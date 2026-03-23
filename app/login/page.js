@@ -1,14 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { signInWithPopup } from "firebase/auth";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged, signInWithPopup } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { auth, googleProvider } from "@/lib/firebase";
 
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.cookie = "bridge_auth=1; path=/; max-age=2592000; samesite=lax";
+        router.replace("/dashboard");
+        return;
+      }
+      setCheckingAuth(false);
+    });
+
+    return () => unsubscribe();
+  }, [router]);
 
   const handleGoogleSignIn = async () => {
     setErrorMessage("");
@@ -16,7 +30,8 @@ export default function LoginPage() {
 
     try {
       await signInWithPopup(auth, googleProvider);
-      router.push("/dashboard");
+      document.cookie = "bridge_auth=1; path=/; max-age=2592000; samesite=lax";
+      router.replace("/dashboard");
     } catch (error) {
       const message =
         error instanceof Error
@@ -31,6 +46,19 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-white px-4 py-6 text-slate-900">
+        <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-[390px] items-center justify-center rounded-[28px] border border-slate-100 bg-white shadow-[0_12px_36px_rgba(15,23,42,0.08)]">
+          <div className="flex items-center gap-2 text-sm font-semibold text-[#2B5CE6]">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#2B5CE6]/30 border-t-[#2B5CE6]" />
+            Checking session...
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white px-4 py-6 text-slate-900">
