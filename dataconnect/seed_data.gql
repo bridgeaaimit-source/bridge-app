@@ -1,0 +1,69 @@
+mutation CreateDemoData @transaction @auth(level: USER, insecureReason: "This operation is for seeding demo data and should only be callable by an authenticated user.") {
+  user1: user_insert(data: {
+    id: "550e8400-e29b-41d4-a716-446655440000",
+    displayName: "Alice Smith",
+    createdAt: "2023-01-15T10:00:00Z",
+    email: "alice@example.com",
+    photoUrl: "https://example.com/alice.jpg"
+  })
+  user2: user_insert(data: {
+    id: "550e8400-e29b-41d4-a716-446655440001",
+    displayName: "Bob Johnson",
+    createdAt: "2023-02-20T11:30:00Z",
+    email: "bob@example.com",
+    photoUrl: "https://example.com/bob.jpg"
+  })
+  movie1: movie_insert(data: {
+    id: "550e8400-e29b-41d4-a716-446655440002",
+    title: "The Great Adventure",
+    year: 2022,
+    createdAt: "2023-03-01T12:00:00Z",
+    summary: "A thrilling journey across uncharted lands.",
+    genres: ["Adventure", "Action"],
+    runtimeMinutes: 120
+  })
+  movie2: movie_insert(data: {
+    id: "550e8400-e29b-41d4-a716-446655440003",
+    title: "Sci-Fi Odyssey",
+    year: 2023,
+    createdAt: "2023-04-10T14:00:00Z",
+    summary: "Humanity's first mission to a distant galaxy.",
+    genres: ["Science Fiction"],
+    runtimeMinutes: 150
+  })
+  movieList1: movieList_insert(data: {
+    id: "550e8400-e29b-41d4-a716-446655440004",
+    userId: "550e8400-e29b-41d4-a716-446655440000",
+    name: "Alice's Favorite Movies",
+    isPublic: true,
+    createdAt: "2023-05-01T10:00:00Z",
+    updatedAt: "2023-05-01T10:00:00Z",
+    description: "A collection of my all-time favorite films.",
+    shareToken: "ALICEFAVMOVIES"
+  })
+  movieListEntry1: movieListEntry_insert(data: {
+    movieListId: "550e8400-e29b-41d4-a716-446655440004",
+    movieId: "550e8400-e29b-41d4-a716-446655440002",
+    position: 1,
+    note: "Absolutely loved the special effects!"
+  })
+  watch1: watch_insert(data: {
+    id: "550e8400-e29b-41d4-a716-446655440005",
+    userId: "550e8400-e29b-41d4-a716-446655440000",
+    movieId: "550e8400-e29b-41d4-a716-446655440002",
+    watchDate: "2023-05-05",
+    createdAt: "2023-05-05T18:00:00Z",
+    location: "Home"
+  })
+  review1: review_insert(data: {
+    id: "550e8400-e29b-41d4-a716-446655440006",
+    userId: "550e8400-e29b-41d4-a716-446655440000",
+    movieId: "550e8400-e29b-41d4-a716-446655440002",
+    watchId: "550e8400-e29b-41d4-a716-446655440005",
+    rating: 5,
+    isPublic: true,
+    createdAt: "2023-05-06T09:00:00Z",
+    updatedAt: "2023-05-06T09:00:00Z",
+    text: "An incredible movie, highly recommend!"
+  })
+}
