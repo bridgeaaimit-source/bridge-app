@@ -8,9 +8,19 @@ export async function POST(request) {
     console.log('=== API ROUTE HIT ===');
     console.log('Body:', { question, answer, domain, count });
     console.log('Has API key:', !!process.env.ANTHROPIC_API_KEY);
+    console.log('API Key first 10 chars:', process.env.ANTHROPIC_API_KEY?.substring(0, 10));
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error('ANTHROPIC_API_KEY is missing');
+      return Response.json({ error: 'API key not configured' }, { status: 500 });
+    }
 
     const client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      // Add default headers to ensure proper authentication
+      defaultHeaders: {
+        'anthropic-version': '2023-06-01'
+      }
     });
 
     // Generate questions
