@@ -1,5 +1,5 @@
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const MODEL = "gpt-4o";
+const Anthropic = require('@anthropic-ai/sdk');
+const MODEL = "claude-sonnet-4-20250514";
 
 function jsonResponse(data, status = 200) {
   return Response.json(data, { status });
@@ -13,41 +13,44 @@ async function readJsonBody(request) {
   }
 }
 
-async function callOpenAIJSON({ systemPrompt, userPrompt }) {
-  const apiKey = process.env.OPENAI_API_KEY;
+async function callClaudeJSON({ systemPrompt, userPrompt }) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    throw new Error("Missing OPENAI_API_KEY");
+    throw new Error("Missing ANTHROPIC_API_KEY");
   }
 
-  const res = await fetch(OPENAI_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      temperature: 0.3,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-    }),
+  const client = new Anthropic({
+    apiKey: apiKey,
   });
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`OpenAI request failed (${res.status}): ${text}`);
-  }
+  try {
+    const message = await client.messages.create({
+      model: MODEL,
+      max_tokens: 1024,
+      temperature: 0.3,
+      system: systemPrompt,
+      messages: [
+        { role: "user", content: userPrompt }
+      ],
+    });
 
-  const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error("OpenAI returned empty response");
-  }
+    const content = message.content[0]?.text;
+    
+    if (!content) {
+      throw new Error("Claude returned an empty response");
+    }
 
-  return JSON.parse(content);
+    // Extract JSON from the response
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Claude returned non-JSON content");
+    }
+
+    return JSON.parse(jsonMatch[0]);
+  } catch (error) {
+    console.error('Claude API error:', error);
+    throw error;
+  }
 }
 
 function getMockOutput(mode, text) {
@@ -98,8 +101,8 @@ export async function POST(request) {
 
   try {
     if (mode === "rewrite") {
-      const result = await callOpenAIJSON({
-        systemPrompt: "You are an expert interview coach. Rewrite interview answers to be more professional, structured, and impactful. Use clear language, add specific examples where appropriate, and maintain the original intent. Return strict JSON with 'output' field only.",
+      const result = await callClaudeJSON({
+        systemPrompt: "You are an expert interview coach. Rewrite interview answers to be more professional, structured, and impactful. Use clear language, add specific examples where appropriate, and maintain original intent. Return strict JSON with 'output' field only.",
         userPrompt: `Rewrite this interview answer to make it more professional and impactful:
 
 ${text}
@@ -118,8 +121,8 @@ Return JSON:
     }
 
     if (mode === "hinglish_to_english") {
-      const result = await callOpenAIJSON({
-        systemPrompt: "You are a language expert specializing in converting Hinglish (Hindi + English) to professional English. Maintain the meaning while improving grammar, vocabulary, and professionalism. Return strict JSON with 'output' field only.",
+      const result = await callClaudeJSON({
+        systemPrompt: "You are a language expert specializing in converting Hinglish (Hindi + English) to professional English. Maintain meaning while improving grammar, vocabulary, and professionalism. Return strict JSON with 'output' field only.",
         userPrompt: `Convert this Hinglish text to fluent professional English:
 
 ${text}
@@ -127,7 +130,7 @@ ${text}
 Guidelines:
 - Convert to proper English grammar
 - Use professional vocabulary
-- Maintain the original meaning
+- Maintain original meaning
 - Make it suitable for formal/communication contexts
 - Keep it natural and fluent
 

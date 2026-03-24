@@ -1,5 +1,5 @@
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const MODEL = "gpt-4o";
+const Anthropic = require('@anthropic-ai/sdk');
+const MODEL = "claude-sonnet-4-20250514";
 const DEFAULT_COUNT = 5;
 
 const MOCK_QUESTIONS_BY_DOMAIN = {
@@ -76,46 +76,44 @@ async function readJsonBody(request) {
   }
 }
 
-async function callOpenAIJSON({ systemPrompt, userPrompt, temperature = 0.7 }) {
-  const apiKey = process.env.OPENAI_API_KEY;
+async function callClaudeJSON({ systemPrompt, userPrompt, temperature = 0.7 }) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
-    throw new Error("Missing OPENAI_API_KEY");
+    throw new Error("Missing ANTHROPIC_API_KEY");
   }
 
-  const res = await fetch(OPENAI_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      temperature,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-    }),
+  const client = new Anthropic({
+    apiKey: apiKey,
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`OpenAI request failed (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content;
-
-  if (!content) {
-    throw new Error("OpenAI returned an empty response");
-  }
-
   try {
-    return JSON.parse(content);
-  } catch {
-    throw new Error("OpenAI returned non-JSON content");
+    const message = await client.messages.create({
+      model: MODEL,
+      max_tokens: 1024,
+      temperature: temperature,
+      system: systemPrompt,
+      messages: [
+        { role: "user", content: userPrompt }
+      ],
+    });
+
+    const content = message.content[0]?.text;
+    
+    if (!content) {
+      throw new Error("Claude returned an empty response");
+    }
+
+    // Extract JSON from the response
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Claude returned non-JSON content");
+    }
+
+    return JSON.parse(jsonMatch[0]);
+  } catch (error) {
+    console.error('Claude API error:', error);
+    throw error;
   }
 }
 
@@ -154,7 +152,7 @@ async function handleGenerateQuestions(body) {
   }
 
   try {
-    const result = await callOpenAIJSON({
+    const result = await callClaudeJSON({
       systemPrompt:
         "You generate realistic, role-relevant interview questions. Return strict JSON only.",
       userPrompt: `Generate exactly ${count} realistic interview questions for the "${domain}" domain.
@@ -194,7 +192,7 @@ async function handleAnalyzeAnswer(body) {
   }
 
   try {
-    const result = await callOpenAIJSON({
+    const result = await callClaudeJSON({
       systemPrompt:
         "You evaluate interview answers with clear rubric scoring. Return strict JSON only.",
       userPrompt: `Analyze this interview response in the "${domain}" domain.
