@@ -164,18 +164,25 @@ export default function InterviewPage() {
   };
 
   const startInterview = async (mode) => {
+    console.log('=== START INTERVIEW CALLED ===');
+    console.log('Mode:', mode);
+    console.log('Selected domain:', selectedDomain);
+    
     setInterviewMode(mode);
     setErrorMessage("");
     setIsLoadingQuestions(true);
 
     try {
+      console.log('Making API call to /api/interview...');
       const response = await fetch("/api/interview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ domain: selectedDomain, count: 5 }),
       });
 
+      console.log('API response status:', response.status);
       const data = await response.json();
+      console.log('API response data:', data);
 
       if (!response.ok || !Array.isArray(data?.questions) || !data.questions.length) {
         throw new Error(data?.error || "Could not generate interview questions right now.");
@@ -191,6 +198,7 @@ export default function InterviewPage() {
       setTranscript("");
       setStep(2);
     } catch (error) {
+      console.error('Start interview error:', error);
       setErrorMessage(
         error instanceof Error
           ? error.message
