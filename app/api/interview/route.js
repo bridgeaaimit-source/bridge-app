@@ -121,7 +121,15 @@ async function callClaudeJSON({ prompt }) {
     const responseText = message.content[0].text;
     console.log('Raw Claude response:', responseText);
     
-    const result = JSON.parse(responseText);
+    // Strip markdown blocks if present
+    const cleanResponse = responseText
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
+    
+    console.log('Cleaned response:', cleanResponse);
+    
+    const result = JSON.parse(cleanResponse);
     return result;
   } catch (error) {
     console.error('Claude API error:', error);
@@ -194,6 +202,12 @@ async function handleAnalyzeAnswer(body) {
   const answer = typeof body?.answer === "string" ? body.answer.trim() : "";
   const domain = typeof body?.domain === "string" ? body.domain.trim() : "";
 
+  console.log('=== INTERVIEW API CALLED ===');
+  console.log('Question:', question);
+  console.log('Answer:', answer);
+  console.log('Domain:', domain);
+  console.log('API Key exists:', !!process.env.ANTHROPIC_API_KEY);
+
   if (!question || !answer || !domain) {
     return jsonResponse(
       { error: "question, answer, and domain are required" },
@@ -201,31 +215,70 @@ async function handleAnalyzeAnswer(body) {
     );
   }
 
+  // Calculate actual word count
+  const wordCount = answer.trim().split(/\s+/).length;
+  console.log('Actual word count:', wordCount);
+
+  // Detect filler words programmatically
+  const fillerWords = [
+    'so', 'basically', 'you know', 'like', 'umm', 'uhh', 
+    'actually', 'literally', 'I mean', 'right', 'na', 'toh', 
+    'matlab', 'agar', 'I think', 'maybe', 'I guess', 
+    'not sure', 'I don\'t know', 'kind of', 'sort of'
+  ];
+  
+  const foundFillers = fillerWords.filter(f => 
+    answer.toLowerCase().includes(f.toLowerCase())
+  );
+  console.log('Found fillers:', foundFillers);
+
+  // Strict scoring rules
+  let maxScore = 10;
+  if (wordCount < 30) maxScore = 4;
+  if (!answer.toLowerCase().includes('example') && !answer.toLowerCase().includes('project')) maxScore = Math.min(maxScore, 5);
+  if (foundFillers.length > 0) maxScore = Math.min(maxScore, 6);
+  if (answer.toLowerCase().includes('i don\'t know') || answer.toLowerCase().includes('no idea')) maxScore = 2;
+
   try {
     const prompt = `You are a strict interview coach for Indian students.
 Analyze this interview answer carefully.
 
 Question: ${question}
 Domain: ${domain}
-Student Answer: ${answer}
+Student Answer: "${answer}"
+Word Count: ${wordCount}
+
+IMPORTANT: You MUST analyze ONLY this exact answer: "${answer}"
+Do NOT give generic feedback.
+Every strength and improvement must quote actual answer content.
+If answer is poor (like "I don't know"), say it clearly.
+
+DETECTED FILLER WORDS: ${foundFillers.join(', ')}
 
 IMPORTANT: Detect these EXACT filler words if present:
 basically, you know, like, umm, uhh, so basically, 
 actually, literally, kind of, sort of, I mean, right,
 na, toh, matlab, agar, I think, maybe, I guess, not sure
 
+STRICT SCORING RULES:
+- Under 30 words = max score 4/10
+- No examples given = content max 5/10  
+- Fillers found = confidence reduced
+- "I don't know" in answer = automatic max score 2/10
+- Maximum possible score: ${maxScore}/10
+
 Return ONLY valid JSON, no extra text, no markdown:
 {
-  "score": (1-10 strict),
+  "score": (1-${maxScore} strict based on rules above),
   "clarity": (1-10),
   "confidence": (1-10),
   "content": (1-10),
   "communication": (1-10),
-  "word_count": (count words in answer),
+  "word_count": ${wordCount},
   "filler_words": {
-    "found": ["list every filler word found"],
-    "count": (total fillers),
-    "examples": "basically (3x), you know (2x)"
+    "found": [${foundFillers.map(f => `"${f}"`).join(', ')}],
+    "count": ${foundFillers.length},
+    "examples": "List actual examples from answer"
   },
   "structure": {
     "has_opening": (true/false),
@@ -233,32 +286,32 @@ Return ONLY valid JSON, no extra text, no markdown:
     "has_conclusion": (true/false),
     "rating": "Poor/Average/Good/Excellent"
   },
-  "weak_language": ["I think", "maybe"],
-  "strong_language": ["I achieved", "I led"],
+  "weak_language": ["list actual weak phrases from answer"],
+  "strong_language": ["list actual strong phrases from answer"],
   "strengths": [
     "specific strength from THIS answer",
     "another specific strength"
   ],
   "improvements": [
-    "specific improvement with example",
-    "specific improvement with example",
+    "specific improvement with example from answer",
+    "specific improvement with example", 
     "specific improvement with example"
   ],
-  "filler_feedback": "You used basically 3 times. Replace with: therefore, consequently, or remove it",
-  "structure_feedback": "specific feedback on answer structure",
+  "filler_feedback": "Specific feedback about actual fillers used",
+  "structure_feedback": "specific feedback on actual answer structure",
   "better_answer": "Complete model answer 150-200 words for this exact question"
 }`;
 
     const result = await callClaudeJSON({ prompt });
 
     return jsonResponse({
-      score: Number(result?.score ?? 0),
+      score: Math.min(Number(result?.score ?? 0), maxScore),
       clarity: Number(result?.clarity ?? 0),
       confidence: Number(result?.confidence ?? 0),
       content: Number(result?.content ?? 0),
       communication: Number(result?.communication ?? 0),
-      word_count: Number(result?.word_count ?? 0),
-      filler_words: result?.filler_words || { found: [], count: 0, examples: "" },
+      word_count: wordCount,
+      filler_words: result?.filler_words || { found: foundFillers, count: foundFillers.length, examples: "" },
       structure: result?.structure || { has_opening: false, has_examples: false, has_conclusion: false, rating: "Poor" },
       weak_language: Array.isArray(result?.weak_language) ? result.weak_language : [],
       strong_language: Array.isArray(result?.strong_language) ? result.strong_language : [],
