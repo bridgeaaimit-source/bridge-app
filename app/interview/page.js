@@ -19,8 +19,12 @@ const domains = [
 export default function InterviewPage() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [step, setStep] = useState(1);
+  const [interviewMode, setInterviewMode] = useState("text"); // "text" or "voice"
   const [selectedDomain, setSelectedDomain] = useState("Software Engineer");
   const [answer, setAnswer] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [recognition, setRecognition] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [analyses, setAnalyses] = useState([]);
@@ -30,6 +34,7 @@ export default function InterviewPage() {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [isAnalyzingAnswer, setIsAnalyzingAnswer] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [browserSupport, setBrowserSupport] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -44,6 +49,64 @@ export default function InterviewPage() {
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    // Check browser support for Web Speech API
+    if (typeof window !== 'undefined' && !('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      setBrowserSupport(false);
+    }
+  }, []);
+
+  const startRecording = () => {
+    if (!browserSupport) return;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognitionInstance = new SpeechRecognition();
+    
+    recognitionInstance.continuous = true;
+    recognitionInstance.interimResults = true;
+    recognitionInstance.lang = 'en-US';
+
+    recognitionInstance.onstart = () => {
+      setIsRecording(true);
+      setTranscript("");
+    };
+
+    recognitionInstance.onresult = (event) => {
+      let finalTranscript = '';
+      let interimTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalTranscript += result[0].transcript;
+        } else {
+          interimTranscript += result[0].transcript;
+        }
+      }
+
+      setTranscript(finalTranscript + interimTranscript);
+    };
+
+    recognitionInstance.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      setIsRecording(false);
+    };
+
+    recognitionInstance.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognitionInstance.start();
+    setRecognition(recognitionInstance);
+  };
+
+  const stopRecording = () => {
+    if (recognition) {
+      recognition.stop();
+      setRecognition(null);
+    }
+  };
 
   useEffect(() => {
     if (step === 3 && feedback) {
@@ -100,7 +163,8 @@ export default function InterviewPage() {
     };
   };
 
-  const startInterview = async () => {
+  const startInterview = async (mode) => {
+    setInterviewMode(mode);
     setErrorMessage("");
     setIsLoadingQuestions(true);
 
@@ -124,6 +188,7 @@ export default function InterviewPage() {
       setSelectedFeedbackTab(0);
       setFeedback(null);
       setAnswer("");
+      setTranscript("");
       setStep(2);
     } catch (error) {
       setErrorMessage(
@@ -133,6 +198,65 @@ export default function InterviewPage() {
       );
     } finally {
       setIsLoadingQuestions(false);
+    }
+  };
+
+  const submitVoiceAnswer = async () => {
+    if (!transcript.trim()) {
+      setErrorMessage("Please speak your answer before submitting.");
+      return;
+    }
+
+    setErrorMessage("");
+    setIsAnalyzingAnswer(true);
+
+    try {
+      const response = await fetch("/api/interview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: currentQuestion,
+          answer: transcript.trim(),
+          domain: selectedDomain,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Could not analyze your answer right now.");
+      }
+
+      const updatedAnalyses = [...analyses, data];
+      setAnalyses(updatedAnalyses);
+      const updatedResponses = [
+        ...responses,
+        {
+          question: currentQuestion,
+          answer: transcript.trim(),
+          analysis: data,
+        },
+      ];
+      setResponses(updatedResponses);
+
+      const isLastQuestion = currentQuestionIndex >= totalQuestions - 1;
+      if (isLastQuestion) {
+        setSelectedFeedbackTab(0);
+        setFeedback(aggregateFeedback(updatedAnalyses));
+        setStep(3);
+      } else {
+        setCurrentQuestionIndex((prev) => prev + 1);
+        setTranscript("");
+        setAnswer("");
+      }
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while analyzing your answer. Please try again."
+      );
+    } finally {
+      setIsAnalyzingAnswer(false);
     }
   };
 
@@ -301,9 +425,9 @@ export default function InterviewPage() {
               </div>
 
               <button
-                onClick={startInterview}
+                onClick={() => startInterview("text")}
                 disabled={isLoadingQuestions}
-                className="w-full py-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl font-semibold shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full py-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl font-semibold shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed mb-3"
                 style={{ boxShadow: '0 10px 25px rgba(108, 99, 255, 0.3)' }}
               >
                 {isLoadingQuestions ? (
@@ -312,7 +436,119 @@ export default function InterviewPage() {
                     Generating Questions...
                   </div>
                 ) : (
-                  "Start Interview →"
+                  <div className="flex items-center justify-center gap-2">
+                    <span>📝</span>
+                    Start Text Interview
+                  </div>
+                )}
+              </button>
+
+              <button
+                onClick={() => startInterview("voice")}
+                disabled={isLoadingQuestions || !browserSupport}
+                className="w-full py-4 bg-gradient-to-r from-red-500 to-red-600 rounded-2xl font-semibold shadow-lg hover:shadow-red-500/25 transition-all duration-300 hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed"
+                style={{ boxShadow: '0 10px 25px rgba(239, 68, 68, 0.3)' }}
+              >
+                {isLoadingQuestions ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+                    Generating Questions...
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    <span>🎤</span>
+                    Start Voice Interview
+                  </div>
+                )}
+              </button>
+
+              {!browserSupport && (
+                <div className="mt-4 px-4 py-3 bg-yellow-500/20 border border-yellow-500/30 rounded-xl text-yellow-300 text-sm text-center">
+                  ⚠️ Please use Chrome on Android for voice interview
+                </div>
+              )}
+
+              {errorMessage && (
+                <div className="mt-4 px-4 py-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 text-sm text-center">
+                  {errorMessage}
+                </div>
+              )}
+            </section>
+          )}
+
+          {step === 2 && interviewMode === "voice" && (
+            <section className="animate-fade-up">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-sm font-semibold text-purple-400">
+                  Question {currentQuestionIndex + 1} of {totalQuestions}
+                </div>
+                <div className="px-3 py-1 bg-red-500/20 border border-red-500/30 rounded-lg text-xs font-semibold text-red-400">
+                  02:30
+                </div>
+              </div>
+
+              <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-6">
+                <div
+                  className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
+                  style={{
+                    width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%`,
+                  }}
+                />
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 mb-6" style={{ boxShadow: '0 20px 40px rgba(108, 99, 255, 0.3)' }}>
+                <div className="text-sm text-purple-200 mb-2">Current prompt</div>
+                <h3 className="text-lg font-semibold leading-relaxed">
+                  {currentQuestion || "Loading your interview question..."}
+                </h3>
+              </div>
+
+              {/* Microphone Button */}
+              <div className="flex flex-col items-center mb-6">
+                <button
+                  onClick={isRecording ? stopRecording : startRecording}
+                  className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
+                    isRecording 
+                      ? 'bg-red-500 animate-pulse shadow-lg shadow-red-500/50' 
+                      : 'bg-purple-500 shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40'
+                  }`}
+                  style={{ 
+                    boxShadow: isRecording 
+                      ? '0 0 30px rgba(239, 68, 68, 0.6)' 
+                      : '0 10px 25px rgba(108, 99, 255, 0.3)' 
+                  }}
+                >
+                  <span className="text-3xl">{isRecording ? '🔴' : '🎤'}</span>
+                </button>
+                <div className="text-sm text-gray-400 mt-3">
+                  {isRecording ? 'Recording...' : 'Tap to Speak'}
+                </div>
+              </div>
+
+              {/* Live Transcription */}
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-4 min-h-[120px]">
+                <div className="text-xs text-gray-400 mb-2">Live Transcription</div>
+                <div className="text-white min-h-[80px]">
+                  {transcript || "Your speech will appear here..."}
+                </div>
+              </div>
+
+              <button
+                onClick={submitVoiceAnswer}
+                disabled={!transcript.trim() || isAnalyzingAnswer}
+                className="w-full py-4 bg-gradient-to-r from-red-500 to-red-600 rounded-2xl font-semibold shadow-lg hover:shadow-red-500/25 transition-all duration-300 hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed"
+                style={{ boxShadow: '0 10px 25px rgba(239, 68, 68, 0.3)' }}
+              >
+                {isAnalyzingAnswer ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+                    AI is analyzing your answer...
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    Stop & Analyze
+                    <Send className="w-4 h-4" />
+                  </div>
                 )}
               </button>
 
@@ -324,7 +560,7 @@ export default function InterviewPage() {
             </section>
           )}
 
-          {step === 2 && (
+          {step === 2 && interviewMode === "text" && (
             <section className="animate-fade-up">
               <div className="flex items-center justify-between mb-4">
                 <div className="text-sm font-semibold text-purple-400">
