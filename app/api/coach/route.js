@@ -14,13 +14,21 @@ async function readJsonBody(request) {
 }
 
 async function callClaudeJSON({ systemPrompt, userPrompt }) {
+  console.log('=== COACH API CALLED ===');
+  console.log('Has API key:', !!process.env.ANTHROPIC_API_KEY);
+  console.log('API Key first 10 chars:', process.env.ANTHROPIC_API_KEY?.substring(0, 10));
+  
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
+    console.error('ANTHROPIC_API_KEY is missing in coach API');
     throw new Error("Missing ANTHROPIC_API_KEY");
   }
 
   const client = new Anthropic({
     apiKey: apiKey,
+    defaultHeaders: {
+      'anthropic-version': '2023-06-01'
+    }
   });
 
   try {
@@ -29,26 +37,24 @@ async function callClaudeJSON({ systemPrompt, userPrompt }) {
       max_tokens: 1024,
       temperature: 0.3,
       system: systemPrompt,
-      messages: [
-        { role: "user", content: userPrompt }
-      ],
+      messages: [{ role: "user", content: userPrompt }]
     });
-
-    const content = message.content[0]?.text;
     
-    if (!content) {
-      throw new Error("Claude returned an empty response");
-    }
-
-    // Extract JSON from the response
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("Claude returned non-JSON content");
-    }
-
-    return JSON.parse(jsonMatch[0]);
+    const responseText = message.content[0].text;
+    console.log('Coach API Raw Response:', responseText);
+    
+    // Strip markdown blocks if present
+    const cleanResponse = responseText
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
+    
+    console.log('Coach API Cleaned Response:', cleanResponse);
+    
+    const result = JSON.parse(cleanResponse);
+    return result;
   } catch (error) {
-    console.error('Claude API error:', error);
+    console.error('Coach API Error:', error);
     throw error;
   }
 }
