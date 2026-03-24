@@ -637,7 +637,7 @@ export default function InterviewPage() {
                 <div className="text-2xl font-bold">{feedback?.score ?? 0} / 10</div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="grid grid-cols-4 gap-3 mb-6">
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
                   <div className="text-xs text-gray-400 mb-1">Clarity</div>
                   <div className="text-lg font-bold text-green-400">{feedback?.clarity ?? 0}/10</div>
@@ -649,6 +649,94 @@ export default function InterviewPage() {
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
                   <div className="text-xs text-gray-400 mb-1">Content</div>
                   <div className="text-lg font-bold text-green-400">{feedback?.content ?? 0}/10</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
+                  <div className="text-xs text-gray-400 mb-1">Communication</div>
+                  <div className="text-lg font-bold text-green-400">{feedback?.communication ?? 0}/10</div>
+                </div>
+              </div>
+
+              {/* Word Count Analysis */}
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-6">
+                <div className="text-sm font-semibold mb-3">Word Count Analysis</div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-2xl font-bold">{feedback?.word_count ?? 0}</div>
+                    <div className="text-xs text-gray-400">words used</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-green-400">Ideal: 80-120</div>
+                    <div className="text-xs text-gray-400">Good range for interview answers</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Filler Words Analysis */}
+              <div className="bg-red-500/10 backdrop-blur-sm rounded-2xl p-4 border border-red-500/20 mb-6">
+                <div className="text-sm font-semibold text-red-400 mb-3">Filler Words Detected</div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-2xl font-bold text-red-400">{feedback?.filler_words?.count ?? 0}</div>
+                  <div className="text-sm text-red-300">filler words found</div>
+                </div>
+                {(feedback?.filler_words?.found?.length > 0) && (
+                  <div className="space-y-2">
+                    <div className="text-xs text-red-300">Found: {feedback?.filler_words?.found?.join(", ")}</div>
+                    <div className="text-xs text-gray-400 bg-red-500/5 rounded p-2">{feedback?.filler_words?.examples}</div>
+                    <div className="text-xs text-red-200">{feedback?.filler_feedback}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Structure Analysis */}
+              <div className="bg-blue-500/10 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20 mb-6">
+                <div className="text-sm font-semibold text-blue-400 mb-3">Answer Structure</div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Overall Rating</span>
+                    <span className="text-sm font-bold text-blue-300">{feedback?.structure?.rating || "Poor"}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className={`text-center p-2 rounded ${feedback?.structure?.has_opening ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                      <div className="text-xs">Opening</div>
+                    </div>
+                    <div className={`text-center p-2 rounded ${feedback?.structure?.has_examples ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                      <div className="text-xs">Examples</div>
+                    </div>
+                    <div className={`text-center p-2 rounded ${feedback?.structure?.has_conclusion ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                      <div className="text-xs">Conclusion</div>
+                    </div>
+                  </div>
+                  {feedback?.structure_feedback && (
+                    <div className="text-xs text-blue-200 bg-blue-500/5 rounded p-2">{feedback?.structure_feedback}</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Language Analysis */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="bg-orange-500/10 backdrop-blur-sm rounded-2xl p-4 border border-orange-500/20">
+                  <div className="text-sm font-semibold text-orange-400 mb-3">Weak Language</div>
+                  <div className="space-y-1">
+                    {feedback?.weak_language?.length > 0 ? (
+                      feedback?.weak_language?.map((phrase, idx) => (
+                        <div key={`weak-${idx}`} className="text-xs text-orange-300">• {phrase}</div>
+                      ))
+                    ) : (
+                      <div className="text-xs text-green-400">No weak phrases detected!</div>
+                    )}
+                  </div>
+                </div>
+                <div className="bg-green-500/10 backdrop-blur-sm rounded-2xl p-4 border border-green-500/20">
+                  <div className="text-sm font-semibold text-green-400 mb-3">Strong Language</div>
+                  <div className="space-y-1">
+                    {feedback?.strong_language?.length > 0 ? (
+                      feedback?.strong_language?.map((phrase, idx) => (
+                        <div key={`strong-${idx}`} className="text-xs text-green-300">• {phrase}</div>
+                      ))
+                    ) : (
+                      <div className="text-xs text-gray-400">Could be stronger</div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -723,8 +811,23 @@ export default function InterviewPage() {
                 )}
               </div>
 
-              <div className="bg-green-500/10 rounded-xl p-4 border border-green-500/20 mb-4">
-                <div className="text-sm font-bold text-green-400 mb-2">Overall Strengths</div>
+              <div className="bg-purple-500/10 backdrop-blur-sm rounded-2xl p-4 border border-purple-500/20 mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-sm font-bold text-purple-400">Model Answer</div>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(feedback?.better_answer || "")}
+                    className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300 hover:bg-purple-500/30 transition-colors"
+                  >
+                    📋 Copy
+                  </button>
+                </div>
+                <div className="text-sm leading-relaxed text-purple-200">
+                  {feedback?.better_answer || "A well-structured answer should include specific examples, measurable results, and a clear conclusion that demonstrates your capabilities and alignment with the role requirements."}
+                </div>
+              </div>
+
+              <div className="bg-green-500/10 backdrop-blur-sm rounded-2xl p-4 border border-green-500/20 mb-4">
+                <div className="text-sm font-bold text-green-400 mb-3">Overall Strengths</div>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-green-300">
                   {(feedback?.strengths?.length ? feedback.strengths : ["Strong effort and thoughtful responses."]).map(
                     (item, idx) => (
@@ -734,9 +837,9 @@ export default function InterviewPage() {
                 </ul>
               </div>
 
-              <div className="bg-red-500/10 rounded-xl p-4 border border-red-500/20 mb-6">
-                <div className="text-sm font-bold text-red-400 mb-2">Areas to Improve</div>
-                <ul className="list-disc space-y-1 pl-5 text-sm text-red-300">
+              <div className="bg-orange-500/10 backdrop-blur-sm rounded-2xl p-4 border border-orange-500/20 mb-6">
+                <div className="text-sm font-bold text-orange-400 mb-3">Areas to Improve</div>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-orange-300">
                   {(
                     feedback?.improvements?.length
                       ? feedback.improvements
