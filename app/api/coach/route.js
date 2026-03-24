@@ -1,4 +1,4 @@
-const Anthropic = require('@anthropic-ai/sdk');
+import Anthropic from '@anthropic-ai/sdk';
 const MODEL = "claude-sonnet-4-20250514";
 
 function jsonResponse(data, status = 200) {
