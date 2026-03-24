@@ -5,37 +5,43 @@ import { onAuthStateChanged } from "firebase/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
+import { Home, Mic, Zap, Trophy, User, Bell, Flame, Briefcase, MessageSquare, TrendingUp, Target } from "lucide-react";
 
 const actionCards = [
   {
-    icon: "🎤",
-    title: "AI Mock Interview",
-    subtitle: "Practice with instant AI feedback",
+    icon: Mic,
+    title: "Mock Interview",
+    subtitle: "AI-powered practice",
     href: "/interview",
+    color: "purple"
   },
   {
-    icon: "🗣️",
-    title: "GD Practice",
-    subtitle: "Simulate real group discussions",
+    icon: MessageSquare,
+    title: "GD Battle",
+    subtitle: "Group discussions",
     href: "/gd",
+    color: "coral"
   },
   {
-    icon: "🔥",
-    title: "PULSE Intelligence",
-    subtitle: "Track real-time company trends",
+    icon: Zap,
+    title: "PULSE Feed",
+    subtitle: "Company insights",
     href: "/pulse",
+    color: "green"
   },
   {
-    icon: "📢",
-    title: "Communication Coach",
-    subtitle: "Improve fluency and confidence",
-    href: "/coach",
+    icon: Trophy,
+    title: "Leaderboard",
+    subtitle: "Top performers",
+    href: "/leaderboard",
+    color: "gold"
   },
 ];
 
 export default function DashboardPage() {
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [bridgeScore, setBridgeScore] = useState(742);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -53,105 +59,188 @@ export default function DashboardPage() {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen bg-white px-4 py-4 text-slate-900">
-        <div className="mx-auto flex min-h-[80vh] w-full max-w-[390px] items-center justify-center rounded-[28px] border border-slate-100 bg-white shadow-[0_12px_36px_rgba(15,23,42,0.08)]">
-          <div className="flex items-center gap-2 text-sm font-semibold text-[#2B5CE6]">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#2B5CE6]/30 border-t-[#2B5CE6]" />
-            Loading dashboard...
-          </div>
+      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500/30 border-t-purple-500 mx-auto mb-4"></div>
+          <div className="text-purple-400 font-semibold">Loading dashboard...</div>
         </div>
       </div>
     );
   }
 
+  const scorePercentage = (bridgeScore / 1000) * 100;
+  const circumference = 2 * Math.PI * 45;
+  const strokeDashoffset = circumference - (scorePercentage / 100) * circumference;
+
   return (
-    <div className="min-h-screen bg-white px-4 py-4 text-slate-900">
-      <div className="mx-auto w-full max-w-[390px] rounded-[28px] border border-slate-100 bg-white shadow-[0_12px_36px_rgba(15,23,42,0.08)]">
-        <header className="flex items-center justify-between px-5 pb-3 pt-5">
+    <div className="min-h-screen bg-[#0A0A0F] text-white">
+      <div className="max-w-md mx-auto px-6 py-6">
+        
+        {/* Top bar */}
+        <header className="flex items-center justify-between mb-8">
           <div>
-            <p className="text-sm font-semibold text-slate-500">Good Morning 👋</p>
-            <h1 className="text-lg font-bold text-slate-900">Ready to level up?</h1>
+            <h1 className="text-2xl font-bold" style={{ textShadow: '0 0 20px #6C63FF' }}>
+              BRIDGE
+            </h1>
+            <p className="text-gray-400 text-sm">Welcome back! 👋</p>
           </div>
-          <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#2B5CE6]/20 bg-[#EEF3FF] text-sm font-bold text-[#2B5CE6]">
-            SM
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <Bell className="w-6 h-6 text-gray-400" />
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+            </div>
+            <div className="flex items-center gap-1">
+              <Flame className="w-5 h-5 text-orange-500" />
+              <span className="text-sm font-bold">5</span>
+            </div>
           </div>
         </header>
 
-        <main className="px-5 pb-24 pt-4">
-          <section className="rounded-2xl bg-gradient-to-br from-[#2B5CE6] via-[#3B6AFF] to-[#1E3FA8] p-5 text-white shadow-[0_10px_30px_rgba(43,92,230,0.35)]">
-            <p className="text-sm font-medium text-blue-100">Welcome back, Sid 👋</p>
-            <h2 className="mt-2 text-2xl font-bold leading-tight">
-              Your placement preparation starts here
-            </h2>
-            <p className="mt-2 text-xs text-blue-100">Keep your streak alive and complete today&apos;s challenge.</p>
-          </section>
-
-          <section className="mt-4 grid grid-cols-3 gap-2.5">
-            <article className="rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
-              <p className="text-xs text-slate-500">Interviews</p>
-              <p className="mt-1 text-base font-bold text-slate-900">12</p>
-            </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
-              <p className="text-xs text-slate-500">Avg Score</p>
-              <p className="mt-1 text-base font-bold text-slate-900">7.4</p>
-            </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
-              <p className="text-xs text-slate-500">Streak</p>
-              <p className="mt-1 text-base font-bold text-slate-900">5 days</p>
-            </article>
-          </section>
-
-          <section className="mt-6">
-            <h3 className="text-lg font-bold text-slate-900">What do you want to do today?</h3>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              {actionCards.map((item) => (
-                <Link
-                  key={item.title}
-                  href={item.href}
-                  className="block rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_6px_16px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5"
-                >
-                  <span className="text-2xl">{item.icon}</span>
-                  <div className="mt-2 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">{item.subtitle}</p>
+        {/* BRIDGE SCORE Card */}
+        <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-3xl p-6 mb-6 relative overflow-hidden" style={{ boxShadow: '0 20px 40px rgba(108, 99, 255, 0.3)' }}>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold">BRIDGE SCORE</h2>
+                <p className="text-purple-200 text-sm">Interview Ready �</p>
+              </div>
+              <div className="relative w-24 h-24">
+                <svg className="w-24 h-24 transform -rotate-90">
+                  <circle
+                    cx="48"
+                    cy="48"
+                    r="45"
+                    stroke="rgba(255,255,255,0.2)"
+                    strokeWidth="6"
+                    fill="none"
+                  />
+                  <circle
+                    cx="48"
+                    cy="48"
+                    r="45"
+                    stroke="white"
+                    strokeWidth="6"
+                    fill="none"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    className="transition-all duration-1000 ease-out"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">{bridgeScore}</div>
+                    <div className="text-xs text-purple-200">/1000</div>
                   </div>
-                </Link>
-              ))}
+                </div>
+              </div>
             </div>
-          </section>
+          </div>
+        </div>
 
-          <section className="mt-6 rounded-2xl border border-[#FF6B35]/20 bg-[#FFF5F1] p-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#FF6B35]">Today&apos;s Challenge</p>
-            <p className="mt-2 text-sm font-semibold text-slate-900">Record a 60-second self-introduction</p>
-            <button className="mt-3 rounded-xl bg-[#FF6B35] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-95">
-              Start Challenge
-            </button>
-          </section>
-        </main>
+        {/* Quick Stats */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
+            <div className="flex justify-center mb-1">
+              <Briefcase className="w-4 h-4 text-purple-400" />
+            </div>
+            <div className="text-lg font-bold">12</div>
+            <div className="text-xs text-gray-400">Practices</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
+            <div className="flex justify-center mb-1">
+              <Target className="w-4 h-4 text-purple-400" />
+            </div>
+            <div className="text-lg font-bold">7.4</div>
+            <div className="text-xs text-gray-400">Avg Score</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
+            <div className="flex justify-center mb-1">
+              <Flame className="w-4 h-4 text-orange-500" />
+            </div>
+            <div className="text-lg font-bold">5</div>
+            <div className="text-xs text-gray-400">Day Streak</div>
+          </div>
+        </div>
 
-        <nav className="fixed bottom-4 left-1/2 z-10 w-[calc(100%-2rem)] max-w-[360px] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-[0_8px_24px_rgba(15,23,42,0.10)]">
-          <ul className="grid grid-cols-4">
-            <li className="text-center text-[#2B5CE6]">
-              <Link href="/dashboard" className="text-[11px] font-semibold">
-                Home
+        {/* Continue where you left off */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 mb-6">
+          <h3 className="font-semibold mb-2">Continue Where You Left Off</h3>
+          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Technical Interview</p>
+                <p className="text-xs text-gray-400">Completed 3/5 questions</p>
+              </div>
+              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                <span className="text-xs font-bold">60%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature Grid */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          {actionCards.map((item) => (
+            <Link
+              key={item.title}
+              href={item.href}
+              className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-[1.02]"
+            >
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${
+                item.color === 'purple' ? 'bg-purple-500' :
+                item.color === 'coral' ? 'bg-red-500' :
+                item.color === 'green' ? 'bg-green-500' :
+                'bg-yellow-500'
+              }`}>
+                <item.icon className="w-5 h-5 text-white" />
+              </div>
+              <h4 className="font-semibold text-sm mb-1">{item.title}</h4>
+              <p className="text-xs text-gray-400">{item.subtitle}</p>
+            </Link>
+          ))}
+        </div>
+
+        {/* Daily Challenge */}
+        <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-4 mb-20" style={{ boxShadow: '0 10px 25px rgba(255, 107, 107, 0.3)' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-sm">Daily Challenge</h3>
+              <p className="text-xs text-red-100 mt-1">Record 60s self-introduction</p>
+            </div>
+            <div className="bg-white/20 rounded-lg px-3 py-1">
+              <span className="text-xs font-semibold">+50 pts</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Navigation */}
+        <nav className="fixed bottom-0 left-0 right-0 bg-[#0A0A0F]/90 backdrop-blur-xl border-t border-white/10">
+          <div className="max-w-md mx-auto px-6 py-3">
+            <div className="grid grid-cols-5 gap-4">
+              <Link href="/dashboard" className="flex flex-col items-center gap-1 text-purple-400">
+                <Home className="w-5 h-5" />
+                <span className="text-xs">Home</span>
               </Link>
-            </li>
-            <li className="text-center text-slate-500">
-              <Link href="/interview" className="text-[11px]">
-                Practice
+              <Link href="/interview" className="flex flex-col items-center gap-1 text-gray-400">
+                <Mic className="w-5 h-5" />
+                <span className="text-xs">Practice</span>
               </Link>
-            </li>
-            <li className="text-center text-slate-500">
-              <Link href="/pulse" className="text-[11px]">
-                PULSE
+              <Link href="/pulse" className="flex flex-col items-center gap-1 text-gray-400">
+                <Zap className="w-5 h-5" />
+                <span className="text-xs">PULSE</span>
               </Link>
-            </li>
-            <li className="text-center text-slate-500">
-              <Link href="/profile" className="text-[11px]">
-                Profile
+              <Link href="/leaderboard" className="flex flex-col items-center gap-1 text-gray-400">
+                <Trophy className="w-5 h-5" />
+                <span className="text-xs">Trophy</span>
               </Link>
-            </li>
-          </ul>
+              <Link href="/profile" className="flex flex-col items-center gap-1 text-gray-400">
+                <User className="w-5 h-5" />
+                <span className="text-xs">Profile</span>
+              </Link>
+            </div>
+          </div>
         </nav>
       </div>
     </div>

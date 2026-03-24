@@ -4,17 +4,27 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
+import { Home, Mic, Zap, Trophy, User, Edit3, LogOut, Target, Award, TrendingUp, Calendar } from "lucide-react";
 
 const domainOptions = ["IT", "Marketing", "Finance", "MBA"];
 const companyOptions = ["TCS", "Infosys", "Wipro", "Accenture", "Capgemini", "Deloitte"];
+const achievements = [
+  { id: 1, name: "First Interview", icon: "🎯", earned: true },
+  { id: 2, name: "Week Warrior", icon: "🔥", earned: true },
+  { id: 3, name: "Score Master", icon: "⭐", earned: true },
+  { id: 4, name: "Streak Champion", icon: "🏆", earned: false },
+  { id: 5, name: "Perfect 10", icon: "💯", earned: false },
+  { id: 6, name: "AI Expert", icon: "🤖", earned: false },
+];
 
 export default function ProfilePage() {
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [user, setUser] = useState(null);
-  const [collegeName, setCollegeName] = useState("");
+  const [collegeName, setCollegeName] = useState("VIT Vellore");
   const [domain, setDomain] = useState("IT");
-  const [targets, setTargets] = useState([]);
+  const [targets, setTargets] = useState(["TCS", "Infosys", "Amazon"]);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -43,106 +53,235 @@ export default function ProfilePage() {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen bg-white px-4 py-4 text-slate-900">
-        <div className="mx-auto flex min-h-[80vh] w-full max-w-[390px] items-center justify-center rounded-[28px] border border-slate-100 bg-white shadow-[0_12px_36px_rgba(15,23,42,0.08)]">
-          <div className="flex items-center gap-2 text-sm font-semibold text-[#2B5CE6]">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#2B5CE6]/30 border-t-[#2B5CE6]" />
-            Loading profile...
-          </div>
+      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500/30 border-t-purple-500 mx-auto mb-4"></div>
+          <div className="text-purple-400 font-semibold">Loading profile...</div>
         </div>
       </div>
     );
   }
 
+  const skills = [
+    { name: "Technical", level: 85 },
+    { name: "Communication", level: 70 },
+    { name: "Problem Solving", level: 90 },
+    { name: "Aptitude", level: 75 },
+  ];
+
   return (
-    <div className="min-h-screen bg-white px-4 py-4 text-slate-900">
-      <div className="mx-auto w-full max-w-[390px] rounded-[28px] border border-slate-100 bg-white shadow-[0_12px_36px_rgba(15,23,42,0.08)]">
-        <header className="px-4 pb-2 pt-5">
-          <h1 className="text-xl font-black tracking-tight text-[#2B5CE6]">Profile</h1>
+    <div className="min-h-screen bg-[#0A0A0F] text-white">
+      <div className="max-w-md mx-auto px-6 py-6">
+        
+        {/* Header */}
+        <header className="flex items-center justify-between mb-8">
+          <h1 className="text-2xl font-bold">Profile</h1>
+          <button
+            onClick={() => setIsEditing(!isEditing)}
+            className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+          >
+            <Edit3 className="w-5 h-5" />
+          </button>
         </header>
 
-        <main className="space-y-4 px-4 pb-6">
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-3">
+        {/* User Info */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-6">
+          <div className="flex items-center gap-4">
+            <div className="relative">
               {user?.photoURL ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.photoURL} alt="User" className="h-12 w-12 rounded-full border border-slate-200" />
+                <img src={user.photoURL} alt="User" className="w-16 h-16 rounded-full border-2 border-purple-400" />
               ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#EEF3FF] font-bold text-[#2B5CE6]">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
                   {(user?.displayName || "U").slice(0, 1)}
                 </div>
               )}
-              <div>
-                <p className="text-sm font-semibold text-slate-900">{user?.displayName || "BRIDGE User"}</p>
-                <p className="text-xs text-slate-500">{user?.email || ""}</p>
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-xs">
+                🏆
               </div>
             </div>
-          </section>
-
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">College Name</label>
-            <input
-              value={collegeName}
-              onChange={(e) => setCollegeName(e.target.value)}
-              placeholder="Enter your college name"
-              className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2B5CE6]"
-            />
-
-            <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Domain
-            </label>
-            <select
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2B5CE6]"
-            >
-              {domainOptions.map((option) => (
-                <option key={option}>{option}</option>
-              ))}
-            </select>
-          </section>
-
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Target Companies</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {companyOptions.map((company) => (
-                <button
-                  key={company}
-                  onClick={() => toggleTarget(company)}
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                    targets.includes(company)
-                      ? "border-[#2B5CE6] bg-[#EEF3FF] text-[#2B5CE6]"
-                      : "border-slate-200 bg-white text-slate-600"
-                  }`}
-                >
-                  {company}
-                </button>
-              ))}
+            <div className="flex-1">
+              <h2 className="font-semibold text-lg">{user?.displayName || "BRIDGE User"}</h2>
+              <p className="text-sm text-gray-400">{user?.email || ""}</p>
+              <div className="mt-2">
+                <span className="text-xs bg-purple-500/20 px-2 py-1 rounded-lg text-purple-300">
+                  BRIDGE Score: 742
+                </span>
+              </div>
             </div>
-          </section>
+          </div>
+        </div>
 
-          <section className="grid grid-cols-3 gap-2.5">
-            <article className="rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
-              <p className="text-xs text-slate-500">Interviews</p>
-              <p className="mt-1 text-base font-bold text-slate-900">12</p>
-            </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
-              <p className="text-xs text-slate-500">Avg Score</p>
-              <p className="mt-1 text-base font-bold text-slate-900">7.4</p>
-            </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
-              <p className="text-xs text-slate-500">Streak</p>
-              <p className="mt-1 text-base font-bold text-slate-900">5 days</p>
-            </article>
-          </section>
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
+            <div className="text-2xl font-bold text-purple-400">12</div>
+            <div className="text-xs text-gray-400">Interviews</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
+            <div className="text-2xl font-bold text-green-400">7.4</div>
+            <div className="text-xs text-gray-400">Avg Score</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
+            <div className="text-2xl font-bold text-orange-400">5</div>
+            <div className="text-xs text-gray-400">Day Streak</div>
+          </div>
+        </div>
 
-          <button
-            onClick={logout}
-            className="w-full rounded-xl bg-[#FF6B35] px-4 py-2.5 text-sm font-semibold text-white"
-          >
-            Logout
-          </button>
-        </main>
+        {/* Achievements */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-6">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <Award className="w-5 h-5 text-yellow-400" />
+            Achievements
+          </h3>
+          <div className="grid grid-cols-3 gap-3">
+            {achievements.map((achievement) => (
+              <div
+                key={achievement.id}
+                className={`text-center p-3 rounded-xl border transition-all ${
+                  achievement.earned
+                    ? "bg-yellow-500/20 border-yellow-500/30"
+                    : "bg-white/5 border-white/10 opacity-50"
+                }`}
+              >
+                <div className="text-2xl mb-1">{achievement.icon}</div>
+                <div className="text-xs font-semibold">{achievement.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Skills Progress */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-6">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-green-400" />
+            Skills Progress
+          </h3>
+          <div className="space-y-3">
+            {skills.map((skill) => (
+              <div key={skill.name}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>{skill.name}</span>
+                  <span className="text-gray-400">{skill.level}%</span>
+                </div>
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-1000"
+                    style={{ width: `${skill.level}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Editable Profile Info */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-6">
+          <h3 className="font-semibold mb-4">Profile Information</h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">College Name</label>
+              <input
+                value={collegeName}
+                onChange={(e) => setCollegeName(e.target.value)}
+                disabled={!isEditing}
+                placeholder="Enter your college name"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20 disabled:opacity-50"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Domain</label>
+              <select
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+                disabled={!isEditing}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20 disabled:opacity-50"
+              >
+                {domainOptions.map((option) => (
+                  <option key={option} value={option} className="bg-[#0A0A0F]">
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Target Companies</label>
+              <div className="flex flex-wrap gap-2">
+                {companyOptions.map((company) => (
+                  <button
+                    key={company}
+                    onClick={() => isEditing && toggleTarget(company)}
+                    disabled={!isEditing}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                      targets.includes(company)
+                        ? "bg-purple-500 text-white"
+                        : "bg-white/10 border border-white/20 text-gray-400"
+                    } ${!isEditing ? "cursor-not-allowed opacity-70" : "hover:bg-purple-600"}`}
+                  >
+                    {company}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Activity Calendar */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-20">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-blue-400" />
+            Activity This Month
+          </h3>
+          <div className="grid grid-cols-7 gap-1 text-xs">
+            {Array.from({ length: 28 }, (_, i) => (
+              <div
+                key={i}
+                className={`aspect-square rounded flex items-center justify-center ${
+                  i % 3 === 0 ? "bg-purple-500" : i % 5 === 0 ? "bg-purple-500/50" : "bg-white/10"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Logout Button */}
+        <button
+          onClick={logout}
+          className="w-full py-3 bg-red-500/20 border border-red-500/30 rounded-xl font-semibold text-red-400 hover:bg-red-500/30 transition-all flex items-center justify-center gap-2 mb-20"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </button>
+
+        {/* Bottom Navigation */}
+        <nav className="fixed bottom-0 left-0 right-0 bg-[#0A0A0F]/90 backdrop-blur-xl border-t border-white/10">
+          <div className="max-w-md mx-auto px-6 py-3">
+            <div className="grid grid-cols-5 gap-4">
+              <a href="/dashboard" className="flex flex-col items-center gap-1 text-gray-400">
+                <Home className="w-5 h-5" />
+                <span className="text-xs">Home</span>
+              </a>
+              <a href="/interview" className="flex flex-col items-center gap-1 text-gray-400">
+                <Mic className="w-5 h-5" />
+                <span className="text-xs">Practice</span>
+              </a>
+              <a href="/pulse" className="flex flex-col items-center gap-1 text-gray-400">
+                <Zap className="w-5 h-5" />
+                <span className="text-xs">PULSE</span>
+              </a>
+              <a href="/leaderboard" className="flex flex-col items-center gap-1 text-gray-400">
+                <Trophy className="w-5 h-5" />
+                <span className="text-xs">Trophy</span>
+              </a>
+              <a href="/profile" className="flex flex-col items-center gap-1 text-purple-400">
+                <User className="w-5 h-5" />
+                <span className="text-xs">Profile</span>
+              </a>
+            </div>
+          </div>
+        </nav>
       </div>
     </div>
   );

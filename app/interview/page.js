@@ -1,6 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { ChevronLeft, Info, Send, RotateCcw, Share2, Home, Mic, Zap, Trophy, User } from "lucide-react";
+import Link from "next/link";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import confetti from "canvas-confetti";
 
 const domains = [
   { icon: "💻", label: "Software Engineer" },
@@ -12,6 +17,7 @@ const domains = [
 ];
 
 export default function InterviewPage() {
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [step, setStep] = useState(1);
   const [selectedDomain, setSelectedDomain] = useState("Software Engineer");
   const [answer, setAnswer] = useState("");
@@ -24,6 +30,33 @@ export default function InterviewPage() {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [isAnalyzingAnswer, setIsAnalyzingAnswer] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        document.cookie = "bridge_auth=; path=/; max-age=0; samesite=lax";
+        window.location.replace("/login");
+        return;
+      }
+      document.cookie = "bridge_auth=1; path=/; max-age=2592000; samesite=lax";
+      setIsCheckingAuth(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (step === 3 && feedback) {
+      // Trigger confetti when interview is complete
+      setTimeout(() => {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }, 500);
+    }
+  }, [step, feedback]);
 
   const wordCount = useMemo(() => {
     return answer.trim() ? answer.trim().split(/\s+/).length : 0;
@@ -175,41 +208,64 @@ export default function InterviewPage() {
     setIsAnalyzingAnswer(false);
   };
 
+  const shareResult = () => {
+    // Generate shareable text
+    const shareText = `I scored ${feedback?.score.toFixed(1)}/10 in my AI Mock Interview on BRIDGE! 🚀 My BRIDGE Score is growing stronger. Join me!`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: "BRIDGE AI Mock Interview Result",
+        text: shareText,
+        url: window.location.origin,
+      });
+    } else {
+      // Fallback - copy to clipboard
+      navigator.clipboard.writeText(shareText);
+      alert("Result copied to clipboard!");
+    }
+  };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500/30 border-t-purple-500 mx-auto mb-4"></div>
+          <div className="text-purple-400 font-semibold">Loading interview...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-white px-4 py-4 text-slate-900">
-      <div className="mx-auto w-full max-w-[390px] rounded-[28px] border border-slate-100 bg-white shadow-[0_12px_36px_rgba(15,23,42,0.08)]">
-        <header className="flex items-center justify-between px-4 pb-3 pt-5">
+    <div className="min-h-screen bg-[#0A0A0F] text-white">
+      <div className="max-w-md mx-auto px-6 py-6">
+        
+        {/* Header */}
+        <header className="flex items-center justify-between mb-6">
           <button
-            aria-label="Go back"
-            className="rounded-xl border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
+            onClick={() => window.history.back()}
+            className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
+            <ChevronLeft className="w-5 h-5" />
           </button>
 
-          <h1 className="text-base font-bold text-[#2B5CE6]">AI Mock Interview</h1>
+          <h1 className="text-lg font-bold text-purple-400">AI Mock Interview</h1>
 
-          <button
-            aria-label="Interview info"
-            className="rounded-xl border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
-          >
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 11v5M12 8h.01" />
-            </svg>
+          <button className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
+            <Info className="w-5 h-5" />
           </button>
         </header>
 
-        <div className="px-4 pb-3">
-          <div className="flex items-center justify-between gap-1 text-[10px] font-semibold uppercase tracking-wide sm:text-xs">
-            <span className={step >= 1 ? "text-[#2B5CE6]" : "text-slate-400"}>Step 1: Choose Domain</span>
-            <span className={step >= 2 ? "text-[#2B5CE6]" : "text-slate-400"}>Step 2: Answer Questions</span>
-            <span className={step >= 3 ? "text-[#2B5CE6]" : "text-slate-400"}>Step 3: Get Feedback</span>
+        {/* Step Indicator */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between text-xs font-semibold mb-3">
+            <span className={step >= 1 ? "text-purple-400" : "text-gray-500"}>Step 1: Choose Domain</span>
+            <span className={step >= 2 ? "text-purple-400" : "text-gray-500"}>Step 2: Answer Questions</span>
+            <span className={step >= 3 ? "text-purple-400" : "text-gray-500"}>Step 3: Get Feedback</span>
           </div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full bg-[#2B5CE6] transition-all duration-500"
+              className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
               style={{
                 width: step === 1 ? "33%" : step === 2 ? "66%" : "100%",
               }}
@@ -217,27 +273,28 @@ export default function InterviewPage() {
           </div>
         </div>
 
-        <main className="px-4 pb-24">
+        {/* Main Content */}
+        <main className="mb-20">
           {step === 1 && (
             <section className="animate-fade-up">
-              <h2 className="text-xl font-bold text-slate-900">What role are you preparing for?</h2>
-              <p className="mt-1 text-sm text-slate-500">We&apos;ll ask you 5 targeted questions</p>
+              <h2 className="text-2xl font-bold mb-2">What role are you preparing for?</h2>
+              <p className="text-gray-400 text-sm mb-6">We'll ask you 5 targeted questions</p>
 
-              <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 mb-6">
                 {domains.map((domain) => {
                   const active = selectedDomain === domain.label;
                   return (
                     <button
                       key={domain.label}
                       onClick={() => setSelectedDomain(domain.label)}
-                      className={`rounded-2xl border p-3 text-left shadow-sm transition ${
+                      className={`p-4 rounded-2xl border transition-all duration-300 ${
                         active
-                          ? "border-[#2B5CE6] bg-[#EEF3FF] ring-1 ring-[#2B5CE6]"
-                          : "border-slate-200 bg-white hover:bg-slate-50"
+                          ? "bg-purple-500/20 border-purple-400 shadow-lg shadow-purple-500/25"
+                          : "bg-white/10 border-white/20 hover:bg-white/20"
                       }`}
                     >
-                      <p className="text-xl">{domain.icon}</p>
-                      <p className="mt-1 text-sm font-semibold text-slate-800">{domain.label}</p>
+                      <div className="text-2xl mb-2">{domain.icon}</div>
+                      <div className="text-sm font-semibold">{domain.label}</div>
                     </button>
                   );
                 })}
@@ -246,116 +303,132 @@ export default function InterviewPage() {
               <button
                 onClick={startInterview}
                 disabled={isLoadingQuestions}
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2B5CE6] px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(43,92,230,0.35)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+                className="w-full py-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl font-semibold shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed"
+                style={{ boxShadow: '0 10px 25px rgba(108, 99, 255, 0.3)' }}
               >
-                {isLoadingQuestions && (
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/50 border-t-white" />
+                {isLoadingQuestions ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+                    Generating Questions...
+                  </div>
+                ) : (
+                  "Start Interview →"
                 )}
-                {isLoadingQuestions ? "Generating Questions..." : "Start Interview →"}
               </button>
 
               {errorMessage && (
-                <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                <div className="mt-4 px-4 py-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 text-sm text-center">
                   {errorMessage}
-                </p>
+                </div>
               )}
             </section>
           )}
 
           {step === 2 && (
             <section className="animate-fade-up">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-slate-700">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-sm font-semibold text-purple-400">
                   Question {currentQuestionIndex + 1} of {totalQuestions}
-                </p>
-                <p className="rounded-lg bg-[#FFF5F1] px-2 py-1 text-xs font-semibold text-[#FF6B35]">02:30</p>
+                </div>
+                <div className="px-3 py-1 bg-red-500/20 border border-red-500/30 rounded-lg text-xs font-semibold text-red-400">
+                  02:30
+                </div>
               </div>
 
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-6">
                 <div
-                  className="h-full rounded-full bg-[#2B5CE6] transition-all"
+                  className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
                   style={{
                     width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%`,
                   }}
                 />
               </div>
 
-              <div className="mt-4 rounded-2xl bg-gradient-to-br from-[#2B5CE6] to-[#1E3FA8] p-4 text-white shadow-[0_10px_30px_rgba(43,92,230,0.35)]">
-                <p className="text-sm font-medium text-blue-100">Current prompt</p>
-                <h3 className="mt-1 text-base font-semibold leading-relaxed">
+              <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 mb-6" style={{ boxShadow: '0 20px 40px rgba(108, 99, 255, 0.3)' }}>
+                <div className="text-sm text-purple-200 mb-2">Current prompt</div>
+                <h3 className="text-lg font-semibold leading-relaxed">
                   {currentQuestion || "Loading your interview question..."}
                 </h3>
               </div>
 
-              <label className="mt-4 block">
+              <div className="mb-4">
                 <textarea
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
                   placeholder="Type your answer here..."
-                  className="min-h-[180px] w-full rounded-2xl border border-slate-200 p-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#2B5CE6] focus:ring-2 focus:ring-[#2B5CE6]/20"
+                  className="w-full min-h-[180px] bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20 transition-all"
                 />
-              </label>
-
-              <div className="mt-2 text-right text-xs font-medium text-slate-500">{wordCount} words</div>
+                <div className="text-right text-xs text-gray-400 mt-2">{wordCount} words</div>
+              </div>
 
               <button
                 onClick={submitAnswer}
                 disabled={isAnalyzingAnswer}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2B5CE6] px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(43,92,230,0.35)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+                className="w-full py-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl font-semibold shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed"
+                style={{ boxShadow: '0 10px 25px rgba(108, 99, 255, 0.3)' }}
               >
-                {isAnalyzingAnswer && (
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/50 border-t-white" />
+                {isAnalyzingAnswer ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+                    AI is analyzing your answer...
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    Submit Answer
+                    <Send className="w-4 h-4" />
+                  </div>
                 )}
-                {isAnalyzingAnswer ? "AI is analyzing your answer..." : "Submit Answer →"}
               </button>
 
               {errorMessage && (
-                <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                <div className="mt-4 px-4 py-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 text-sm text-center">
                   {errorMessage}
-                </p>
+                </div>
               )}
             </section>
           )}
 
           {step === 3 && (
             <section className="animate-fade-up">
-              <h2 className="text-xl font-bold text-slate-900">Interview Complete! 🎉</h2>
-              <p className="mt-1 text-sm text-slate-500">Great effort. Here&apos;s your AI feedback summary.</p>
-
-              <div className="mt-4 rounded-2xl bg-[#2B5CE6] p-5 text-center text-white shadow-[0_10px_30px_rgba(43,92,230,0.35)]">
-                <p className="text-sm text-blue-100">Overall Score</p>
-                <p className="mt-1 text-4xl font-black">{feedback?.score ?? 0} / 10</p>
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold mb-2">Interview Complete! 🎉</h2>
+                <p className="text-gray-400 text-sm">Great effort. Here's your AI feedback summary.</p>
               </div>
 
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                <article className="rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
-                  <p className="text-xs text-slate-500">Clarity</p>
-                  <p className="mt-1 text-sm font-bold text-slate-800">{feedback?.clarity ?? 0}/10</p>
-                </article>
-                <article className="rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
-                  <p className="text-xs text-slate-500">Confidence</p>
-                  <p className="mt-1 text-sm font-bold text-slate-800">{feedback?.confidence ?? 0}/10</p>
-                </article>
-                <article className="rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
-                  <p className="text-xs text-slate-500">Content</p>
-                  <p className="mt-1 text-sm font-bold text-slate-800">{feedback?.content ?? 0}/10</p>
-                </article>
+              <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 text-center mb-6" style={{ boxShadow: '0 20px 40px rgba(108, 99, 255, 0.3)' }}>
+                <div className="text-sm text-purple-200 mb-2">BRIDGE Score Change</div>
+                <div className="text-4xl font-black mb-2">+23 points! 🚀</div>
+                <div className="text-2xl font-bold">{feedback?.score ?? 0} / 10</div>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-                <p className="text-sm font-bold text-slate-800">Per-question feedback</p>
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
+                  <div className="text-xs text-gray-400 mb-1">Clarity</div>
+                  <div className="text-lg font-bold text-green-400">{feedback?.clarity ?? 0}/10</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
+                  <div className="text-xs text-gray-400 mb-1">Confidence</div>
+                  <div className="text-lg font-bold text-green-400">{feedback?.confidence ?? 0}/10</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
+                  <div className="text-xs text-gray-400 mb-1">Content</div>
+                  <div className="text-lg font-bold text-green-400">{feedback?.content ?? 0}/10</div>
+                </div>
+              </div>
 
-                <div className="mt-3 grid grid-cols-5 gap-2">
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-6">
+                <div className="font-semibold mb-3">Per-question feedback</div>
+                <div className="grid grid-cols-5 gap-2 mb-4">
                   {responses.map((item, idx) => {
                     const active = idx === selectedFeedbackTab;
                     return (
                       <button
                         key={`tab-${idx}`}
                         onClick={() => setSelectedFeedbackTab(idx)}
-                        className={`rounded-lg border px-2 py-2 text-xs font-semibold transition ${
+                        className={`py-2 px-2 rounded-lg text-xs font-semibold transition-all ${
                           active
-                            ? "border-[#2B5CE6] bg-[#EEF3FF] text-[#2B5CE6]"
-                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                            ? "bg-purple-500 text-white"
+                            : "bg-white/10 text-gray-400 hover:bg-white/20"
                         }`}
                       >
                         Q{idx + 1}
@@ -365,31 +438,29 @@ export default function InterviewPage() {
                 </div>
 
                 {responses[selectedFeedbackTab] && (
-                  <div className="mt-3 space-y-3">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Question</p>
-                      <p className="mt-1 text-sm font-medium text-slate-800">
+                  <div className="space-y-3">
+                    <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                      <div className="text-xs font-semibold text-gray-400 mb-1">Question</div>
+                      <div className="text-sm font-medium">
                         {responses[selectedFeedbackTab].question}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 bg-white p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Your answer
-                        </p>
-                        <span className="rounded-md bg-[#EEF3FF] px-2 py-1 text-xs font-bold text-[#2B5CE6]">
-                          Score: {Number(responses[selectedFeedbackTab]?.analysis?.score ?? 0).toFixed(1)}/10
-                        </span>
                       </div>
-                      <p className="mt-1 text-sm leading-relaxed text-slate-700">
-                        {responses[selectedFeedbackTab].answer}
-                      </p>
                     </div>
 
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                      <p className="text-sm font-bold text-emerald-700">Strengths</p>
-                      <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-emerald-800">
+                    <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-xs font-semibold text-gray-400">Your answer</div>
+                        <div className="bg-purple-500/20 px-2 py-1 rounded text-xs font-bold text-purple-400">
+                          Score: {Number(responses[selectedFeedbackTab]?.analysis?.score ?? 0).toFixed(1)}/10
+                        </div>
+                      </div>
+                      <div className="text-sm leading-relaxed text-gray-300">
+                        {responses[selectedFeedbackTab].answer}
+                      </div>
+                    </div>
+
+                    <div className="bg-green-500/10 rounded-xl p-3 border border-green-500/20">
+                      <div className="text-sm font-bold text-green-400 mb-2">Strengths</div>
+                      <ul className="list-disc space-y-1 pl-5 text-sm text-green-300">
                         {(
                           responses[selectedFeedbackTab]?.analysis?.strengths?.length
                             ? responses[selectedFeedbackTab].analysis.strengths
@@ -400,9 +471,9 @@ export default function InterviewPage() {
                       </ul>
                     </div>
 
-                    <div className="rounded-xl border border-orange-200 bg-orange-50 p-3">
-                      <p className="text-sm font-bold text-[#FF6B35]">Improvements</p>
-                      <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-orange-800">
+                    <div className="bg-red-500/10 rounded-xl p-3 border border-red-500/20">
+                      <div className="text-sm font-bold text-red-400 mb-2">Improvements</div>
+                      <ul className="list-disc space-y-1 pl-5 text-sm text-red-300">
                         {(
                           responses[selectedFeedbackTab]?.analysis?.improvements?.length
                             ? responses[selectedFeedbackTab].analysis.improvements
@@ -412,21 +483,13 @@ export default function InterviewPage() {
                         ))}
                       </ul>
                     </div>
-
-                    <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
-                      <p className="text-sm font-bold text-[#2B5CE6]">How you could have answered this</p>
-                      <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                        {responses[selectedFeedbackTab]?.analysis?.better_answer ||
-                          "Use a STAR-style structure for a sharper response."}
-                      </p>
-                    </div>
                   </div>
                 )}
               </div>
 
-              <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                <p className="text-sm font-bold text-emerald-700">Strengths</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-emerald-800">
+              <div className="bg-green-500/10 rounded-xl p-4 border border-green-500/20 mb-4">
+                <div className="text-sm font-bold text-green-400 mb-2">Overall Strengths</div>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-green-300">
                   {(feedback?.strengths?.length ? feedback.strengths : ["Strong effort and thoughtful responses."]).map(
                     (item, idx) => (
                       <li key={`strength-${idx}`}>{item}</li>
@@ -435,9 +498,9 @@ export default function InterviewPage() {
                 </ul>
               </div>
 
-              <div className="mt-3 rounded-2xl border border-orange-200 bg-orange-50 p-4">
-                <p className="text-sm font-bold text-[#FF6B35]">Improve</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-orange-800">
+              <div className="bg-red-500/10 rounded-xl p-4 border border-red-500/20 mb-6">
+                <div className="text-sm font-bold text-red-400 mb-2">Areas to Improve</div>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-red-300">
                   {(
                     feedback?.improvements?.length
                       ? feedback.improvements
@@ -448,27 +511,53 @@ export default function InterviewPage() {
                 </ul>
               </div>
 
-              <div className="mt-3 rounded-2xl border border-blue-200 bg-blue-50 p-4">
-                <p className="text-sm font-bold text-[#2B5CE6]">How you could have answered this</p>
-                <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                  {feedback?.better_answer || "Practice with clearer structure to improve your next response."}
-                </p>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={resetInterview}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                  className="py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl font-semibold hover:bg-white/20 transition-all flex items-center justify-center gap-2"
                 >
+                  <RotateCcw className="w-4 h-4" />
                   Practice Again
                 </button>
-                <button className="rounded-xl bg-[#2B5CE6] px-3 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(43,92,230,0.35)] transition hover:brightness-105">
+                <button
+                  onClick={shareResult}
+                  className="py-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl font-semibold shadow-lg hover:shadow-purple-500/25 transition-all flex items-center justify-center gap-2"
+                >
+                  <Share2 className="w-4 h-4" />
                   Share Result
                 </button>
               </div>
             </section>
           )}
         </main>
+
+        {/* Bottom Navigation */}
+        <nav className="fixed bottom-0 left-0 right-0 bg-[#0A0A0F]/90 backdrop-blur-xl border-t border-white/10">
+          <div className="max-w-md mx-auto px-6 py-3">
+            <div className="grid grid-cols-5 gap-4">
+              <Link href="/dashboard" className="flex flex-col items-center gap-1 text-gray-400">
+                <Home className="w-5 h-5" />
+                <span className="text-xs">Home</span>
+              </Link>
+              <Link href="/interview" className="flex flex-col items-center gap-1 text-purple-400">
+                <Mic className="w-5 h-5" />
+                <span className="text-xs">Practice</span>
+              </Link>
+              <Link href="/pulse" className="flex flex-col items-center gap-1 text-gray-400">
+                <Zap className="w-5 h-5" />
+                <span className="text-xs">PULSE</span>
+              </Link>
+              <Link href="/leaderboard" className="flex flex-col items-center gap-1 text-gray-400">
+                <Trophy className="w-5 h-5" />
+                <span className="text-xs">Trophy</span>
+              </Link>
+              <Link href="/profile" className="flex flex-col items-center gap-1 text-gray-400">
+                <User className="w-5 h-5" />
+                <span className="text-xs">Profile</span>
+              </Link>
+            </div>
+          </div>
+        </nav>
       </div>
 
       <style jsx global>{`

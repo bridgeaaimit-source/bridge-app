@@ -27,7 +27,7 @@ async function callOpenAIJSON({ systemPrompt, userPrompt }) {
     },
     body: JSON.stringify({
       model: MODEL,
-      temperature: 0.5,
+      temperature: 0.3,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
@@ -52,10 +52,35 @@ async function callOpenAIJSON({ systemPrompt, userPrompt }) {
 
 function getMockOutput(mode, text) {
   if (mode === "rewrite") {
-    return `I would approach this situation by first clarifying the objective, then aligning with stakeholders, and finally executing with measurable milestones. ${text ? "I also ensure regular updates and proactive risk mitigation." : ""}`;
+    const improvedAnswers = [
+      "I approach challenges by first analyzing the requirements, then developing a structured plan, and finally executing with measurable outcomes. I ensure clear communication with stakeholders throughout the process.",
+      "My methodology involves breaking down complex problems into manageable components, prioritizing tasks based on impact and urgency, and delivering results through systematic execution.",
+      "I handle situations by assessing the context, identifying key objectives, collaborating with team members effectively, and maintaining transparent communication with all stakeholders."
+    ];
+    return improvedAnswers[Math.floor(Math.random() * improvedAnswers.length)];
   }
 
-  return "I completed the task on time and presented the results confidently. I can collaborate effectively with my team and communicate clearly with stakeholders.";
+  if (mode === "hinglish_to_english") {
+    const hinglishExamples = {
+      "main aapka point samjha": "I understand your point clearly.",
+      "mujhe iska solution pata hai": "I know the solution to this problem.",
+      "humne kaam complete kar diya": "We have completed the work successfully.",
+      "ye bahut accha idea hai": "This is an excellent idea.",
+      "main ready hoon interview ke liye": "I am prepared for the interview."
+    };
+    
+    // Check if it's a common hinglish phrase
+    const lowerText = text.toLowerCase();
+    for (const [hinglish, english] of Object.entries(hinglishExamples)) {
+      if (lowerText.includes(hinglish)) {
+        return english;
+      }
+    }
+    
+    return "I am confident in my abilities and ready to take on new challenges. I can communicate effectively and work well in a team environment.";
+  }
+
+  return "I successfully completed the assigned task and delivered the expected results on time.";
 }
 
 export async function POST(request) {
@@ -74,30 +99,47 @@ export async function POST(request) {
   try {
     if (mode === "rewrite") {
       const result = await callOpenAIJSON({
-        systemPrompt: "You rewrite interview answers in clear, concise professional English. Return strict JSON.",
-        userPrompt: `Rewrite this answer professionally, keeping original intent:
+        systemPrompt: "You are an expert interview coach. Rewrite interview answers to be more professional, structured, and impactful. Use clear language, add specific examples where appropriate, and maintain the original intent. Return strict JSON with 'output' field only.",
+        userPrompt: `Rewrite this interview answer to make it more professional and impactful:
+
 ${text}
 
+Guidelines:
+- Use professional language
+- Add structure (STAR format if applicable)
+- Include specific examples or metrics
+- Keep it concise but comprehensive
+- Maintain original meaning
+
 Return JSON:
-{"output":"...rewritten answer..."}`,
+{"output":"...rewritten professional answer..."}`,
       });
       return jsonResponse({ output: typeof result?.output === "string" ? result.output : getMockOutput(mode, text) });
     }
 
     if (mode === "hinglish_to_english") {
       const result = await callOpenAIJSON({
-        systemPrompt: "You convert Hinglish to fluent professional English. Return strict JSON.",
-        userPrompt: `Convert this Hinglish text into professional English:
+        systemPrompt: "You are a language expert specializing in converting Hinglish (Hindi + English) to professional English. Maintain the meaning while improving grammar, vocabulary, and professionalism. Return strict JSON with 'output' field only.",
+        userPrompt: `Convert this Hinglish text to fluent professional English:
+
 ${text}
 
+Guidelines:
+- Convert to proper English grammar
+- Use professional vocabulary
+- Maintain the original meaning
+- Make it suitable for formal/communication contexts
+- Keep it natural and fluent
+
 Return JSON:
-{"output":"...converted text..."}`,
+{"output":"...converted professional English text..."}`,
       });
       return jsonResponse({ output: typeof result?.output === "string" ? result.output : getMockOutput(mode, text) });
     }
 
-    return jsonResponse({ error: "Unsupported mode" }, 400);
-  } catch {
+    return jsonResponse({ error: "Unsupported mode. Use 'rewrite' or 'hinglish_to_english'" }, 400);
+  } catch (error) {
+    console.error('Coach API Error:', error);
     return jsonResponse({ output: getMockOutput(mode, text), source: "mock" });
   }
 }
