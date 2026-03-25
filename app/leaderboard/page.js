@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { Home, Mic, Zap, Trophy, User, Crown, Flame, Star } from "lucide-react";
 
 const mockStudents = [
@@ -19,34 +17,8 @@ const mockStudents = [
 ];
 
 export default function LeaderboardPage() {
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [timeFilter, setTimeFilter] = useState("week");
   const [scopeFilter, setScopeFilter] = useState("all");
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        document.cookie = "bridge_auth=; path=/; max-age=0; samesite=lax";
-        window.location.replace("/login");
-        return;
-      }
-      document.cookie = "bridge_auth=1; path=/; max-age=2592000; samesite=lax";
-      setIsCheckingAuth(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500/30 border-t-purple-500 mx-auto mb-4"></div>
-          <div className="text-purple-400 font-semibold">Loading leaderboard...</div>
-        </div>
-      </div>
-    );
-  }
 
   const top3 = mockStudents.slice(0, 3);
   const restOfStudents = mockStudents.slice(3);

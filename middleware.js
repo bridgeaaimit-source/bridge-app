@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+// Temporarily disabled for testing
+/*
 const protectedRoutes = ["/dashboard", "/interview", "/pulse", "/coach", "/gd", "/profile"];
 
 export function middleware(request) {
@@ -31,4 +33,14 @@ export const config = {
     "/gd/:path*",
     "/profile/:path*",
   ],
+};
+*/
+
+// Allow all routes during testing
+export function middleware(request) {
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [],
 };
