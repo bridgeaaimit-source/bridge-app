@@ -2,28 +2,28 @@ import Anthropic from '@anthropic-ai/sdk';
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const category = searchParams.get('category') || 'general';
+  const category = searchParams.get('category') || 'All';
   
-  console.log('=== NEWS API CALLED ===');
-  console.log('Category:', category);
-  console.log('NewsAPI key exists:', !!process.env.NEWS_API_KEY);
-  console.log('Claude API key exists:', !!process.env.ANTHROPIC_API_KEY);
+  console.log('NEWS_API_KEY exists:', !!process.env.NEWS_API_KEY);
+  console.log('ANTHROPIC_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
   
   // Category to search keywords mapping
   const keywords = {
-    'Marketing': 'marketing advertising brand management career india',
-    'Finance': 'finance banking investment career freshers india',
-    'HR': 'HR recruitment hiring human resources career india',
-    'Analytics': 'data analytics business intelligence career india',
-    'Tech': 'software engineering technology placement india',
-    'MBA': 'MBA management consulting career placement india',
-    'All': 'placement career interview job freshers india 2026'
+    'All': 'placement career job india fresher 2026',
+    'Marketing': 'marketing digital advertising brand india',
+    'Finance': 'finance banking stock market india career',
+    'HR': 'human resources recruitment hiring india',
+    'Analytics': 'data analytics AI machine learning career',
+    'Tech': 'software engineering coding startup india',
+    'MBA': 'MBA management business strategy india'
   };
 
   const query = keywords[category] || keywords['All'];
+  console.log('1. Fetching NewsAPI with query:', query);
 
   try {
     // Step 1: Fetch from NewsAPI
+    console.log('2. Calling NewsAPI...');
     const newsResponse = await fetch(
       `https://newsapi.org/v2/everything?` +
       `q=${encodeURIComponent(query)}&` +
@@ -33,25 +33,30 @@ export async function GET(request) {
       `apiKey=${process.env.NEWS_API_KEY}` 
     );
     
+    console.log('3. NewsAPI response status:', newsResponse.status);
+    
     if (!newsResponse.ok) {
-      throw new Error(`NewsAPI error: ${newsResponse.status}`);
+      const errorText = await newsResponse.text();
+      console.error('NewsAPI error:', errorText);
+      throw new Error(`NewsAPI error ${newsResponse.status}: ${errorText}`);
     }
     
     const newsData = await newsResponse.json();
     const articles = newsData.articles || [];
-    
-    console.log(`Fetched ${articles.length} articles from NewsAPI`);
+    console.log('4. Articles count:', articles.length);
+
+    if (articles.length === 0) {
+      throw new Error('No articles found from NewsAPI');
+    }
 
     // Step 2: Use Claude to filter and add insights
+    console.log('5. Calling Claude...');
     const client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      defaultHeaders: {
-        'anthropic-version': '2023-06-01'
-      }
+      apiKey: process.env.ANTHROPIC_API_KEY
     });
 
     const articleList = articles.map((a, i) => 
-      `${i+1}. Title: ${a.title}\nDescription: ${a.description}` 
+      `${i+1}. Title: ${a.title}\nDescription: ${a.description || 'No description'}` 
     ).join('\n\n');
 
     const prompt = `You are a placement advisor for Indian college students.
@@ -95,27 +100,35 @@ Return ONLY valid JSON, no markdown:
       .replace(/```/g, '')
       .trim();
     
-    console.log('Claude curation response:', text);
+    console.log('6. Claude response:', text);
+    
+    if (!text) {
+      throw new Error('Claude returned empty response');
+    }
+    
     const aiCuration = JSON.parse(text);
+    console.log('7. Parsed Claude curation:', aiCuration);
 
     // Step 3: Combine NewsAPI + Claude insights
     const curatedArticles = aiCuration.articles.map(item => {
       const article = articles[item.index];
+      if (!article) return null;
+      
       return {
-        title: article?.title,
-        description: article?.description,
-        url: article?.url,
-        urlToImage: article?.urlToImage,
-        publishedAt: article?.publishedAt,
-        source: article?.source?.name,
+        title: article.title,
+        description: article.description || 'No description available',
+        url: article.url,
+        urlToImage: article.urlToImage,
+        publishedAt: article.publishedAt,
+        source: article.source?.name || 'Unknown',
         placement_insight: item.placement_insight,
         gd_topic: item.gd_topic,
         relevance_score: item.relevance_score,
         why_relevant: item.why_relevant
       };
-    }).filter(a => a.title);
+    }).filter(a => a && a.title);
 
-    console.log(`Curated ${curatedArticles.length} articles for ${category}`);
+    console.log('8. Final curated articles count:', curatedArticles.length);
 
     return Response.json({
       articles: curatedArticles,
@@ -126,37 +139,18 @@ Return ONLY valid JSON, no markdown:
     });
 
   } catch (error) {
-    console.error('News API error:', error);
-    // Fallback mock data
+    console.error('=== NEWS API ERROR ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Stack trace:', error.stack);
+    
     return Response.json({
-      articles: [
-        {
-          title: "Top Marketing Trends Shaping Placements in 2026",
-          description: "Digital marketing skills are now mandatory for campus placements at top companies.",
-          url: "#",
-          urlToImage: null,
-          source: "Economic Times",
-          publishedAt: new Date().toISOString(),
-          placement_insight: "Brush up on digital marketing tools before your interview",
-          gd_topic: true,
-          relevance_score: 9,
-          why_relevant: "Directly impacts marketing role interviews"
-        },
-        {
-          title: "Tech Giants Focus on AI Skills in Campus Recruitment",
-          description: "Leading companies are prioritizing candidates with AI and machine learning knowledge.",
-          url: "#",
-          urlToImage: null,
-          source: "Times of India",
-          publishedAt: new Date().toISOString(),
-          placement_insight: "Learn AI basics to stand out in technical interviews",
-          gd_topic: true,
-          relevance_score: 10,
-          why_relevant: "AI skills are becoming essential for tech roles"
-        }
-      ],
-      category_trend: "AI skills are trending in all domains",
-      interview_tip: "Mention AI tools you know in every interview"
-    });
+      error: error.message,
+      articles: [],
+      category_trend: null,
+      interview_tip: null,
+      total: 0,
+      cached_at: new Date().toISOString()
+    }, { status: 500 });
   }
 }

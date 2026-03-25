@@ -1,58 +1,62 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Home, Mic, Zap, Trophy, User, Plus, Filter, TrendingUp, X, RefreshCw, ExternalLink, Users, Calendar } from "lucide-react";
 
 const categories = ["All", "Marketing", "Finance", "HR", "Analytics", "Tech", "MBA"];
 
 export default function PulsePage() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [newsData, setNewsData] = useState(null);
   const [newsLoading, setNewsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeCategory, setActiveCategory] = useState("All");
 
   useEffect(() => {
-    // Initialize with "All" category
-    setActiveCategory("All");
+    // Load initial data
+    fetchNews("All");
   }, []);
 
-  useEffect(() => {
-    if (activeCategory) {
-      fetchNews(activeCategory);
-    }
-  }, [activeCategory]);
-
   const fetchNews = async (category) => {
-    console.log('Fetching category:', category);
+    console.log('Fetching news for:', category);
     setNewsLoading(true);
     setError(null);
     setNewsData(null); // Clear previous articles
     
     try {
-      console.log('=== FETCHING NEWS ===');
-      console.log('Category:', category);
-      console.log('NewsAPI key exists:', !!process.env.NEWS_API_KEY);
-      
+      console.log('Making API call to /api/news...');
       const response = await fetch(`/api/news?category=${encodeURIComponent(category)}`);
       const data = await response.json();
+      
+      console.log('API response:', data);
+      console.log('Articles received:', data.articles?.length);
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch news');
       }
       
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
       setNewsData(data);
-      console.log(`Loaded ${data.articles?.length || 0} articles for ${category}`);
+      console.log(`Successfully loaded ${data.articles?.length || 0} articles for ${category}`);
     } catch (err) {
       console.error('News fetch error:', err);
       setError(err.message);
     } finally {
       setNewsLoading(false);
+      setLoading(false);
     }
   };
 
   const refreshNews = () => {
     fetchNews(activeCategory);
+  };
+
+  const handleCategoryChange = (category) => {
+    setActiveCategory(category);
+    fetchNews(category);
   };
 
   const formatTimeAgo = (dateString) => {
@@ -70,6 +74,17 @@ export default function PulsePage() {
 
   const currentData = newsData;
   const gdTopics = currentData?.articles?.filter(a => a.gd_topic) || [];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500/30 border-t-purple-500 mx-auto mb-4"></div>
+          <div className="text-white text-xl">Loading BRIDGE PULSE...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
@@ -134,7 +149,7 @@ export default function PulsePage() {
           {categories.map((category) => (
             <button
               key={category}
-              onClick={() => setActiveCategory(category)}
+              onClick={() => handleCategoryChange(category)}
               className={`px-4 py-2 rounded-xl font-semibold transition-all whitespace-nowrap ${
                 activeCategory === category
                   ? "bg-purple-500 text-white"
@@ -168,14 +183,20 @@ export default function PulsePage() {
         {error && !newsLoading && (
           <div className="bg-red-500/20 backdrop-blur-sm rounded-2xl p-6 border border-red-500/30 mb-6">
             <div className="text-red-300 text-center">
-              <p className="mb-2">📰 Showing curated content</p>
-              <p className="text-sm">Could not load latest news: {error}</p>
+              <p className="mb-2">❌ Error loading news</p>
+              <p className="text-sm">{error}</p>
+              <button 
+                onClick={refreshNews}
+                className="mt-3 px-4 py-2 bg-red-500/30 rounded-lg text-red-300 hover:bg-red-500/40 transition-colors"
+              >
+                Try Again
+              </button>
             </div>
           </div>
         )}
 
         {/* News Articles */}
-        {currentData?.articles && !newsLoading && (
+        {currentData?.articles && !newsLoading && currentData.articles.length > 0 && (
           <div className="space-y-4 mb-8">
             {currentData.articles.map((article, index) => (
               <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all cursor-pointer">
@@ -245,6 +266,21 @@ export default function PulsePage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* No Articles State */}
+        {!newsLoading && currentData && (!currentData.articles || currentData.articles.length === 0) && (
+          <div className="bg-gray-500/20 backdrop-blur-sm rounded-2xl p-8 border border-gray-500/30 text-center">
+            <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">No articles found</h3>
+            <p className="text-gray-400 mb-4">No relevant news found for {activeCategory} category</p>
+            <button 
+              onClick={refreshNews}
+              className="px-4 py-2 bg-purple-500/30 rounded-lg text-purple-300 hover:bg-purple-500/40 transition-colors"
+            >
+              Refresh
+            </button>
           </div>
         )}
 
