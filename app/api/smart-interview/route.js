@@ -1,5 +1,27 @@
 import Anthropic from '@anthropic-ai/sdk';
 
+// Retry helper function
+async function retryClaudeCall(callFunction, maxRetries = 3, delay = 1000) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await callFunction();
+      return result;
+    } catch (error) {
+      console.error(`Claude API call attempt ${attempt} failed:`, error.message);
+      
+      // If it's not an overload error or we've maxed out retries, throw
+      if (error.status !== 529 || attempt === maxRetries) {
+        throw error;
+      }
+      
+      // Wait before retrying (exponential backoff)
+      const waitTime = delay * Math.pow(2, attempt - 1);
+      console.log(`Waiting ${waitTime}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+  }
+}
+
 export async function POST(request) {
   const body = await request.json();
   const { action, resume_text, resume_base64, job_role, jd, 
@@ -55,34 +77,38 @@ Return ONLY valid JSON:
     let message;
     if (resume_base64) {
       // Handle PDF resume
-      message = await client.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'document',
-              source: {
-                type: 'base64',
-                media_type: 'application/pdf',
-                data: resume_base64
+      message = await retryClaudeCall(() => 
+        client.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{
+            role: 'user',
+            content: [
+              {
+                type: 'document',
+                source: {
+                  type: 'base64',
+                  media_type: 'application/pdf',
+                  data: resume_base64
+                }
+              },
+              {
+                type: 'text',
+                text: prompt
               }
-            },
-            {
-              type: 'text',
-              text: prompt
-            }
-          ]
-        }]
-      });
+            ]
+          }]
+        })
+      );
     } else {
       // Handle text resume
-      message = await client.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      });
+      message = await retryClaudeCall(() =>
+        client.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      );
     }
 
     const text = message.content[0].text
@@ -92,9 +118,16 @@ Return ONLY valid JSON:
 
   // ACTION 2: Continue - dynamic follow-up based on answer
   if (action === 'continue') {
-    const historyText = conversation_history.map(h => 
-      `Interviewer: ${h.question}\nCandidate: ${h.answer}` 
+    console.log('=== SMART INTERVIEW CONTINUE ===');
+    console.log('Conversation history length:', conversation_history.length);
+    console.log('Question number:', conversation_history.length + 1);
+    console.log('Last answer:', last_answer);
+    
+    const historyText = conversation_history.map((h, i) => 
+      `Q${i+1}: ${h.question}\nA${i+1}: ${h.answer}` 
     ).join('\n\n');
+    
+    console.log('History text preview:', historyText.substring(0, 200) + '...');
 
     const prompt = `You are a strict senior interviewer.
 Job Role: ${job_role}
@@ -109,7 +142,9 @@ ${historyText}
 Latest answer from candidate:
 "${last_answer}"
 
-Question number: ${conversation_history.length + 1} of 10
+This is question ${conversation_history.length + 1} of 10 questions.
+
+IMPORTANT: Look at the conversation history above. DO NOT repeat any previous questions. Ask a completely NEW question that follows logically from their latest answer.
 
 Your task:
 1. Evaluate the last answer critically
@@ -128,6 +163,7 @@ Rules:
 - Sound like a real interviewer
 - After question 8, start wrapping up
 - After question 10, say interview is complete
+- NEVER repeat a previous question
 
 Return ONLY valid JSON:
 {
@@ -142,15 +178,23 @@ Return ONLY valid JSON:
   "interview_complete": false
 }`;
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      messages: [{ role: 'user', content: prompt }]
-    });
+    const message = await retryClaudeCall(() =>
+      client.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    );
 
     const text = message.content[0].text
       .replace(/```json/g, '').replace(/```/g, '').trim();
-    return Response.json(JSON.parse(text));
+    
+    console.log('Claude response:', text);
+    
+    const result = JSON.parse(text);
+    console.log('Next question:', result.question);
+    
+    return Response.json(result);
   }
 
   // ACTION 3: Final evaluation with placement chance
@@ -223,11 +267,13 @@ Return ONLY valid JSON:
   "hire_reasoning": "Honest one paragraph hiring decision"
 }`;
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      messages: [{ role: 'user', content: prompt }]
-    });
+    const message = await retryClaudeCall(() =>
+      client.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    );
 
     const text = message.content[0].text
       .replace(/```json/g, '').replace(/```/g, '').trim();

@@ -106,12 +106,25 @@ export default function SmartInterviewPage() {
         })
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
       const data = await response.json();
       setCurrentQuestion(data.question);
       setIsTyping(false);
     } catch (error) {
       console.error('Error starting interview:', error);
-      alert('Failed to start interview');
+      let errorMessage = 'Failed to start interview';
+      
+      if (error.message.includes('529') || error.message.includes('overloaded')) {
+        errorMessage = 'AI service is temporarily busy. Please try again in a moment.';
+      } else if (error.message.includes('API key')) {
+        errorMessage = 'Service configuration error. Please contact support.';
+      }
+      
+      alert(errorMessage);
       setStage('setup');
     } finally {
       setLoading(false);
@@ -120,6 +133,12 @@ export default function SmartInterviewPage() {
 
   const submitAnswer = async () => {
     if (!currentAnswer.trim()) return;
+
+    console.log('=== SUBMITTING ANSWER ===');
+    console.log('Current question:', currentQuestion);
+    console.log('Answer:', currentAnswer);
+    console.log('Question number:', questionNumber);
+    console.log('History length:', conversationHistory.length);
 
     const answerToSubmit = currentAnswer;
     setCurrentAnswer('');
@@ -132,6 +151,8 @@ export default function SmartInterviewPage() {
       answer: answerToSubmit
     }];
     setConversationHistory(newHistory);
+    
+    console.log('New history length:', newHistory.length);
 
     try {
       const response = await fetch('/api/smart-interview', {
@@ -149,18 +170,34 @@ export default function SmartInterviewPage() {
         })
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log('API response:', data);
       
       if (data.interview_complete || questionNumber >= maxQuestions) {
         // Get final evaluation
         await getFinalEvaluation(newHistory);
       } else {
+        console.log('Setting new question:', data.question);
         setCurrentQuestion(data.question);
         setQuestionNumber(questionNumber + 1);
         setIsTyping(false);
       }
     } catch (error) {
       console.error('Error submitting answer:', error);
+      let errorMessage = 'Failed to get next question';
+      
+      if (error.message.includes('529') || error.message.includes('overloaded')) {
+        errorMessage = 'AI service is temporarily busy. Please try again.';
+      } else if (error.message.includes('API key')) {
+        errorMessage = 'Service configuration error. Please contact support.';
+      }
+      
+      alert(errorMessage);
       setIsTyping(false);
     }
   };
@@ -181,12 +218,26 @@ export default function SmartInterviewPage() {
         })
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
       const data = await response.json();
       setFeedback(data);
       setStage('feedback');
     } catch (error) {
       console.error('Error getting evaluation:', error);
-      alert('Failed to get evaluation');
+      let errorMessage = 'Failed to get evaluation';
+      
+      if (error.message.includes('529') || error.message.includes('overloaded')) {
+        errorMessage = 'AI service is temporarily busy. Please try again for your evaluation.';
+      } else if (error.message.includes('API key')) {
+        errorMessage = 'Service configuration error. Please contact support.';
+      }
+      
+      alert(errorMessage);
+      setStage('interviewing');
     }
   };
 
