@@ -2,6 +2,8 @@ import Anthropic from '@anthropic-ai/sdk';
 
 export async function POST(request) {
   try {
+    console.log('ANTHROPIC KEY:', process.env.ANTHROPIC_API_KEY?.substring(0, 15));
+    
     const body = await request.json();
     const { question, answer, domain, count } = body;
     
@@ -18,11 +20,7 @@ export async function POST(request) {
     }
 
     const client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      // Add default headers to ensure proper authentication
-      defaultHeaders: {
-        'anthropic-version': '2023-06-01'
-      }
+      apiKey: process.env.ANTHROPIC_API_KEY
     });
 
     // Generate questions

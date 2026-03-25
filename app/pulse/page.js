@@ -10,11 +10,10 @@ const categories = ["All", "Marketing", "Finance", "HR", "Analytics", "Tech", "M
 export default function PulsePage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState("All");
   const [newsData, setNewsData] = useState(null);
   const [newsLoading, setNewsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [cache, setCache] = useState({});
+  const [activeCategory, setActiveCategory] = useState("All");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -25,14 +24,16 @@ export default function PulsePage() {
   }, []);
 
   useEffect(() => {
-    if (selectedCategory && !cache[selectedCategory]) {
-      fetchNews(selectedCategory);
+    if (activeCategory) {
+      fetchNews(activeCategory);
     }
-  }, [selectedCategory]);
+  }, [activeCategory]);
 
   const fetchNews = async (category) => {
+    console.log('Fetching category:', category);
     setNewsLoading(true);
     setError(null);
+    setNewsData(null); // Clear previous articles
     
     try {
       console.log('=== FETCHING NEWS ===');
@@ -47,7 +48,6 @@ export default function PulsePage() {
       }
       
       setNewsData(data);
-      setCache(prev => ({ ...prev, [category]: data }));
       console.log(`Loaded ${data.articles?.length || 0} articles for ${category}`);
     } catch (err) {
       console.error('News fetch error:', err);
@@ -58,8 +58,7 @@ export default function PulsePage() {
   };
 
   const refreshNews = () => {
-    setCache(prev => ({ ...prev, [selectedCategory]: null }));
-    fetchNews(selectedCategory);
+    fetchNews(activeCategory);
   };
 
   const formatTimeAgo = (dateString) => {
@@ -75,7 +74,7 @@ export default function PulsePage() {
     return `${diffDays}d ago`;
   };
 
-  const currentData = cache[selectedCategory] || newsData;
+  const currentData = newsData;
   const gdTopics = currentData?.articles?.filter(a => a.gd_topic) || [];
 
   if (loading) {
@@ -128,7 +127,7 @@ export default function PulsePage() {
           <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-2xl p-6 mb-6" style={{ boxShadow: '0 20px 40px rgba(108, 99, 255, 0.3)' }}>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm text-purple-200 mb-1">📈 This week in {selectedCategory}</div>
+                <div className="text-sm text-purple-200 mb-1">📈 This week in {activeCategory}</div>
                 <div className="text-xl font-semibold text-white">{currentData.category_trend}</div>
               </div>
               <button 
@@ -160,9 +159,9 @@ export default function PulsePage() {
           {categories.map((category) => (
             <button
               key={category}
-              onClick={() => setSelectedCategory(category)}
+              onClick={() => setActiveCategory(category)}
               className={`px-4 py-2 rounded-xl font-semibold transition-all whitespace-nowrap ${
-                selectedCategory === category
+                activeCategory === category
                   ? "bg-purple-500 text-white"
                   : "bg-white/10 text-gray-400 hover:bg-white/20"
               }`}
@@ -204,7 +203,7 @@ export default function PulsePage() {
         {currentData?.articles && !newsLoading && (
           <div className="space-y-4 mb-8">
             {currentData.articles.map((article, index) => (
-              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all">
+              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all cursor-pointer">
                 <div className="flex gap-4">
                   {/* Image */}
                   <div className="w-24 h-24 flex-shrink-0">
@@ -215,7 +214,8 @@ export default function PulsePage() {
                         className="w-full h-full object-cover rounded-xl"
                         onError={(e) => {
                           e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
+                          e.target.parentElement.style.background = 
+                            'linear-gradient(135deg, #6C63FF, #FF6B6B)';
                         }}
                       />
                     ) : null}
@@ -257,14 +257,14 @@ export default function PulsePage() {
                           ⭐ {article.relevance_score}/10
                         </span>
                       </div>
-                      <a 
-                        href={article.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-purple-400 hover:text-purple-300 text-sm font-semibold flex items-center gap-1 transition-colors"
-                      >
-                        Read Article <ExternalLink className="w-3 h-3" />
-                      </a>
+                      {article.url && article.url !== "#" && (
+                        <button 
+                          onClick={() => window.open(article.url, '_blank')}
+                          className="text-purple-400 hover:text-purple-300 text-sm font-semibold flex items-center gap-1 transition-colors"
+                        >
+                          Read Article <ExternalLink className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
