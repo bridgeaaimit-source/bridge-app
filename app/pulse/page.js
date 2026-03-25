@@ -3,373 +3,301 @@
 import { useMemo, useState, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { Home, Mic, Zap, Trophy, User, Plus, Filter, TrendingUp, X } from "lucide-react";
+import { Home, Mic, Zap, Trophy, User, Plus, Filter, TrendingUp, X, RefreshCw, ExternalLink, Users, Calendar } from "lucide-react";
 
-const tabs = ["All", "TCS", "Infosys", "Wipro", "Amazon"];
-
-const mockExperiences = [
-  {
-    id: 1,
-    company: "TCS",
-    role: "Assistant System Engineer",
-    roundType: "Technical",
-    difficulty: "Medium",
-    helpful: 21,
-    trending: true,
-    questions: [
-      "Explain OOP principles with examples.",
-      "Difference between REST and SOAP APIs?",
-      "How would you optimize SQL query performance?",
-    ],
-  },
-  {
-    id: 2,
-    company: "Infosys",
-    role: "Systems Engineer",
-    roundType: "HR",
-    difficulty: "Easy",
-    helpful: 13,
-    trending: false,
-    questions: [
-      "Tell me about yourself.",
-      "Why Infosys?",
-      "How do you handle feedback from seniors?",
-    ],
-  },
-  {
-    id: 3,
-    company: "Wipro",
-    role: "Project Engineer",
-    roundType: "GD",
-    difficulty: "Hard",
-    helpful: 28,
-    trending: true,
-    questions: [
-      "GD topic: AI replacing jobs.",
-      "How do you convince a teammate in disagreement?",
-    ],
-  },
-  {
-    id: 4,
-    company: "Amazon",
-    role: "SDE Intern",
-    roundType: "Technical",
-    difficulty: "Hard",
-    helpful: 35,
-    trending: true,
-    questions: [
-      "Design a URL shortener system.",
-      "Find the longest palindrome substring.",
-      "Explain TCP vs UDP.",
-    ],
-  },
-  {
-    id: 5,
-    company: "Accenture",
-    role: "Associate Software Engineer",
-    roundType: "Technical",
-    difficulty: "Medium",
-    helpful: 17,
-    trending: false,
-    questions: [
-      "Difference between stack and queue.",
-      "What is normalization in DBMS?",
-      "Explain one challenging project from college.",
-    ],
-  },
-];
-
-function badgeStyle(difficulty) {
-  if (difficulty === "Easy") return "bg-green-500/20 border-green-500/30 text-green-400";
-  if (difficulty === "Hard") return "bg-red-500/20 border-red-500/30 text-red-400";
-  return "bg-yellow-500/20 border-yellow-500/30 text-yellow-400";
-}
+const categories = ["All", "Marketing", "Finance", "HR", "Analytics", "Tech", "MBA"];
 
 export default function PulsePage() {
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [activeTab, setActiveTab] = useState("All");
-  const [isOpen, setIsOpen] = useState(false);
-  const [items, setItems] = useState(mockExperiences);
-  const [form, setForm] = useState({
-    company: "",
-    role: "",
-    roundType: "HR",
-    questions: "",
-    difficulty: "Medium",
-  });
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [newsData, setNewsData] = useState(null);
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [cache, setCache] = useState({});
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        document.cookie = "bridge_auth=; path=/; max-age=0; samesite=lax";
-        window.location.replace("/login");
-        return;
-      }
-      document.cookie = "bridge_auth=1; path=/; max-age=2592000; samesite=lax";
-      setIsCheckingAuth(false);
+      setUser(user);
+      setLoading(false);
     });
-
-    return () => unsubscribe();
+    return unsubscribe;
   }, []);
 
-  const filteredItems = useMemo(() => {
-    if (activeTab === "All") return items;
-    return items.filter((item) => item.company === activeTab);
-  }, [activeTab, items]);
+  useEffect(() => {
+    if (selectedCategory && !cache[selectedCategory]) {
+      fetchNews(selectedCategory);
+    }
+  }, [selectedCategory]);
 
-  const submitExperience = () => {
-    if (!form.company.trim() || !form.role.trim() || !form.questions.trim()) return;
-
-    const newItem = {
-      id: Date.now(),
-      company: form.company.trim(),
-      role: form.role.trim(),
-      roundType: form.roundType,
-      difficulty: form.difficulty,
-      helpful: 0,
-      trending: false,
-      questions: form.questions
-        .split("\n")
-        .map((q) => q.trim())
-        .filter(Boolean)
-        .slice(0, 5),
-    };
-
-    setItems((prev) => [newItem, ...prev]);
-    setForm({
-      company: "",
-      role: "",
-      roundType: "HR",
-      questions: "",
-      difficulty: "Medium",
-    });
-    setIsOpen(false);
+  const fetchNews = async (category) => {
+    setNewsLoading(true);
+    setError(null);
+    
+    try {
+      console.log('=== FETCHING NEWS ===');
+      console.log('Category:', category);
+      console.log('NewsAPI key exists:', !!process.env.NEWS_API_KEY);
+      
+      const response = await fetch(`/api/news?category=${encodeURIComponent(category)}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch news');
+      }
+      
+      setNewsData(data);
+      setCache(prev => ({ ...prev, [category]: data }));
+      console.log(`Loaded ${data.articles?.length || 0} articles for ${category}`);
+    } catch (err) {
+      console.error('News fetch error:', err);
+      setError(err.message);
+    } finally {
+      setNewsLoading(false);
+    }
   };
 
-  if (isCheckingAuth) {
+  const refreshNews = () => {
+    setCache(prev => ({ ...prev, [selectedCategory]: null }));
+    fetchNews(selectedCategory);
+  };
+
+  const formatTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
+  };
+
+  const currentData = cache[selectedCategory] || newsData;
+  const gdTopics = currentData?.articles?.filter(a => a.gd_topic) || [];
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading BRIDGE PULSE...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500/30 border-t-purple-500 mx-auto mb-4"></div>
-          <div className="text-purple-400 font-semibold">Loading PULSE...</div>
+          <h1 className="text-3xl font-bold text-white mb-4">BRIDGE PULSE</h1>
+          <p className="text-gray-400 mb-8">Please sign in to access placement insights</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-white">
-      <div className="max-w-md mx-auto px-6 py-6">
-        
-        {/* Header */}
-        <header className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">PULSE</h1>
-            <Zap className="w-6 h-6 text-purple-400" />
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          </div>
-          <button className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
-            <Filter className="w-5 h-5" />
-          </button>
-        </header>
-
-        {/* AI Insight Banner */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-2xl p-4 mb-6" style={{ boxShadow: '0 10px 25px rgba(108, 99, 255, 0.3)' }}>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-              <span className="text-xs">🤖</span>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+      {/* Navigation */}
+      <nav className="bg-black/20 backdrop-blur-md border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-3">
+              <Zap className="w-8 h-8 text-purple-400" />
+              <span className="text-xl font-bold text-white">BRIDGE PULSE</span>
             </div>
-            <span className="text-sm font-semibold">AI Insight</span>
-          </div>
-          <p className="text-sm text-purple-200">
-            TCS asking more HR questions this week based on 12 recent experiences
-          </p>
-        </div>
-
-        {/* Filter Pills */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${
-                activeTab === tab
-                  ? "bg-purple-500 text-white shadow-lg shadow-purple-500/25"
-                  : "bg-white/10 border border-white/20 text-gray-400 hover:bg-white/20"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        {/* Experience Cards */}
-        <div className="space-y-4 mb-20">
-          {filteredItems.map((item) => (
-            <div
-              key={item.id}
-              className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                    {item.company.slice(0, 2)}
-                  </div>
-                  <div>
-                    <div className="font-semibold">{item.company}</div>
-                    <div className="text-sm text-gray-400">{item.role}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {item.trending && (
-                    <div className="flex items-center gap-1 px-2 py-1 bg-red-500/20 border border-red-500/30 rounded-lg">
-                      <TrendingUp className="w-3 h-3 text-red-400" />
-                      <span className="text-xs text-red-400">Trending</span>
-                    </div>
-                  )}
-                  <div className={`px-3 py-1 rounded-lg text-xs font-semibold border ${badgeStyle(item.difficulty)}`}>
-                    {item.difficulty}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mb-3">
-                <div className="text-xs font-semibold text-gray-400 mb-2">Questions Asked</div>
-                <ul className="space-y-2">
-                  {item.questions.slice(0, 3).map((q, idx) => (
-                    <li key={`${item.id}-${idx}`} className="text-sm flex items-start gap-2">
-                      <div className="w-1.5 h-1.5 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
-                      <span className="text-gray-300">{q}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="px-3 py-1 bg-white/5 rounded-lg border border-white/10">
-                  <span className="text-xs text-gray-400">{item.roundType} Round</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button className="flex items-center gap-1 px-3 py-1 bg-white/10 rounded-lg border border-white/20 hover:bg-white/20 transition-colors">
-                    <span className="text-sm">👍</span>
-                    <span className="text-xs text-gray-400">{item.helpful}</span>
-                  </button>
-                  <button className="px-3 py-1 bg-purple-500 rounded-lg text-xs font-semibold hover:bg-purple-600 transition-colors">
-                    Read More
-                  </button>
-                </div>
+            <div className="flex items-center gap-6">
+              <button className="text-gray-400 hover:text-white transition-colors">
+                <Filter className="w-5 h-5" />
+              </button>
+              <button className="text-gray-400 hover:text-white transition-colors">
+                <TrendingUp className="w-5 h-5" />
+              </button>
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                {user.email?.charAt(0).toUpperCase()}
               </div>
             </div>
-          ))}
+          </div>
         </div>
+      </nav>
 
-        {/* FAB Button */}
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-24 right-6 z-20 w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-110"
-          style={{ boxShadow: '0 10px 25px rgba(108, 99, 255, 0.3)' }}
-        >
-          <Plus className="w-6 h-6" />
-        </button>
-
-        {/* Add Experience Modal */}
-        {isOpen && (
-          <div className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm flex items-end">
-            <div className="bg-[#0A0A0F] rounded-t-3xl w-full max-w-md mx-auto p-6 border-t border-white/10">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">Add Experience</h2>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="w-8 h-8 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white/20 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* AI Trend Banner */}
+        {currentData?.category_trend && (
+          <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-2xl p-6 mb-6" style={{ boxShadow: '0 20px 40px rgba(108, 99, 255, 0.3)' }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm text-purple-200 mb-1">📈 This week in {selectedCategory}</div>
+                <div className="text-xl font-semibold text-white">{currentData.category_trend}</div>
               </div>
+              <button 
+                onClick={refreshNews}
+                className="text-white/70 hover:text-white transition-colors"
+                disabled={newsLoading}
+              >
+                <RefreshCw className={`w-5 h-5 ${newsLoading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+          </div>
+        )}
 
-              <div className="space-y-4">
-                <input
-                  value={form.company}
-                  onChange={(e) => setForm((prev) => ({ ...prev, company: e.target.value }))}
-                  placeholder="Company name"
-                  className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
-                />
-                <input
-                  value={form.role}
-                  onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value }))}
-                  placeholder="Role"
-                  className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
-                />
-                <select
-                  value={form.roundType}
-                  onChange={(e) => setForm((prev) => ({ ...prev, roundType: e.target.value }))}
-                  className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
-                >
-                  <option value="HR" className="bg-[#0A0A0F]">HR</option>
-                  <option value="Technical" className="bg-[#0A0A0F]">Technical</option>
-                  <option value="GD" className="bg-[#0A0A0F]">GD</option>
-                </select>
-                <textarea
-                  value={form.questions}
-                  onChange={(e) => setForm((prev) => ({ ...prev, questions: e.target.value }))}
-                  placeholder="Questions asked (one per line)"
-                  className="min-h-[100px] w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
-                />
-                <select
-                  value={form.difficulty}
-                  onChange={(e) => setForm((prev) => ({ ...prev, difficulty: e.target.value }))}
-                  className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
-                >
-                  <option value="Easy" className="bg-[#0A0A0F]">Easy</option>
-                  <option value="Medium" className="bg-[#0A0A0F]">Medium</option>
-                  <option value="Hard" className="bg-[#0A0A0F]">Hard</option>
-                </select>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="flex-1 py-3 bg-white/10 border border-white/20 rounded-xl font-semibold hover:bg-white/20 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={submitExperience}
-                    className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl font-semibold shadow-lg hover:shadow-purple-500/25 transition-all"
-                  >
-                    Submit
-                  </button>
-                </div>
+        {/* Interview Tip Card */}
+        {currentData?.interview_tip && (
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-6 mb-6" style={{ boxShadow: '0 20px 40px rgba(251, 146, 60, 0.3)' }}>
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">💡</div>
+              <div>
+                <div className="text-sm text-orange-100 mb-1">Interview Tip</div>
+                <div className="text-lg font-semibold text-white">{currentData.interview_tip}</div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Bottom Navigation */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-[#0A0A0F]/90 backdrop-blur-xl border-t border-white/10">
-          <div className="max-w-md mx-auto px-6 py-3">
-            <div className="grid grid-cols-5 gap-4">
-              <a href="/dashboard" className="flex flex-col items-center gap-1 text-gray-400">
-                <Home className="w-5 h-5" />
-                <span className="text-xs">Home</span>
-              </a>
-              <a href="/interview" className="flex flex-col items-center gap-1 text-gray-400">
-                <Mic className="w-5 h-5" />
-                <span className="text-xs">Practice</span>
-              </a>
-              <a href="/pulse" className="flex flex-col items-center gap-1 text-purple-400">
-                <Zap className="w-5 h-5" />
-                <span className="text-xs">PULSE</span>
-              </a>
-              <a href="/leaderboard" className="flex flex-col items-center gap-1 text-gray-400">
-                <Trophy className="w-5 h-5" />
-                <span className="text-xs">Trophy</span>
-              </a>
-              <a href="/profile" className="flex flex-col items-center gap-1 text-gray-400">
-                <User className="w-5 h-5" />
-                <span className="text-xs">Profile</span>
-              </a>
+        {/* Filter Tabs */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={`px-4 py-2 rounded-xl font-semibold transition-all whitespace-nowrap ${
+                selectedCategory === category
+                  ? "bg-purple-500 text-white"
+                  : "bg-white/10 text-gray-400 hover:bg-white/20"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+
+        {/* Loading Skeleton */}
+        {newsLoading && (
+          <div className="space-y-4 mb-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 animate-pulse">
+                <div className="flex gap-4">
+                  <div className="w-20 h-20 bg-gray-700 rounded-xl"></div>
+                  <div className="flex-1 space-y-3">
+                    <div className="h-4 bg-gray-700 rounded w-1/3"></div>
+                    <div className="h-4 bg-gray-700 rounded w-full"></div>
+                    <div className="h-4 bg-gray-700 rounded w-2/3"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !newsLoading && (
+          <div className="bg-red-500/20 backdrop-blur-sm rounded-2xl p-6 border border-red-500/30 mb-6">
+            <div className="text-red-300 text-center">
+              <p className="mb-2">📰 Showing curated content</p>
+              <p className="text-sm">Could not load latest news: {error}</p>
             </div>
           </div>
-        </nav>
+        )}
+
+        {/* News Articles */}
+        {currentData?.articles && !newsLoading && (
+          <div className="space-y-4 mb-8">
+            {currentData.articles.map((article, index) => (
+              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all">
+                <div className="flex gap-4">
+                  {/* Image */}
+                  <div className="w-24 h-24 flex-shrink-0">
+                    {article.urlToImage ? (
+                      <img 
+                        src={article.urlToImage} 
+                        alt={article.title}
+                        className="w-full h-full object-cover rounded-xl"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div className="w-full h-full bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl flex items-center justify-center" style={{ display: article.urlToImage ? 'none' : 'flex' }}>
+                      <TrendingUp className="w-8 h-8 text-purple-300" />
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1">
+                    {/* Source and Time */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-sm text-gray-400">{article.source}</div>
+                      <div className="text-sm text-gray-400">{formatTimeAgo(article.publishedAt)}</div>
+                    </div>
+
+                    {/* Title */}
+                    <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">{article.title}</h3>
+
+                    {/* Description */}
+                    <p className="text-gray-400 text-sm mb-3 line-clamp-2">{article.description}</p>
+
+                    {/* Placement Insight */}
+                    <div className="bg-purple-500/20 backdrop-blur-sm rounded-xl p-3 border border-purple-500/30 mb-3">
+                      <div className="text-sm text-purple-300">
+                        🎯 {article.placement_insight}
+                      </div>
+                    </div>
+
+                    {/* Bottom Row */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {article.gd_topic && (
+                          <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-lg text-xs font-semibold">
+                            🗣️ GD Topic
+                          </span>
+                        )}
+                        <span className="text-yellow-400 text-sm">
+                          ⭐ {article.relevance_score}/10
+                        </span>
+                      </div>
+                      <a 
+                        href={article.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-purple-400 hover:text-purple-300 text-sm font-semibold flex items-center gap-1 transition-colors"
+                      >
+                        Read Article <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* GD Booster Section */}
+        {gdTopics.length > 0 && (
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">🗣️ GD Booster</h3>
+              <Users className="w-5 h-5 text-purple-400" />
+            </div>
+            <div className="text-gray-300 mb-3">Practice these Group Discussion topics from current news:</div>
+            <div className="space-y-2">
+              {gdTopics.slice(0, 3).map((topic, index) => (
+                <div key={index} className="bg-white/5 rounded-xl p-3 border border-white/10">
+                  <div className="text-sm font-medium text-white">{topic.title}</div>
+                  <div className="text-xs text-gray-400 mt-1">{topic.why_relevant}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Timestamp */}
+        {currentData?.cached_at && (
+          <div className="text-center text-gray-500 text-sm mt-6">
+            Updated {formatTimeAgo(currentData.cached_at)} ago
+          </div>
+        )}
       </div>
     </div>
   );

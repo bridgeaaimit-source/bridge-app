@@ -10,6 +10,7 @@ export async function POST(request) {
     console.log('Has API key:', !!process.env.ANTHROPIC_API_KEY);
     console.log('API Key first 10 chars:', process.env.ANTHROPIC_API_KEY?.substring(0, 10));
     console.log('Raw env var:', process.env.ANTHROPIC_API_KEY);
+    console.log('NewsAPI key exists:', !!process.env.NEWS_API_KEY);
 
     if (!process.env.ANTHROPIC_API_KEY) {
       console.error('ANTHROPIC_API_KEY is missing');
