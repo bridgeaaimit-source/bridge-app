@@ -9,13 +9,13 @@ export async function GET(request) {
   
   // Category to search keywords mapping
   const keywords = {
-    'All': 'placement career job india fresher 2026',
-    'Marketing': 'marketing digital advertising brand india',
-    'Finance': 'finance banking stock market india career',
-    'HR': 'human resources recruitment hiring india',
-    'Analytics': 'data analytics AI machine learning career',
-    'Tech': 'software engineering coding startup india',
-    'MBA': 'MBA management business strategy india'
+    'All': 'india jobs hiring 2026',
+    'Marketing': 'marketing india 2026',
+    'Finance': 'finance india banking 2026',
+    'HR': 'hiring recruitment india 2026',
+    'Analytics': 'data analytics india 2026',
+    'Tech': 'technology software india 2026',
+    'MBA': 'business management india 2026'
   };
 
   const query = keywords[category] || keywords['All'];
@@ -24,14 +24,10 @@ export async function GET(request) {
   try {
     // Step 1: Fetch from NewsAPI
     console.log('2. Calling NewsAPI...');
-    const newsResponse = await fetch(
-      `https://newsapi.org/v2/everything?` +
-      `q=${encodeURIComponent(query)}&` +
-      `language=en&` +
-      `sortBy=publishedAt&` +
-      `pageSize=15&` +
-      `apiKey=${process.env.NEWS_API_KEY}` 
-    );
+    const newsUrl = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&pageSize=20&apiKey=${process.env.NEWS_API_KEY}`;
+    console.log('NewsAPI URL:', newsUrl);
+    
+    const newsResponse = await fetch(newsUrl);
     
     console.log('3. NewsAPI response status:', newsResponse.status);
     
@@ -42,25 +38,69 @@ export async function GET(request) {
     }
     
     const newsData = await newsResponse.json();
+    console.log('4. NewsAPI full response:', newsData);
+    
     const articles = newsData.articles || [];
-    console.log('4. Articles count:', articles.length);
+    console.log('5. Articles count:', articles.length);
 
     if (articles.length === 0) {
-      throw new Error('No articles found from NewsAPI');
+      console.log('6. No articles found, trying fallback query...');
+      // Try fallback query
+      const fallbackQuery = 'india career';
+      console.log('6.1. Trying fallback query:', fallbackQuery);
+      
+      const fallbackResponse = await fetch(
+        `https://newsapi.org/v2/everything?q=${encodeURIComponent(fallbackQuery)}&sortBy=publishedAt&pageSize=20&apiKey=${process.env.NEWS_API_KEY}`
+      );
+      
+      if (fallbackResponse.ok) {
+        const fallbackData = await fallbackResponse.json();
+        const fallbackArticles = fallbackData.articles || [];
+        console.log('6.2. Fallback articles count:', fallbackArticles.length);
+        
+        if (fallbackArticles.length > 0) {
+          // Use fallback articles
+          return processArticles(fallbackArticles, category, 'india career');
+        }
+      }
+      
+      throw new Error(`No articles found for query: "${query}" and fallback: "india career"`);
     }
 
-    // Step 2: Use Claude to filter and add insights
-    console.log('5. Calling Claude...');
-    const client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY
-    });
+    return processArticles(articles, category, query);
 
-    const articleList = articles.map((a, i) => 
-      `${i+1}. Title: ${a.title}\nDescription: ${a.description || 'No description'}` 
-    ).join('\n\n');
-
-    const prompt = `You are a placement advisor for Indian college students.
+  } catch (error) {
+    console.error('=== NEWS API ERROR ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Stack trace:', error.stack);
     
+    return Response.json({
+      error: error.message,
+      articles: [],
+      category_trend: null,
+      interview_tip: null,
+      total: 0,
+      cached_at: new Date().toISOString()
+    }, { status: 500 });
+  }
+}
+
+async function processArticles(articles, category, query) {
+  console.log('7. Processing articles with Claude...');
+  
+  // Step 2: Use Claude to filter and add insights
+  console.log('8. Calling Claude...');
+  const client = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY
+  });
+
+  const articleList = articles.map((a, i) => 
+    `${i+1}. Title: ${a.title}\nDescription: ${a.description || 'No description'}` 
+  ).join('\n\n');
+
+  const prompt = `You are a placement advisor for Indian college students.
+  
 Here are ${articles.length} news articles. 
 Student category interest: ${category}
 
@@ -89,68 +129,52 @@ Return ONLY valid JSON, no markdown:
   "interview_tip": "One interview tip based on current ${category} news"
 }`;
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      messages: [{ role: 'user', content: prompt }]
-    });
+  const message = await client.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1000,
+    messages: [{ role: 'user', content: prompt }]
+  });
 
-    const text = message.content[0].text
-      .replace(/```json/g, '')
-      .replace(/```/g, '')
-      .trim();
-    
-    console.log('6. Claude response:', text);
-    
-    if (!text) {
-      throw new Error('Claude returned empty response');
-    }
-    
-    const aiCuration = JSON.parse(text);
-    console.log('7. Parsed Claude curation:', aiCuration);
-
-    // Step 3: Combine NewsAPI + Claude insights
-    const curatedArticles = aiCuration.articles.map(item => {
-      const article = articles[item.index];
-      if (!article) return null;
-      
-      return {
-        title: article.title,
-        description: article.description || 'No description available',
-        url: article.url,
-        urlToImage: article.urlToImage,
-        publishedAt: article.publishedAt,
-        source: article.source?.name || 'Unknown',
-        placement_insight: item.placement_insight,
-        gd_topic: item.gd_topic,
-        relevance_score: item.relevance_score,
-        why_relevant: item.why_relevant
-      };
-    }).filter(a => a && a.title);
-
-    console.log('8. Final curated articles count:', curatedArticles.length);
-
-    return Response.json({
-      articles: curatedArticles,
-      category_trend: aiCuration.category_trend,
-      interview_tip: aiCuration.interview_tip,
-      total: curatedArticles.length,
-      cached_at: new Date().toISOString()
-    });
-
-  } catch (error) {
-    console.error('=== NEWS API ERROR ===');
-    console.error('Error type:', error.constructor.name);
-    console.error('Error message:', error.message);
-    console.error('Stack trace:', error.stack);
-    
-    return Response.json({
-      error: error.message,
-      articles: [],
-      category_trend: null,
-      interview_tip: null,
-      total: 0,
-      cached_at: new Date().toISOString()
-    }, { status: 500 });
+  const text = message.content[0].text
+    .replace(/```json/g, '')
+    .replace(/```/g, '')
+    .trim();
+  
+  console.log('9. Claude response:', text);
+  
+  if (!text) {
+    throw new Error('Claude returned empty response');
   }
+  
+  const aiCuration = JSON.parse(text);
+  console.log('10. Parsed Claude curation:', aiCuration);
+
+  // Step 3: Combine NewsAPI + Claude insights
+  const curatedArticles = aiCuration.articles.map(item => {
+    const article = articles[item.index];
+    if (!article) return null;
+    
+    return {
+      title: article.title,
+      description: article.description || 'No description available',
+      url: article.url,
+      urlToImage: article.urlToImage,
+      publishedAt: article.publishedAt,
+      source: article.source?.name || 'Unknown',
+      placement_insight: item.placement_insight,
+      gd_topic: item.gd_topic,
+      relevance_score: item.relevance_score,
+      why_relevant: item.why_relevant
+    };
+  }).filter(a => a && a.title);
+
+  console.log('11. Final curated articles count:', curatedArticles.length);
+
+  return Response.json({
+    articles: curatedArticles,
+    category_trend: aiCuration.category_trend,
+    interview_tip: aiCuration.interview_tip,
+    total: curatedArticles.length,
+    cached_at: new Date().toISOString()
+  });
 }
