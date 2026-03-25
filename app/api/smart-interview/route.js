@@ -1,0 +1,239 @@
+import Anthropic from '@anthropic-ai/sdk';
+
+export async function POST(request) {
+  const body = await request.json();
+  const { action, resume_text, resume_base64, job_role, jd, 
+    round, conversation_history, last_answer } = body;
+
+  const client = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY
+  });
+
+  // ACTION 1: Initialize - read resume+JD, ask first question
+  if (action === 'init') {
+    const prompt = `You are a strict senior interviewer at a 
+company hiring for: ${job_role}
+
+You have received this candidate's resume and job description.
+
+RESUME:
+${resume_text}
+
+JOB DESCRIPTION:
+${jd}
+
+ROUND: ${round}
+
+Your task:
+1. Carefully analyze the resume against the JD
+2. Note: skills match, gaps, interesting projects, 
+   experience level, red flags
+3. Ask your FIRST interview question
+
+Rules:
+- Ask ONE question only
+- Make it specific to THEIR resume, not generic
+- For HR round: start with background/motivation
+- For Technical round: pick a project from resume and probe it
+- For Managerial round: ask about leadership/decisions
+- Sound like a real interviewer, professional but direct
+- Do NOT say "Great resume!" or give compliments
+
+Return ONLY valid JSON:
+{
+  "question": "Your first interview question here",
+  "interviewer_thought": "Brief note on what you noticed 
+    in resume that led to this question (hidden from student)",
+  "resume_analysis": {
+    "strong_points": ["point1", "point2"],
+    "weak_points": ["point1", "point2"],
+    "skills_match_percent": 72,
+    "initial_impression": "Promising/Average/Weak"
+  }
+}`;
+
+    let message;
+    if (resume_base64) {
+      // Handle PDF resume
+      message = await client.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: resume_base64
+              }
+            },
+            {
+              type: 'text',
+              text: prompt
+            }
+          ]
+        }]
+      });
+    } else {
+      // Handle text resume
+      message = await client.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      });
+    }
+
+    const text = message.content[0].text
+      .replace(/```json/g, '').replace(/```/g, '').trim();
+    return Response.json(JSON.parse(text));
+  }
+
+  // ACTION 2: Continue - dynamic follow-up based on answer
+  if (action === 'continue') {
+    const historyText = conversation_history.map(h => 
+      `Interviewer: ${h.question}\nCandidate: ${h.answer}` 
+    ).join('\n\n');
+
+    const prompt = `You are a strict senior interviewer.
+Job Role: ${job_role}
+Round: ${round}
+
+Resume:
+${resume_text}
+
+Conversation so far:
+${historyText}
+
+Latest answer from candidate:
+"${last_answer}"
+
+Question number: ${conversation_history.length + 1} of 10
+
+Your task:
+1. Evaluate the last answer critically
+2. Decide next question strategy:
+   - If answer was vague → dig deeper on same topic
+   - If answer mentioned something interesting → follow up on it
+   - If answer was weak → note it, move to next topic
+   - If answer was strong → acknowledge briefly, probe harder
+3. Ask the next question
+
+Rules:
+- ONE question only
+- Dynamic - based on what they just said
+- If they mentioned a project, ask technical details
+- If they mentioned a number/achievement, verify it
+- Sound like a real interviewer
+- After question 8, start wrapping up
+- After question 10, say interview is complete
+
+Return ONLY valid JSON:
+{
+  "question": "Your next question",
+  "answer_evaluation": {
+    "score": (1-10, be strict),
+    "was_specific": true/false,
+    "had_examples": true/false,
+    "filler_words": ["list any found"],
+    "quick_feedback": "One line honest evaluation"
+  },
+  "interview_complete": false
+}`;
+
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const text = message.content[0].text
+      .replace(/```json/g, '').replace(/```/g, '').trim();
+    return Response.json(JSON.parse(text));
+  }
+
+  // ACTION 3: Final evaluation with placement chance
+  if (action === 'evaluate') {
+    const historyText = conversation_history.map((h, i) => 
+      `Q${i+1}: ${h.question}\nA${i+1}: ${h.answer}\nScore: ${h.score || 'N/A'}` 
+    ).join('\n\n');
+
+    const prompt = `You are a strict senior hiring manager.
+Job Role: ${job_role}
+Round: ${round}
+
+Resume:
+${resume_text}
+
+Job Description:
+${jd}
+
+Complete Interview Transcript:
+${historyText}
+
+Give a brutally honest final evaluation.
+Consider: answer quality, communication, resume fit,
+technical accuracy, confidence, specific examples given.
+
+Return ONLY valid JSON:
+{
+  "placement_chance": (0-100, be very strict:
+    0-30: Not suitable,
+    31-50: Weak candidate,
+    51-65: Below average,
+    66-75: Average, might get through,
+    76-85: Good candidate,
+    86-95: Strong candidate,
+    96-100: Exceptional - rare),
+  "verdict": "Selected/Strong Maybe/Weak Maybe/Rejected",
+  "overall_score": (1-10),
+  "scores": {
+    "communication": (1-10),
+    "technical_knowledge": (1-10),
+    "resume_jd_fit": (1-10),
+    "confidence": (1-10),
+    "answer_quality": (1-10)
+  },
+  "best_answer": {
+    "question": "question they answered best",
+    "why": "why it was good"
+  },
+  "worst_answer": {
+    "question": "question they answered worst",
+    "why": "why it was weak"
+  },
+  "filler_words_summary": "Overall filler word usage assessment",
+  "strengths": [
+    "specific strength with example from interview",
+    "specific strength with example from interview"
+  ],
+  "weaknesses": [
+    "specific weakness with example from interview",
+    "specific weakness with example from interview"
+  ],
+  "improvement_roadmap": [
+    "Specific action item 1 to improve before next interview",
+    "Specific action item 2 to improve",
+    "Specific action item 3 to improve"
+  ],
+  "interviewer_notes": "What the interviewer would write 
+    about this candidate internally - be honest",
+  "should_hire": true/false,
+  "hire_reasoning": "Honest one paragraph hiring decision"
+}`;
+
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const text = message.content[0].text
+      .replace(/```json/g, '').replace(/```/g, '').trim();
+    return Response.json(JSON.parse(text));
+  }
+
+  return Response.json({ error: 'Invalid action' }, 
+    { status: 400 });
+}

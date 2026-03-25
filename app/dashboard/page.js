@@ -2,9 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Home, Mic, Zap, Trophy, User, Bell, Flame, Briefcase, MessageSquare, TrendingUp, Target } from "lucide-react";
+import { Home, Mic, Zap, Trophy, User, Bell, Flame, Briefcase, MessageSquare, TrendingUp, Target, Brain } from "lucide-react";
 
 const actionCards = [
+  {
+    icon: Brain,
+    title: "Smart Interview",
+    subtitle: "Upload resume, get personalized interview",
+    href: "/smart-interview",
+    color: "purple",
+    badge: "NEW"
+  },
   {
     icon: Mic,
     title: "Mock Interview",
@@ -156,8 +164,13 @@ export default function Dashboard() {
             <Link
               key={item.title}
               href={item.href}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-[1.02]"
+              className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-[1.02] relative"
             >
+              {item.badge && (
+                <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                  {item.badge}
+                </div>
+              )}
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${
                 item.color === 'purple' ? 'bg-purple-500' :
                 item.color === 'coral' ? 'bg-red-500' :
