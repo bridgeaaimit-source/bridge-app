@@ -36,11 +36,40 @@ export default function PulsePage() {
   const fetchGDInsights = async (category) => {
     setGdLoading(true);
     try {
+      console.log('Fetching GD insights for:', category);
       const res = await fetch(`/api/gd-insights?category=${category}`);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('GD Insights API error:', errorText);
+        throw new Error(`HTTP ${res.status}: ${errorText}`);
+      }
+      
       const data = await res.json();
+      console.log('GD Insights response:', data);
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      if (!data || !data.gd_topic) {
+        throw new Error('Invalid GD insights response format');
+      }
+      
       setGdInsights(data);
     } catch (err) {
       console.error('GD insights error:', err);
+      let errorMessage = 'Failed to load GD insights';
+      
+      if (err.message.includes('JSON')) {
+        errorMessage = 'Server returned invalid GD data format';
+      } else if (err.message.includes('529') || err.message.includes('overloaded')) {
+        errorMessage = 'AI service is temporarily busy. Please try again.';
+      } else if (err.message.includes('Failed to fetch')) {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+      
+      console.error('GD insights fetch error:', errorMessage);
     } finally {
       setGdLoading(false);
     }
@@ -55,24 +84,40 @@ export default function PulsePage() {
     try {
       console.log('Making API call to /api/news...');
       const response = await fetch(`/api/news?category=${encodeURIComponent(category)}`);
-      const data = await response.json();
       
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API error response:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      
+      const data = await response.json();
       console.log('API response:', data);
       console.log('Articles received:', data.articles?.length);
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch news');
-      }
-      
       if (data.error) {
         throw new Error(data.error);
+      }
+      
+      if (!data || !data.articles) {
+        throw new Error('Invalid response format from server');
       }
       
       setNewsData(data);
       console.log(`Successfully loaded ${data.articles?.length || 0} articles for ${category}`);
     } catch (err) {
       console.error('News fetch error:', err);
-      setError(err.message);
+      let errorMessage = 'Failed to load news';
+      
+      if (err.message.includes('JSON')) {
+        errorMessage = 'Server returned invalid data format';
+      } else if (err.message.includes('529') || err.message.includes('overloaded')) {
+        errorMessage = 'AI service is temporarily busy. Please try again.';
+      } else if (err.message.includes('Failed to fetch')) {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setNewsLoading(false);
       setLoading(false);

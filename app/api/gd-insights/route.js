@@ -74,7 +74,16 @@ Return ONLY valid JSON, no markdown:
       .replace(/```/g, '')
       .trim();
     
-    const insights = JSON.parse(text);
+    console.log('GD Insights raw response:', text);
+    
+    let insights;
+    try {
+      insights = JSON.parse(text);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      console.error('Raw text:', text);
+      throw new Error('Invalid JSON response from Claude');
+    }
     
     // Cache for today
     dailyCache[cacheKey] = insights;

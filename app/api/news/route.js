@@ -146,7 +146,14 @@ Return ONLY valid JSON, no markdown:
     throw new Error('Claude returned empty response');
   }
   
-  const aiCuration = JSON.parse(text);
+  let aiCuration;
+  try {
+    aiCuration = JSON.parse(text);
+  } catch (parseError) {
+    console.error('JSON parse error in news API:', parseError);
+    console.error('Raw text:', text);
+    throw new Error('Invalid JSON response from Claude');
+  }
   console.log('10. Parsed Claude curation:', aiCuration);
 
   // Step 3: Combine NewsAPI + Claude insights
