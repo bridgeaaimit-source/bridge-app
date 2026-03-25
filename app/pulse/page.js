@@ -11,11 +11,27 @@ export default function PulsePage() {
   const [newsLoading, setNewsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeCategory, setActiveCategory] = useState("All");
+  const [gdInsights, setGdInsights] = useState(null);
+  const [gdLoading, setGdLoading] = useState(true);
 
   useEffect(() => {
     // Load initial data
     fetchNews("All");
+    fetchGDInsights("All");
   }, []);
+
+  const fetchGDInsights = async (category) => {
+    setGdLoading(true);
+    try {
+      const res = await fetch(`/api/gd-insights?category=${category}`);
+      const data = await res.json();
+      setGdInsights(data);
+    } catch (err) {
+      console.error('GD insights error:', err);
+    } finally {
+      setGdLoading(false);
+    }
+  };
 
   const fetchNews = async (category) => {
     console.log('Fetching news for:', category);
@@ -57,6 +73,7 @@ export default function PulsePage() {
   const handleCategoryChange = (category) => {
     setActiveCategory(category);
     fetchNews(category);
+    fetchGDInsights(category);
   };
 
   const formatTimeAgo = (dateString) => {
@@ -142,6 +159,135 @@ export default function PulsePage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* GD Booster Section */}
+        {gdInsights && !gdLoading && (
+          <div className="mb-4">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-white font-bold text-lg">
+                🗣️ GD Booster
+              </h2>
+              <span className="bg-green-500/20 text-green-400 
+                text-xs px-2 py-1 rounded-full">
+                Daily • Refreshes 6AM
+              </span>
+            </div>
+
+            {/* Main Topic Card */}
+            <div className="bg-gradient-to-r from-purple-600/20 
+              to-blue-600/20 border border-purple-500/30 
+              rounded-2xl p-4 mb-3">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-purple-300 text-xs font-medium">
+                  TODAY'S TOPIC
+                </span>
+                <span className={`text-xs px-2 py-1 rounded-full
+                  ${gdInsights.difficulty === 'Easy' 
+                    ? 'bg-green-500/20 text-green-400'
+                    : gdInsights.difficulty === 'Hard'
+                    ? 'bg-red-500/20 text-red-400'
+                    : 'bg-yellow-500/20 text-yellow-400'}`}>
+                  {gdInsights.difficulty}
+                </span>
+              </div>
+              <h3 className="text-white font-bold text-base mb-1">
+                {gdInsights.gd_topic}
+              </h3>
+              <p className="text-gray-400 text-xs">
+                {gdInsights.why_trending}
+              </p>
+            </div>
+
+            {/* Pros and Cons */}
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              {/* Pros */}
+              <div className="bg-green-500/10 border border-green-500/20 
+                rounded-2xl p-3">
+                <p className="text-green-400 font-bold text-sm mb-2">
+                  ✅ Pros
+                </p>
+                {gdInsights.pros?.map((pro, i) => (
+                  <p key={i} className="text-gray-300 text-xs mb-1">
+                    • {pro}
+                  </p>
+                ))}
+              </div>
+              {/* Cons */}
+              <div className="bg-red-500/10 border border-red-500/20 
+                rounded-2xl p-3">
+                <p className="text-red-400 font-bold text-sm mb-2">
+                  ❌ Cons
+                </p>
+                {gdInsights.cons?.map((con, i) => (
+                  <p key={i} className="text-gray-300 text-xs mb-1">
+                    • {con}
+                  </p>
+                ))}
+              </div>
+            </div>
+
+            {/* Example Argument */}
+            <div className="bg-blue-500/10 border border-blue-500/20 
+              rounded-2xl p-4 mb-3">
+              <p className="text-blue-300 text-xs font-medium mb-2">
+                💬 Example Argument
+              </p>
+              <p className="text-white text-sm italic">
+                "{gdInsights.example_argument}"
+              </p>
+            </div>
+
+            {/* How to Start */}
+            <div className="bg-orange-500/10 border border-orange-500/20 
+              rounded-2xl p-4 mb-3">
+              <p className="text-orange-300 text-xs font-medium mb-2">
+                🚀 How to Start Speaking
+              </p>
+              <p className="text-white text-sm">
+                {gdInsights.how_to_start}
+              </p>
+            </div>
+
+            {/* Power Phrase */}
+            <div className="bg-yellow-500/10 border border-yellow-500/20 
+              rounded-2xl p-4 mb-3">
+              <p className="text-yellow-300 text-xs font-medium mb-2">
+                ⚡ Power Phrase
+              </p>
+              <p className="text-white text-sm font-medium italic">
+                "{gdInsights.power_phrase}"
+              </p>
+            </div>
+
+            {/* Key Facts */}
+            <div className="bg-white/5 rounded-2xl p-4 mb-3">
+              <p className="text-gray-300 text-xs font-medium mb-2">
+                📊 Key Facts to Use
+              </p>
+              {gdInsights.key_facts?.map((fact, i) => (
+                <p key={i} className="text-gray-400 text-xs mb-1">
+                  • {fact}
+                </p>
+              ))}
+            </div>
+
+            {/* Practice Button */}
+            <button 
+              onClick={() => window.location.href='/gd'}
+              className="w-full bg-purple-600 hover:bg-purple-700 
+                text-white font-bold py-3 rounded-2xl text-sm
+                transition-all active:scale-95">
+              🎯 Practice This GD Topic →
+            </button>
+          </div>
+        )}
+
+        {/* GD Loading skeleton */}
+        {gdLoading && (
+          <div className="h-96 bg-white/5 rounded-2xl 
+            animate-pulse mb-4"/>
         )}
 
         {/* Filter Tabs */}
