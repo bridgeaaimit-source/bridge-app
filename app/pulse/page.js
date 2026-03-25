@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { Home, Mic, Zap, Trophy, User, Plus, Filter, TrendingUp, X, RefreshCw, ExternalLink, Users, Calendar } from "lucide-react";
 
 const categories = ["All", "Marketing", "Finance", "HR", "Analytics", "Tech", "MBA"];
 
 export default function PulsePage() {
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [newsData, setNewsData] = useState(null);
   const [newsLoading, setNewsLoading] = useState(false);
@@ -15,10 +18,20 @@ export default function PulsePage() {
   const [gdLoading, setGdLoading] = useState(true);
 
   useEffect(() => {
-    // Load initial data
-    fetchNews("All");
-    fetchGDInsights("All");
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setLoading(false);
+    });
+    return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      // Load initial data
+      fetchNews("All");
+      fetchGDInsights("All");
+    }
+  }, [user]);
 
   const fetchGDInsights = async (category) => {
     setGdLoading(true);
@@ -103,6 +116,17 @@ export default function PulsePage() {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-white mb-4">BRIDGE PULSE</h1>
+          <p className="text-gray-400 mb-8">Please sign in to access placement insights</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
       {/* Navigation */}
@@ -121,7 +145,7 @@ export default function PulsePage() {
                 <TrendingUp className="w-5 h-5" />
               </button>
               <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                G
+                {user.email?.charAt(0).toUpperCase()}
               </div>
             </div>
           </div>
