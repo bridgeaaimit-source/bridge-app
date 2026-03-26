@@ -46,7 +46,7 @@ const actionCards = [
 ];
 
 export default function Dashboard() {
-  const [bridgeScore, setBridgeScore] = useState(742);
+  const [bridgeScore, setBridgeScore] = useState(null);
   const [greeting, setGreeting] = useState("");
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function Dashboard() {
     }
   }, []);
 
-  const scorePercentage = (bridgeScore / 1000) * 100;
+  const scorePercentage = bridgeScore ? (bridgeScore / 1000) * 100 : 0;
   const circumference = 2 * Math.PI * 45;
   const strokeDashoffset = circumference - (scorePercentage / 100) * circumference;
 
@@ -113,7 +113,7 @@ export default function Dashboard() {
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
-                    <div className="text-2xl font-bold">{bridgeScore}</div>
+                    <div className="text-2xl font-bold">{bridgeScore || "---"}</div>
                     <div className="text-xs text-purple-200">/1000</div>
                   </div>
                 </div>

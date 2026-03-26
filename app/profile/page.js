@@ -77,7 +77,7 @@ export default function ProfilePage() {
               <p className="text-sm text-gray-400">user@bridge.app</p>
               <div className="mt-2">
                 <span className="text-xs bg-purple-500/20 px-2 py-1 rounded-lg text-purple-300">
-                  BRIDGE Score: 742
+                  BRIDGE Score: {null || "---"}
                 </span>
               </div>
             </div>

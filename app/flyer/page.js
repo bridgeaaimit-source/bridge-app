@@ -29,8 +29,8 @@ const templates = [
 export default function FlyerPage() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState(templates[0]);
-  const [score, setScore] = useState("8.5");
-  const [bridgeScore, setBridgeScore] = useState("742");
+  const [score, setScore] = useState("");
+  const [bridgeScore, setBridgeScore] = useState("");
   const [streak, setStreak] = useState("5");
   const [isGenerating, setIsGenerating] = useState(false);
   const canvasRef = useRef(null);
@@ -276,7 +276,7 @@ export default function FlyerPage() {
                 value={score}
                 onChange={(e) => setScore(e.target.value)}
                 className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
-                placeholder="8.5"
+                placeholder="Your score"
               />
             </div>
           )}
@@ -289,7 +289,7 @@ export default function FlyerPage() {
                 value={bridgeScore}
                 onChange={(e) => setBridgeScore(e.target.value)}
                 className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
-                placeholder="742"
+                placeholder="Your BRIDGE Score"
               />
             </div>
           )}

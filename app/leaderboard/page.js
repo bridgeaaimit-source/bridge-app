@@ -14,7 +14,7 @@ const mockStudents = [
   { rank: 7, name: "Kavya Nair", college: "RVCE Bangalore", score: 821, badge: "📚 Knowledge Hub", streak: 12, avatar: "KN" },
   { rank: 8, name: "Arjun Mehta", college: "DTU Delhi", score: 809, badge: "🌟 Bright Mind", streak: 10, avatar: "AM" },
   { rank: 9, name: "Divya Goyal", college: "JNU Delhi", score: 798, badge: "🎯 Goal Getter", streak: 8, avatar: "DG" },
-  { rank: 10, name: "You", college: "Your College", score: 742, badge: "🔥 On Fire", streak: 5, avatar: "YU", isCurrentUser: true },
+  { rank: 10, name: "You", college: "Your College", score: null, badge: "🔥 On Fire", streak: 5, avatar: "YU", isCurrentUser: true },
 ];
 
 export default function LeaderboardPage() {
@@ -177,7 +177,7 @@ export default function LeaderboardPage() {
                 </div>
                 
                 <div className="text-right">
-                  <div className="font-bold text-lg">{student.score}</div>
+                  <div className="font-bold text-lg">{student.score || "---"}</div>
                   <div className="flex items-center gap-1 text-xs text-gray-400">
                     <Flame className="w-3 h-3 text-orange-500" />
                     {student.streak}

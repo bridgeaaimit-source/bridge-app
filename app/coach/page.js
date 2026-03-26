@@ -85,20 +85,20 @@ export default function CoachPage() {
         <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-4 mb-6" style={{ boxShadow: '0 10px 25px rgba(108, 99, 255, 0.3)' }}>
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-semibold">Today's Score</span>
-            <span className="text-2xl font-bold">8.5/10</span>
+            <span className="text-2xl font-bold">---/10</span>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="text-center">
               <div className="text-xs text-purple-200">Clarity</div>
-              <div className="text-sm font-bold">9/10</div>
+              <div className="text-sm font-bold">---/10</div>
             </div>
             <div className="text-center">
               <div className="text-xs text-purple-200">Fluency</div>
-              <div className="text-sm font-bold">8/10</div>
+              <div className="text-sm font-bold">---/10</div>
             </div>
             <div className="text-center">
               <div className="text-xs text-purple-200">Structure</div>
-              <div className="text-sm font-bold">8.5/10</div>
+              <div className="text-sm font-bold">---/10</div>
             </div>
           </div>
         </div>
