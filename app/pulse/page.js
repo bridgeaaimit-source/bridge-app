@@ -16,6 +16,8 @@ export default function PulsePage() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [gdInsights, setGdInsights] = useState(null);
   const [gdLoading, setGdLoading] = useState(true);
+  const [gdPracticeLoading, setGdPracticeLoading] = useState(false);
+  const [loadingArticle, setLoadingArticle] = useState('');
 
   useEffect(() => {
     // Load initial data
@@ -127,6 +129,42 @@ export default function PulsePage() {
     setActiveCategory(category);
     fetchNews(category);
     fetchGDInsights(category);
+  };
+
+  const handleGDPractice = async (article) => {
+    setGdPracticeLoading(true);
+    setLoadingArticle(article.title);
+    
+    try {
+      const res = await fetch('/api/gd-from-article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          article_title: article.title,
+          article_description: article.description,
+          placement_insight: article.placement_insight
+        })
+      });
+      
+      const gdData = await res.json();
+      
+      // Store in sessionStorage and redirect
+      sessionStorage.setItem('gd_topic', 
+        JSON.stringify(gdData));
+      window.location.href = '/gd';
+      
+    } catch (err) {
+      console.error('GD generation error:', err);
+      // Fallback - just go to GD with article title
+      sessionStorage.setItem('gd_topic', JSON.stringify({
+        gd_topic: article.title,
+        why_relevant: article.placement_insight
+      }));
+      window.location.href = '/gd';
+    } finally {
+      setGdPracticeLoading(false);
+      setLoadingArticle('');
+    }
   };
 
   const formatTimeAgo = (dateString) => {
@@ -441,9 +479,23 @@ export default function PulsePage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         {article.gd_topic && (
-                          <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-lg text-xs font-semibold">
-                            🗣️ GD Topic
-                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleGDPractice(article);
+                            }}
+                            disabled={gdPracticeLoading}
+                            className="bg-green-500/20 text-green-400 
+                              text-xs px-3 py-1 rounded-full border 
+                              border-green-500/30 active:scale-95 
+                              transition-all cursor-pointer
+                              hover:bg-green-500/30 disabled:opacity-50
+                              flex items-center gap-1">
+                            {gdPracticeLoading && loadingArticle === article.title
+                              ? '⏳ Preparing...'
+                              : '🗣️ Practice GD'
+                            }
+                          </button>
                         )}
                         <span className="text-yellow-400 text-sm">
                           ⭐ {article.relevance_score}/10
