@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { Home, Mic, Zap, Trophy, User, Edit, Languages, Lightbulb, Wand2 } from "lucide-react";
+import { Home, Mic, Zap, Trophy, User, Edit, Languages, Lightbulb, Wand2, ChevronLeft } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function CoachPage() {
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [rawAnswer, setRawAnswer] = useState("");
   const [improvedAnswer, setImprovedAnswer] = useState("");
   const [hinglishText, setHinglishText] = useState("");
@@ -14,20 +12,6 @@ export default function CoachPage() {
   const [isLoadingRewrite, setIsLoadingRewrite] = useState(false);
   const [isLoadingConvert, setIsLoadingConvert] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        document.cookie = "bridge_auth=; path=/; max-age=0; samesite=lax";
-        window.location.replace("/login");
-        return;
-      }
-      document.cookie = "bridge_auth=1; path=/; max-age=2592000; samesite=lax";
-      setIsCheckingAuth(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   const improveWithAI = async () => {
     if (!rawAnswer.trim()) return;
@@ -40,14 +24,14 @@ export default function CoachPage() {
         body: JSON.stringify({ mode: "rewrite", text: rawAnswer }),
       });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data?.error || "Could not improve answer right now.");
-      }
+      if (!response.ok) throw new Error(data.error || "Failed to improve answer");
       setImprovedAnswer(data.output || "");
+      toast.success("Answer improved successfully!");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Something went wrong. Please try again.";
       setErrorMessage(message);
+      toast.error(message);
     } finally {
       setIsLoadingRewrite(false);
     }
@@ -61,47 +45,41 @@ export default function CoachPage() {
       const response = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "hinglish_to_english", text: hinglishText }),
+        body: JSON.stringify({ mode: "hinglish", text: hinglishText }),
       });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data?.error || "Could not convert text right now.");
-      }
+      if (!response.ok) throw new Error(data.error || "Failed to convert text");
       setEnglishText(data.output || "");
+      toast.success("Converted to English successfully!");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Something went wrong. Please try again.";
       setErrorMessage(message);
+      toast.error(message);
     } finally {
       setIsLoadingConvert(false);
     }
   };
-
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500/30 border-t-purple-500 mx-auto mb-4"></div>
-          <div className="text-purple-400 font-semibold">Loading coach...</div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-white">
       <div className="max-w-md mx-auto px-6 py-6">
         
         {/* Header */}
-        <header className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <h1 className="text-2xl font-bold">Coach</h1>
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
-              <span className="text-sm">🎯</span>
-            </div>
+        <header className="flex items-center gap-3 mb-6">
+          <button 
+            onClick={() => window.history.back()}
+            className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-3">
+            <Wand2 className="w-8 h-8 text-purple-400" />
+            <h1 className="text-2xl font-bold">AI Coach</h1>
           </div>
-          <p className="text-gray-400 text-sm">Your AI communication assistant</p>
         </header>
+
+        {/* AI Rewrite Section */}
 
         {/* Today's Score Card */}
         <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-4 mb-6" style={{ boxShadow: '0 10px 25px rgba(108, 99, 255, 0.3)' }}>

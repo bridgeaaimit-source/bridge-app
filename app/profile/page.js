@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase";
-import { Home, Mic, Zap, Trophy, User, Edit3, LogOut, Target, Award, TrendingUp, Calendar } from "lucide-react";
+import { Home, Mic, Zap, Trophy, User, Edit3, LogOut, Target, Award, TrendingUp, Calendar, ChevronLeft } from "lucide-react";
+import toast from "react-hot-toast";
 
 const domainOptions = ["IT", "Marketing", "Finance", "MBA"];
 const companyOptions = ["TCS", "Infosys", "Wipro", "Accenture", "Capgemini", "Deloitte"];
@@ -18,49 +16,19 @@ const achievements = [
 ];
 
 export default function ProfilePage() {
-  const router = useRouter();
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [user, setUser] = useState(null);
   const [collegeName, setCollegeName] = useState("VIT Vellore");
   const [domain, setDomain] = useState("IT");
   const [targets, setTargets] = useState(["TCS", "Infosys", "Amazon"]);
   const [isEditing, setIsEditing] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (!currentUser) {
-        document.cookie = "bridge_auth=; path=/; max-age=0; samesite=lax";
-        router.replace("/login");
-        return;
-      }
-      setUser(currentUser);
-      document.cookie = "bridge_auth=1; path=/; max-age=2592000; samesite=lax";
-      setIsCheckingAuth(false);
-    });
-
-    return () => unsubscribe();
-  }, [router]);
+  const handleSave = () => {
+    setIsEditing(false);
+    toast.success("Profile updated successfully!");
+  };
 
   const toggleTarget = (company) => {
     setTargets((prev) => (prev.includes(company) ? prev.filter((c) => c !== company) : [...prev, company]));
   };
-
-  const logout = async () => {
-    await signOut(auth);
-    document.cookie = "bridge_auth=; path=/; max-age=0; samesite=lax";
-    router.replace("/login");
-  };
-
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500/30 border-t-purple-500 mx-auto mb-4"></div>
-          <div className="text-purple-400 font-semibold">Loading profile...</div>
-        </div>
-      </div>
-    );
-  }
 
   const skills = [
     { name: "Technical", level: 85 },
@@ -74,11 +42,20 @@ export default function ProfilePage() {
       <div className="max-w-md mx-auto px-6 py-6">
         
         {/* Header */}
-        <header className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold">Profile</h1>
+        <header className="flex items-center gap-3 mb-6">
+          <button 
+            onClick={() => window.history.back()}
+            className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-3">
+            <User className="w-8 h-8 text-purple-400" />
+            <h1 className="text-2xl font-bold">Profile</h1>
+          </div>
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+            className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors ml-auto"
           >
             <Edit3 className="w-5 h-5" />
           </button>
@@ -88,20 +65,16 @@ export default function ProfilePage() {
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-6">
           <div className="flex items-center gap-4">
             <div className="relative">
-              {user?.photoURL ? (
-                <img src={user.photoURL} alt="User" className="w-16 h-16 rounded-full border-2 border-purple-400" />
-              ) : (
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                  {(user?.displayName || "U").slice(0, 1)}
-                </div>
-              )}
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                U
+              </div>
               <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-xs">
-                🏆
+                
               </div>
             </div>
             <div className="flex-1">
-              <h2 className="font-semibold text-lg">{user?.displayName || "BRIDGE User"}</h2>
-              <p className="text-sm text-gray-400">{user?.email || ""}</p>
+              <h2 className="font-semibold text-lg">BRIDGE User</h2>
+              <p className="text-sm text-gray-400">user@bridge.app</p>
               <div className="mt-2">
                 <span className="text-xs bg-purple-500/20 px-2 py-1 rounded-lg text-purple-300">
                   BRIDGE Score: 742

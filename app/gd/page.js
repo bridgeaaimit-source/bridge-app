@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronLeft, Users, MessageSquare } from "lucide-react";
+import toast from "react-hot-toast";
 
 const topics = [
   { id: 1, title: "AI in Education: Boon or Risk?", participants: 18 },
@@ -40,26 +42,36 @@ export default function GDPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white px-4 py-4 text-slate-900">
-      <div className="mx-auto w-full max-w-[390px] rounded-[28px] border border-slate-100 bg-white shadow-[0_12px_36px_rgba(15,23,42,0.08)]">
-        <header className="px-4 pb-2 pt-5">
-          <h1 className="text-xl font-black tracking-tight text-[#2B5CE6]">GD Practice 🗣️</h1>
-          <p className="mt-1 text-sm text-slate-500">Join discussions and sharpen group communication.</p>
+    <div className="min-h-screen bg-[#0A0A0F] text-white">
+      <div className="max-w-md mx-auto px-6 py-6">
+        
+        {/* Header */}
+        <header className="flex items-center gap-3 mb-6">
+          <button 
+            onClick={() => window.history.back()}
+            className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-3">
+            <Users className="w-8 h-8 text-purple-400" />
+            <h1 className="text-2xl font-bold">GD Battle</h1>
+          </div>
         </header>
 
-        <main className="space-y-4 px-4 pb-6">
+        <main className="space-y-4">
           {!selectedTopic && (
             <section className="space-y-3">
               {topics.map((topic) => (
                 <article
                   key={topic.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_6px_16px_rgba(15,23,42,0.06)]"
+                  className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm p-4"
                 >
-                  <p className="text-sm font-semibold text-slate-900">{topic.title}</p>
-                  <p className="mt-1 text-xs text-slate-500">{topic.participants} participants active</p>
+                  <p className="text-sm font-semibold text-white">{topic.title}</p>
+                  <p className="mt-1 text-xs text-gray-400">{topic.participants} participants active</p>
                   <button
                     onClick={() => joinDiscussion(topic)}
-                    className="mt-3 rounded-xl bg-[#2B5CE6] px-4 py-2 text-sm font-semibold text-white"
+                    className="mt-3 rounded-xl bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
                   >
                     Join Discussion
                   </button>
