@@ -10,9 +10,6 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
-    "@capacitor/android": "^8.3.0",
-    "@capacitor/cli": "^8.3.0",
-    "@capacitor/core": "^8.3.0",
     "canvas-confetti": "^1.9.4",
     "firebase": "^12.11.0",
     "lucide-react": "^1.0.1",

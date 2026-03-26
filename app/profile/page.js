@@ -30,6 +30,13 @@ export default function ProfilePage() {
     setTargets((prev) => (prev.includes(company) ? prev.filter((c) => c !== company) : [...prev, company]));
   };
 
+  const logout = () => {
+    localStorage.removeItem('userToken');
+    localStorage.removeItem('userEmail');
+    toast.success("Logged out successfully!");
+    window.location.href = '/login';
+  };
+
   const skills = [
     { name: "Technical", level: 85 },
     { name: "Communication", level: 70 },
@@ -221,11 +228,7 @@ export default function ProfilePage() {
 
         {/* Logout Button */}
         <button
-          onClick={() => {
-            localStorage.removeItem('bridge_user');
-            toast.success('Logged out successfully');
-            window.location.href = '/login';
-          }}
+          onClick={logout}
           className="w-full py-3 bg-red-500/20 border border-red-500/30 rounded-xl font-semibold text-red-400 hover:bg-red-500/30 transition-all flex items-center justify-center gap-2 mb-20"
         >
           <LogOut className="w-4 h-4" />
