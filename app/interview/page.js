@@ -3,8 +3,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { ChevronLeft, Info, Send, RotateCcw, Share2, Home, Mic, Zap, Trophy, User } from "lucide-react";
 import Link from "next/link";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import confetti from "canvas-confetti";
 
 const domains = [
@@ -17,7 +15,6 @@ const domains = [
 ];
 
 export default function InterviewPage() {
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [step, setStep] = useState(1);
   const [interviewMode, setInterviewMode] = useState("text"); // "text" or "voice"
   const [selectedDomain, setSelectedDomain] = useState("Software Engineer");
@@ -35,20 +32,6 @@ export default function InterviewPage() {
   const [isAnalyzingAnswer, setIsAnalyzingAnswer] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [browserSupport, setBrowserSupport] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        document.cookie = "bridge_auth=; path=/; max-age=0; samesite=lax";
-        window.location.replace("/login");
-        return;
-      }
-      document.cookie = "bridge_auth=1; path=/; max-age=2592000; samesite=lax";
-      setIsCheckingAuth(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   useEffect(() => {
     // Check browser support for Web Speech API
@@ -356,17 +339,6 @@ export default function InterviewPage() {
       alert("Result copied to clipboard!");
     }
   };
-
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500/30 border-t-purple-500 mx-auto mb-4"></div>
-          <div className="text-purple-400 font-semibold">Loading interview...</div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-white">

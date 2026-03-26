@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase";
 import { Home, Mic, Zap, Trophy, User, Bell, Flame, Briefcase, MessageSquare, TrendingUp, Target, Brain } from "lucide-react";
 
 const actionCards = [
@@ -47,34 +44,7 @@ const actionCards = [
 ];
 
 export default function Dashboard() {
-  const router = useRouter();
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [bridgeScore, setBridgeScore] = useState(742);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        document.cookie = "bridge_auth=; path=/; max-age=0; samesite=lax";
-        router.replace("/login");
-        return;
-      }
-      document.cookie = "bridge_auth=1; path=/; max-age=2592000; samesite=lax";
-      setIsCheckingAuth(false);
-    });
-
-    return () => unsubscribe();
-  }, [router]);
-
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500/30 border-t-purple-500 mx-auto mb-4"></div>
-          <div className="text-purple-400 font-semibold">Loading dashboard...</div>
-        </div>
-      </div>
-    );
-  }
 
   const scorePercentage = (bridgeScore / 1000) * 100;
   const circumference = 2 * Math.PI * 45;
