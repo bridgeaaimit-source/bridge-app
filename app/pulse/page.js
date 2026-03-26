@@ -181,7 +181,7 @@ export default function PulsePage() {
   };
 
   const currentData = newsData;
-  const gdTopics = currentData?.articles?.filter(a => a.gd_topic) || [];
+  const gdTopics = currentData?.articles?.filter(a => a.gd_topic === true) || [];
 
   if (loading) {
     return (
@@ -478,7 +478,7 @@ export default function PulsePage() {
                     {/* Bottom Row */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {article.gd_topic && (
+                        {article.gd_topic === true && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();

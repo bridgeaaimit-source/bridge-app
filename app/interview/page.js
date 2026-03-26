@@ -35,16 +35,81 @@ export default function InterviewPage() {
   const [isAnalyzingAnswer, setIsAnalyzingAnswer] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [browserSupport, setBrowserSupport] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(true);
 
   useEffect(() => {
     // Check browser support for Web Speech API
     if (typeof window !== 'undefined' && !('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       setBrowserSupport(false);
     }
+    
+    // Load voices for TTS
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+    
+    // Cleanup TTS on unmount
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, []);
+
+  // Auto-speak when new question appears
+  useEffect(() => {
+    if (questions.length > 0 && currentQuestionIndex < questions.length && autoSpeak) {
+      const currentQuestion = questions[currentQuestionIndex];
+      // Small delay so UI renders first
+      setTimeout(() => speakQuestion(currentQuestion), 500);
+    }
+  }, [currentQuestionIndex, questions, autoSpeak]);
+
+  const speakQuestion = (text) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Voice settings for professional interviewer feel
+    utterance.lang = 'en-IN'; // Indian English
+    utterance.rate = 0.9;     // Slightly slower = clearer
+    utterance.pitch = 1.0;    // Natural pitch
+    utterance.volume = 1.0;   // Full volume
+    
+    // Try to find a good voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(v => 
+      v.lang === 'en-IN' || 
+      v.lang === 'en-GB' ||
+      v.name.includes('Google') ||
+      v.name.includes('Microsoft')
+    );
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+    
+    // States
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    
+    window.speechSynthesis.speak(utterance);
+  };
 
   const startRecording = () => {
     if (!browserSupport) return;
+
+    // Stop TTS when recording starts
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognitionInstance = new SpeechRecognition();
@@ -353,7 +418,13 @@ export default function InterviewPage() {
           <div className="text-center flex-1">
             <h1 className="text-xl font-bold">Mock Interview</h1>
           </div>
-          <div className="w-10"></div>
+          <div className="w-10 flex items-center justify-center">
+            {typeof window !== 'undefined' && 'speechSynthesis' in window ? (
+              <span className="text-purple-400" title="Text-to-Speech Available">🔊</span>
+            ) : (
+              <span className="text-gray-500" title="Use Chrome for best experience">🔕</span>
+            )}
+          </div>
         </header>
 
           {/* Step Indicator */}
@@ -486,11 +557,53 @@ export default function InterviewPage() {
                 />
               </div>
 
-              <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 mb-6" style={{ boxShadow: '0 20px 40px rgba(108, 99, 255, 0.3)' }}>
+              <div className={`bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 mb-6 ${isSpeaking ? 'border border-purple-500 shadow-purple-500/30 shadow-lg' : ''}`} style={{ boxShadow: '0 20px 40px rgba(108, 99, 255, 0.3)' }}>
                 <div className="text-sm text-purple-200 mb-2">Current prompt</div>
                 <h3 className="text-lg font-semibold leading-relaxed">
                   {currentQuestion || "Loading your interview question..."}
                 </h3>
+                
+                {/* TTS Controls */}
+                <div className="flex items-center gap-2 mt-3">
+                  
+                  {/* Speak button */}
+                  <button
+                    onClick={() => isSpeaking 
+                      ? window.speechSynthesis.cancel() 
+                      : speakQuestion(currentQuestion)
+                    }
+                    className={`flex items-center gap-2 px-3 py-1.5 
+                      rounded-full text-xs font-medium transition-all
+                      ${isSpeaking 
+                        ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                        : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                      }`}>
+                    {isSpeaking ? (
+                      <>
+                        <span className="w-2 h-2 bg-red-400 rounded-full 
+                          animate-pulse"/>
+                        Stop Speaking
+                      </>
+                    ) : (
+                      <>
+                        🔊 Hear Question
+                      </>
+                    )}
+                  </button>
+
+                  {/* Auto-speak toggle */}
+                  <button
+                    onClick={() => setAutoSpeak(!autoSpeak)}
+                    className={`px-3 py-1.5 rounded-full text-xs 
+                      font-medium transition-all border
+                      ${autoSpeak 
+                        ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                        : 'bg-white/10 text-gray-400 border-white/20'
+                      }`}>
+                    {autoSpeak ? '🔔 Auto-speak ON' : '🔕 Auto-speak OFF'}
+                  </button>
+
+                </div>
               </div>
 
               {/* Microphone Button */}
@@ -570,11 +683,53 @@ export default function InterviewPage() {
                 />
               </div>
 
-              <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 mb-6" style={{ boxShadow: '0 20px 40px rgba(108, 99, 255, 0.3)' }}>
+              <div className={`bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 mb-6 ${isSpeaking ? 'border border-purple-500 shadow-purple-500/30 shadow-lg' : ''}`} style={{ boxShadow: '0 20px 40px rgba(108, 99, 255, 0.3)' }}>
                 <div className="text-sm text-purple-200 mb-2">Current prompt</div>
                 <h3 className="text-lg font-semibold leading-relaxed">
                   {currentQuestion || "Loading your interview question..."}
                 </h3>
+                
+                {/* TTS Controls */}
+                <div className="flex items-center gap-2 mt-3">
+                  
+                  {/* Speak button */}
+                  <button
+                    onClick={() => isSpeaking 
+                      ? window.speechSynthesis.cancel() 
+                      : speakQuestion(currentQuestion)
+                    }
+                    className={`flex items-center gap-2 px-3 py-1.5 
+                      rounded-full text-xs font-medium transition-all
+                      ${isSpeaking 
+                        ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                        : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                      }`}>
+                    {isSpeaking ? (
+                      <>
+                        <span className="w-2 h-2 bg-red-400 rounded-full 
+                          animate-pulse"/>
+                        Stop Speaking
+                      </>
+                    ) : (
+                      <>
+                        🔊 Hear Question
+                      </>
+                    )}
+                  </button>
+
+                  {/* Auto-speak toggle */}
+                  <button
+                    onClick={() => setAutoSpeak(!autoSpeak)}
+                    className={`px-3 py-1.5 rounded-full text-xs 
+                      font-medium transition-all border
+                      ${autoSpeak 
+                        ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                        : 'bg-white/10 text-gray-400 border-white/20'
+                      }`}>
+                    {autoSpeak ? '🔔 Auto-speak ON' : '🔕 Auto-speak OFF'}
+                  </button>
+
+                </div>
               </div>
 
               <div className="mb-4">

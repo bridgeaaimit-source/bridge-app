@@ -27,6 +27,8 @@ export default function SmartInterviewPage() {
   const [showEndModal, setShowEndModal] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [tooFewAnswers, setTooFewAnswers] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(true);
   
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -36,6 +38,14 @@ export default function SmartInterviewPage() {
 
   // Voice recognition setup
   useEffect(() => {
+    // Load voices for TTS
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+    
     if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
@@ -63,7 +73,56 @@ export default function SmartInterviewPage() {
 
       setRecognition(recognition);
     }
+    
+    // Cleanup TTS on unmount
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, []);
+
+  // Auto-speak when new question appears
+  useEffect(() => {
+    if (currentQuestion && autoSpeak && !isTyping) {
+      // Small delay so UI renders first
+      setTimeout(() => speakQuestion(currentQuestion), 500);
+    }
+  }, [currentQuestion, autoSpeak, isTyping]);
+
+  const speakQuestion = (text) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Voice settings for professional interviewer feel
+    utterance.lang = 'en-IN'; // Indian English
+    utterance.rate = 0.9;     // Slightly slower = clearer
+    utterance.pitch = 1.0;    // Natural pitch
+    utterance.volume = 1.0;   // Full volume
+    
+    // Try to find a good voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(v => 
+      v.lang === 'en-IN' || 
+      v.lang === 'en-GB' ||
+      v.name.includes('Google') ||
+      v.name.includes('Microsoft')
+    );
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+    
+    // States
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    
+    window.speechSynthesis.speak(utterance);
+  };
 
   // Auto scroll to latest message
   useEffect(() => {
