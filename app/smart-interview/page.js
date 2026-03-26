@@ -327,6 +327,11 @@ export default function SmartInterviewPage() {
   };
 
   const startRecording = () => {
+    // Stop TTS when recording starts
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    
     if (recognition) {
       recognition.start();
       setIsRecording(true);
@@ -366,16 +371,25 @@ export default function SmartInterviewPage() {
       <div className="min-h-screen bg-[#0A0A0F] text-white">
         <div className="max-w-md mx-auto px-6 py-6">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <button 
-              onClick={() => window.history.back()}
-              className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <Brain className="w-8 h-8 text-purple-400" />
-              <h1 className="text-2xl font-bold">Smart Interview</h1>
+              <button 
+                onClick={() => window.history.back()}
+                className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-3">
+                <Brain className="w-8 h-8 text-purple-400" />
+                <h1 className="text-2xl font-bold">Smart Interview</h1>
+              </div>
+            </div>
+            <div className="w-10 flex items-center justify-center">
+              {typeof window !== 'undefined' && 'speechSynthesis' in window ? (
+                <span className="text-purple-400" title="Text-to-Speech Available">🔊</span>
+              ) : (
+                <span className="text-gray-500" title="Use Chrome for best experience">🔕</span>
+              )}
             </div>
           </div>
 
@@ -582,7 +596,7 @@ export default function SmartInterviewPage() {
               <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-sm font-bold">
                 AI
               </div>
-              <div className="flex-1 bg-purple-500/20 backdrop-blur-sm rounded-2xl p-4 border border-purple-500/30">
+              <div className={`flex-1 bg-purple-500/20 backdrop-blur-sm rounded-2xl p-4 border border-purple-500/30 ${isSpeaking ? 'border border-purple-500 shadow-purple-500/30 shadow-lg' : ''}`}>
                 {isTyping ? (
                   <div className="flex gap-1">
                     <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" />
@@ -590,7 +604,51 @@ export default function SmartInterviewPage() {
                     <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                   </div>
                 ) : (
-                  <p className="text-white">{currentQuestion}</p>
+                  <>
+                    <p className="text-white mb-3">{currentQuestion}</p>
+                    
+                    {/* TTS Controls */}
+                    <div className="flex items-center gap-2">
+                      
+                      {/* Speak button */}
+                      <button
+                        onClick={() => isSpeaking 
+                          ? window.speechSynthesis.cancel() 
+                          : speakQuestion(currentQuestion)
+                        }
+                        className={`flex items-center gap-2 px-3 py-1.5 
+                          rounded-full text-xs font-medium transition-all
+                          ${isSpeaking 
+                            ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                            : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                          }`}>
+                        {isSpeaking ? (
+                          <>
+                            <span className="w-2 h-2 bg-red-400 rounded-full 
+                              animate-pulse"/>
+                            Stop Speaking
+                          </>
+                        ) : (
+                          <>
+                            🔊 Hear Question
+                          </>
+                        )}
+                      </button>
+
+                      {/* Auto-speak toggle */}
+                      <button
+                        onClick={() => setAutoSpeak(!autoSpeak)}
+                        className={`px-3 py-1.5 rounded-full text-xs 
+                          font-medium transition-all border
+                          ${autoSpeak 
+                            ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                            : 'bg-white/10 text-gray-400 border-white/20'
+                          }`}>
+                        {autoSpeak ? '🔔 Auto-speak ON' : '🔕 Auto-speak OFF'}
+                      </button>
+
+                    </div>
+                  </>
                 )}
               </div>
             </div>

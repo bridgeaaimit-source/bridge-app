@@ -580,8 +580,7 @@ export default function InterviewPage() {
                       }`}>
                     {isSpeaking ? (
                       <>
-                        <span className="w-2 h-2 bg-red-400 rounded-full 
-                          animate-pulse"/>
+                        <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse"/>
                         Stop Speaking
                       </>
                     ) : (
@@ -706,8 +705,7 @@ export default function InterviewPage() {
                       }`}>
                     {isSpeaking ? (
                       <>
-                        <span className="w-2 h-2 bg-red-400 rounded-full 
-                          animate-pulse"/>
+                        <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse"/>
                         Stop Speaking
                       </>
                     ) : (

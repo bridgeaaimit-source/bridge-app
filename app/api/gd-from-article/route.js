@@ -1,20 +1,26 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { initializeApp, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import { credential } from 'firebase-admin/credential';
+import * as admin from 'firebase-admin';
 
-if (!getApps().length) {
-  initializeApp({
-    credential: credential.cert({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY
-        ?.replace(/\\n/g, '\n')
-    })
-  });
+// Initialize Firebase Admin only if credentials are available
+let db = null;
+try {
+  if (!admin.apps.length && 
+      process.env.FIREBASE_CLIENT_EMAIL && 
+      process.env.FIREBASE_PRIVATE_KEY && 
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY
+          ?.replace(/\\n/g, '\n')
+      })
+    });
+  }
+  db = admin.firestore();
+} catch (error) {
+  console.warn('Firebase Admin initialization failed:', error.message);
 }
-
-const db = getFirestore();
 
 export async function POST(request) {
   const { article_title, article_description, 
@@ -27,17 +33,19 @@ export async function POST(request) {
     .substring(0, 50);
 
   try {
-    // Check if GD already exists for this article
-    const docRef = db.collection('gd_from_articles')
-      .doc(cacheKey);
-    const doc = await docRef.get();
+    // Check if GD already exists for this article (only if Firebase is available)
+    if (db) {
+      const docRef = db.collection('gd_from_articles')
+        .doc(cacheKey);
+      const doc = await docRef.get();
 
-    if (doc.exists) {
-      console.log('Serving cached GD for:', cacheKey);
-      return Response.json({
-        ...doc.data(),
-        cached: true
-      });
+      if (doc.exists) {
+        console.log('Serving cached GD for:', cacheKey);
+        return Response.json({
+          ...doc.data(),
+          cached: true
+        });
+      }
     }
 
     // Generate fresh GD content with Claude
@@ -102,13 +110,17 @@ Return ONLY valid JSON, no markdown:
 
     const gdContent = JSON.parse(text);
 
-    // Cache in Firestore permanently
-    await docRef.set({
-      ...gdContent,
-      article_title,
-      generated_at: new Date().toISOString(),
-      cache_key: cacheKey
-    });
+    // Cache in Firestore permanently (only if Firebase is available)
+    if (db) {
+      const docRef = db.collection('gd_from_articles')
+        .doc(cacheKey);
+      await docRef.set({
+        ...gdContent,
+        article_title,
+        generated_at: new Date().toISOString(),
+        cache_key: cacheKey
+      });
+    }
 
     console.log('Fresh GD generated for:', cacheKey);
 
