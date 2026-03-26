@@ -1,6 +1,9 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause } from "lucide-react";
+import PageLayout from "@/components/PageLayout";
+import BackButton from "@/components/BackButton";
+import toast from "react-hot-toast";
 
 export default function SmartInterviewPage() {
   const [stage, setStage] = useState('setup'); // 'setup' | 'interviewing' | 'feedback'
@@ -23,6 +26,9 @@ export default function SmartInterviewPage() {
   const [questionNumber, setQuestionNumber] = useState(1);
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showEndModal, setShowEndModal] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [tooFewAnswers, setTooFewAnswers] = useState(false);
   
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -97,12 +103,9 @@ export default function SmartInterviewPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'init',
-          resume_base64: resumeBase64,
-          resume_text: resumeText,
-          job_role: jobRole,
-          jd: jobDescription,
-          round: round
+          action: 'start',
+          domain: jobRole,
+          count: 5
         })
       });
 
@@ -159,14 +162,10 @@ export default function SmartInterviewPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'continue',
-          resume_text: resumeText,
-          resume_base64: resumeBase64,
-          job_role: jobRole,
-          jd: jobDescription,
-          round: round,
-          conversation_history: newHistory,
-          last_answer: answerToSubmit
+          action: 'analyze',
+          question: currentQuestion,
+          answer: answerToSubmit.trim(),
+          domain: jobRole
         })
       });
 
@@ -241,6 +240,35 @@ export default function SmartInterviewPage() {
     }
   };
 
+  const handleConfirmEnd = async () => {
+    const userAnswerCount = conversationHistory.length;
+    if (userAnswerCount < 2) {
+      setTooFewAnswers(true);
+      return;
+    }
+    setTooFewAnswers(false);
+    setShowEndModal(false);
+    setIsEvaluating(true);
+    try {
+      const response = await fetch('/api/smart-interview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'evaluate',
+          domain: jobRole,
+          conversation: conversationHistory,
+        }),
+      });
+      const data = await response.json();
+      setFeedback(data);
+      setStage('feedback');
+    } catch (error) {
+      console.error('Evaluation error:', error);
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+
   const startRecording = () => {
     if (recognition) {
       recognition.start();
@@ -278,16 +306,11 @@ export default function SmartInterviewPage() {
   // SETUP SCREEN
   if (stage === 'setup') {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] text-white">
-        {/* Header */}
-        <div className="max-w-md mx-auto px-6 py-6">
+      <PageLayout>
+        <div className="px-6 py-6">
+          {/* Header */}
           <div className="flex items-center gap-3 mb-6">
-            <button 
-              onClick={() => window.history.back()}
-              className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+            <BackButton />
             <div className="flex items-center gap-3">
               <Brain className="w-8 h-8 text-purple-400" />
               <h1 className="text-2xl font-bold">Smart Interview</h1>
@@ -438,17 +461,19 @@ export default function SmartInterviewPage() {
           </button>
         </div>
       </div>
-    );
-  }
+    </PageLayout>
+  );
+}
 
   // INTERVIEW SCREEN
   if (stage === 'interviewing') {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] text-white flex flex-col">
-        {/* Header */}
-        <div className="max-w-md mx-auto w-full px-6 py-4 border-b border-white/10">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-medium text-purple-400">{round}</div>
+      <PageLayout>
+        <div className="flex flex-col">
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-white/10">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium text-purple-400">{round}</div>
             <div className="text-sm text-gray-400">Q{questionNumber} of {maxQuestions}</div>
             <button
               onClick={endInterview}
@@ -567,6 +592,13 @@ export default function SmartInterviewPage() {
                 >
                   Submit Answer
                 </button>
+                <button
+                  onClick={() => setShowEndModal(true)}
+                  className="mt-2 w-full rounded-2xl border px-4 py-3 text-sm font-semibold transition"
+                  style={{ borderColor: 'rgba(255,107,107,0.4)', color: '#FF6B6B', background: 'rgba(255,107,107,0.08)' }}
+                >
+                  End Interview
+                </button>
               </div>
             </div>
           )}
@@ -576,10 +608,14 @@ export default function SmartInterviewPage() {
   }
 
   // FEEDBACK SCREEN
-  if (stage === 'feedback' && feedback) {
+  if (stage === 'feedback') {
+    if (!feedback) {
+      setStage('setup');
+      return null;
+    }
     return (
-      <div className="min-h-screen bg-[#0A0A0F] text-white">
-        <div className="max-w-md mx-auto px-6 py-6">
+      <PageLayout>
+        <div className="px-6 py-6">
           {/* Header */}
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold mb-2">Interview Complete</h1>
@@ -611,7 +647,9 @@ export default function SmartInterviewPage() {
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 mb-6">
             <div className="text-center">
               <div className="text-sm text-gray-400 mb-2">Overall Score</div>
-              <div className="text-3xl font-bold text-purple-400">{feedback.overall_score}/10</div>
+              <div className="text-3xl font-bold text-purple-400">
+              {feedback.overall_score === 0 ? '—' : feedback.overall_score} / 10
+            </div>
             </div>
           </div>
 
@@ -666,17 +704,25 @@ export default function SmartInterviewPage() {
             <div className="bg-green-500/10 backdrop-blur-sm rounded-2xl p-4 border border-green-500/30">
               <h4 className="text-sm font-semibold text-green-400 mb-2">Strengths</h4>
               <ul className="space-y-1">
-                {feedback.strengths.map((strength, i) => (
-                  <li key={i} className="text-xs text-gray-300">• {strength}</li>
-                ))}
+                {feedback.strengths && feedback.strengths.length > 0 ? (
+                  feedback.strengths.map((strength, i) => (
+                    <li key={i} className="text-xs text-gray-300">• {strength}</li>
+                  ))
+                ) : (
+                  <p className="text-xs text-gray-400">No specific strengths noted.</p>
+                )}
               </ul>
             </div>
             <div className="bg-red-500/10 backdrop-blur-sm rounded-2xl p-4 border border-red-500/30">
               <h4 className="text-sm font-semibold text-red-400 mb-2">Weaknesses</h4>
               <ul className="space-y-1">
-                {feedback.weaknesses.map((weakness, i) => (
-                  <li key={i} className="text-xs text-gray-300">• {weakness}</li>
-                ))}
+                {feedback.weaknesses && feedback.weaknesses.length > 0 ? (
+                  feedback.weaknesses.map((weakness, i) => (
+                    <li key={i} className="text-xs text-gray-300">• {weakness}</li>
+                  ))
+                ) : (
+                  <p className="text-xs text-gray-400">No improvements noted.</p>
+                )}
               </ul>
             </div>
           </div>
@@ -710,7 +756,18 @@ export default function SmartInterviewPage() {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            <button className="w-full py-3 bg-purple-600 text-white font-bold rounded-2xl transition-all hover:bg-purple-700">
+            <button
+              onClick={() => {
+                const text = `I scored ${feedback?.overall_score}/10 on my AI Mock Interview on BRIDGE! 🚀\nClarity: ${feedback?.scores?.clarity}/10 | Confidence: ${feedback?.scores?.confidence}/10 | Content: ${feedback?.scores?.content}/10\nTry it: https://bridge-app-blue.vercel.app`;
+                if (navigator.share) {
+                  navigator.share({ title: 'My BRIDGE Interview Score', text });
+                } else {
+                  navigator.clipboard.writeText(text);
+                  alert('Result copied to clipboard!');
+                }
+              }}
+              className="w-full py-3 bg-purple-600 text-white font-bold rounded-2xl transition-all hover:bg-purple-700"
+            >
               Share Result
             </button>
             <button 
@@ -724,9 +781,65 @@ export default function SmartInterviewPage() {
             </button>
           </div>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
-  return null;
+  // Modal and loading states
+  return (
+    <>
+      {showEndModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)' }}>
+          <div className="w-full max-w-sm rounded-2xl p-6 flex flex-col gap-4"
+            style={{ background: '#13131A', border: '1px solid rgba(108,99,255,0.3)' }}>
+            <div className="flex justify-center">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center"
+                style={{ background: 'rgba(255,107,107,0.15)', border: '1px solid rgba(255,107,107,0.4)' }}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="none"
+                  viewBox="0 0 24 24" stroke="#FF6B6B" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round"
+                    d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-center text-lg font-bold text-white">End the Interview?</h2>
+            <p className="text-center text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              Your progress will be evaluated based on answers given so far.
+            </p>
+            {tooFewAnswers && (
+              <div className="rounded-xl px-4 py-3 text-center text-sm"
+                style={{ background: 'rgba(255,107,107,0.1)', border: '1px solid rgba(255,107,107,0.3)', color: '#FF6B6B' }}>
+                Please answer at least 2 questions to get meaningful feedback.
+              </div>
+            )}
+            <div className="flex flex-col gap-3 mt-2">
+              <button
+                onClick={() => { setShowEndModal(false); setTooFewAnswers(false); }}
+                className="w-full py-3 rounded-xl font-semibold text-sm"
+                style={{ background: 'rgba(108,99,255,0.15)', border: '1px solid rgba(108,99,255,0.4)', color: '#6C63FF' }}>
+                Continue Interview
+              </button>
+              <button
+                onClick={handleConfirmEnd}
+                className="w-full py-3 rounded-xl font-semibold text-sm"
+                style={{ background: 'rgba(255,107,107,0.15)', border: '1px solid rgba(255,107,107,0.4)', color: '#FF6B6B' }}>
+                End & Get Feedback
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isEvaluating && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4"
+          style={{ background: 'rgba(10,10,15,0.95)' }}>
+          <div className="w-12 h-12 rounded-full border-4 animate-spin"
+            style={{ borderColor: 'rgba(108,99,255,0.3)', borderTopColor: '#6C63FF' }} />
+          <p className="text-white font-semibold">Evaluating your interview...</p>
+          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Claude is analyzing your answers</p>
+        </div>
+      )}
+    </>
+  );
 }

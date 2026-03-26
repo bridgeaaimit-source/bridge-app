@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Home, Mic, Zap, Trophy, User, Bell, Flame, Briefcase, MessageSquare, TrendingUp, Target, Brain } from "lucide-react";
+import PageLayout from "@/components/PageLayout";
+import toast from "react-hot-toast";
 
 const actionCards = [
   {
@@ -45,32 +47,35 @@ const actionCards = [
 
 export default function Dashboard() {
   const [bridgeScore, setBridgeScore] = useState(742);
+  const [greeting, setGreeting] = useState("");
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) {
+      setGreeting("Good morning! 🌅");
+    } else if (hour < 17) {
+      setGreeting("Good afternoon! ☀️");
+    } else {
+      setGreeting("Good evening! 🌙");
+    }
+  }, []);
 
   const scorePercentage = (bridgeScore / 1000) * 100;
   const circumference = 2 * Math.PI * 45;
   const strokeDashoffset = circumference - (scorePercentage / 100) * circumference;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-white">
-      <div className="max-w-md mx-auto px-6 py-6">
+    <PageLayout>
+      <div className="px-6 py-6">
         
         {/* Top bar */}
         <header className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold" style={{ textShadow: '0 0 20px #6C63FF' }}>
-              BRIDGE
-            </h1>
-            <p className="text-gray-400 text-sm">Welcome back! 👋</p>
+            <h1 className="text-2xl font-bold mb-1">{greeting}</h1>
+            <p className="text-gray-400">Ready to ace your placement?</p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Bell className="w-6 h-6 text-gray-400" />
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-            </div>
-            <div className="flex items-center gap-1">
-              <Flame className="w-5 h-5 text-orange-500" />
-              <span className="text-sm font-bold">5</span>
-            </div>
+          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+            U
           </div>
         </header>
 
@@ -197,35 +202,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-
-        {/* Bottom Navigation */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-[#0A0A0F]/90 backdrop-blur-xl border-t border-white/10">
-          <div className="max-w-md mx-auto px-6 py-3">
-            <div className="grid grid-cols-5 gap-4">
-              <Link href="/dashboard" className="flex flex-col items-center gap-1 text-purple-400">
-                <Home className="w-5 h-5" />
-                <span className="text-xs">Home</span>
-              </Link>
-              <Link href="/interview" className="flex flex-col items-center gap-1 text-gray-400">
-                <Mic className="w-5 h-5" />
-                <span className="text-xs">Practice</span>
-              </Link>
-              <Link href="/pulse" className="flex flex-col items-center gap-1 text-gray-400">
-                <Zap className="w-5 h-5" />
-                <span className="text-xs">PULSE</span>
-              </Link>
-              <Link href="/leaderboard" className="flex flex-col items-center gap-1 text-gray-400">
-                <Trophy className="w-5 h-5" />
-                <span className="text-xs">Trophy</span>
-              </Link>
-              <Link href="/profile" className="flex flex-col items-center gap-1 text-gray-400">
-                <User className="w-5 h-5" />
-                <span className="text-xs">Profile</span>
-              </Link>
-            </div>
-          </div>
-        </nav>
       </div>
-    </div>
+    </PageLayout>
   );
 }

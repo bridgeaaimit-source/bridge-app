@@ -4,6 +4,9 @@ import { useMemo, useState, useEffect } from "react";
 import { ChevronLeft, Info, Send, RotateCcw, Share2, Home, Mic, Zap, Trophy, User } from "lucide-react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
+import PageLayout from "@/components/PageLayout";
+import BackButton from "@/components/BackButton";
+import toast from "react-hot-toast";
 
 const domains = [
   { icon: "💻", label: "Software Engineer" },
@@ -341,26 +344,33 @@ export default function InterviewPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-white">
-      <div className="max-w-md mx-auto px-6 py-6">
+    <PageLayout>
+      <div className="px-6 py-6">
         
         {/* Header */}
         <header className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => window.history.back()}
-            className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-
-          <h1 className="text-lg font-bold text-purple-400">AI Mock Interview</h1>
-
-          <button className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
-            <Info className="w-5 h-5" />
-          </button>
+          <BackButton />
+          <div className="text-center flex-1">
+            <h1 className="text-xl font-bold">Mock Interview</h1>
+          </div>
+          <div className="w-10"></div>
         </header>
 
-        {/* Step Indicator */}
+          {/* Step Indicator */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between text-xs font-semibold mb-3">
+              <span className={step >= 1 ? "text-purple-400" : "text-gray-500"}>Step 1: Choose Domain</span>
+              <span className={step >= 2 ? "text-purple-400" : "text-gray-500"}>Step 2: Answer Questions</span>
+              <span className={step >= 3 ? "text-purple-400" : "text-gray-500"}>Step 3: Get Feedback</span>
+            </div>
+            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
+                style={{
+                  width: step === 1 ? "33%" : step === 2 ? "66%" : "100%",
+                }}
+              />
+            </div>
         <div className="mb-8">
           <div className="flex items-center justify-between text-xs font-semibold mb-3">
             <span className={step >= 1 ? "text-purple-400" : "text-gray-500"}>Step 1: Choose Domain</span>
@@ -894,6 +904,7 @@ export default function InterviewPage() {
           }
         }
       `}</style>
-    </div>
+      </div>
+    </PageLayout>
   );
 }

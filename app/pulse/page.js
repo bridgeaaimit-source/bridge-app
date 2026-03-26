@@ -2,6 +2,9 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { Home, Mic, Zap, Trophy, User, Plus, Filter, TrendingUp, X, RefreshCw, ExternalLink, Users, Calendar } from "lucide-react";
+import PageLayout from "@/components/PageLayout";
+import BackButton from "@/components/BackButton";
+import toast from "react-hot-toast";
 
 const categories = ["All", "Marketing", "Finance", "HR", "Analytics", "Tech", "MBA"];
 
@@ -112,7 +115,12 @@ export default function PulsePage() {
   };
 
   const refreshNews = () => {
+    toast("Refreshing news...");
     fetchNews(activeCategory);
+  };
+
+  const handlePullToRefresh = () => {
+    refreshNews();
   };
 
   const handleCategoryChange = (category) => {
@@ -149,29 +157,26 @@ export default function PulsePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
-      {/* Navigation */}
-      <nav className="bg-black/20 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <Zap className="w-8 h-8 text-purple-400" />
-              <span className="text-xl font-bold text-white">BRIDGE PULSE</span>
-            </div>
-            <div className="flex items-center gap-6">
-              <button className="text-gray-400 hover:text-white transition-colors">
-                <Filter className="w-5 h-5" />
-              </button>
-              <button className="text-gray-400 hover:text-white transition-colors">
-                <TrendingUp className="w-5 h-5" />
-              </button>
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                G
+    <PageLayout>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+        {/* Header */}
+        <header className="sticky top-0 bg-black/20 backdrop-blur-md border-b border-white/10 z-10">
+          <div className="max-w-md mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <BackButton />
+              <div className="flex items-center gap-3">
+                <Zap className="w-8 h-8 text-purple-400" />
+                <span className="text-xl font-bold text-white">BRIDGE PULSE</span>
               </div>
+              <button 
+                onClick={handlePullToRefresh}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <RefreshCw className="w-5 h-5" />
+              </button>
             </div>
           </div>
-        </div>
-      </nav>
+        </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* AI Trend Banner */}
@@ -501,6 +506,7 @@ export default function PulsePage() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </PageLayout>
   );
 }

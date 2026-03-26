@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Home, Mic, Zap, Trophy, User, Crown, Flame, Star } from "lucide-react";
+import PageLayout from "@/components/PageLayout";
+import BackButton from "@/components/BackButton";
+import toast from "react-hot-toast";
 
 const mockStudents = [
   { rank: 1, name: "Priya Sharma", college: "IIT Madras", score: 945, badge: "👑 Interview King", streak: 45, avatar: "PS" },
@@ -24,15 +27,19 @@ export default function LeaderboardPage() {
   const restOfStudents = mockStudents.slice(3);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-white">
-      <div className="max-w-md mx-auto px-6 py-6">
+    <PageLayout>
+      <div className="px-6 py-6">
         
         {/* Header */}
         <header className="text-center mb-8">
-          <h1 className="text-2xl font-bold mb-2 flex items-center justify-center gap-2">
-            Top Crackers
-            <Trophy className="w-6 h-6 text-yellow-400" />
-          </h1>
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <BackButton />
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Trophy className="w-8 h-8 text-yellow-400" />
+              Leaderboard
+            </h1>
+            <div className="w-10"></div>
+          </div>
           <p className="text-gray-400 text-sm">India's brightest placement prep stars</p>
         </header>
 
@@ -235,6 +242,7 @@ export default function LeaderboardPage() {
           }
         }
       `}</style>
-    </div>
+      </div>
+    </PageLayout>
   );
 }
