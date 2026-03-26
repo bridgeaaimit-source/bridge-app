@@ -2,9 +2,33 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Home, Mic, Zap, Trophy, User, Bell, Flame, Briefcase, MessageSquare, TrendingUp, Target, Brain } from "lucide-react";
+import { Home, Mic, Zap, Trophy, User, Bell, Flame, Briefcase, MessageSquare, TrendingUp, Target, Brain, ChevronLeft } from "lucide-react";
 import PageLayout from "@/components/PageLayout";
 import toast from "react-hot-toast";
+
+const features = [
+  {
+    icon: Mic,
+    title: "Mock Interview",
+    subtitle: "Practice with AI",
+    href: "/interview",
+    color: "purple"
+  },
+  {
+    icon: Zap,
+    title: "GD Battle",
+    subtitle: "Group discussion",
+    href: "/gd",
+    color: "yellow"
+  },
+  {
+    icon: Trophy,
+    title: "Leaderboard",
+    subtitle: "Top performers",
+    href: "/leaderboard",
+    color: "gold"
+  },
+];
 
 const actionCards = [
   {
@@ -50,6 +74,13 @@ export default function Dashboard() {
   const [greeting, setGreeting] = useState("");
 
   useEffect(() => {
+    // Check authentication
+    const user = localStorage.getItem('bridge_user');
+    if (!user) {
+      window.location.href = "/login";
+      return;
+    }
+
     const hour = new Date().getHours();
     if (hour < 12) {
       setGreeting("Good morning! 🌅");

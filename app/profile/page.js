@@ -221,7 +221,11 @@ export default function ProfilePage() {
 
         {/* Logout Button */}
         <button
-          onClick={logout}
+          onClick={() => {
+            localStorage.removeItem('bridge_user');
+            toast.success('Logged out successfully');
+            window.location.href = '/login';
+          }}
           className="w-full py-3 bg-red-500/20 border border-red-500/30 rounded-xl font-semibold text-red-400 hover:bg-red-500/30 transition-all flex items-center justify-center gap-2 mb-20"
         >
           <LogOut className="w-4 h-4" />

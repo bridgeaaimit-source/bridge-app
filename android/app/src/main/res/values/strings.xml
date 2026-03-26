@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BRIDGE</string>
+    <string name="title_activity_main">BRIDGE</string>
+    <string name="package_name">com.bridge.app</string>
+    <string name="custom_url_scheme">com.bridge.app</string>
+</resources>

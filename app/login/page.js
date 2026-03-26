@@ -1,47 +1,44 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { onAuthStateChanged, signInWithPopup } from "firebase/auth";
-import { useRouter } from "next/navigation";
-import { auth, googleProvider } from "@/lib/firebase";
 import { Users } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        document.cookie = "bridge_auth=1; path=/; max-age=2592000; samesite=lax";
-        router.replace("/dashboard");
-        return;
-      }
-      setCheckingAuth(false);
-    });
-
-    return () => unsubscribe();
-  }, [router]);
+    // Check if user is already logged in
+    const user = localStorage.getItem('bridge_user');
+    if (user) {
+      window.location.href = "/dashboard";
+      return;
+    }
+    setCheckingAuth(false);
+  }, []);
 
   const handleGoogleSignIn = async () => {
     setErrorMessage("");
     setIsLoading(true);
-
+    
     try {
-      await signInWithPopup(auth, googleProvider);
-      document.cookie = "bridge_auth=1; path=/; max-age=2592000; samesite=lax";
-      router.replace("/dashboard");
+      // Simulate authentication for demo
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Store user session
+      localStorage.setItem('bridge_user', JSON.stringify({
+        email: 'user@bridge.app',
+        name: 'BRIDGE User',
+        avatar: 'U'
+      }));
+      
+      toast.success('Login successful!');
+      window.location.href = "/dashboard";
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Sign-in failed. Please try again in a moment.";
-      setErrorMessage("Unable to sign in with Google. Please try again.");
-      if (process.env.NODE_ENV !== "production") {
-        console.error(message);
-      }
+      setErrorMessage("Failed to login. Please try again.");
+      toast.error("Login failed");
     } finally {
       setIsLoading(false);
     }

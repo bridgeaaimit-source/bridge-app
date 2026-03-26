@@ -1,0 +1,8 @@
+{
+  "appId": "com.bridge.app",
+  "appName": "BRIDGE",
+  "webDir": "out",
+  "server": {
+    "androidScheme": "https"
+  }
+}
