@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Home, Mic, Zap, Trophy, User, Crown, Flame, Star } from "lucide-react";
-import PageLayout from "@/components/PageLayout";
-import BackButton from "@/components/BackButton";
+import { Home, Mic, Zap, Trophy, User, Crown, Flame, Star, ChevronLeft } from "lucide-react";
 import toast from "react-hot-toast";
 
 const mockStudents = [
@@ -27,13 +25,18 @@ export default function LeaderboardPage() {
   const restOfStudents = mockStudents.slice(3);
 
   return (
-    <PageLayout>
-      <div className="px-6 py-6">
+    <div className="min-h-screen bg-[#0A0A0F] text-white">
+      <div className="max-w-md mx-auto px-6 py-6">
         
         {/* Header */}
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <BackButton />
+            <button 
+              onClick={() => window.history.back()}
+              className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Trophy className="w-8 h-8 text-yellow-400" />
               Leaderboard
@@ -226,23 +229,6 @@ export default function LeaderboardPage() {
           </div>
         </nav>
       </div>
-
-      <style jsx global>{`
-        .animate-fade-up {
-          animation: fadeUp 500ms ease both;
-        }
-        @keyframes fadeUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-      </div>
-    </PageLayout>
+    </div>
   );
 }

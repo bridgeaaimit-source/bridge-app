@@ -1,8 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause } from "lucide-react";
-import PageLayout from "@/components/PageLayout";
-import BackButton from "@/components/BackButton";
 import toast from "react-hot-toast";
 
 export default function SmartInterviewPage() {
@@ -306,11 +304,16 @@ export default function SmartInterviewPage() {
   // SETUP SCREEN
   if (stage === 'setup') {
     return (
-      <PageLayout>
-        <div className="px-6 py-6">
+      <div className="min-h-screen bg-[#0A0A0F] text-white">
+        <div className="max-w-md mx-auto px-6 py-6">
           {/* Header */}
           <div className="flex items-center gap-3 mb-6">
-            <BackButton />
+            <button 
+              onClick={() => window.history.back()}
+              className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
             <div className="flex items-center gap-3">
               <Brain className="w-8 h-8 text-purple-400" />
               <h1 className="text-2xl font-bold">Smart Interview</h1>
@@ -461,19 +464,17 @@ export default function SmartInterviewPage() {
           </button>
         </div>
       </div>
-    </PageLayout>
-  );
-}
+    );
+  }
 
   // INTERVIEW SCREEN
   if (stage === 'interviewing') {
     return (
-      <PageLayout>
-        <div className="flex flex-col">
-          {/* Header */}
-          <div className="px-6 py-4 border-b border-white/10">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-medium text-purple-400">{round}</div>
+      <div className="min-h-screen bg-[#0A0A0F] text-white flex flex-col">
+        {/* Header */}
+        <div className="max-w-md mx-auto w-full px-6 py-4 border-b border-white/10">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-medium text-purple-400">{round}</div>
             <div className="text-sm text-gray-400">Q{questionNumber} of {maxQuestions}</div>
             <button
               onClick={endInterview}
@@ -614,8 +615,8 @@ export default function SmartInterviewPage() {
       return null;
     }
     return (
-      <PageLayout>
-        <div className="px-6 py-6">
+      <div className="min-h-screen bg-[#0A0A0F] text-white">
+        <div className="max-w-md mx-auto px-6 py-6">
           {/* Header */}
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold mb-2">Interview Complete</h1>
@@ -781,7 +782,7 @@ export default function SmartInterviewPage() {
             </button>
           </div>
         </div>
-      </PageLayout>
+      </div>
     );
   }
 
