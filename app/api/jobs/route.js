@@ -73,107 +73,128 @@ Return ONLY valid JSON:
   if (action === 'fetch_jobs') {
     const { profile } = await request.json()
       .catch(() => ({}));
-
-    // Fetch real jobs from JSearch API
-    const domains = profile?.domains?.join(' OR ') 
-      || 'marketing finance technology';
-    const location = profile?.location || 'India';
-    const experience = profile?.experience_level 
-      || 'fresher';
+    
+    console.log('Fetching real jobs for:', 
+      profile?.job_titles_suitable?.[0]);
 
     let realJobs = [];
 
-    try {
-      // Try JSearch (RapidAPI)
-      const jobRes = await fetch(
-        `https://jsearch.p.rapidapi.com/search?` +
-        `query=${encodeURIComponent(
-          profile?.job_titles_suitable?.[0] || 'fresher'
-        )} in ${location}&` +
-        `page=1&num_pages=1&date_posted=week`,
-        {
-          headers: {
-            'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
-            'X-RapidAPI-Host': 'jsearch.p.rapidapi.com'
+    // Build search queries from profile
+    const searchQueries = [
+      profile?.job_titles_suitable?.[0] || 'fresher',
+      profile?.domains?.[0] || 'marketing',
+    ];
+
+    for (const query of searchQueries) {
+      try {
+        console.log('Searching JSearch for:', query);
+        
+        const jobRes = await fetch(
+          `https://jsearch.p.rapidapi.com/search?` +
+          `query=${encodeURIComponent(query + ' fresher india')}&` +
+          `page=1&num_pages=2&date_posted=week&` +
+          `country=in&language=en`,
+          {
+            method: 'GET',
+            headers: {
+              'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
+              'X-RapidAPI-Host': 'jsearch.p.rapidapi.com'
+            }
           }
+        );
+
+        const jobData = await jobRes.json();
+        console.log('JSearch status:', jobData.status);
+        console.log('Jobs found:', jobData.data?.length);
+
+        if (jobData.data?.length > 0) {
+          realJobs = [...realJobs, ...jobData.data];
         }
-      );
-      const jobData = await jobRes.json();
-      realJobs = jobData.data || [];
-    } catch (err) {
-      console.error('Job fetch error:', err);
+      } catch (err) {
+        console.error('JSearch error:', err.message);
+      }
     }
 
-    // Use Claude to match and score jobs
-    const jobList = realJobs.slice(0, 20).map((j, i) => 
-      `${i+1}. ${j.job_title} at ${j.employer_name}
-      Location: ${j.job_city || 'Remote'}
+    console.log('Total real jobs fetched:', realJobs.length);
+
+    // Format real jobs for Claude to match
+    const jobList = realJobs.slice(0, 15).map((j, i) => 
+      `${i+1}. 
+      Title: ${j.job_title}
+      Company: ${j.employer_name}
+      Location: ${j.job_city || j.job_country || 'Remote'}
       Type: ${j.job_employment_type}
-      Description: ${j.job_description?.substring(0, 200)}`
+      Apply URL: ${j.job_apply_link}
+      Posted: ${j.job_posted_at_datetime_utc}
+      Description: ${j.job_description
+        ?.substring(0, 300)}`
     ).join('\n\n');
 
-    const matchPrompt = `You are a career advisor.
-Match these jobs with the candidate profile.
+    // Claude matches and scores
+    const matchPrompt = `You are a career advisor 
+for Indian college students.
 
 CANDIDATE PROFILE:
-${JSON.stringify(profile, null, 2)}
+Name: ${profile?.name}
+Degree: ${profile?.education?.degree}
+Skills: ${profile?.skills?.join(', ')}
+Domains: ${profile?.domains?.join(', ')}
+Experience: ${profile?.experience_level}
+Location: ${profile?.location}
+Looking for: ${profile?.looking_for}
 
-AVAILABLE JOBS:
-${jobList || 'No jobs fetched, generate 8 realistic mock jobs'}
+${realJobs.length > 0 
+  ? `REAL JOBS TO MATCH (use EXACT apply URLs):
+${jobList}
 
-For each job (real or mock), calculate:
-- Profile match percentage (be realistic, not generous)
-- Why it matches or doesn't
-- Probability of getting interview call
-- Red flags if any
-
-If no real jobs available, generate 8 realistic 
-Indian job listings for this profile.
+Score each job against the profile.
+Keep the EXACT apply_url from the job data.`
+  : `No real jobs fetched. Generate 8 realistic 
+Indian job listings with these apply URLs:
+- For MNC jobs: use LinkedIn search URLs
+- For startups: use company career pages
+- For internships: use Internshala URLs
+Make them realistic for this profile.`
+}
 
 Return ONLY valid JSON:
 {
   "jobs": [
     {
       "id": "unique_id",
-      "title": "Job Title",
-      "company": "Company Name",
-      "location": "City, State",
-      "type": "Full-time/Internship",
-      "salary": "3-5 LPA or ₹15,000/month stipend",
+      "title": "exact job title",
+      "company": "exact company name",
+      "location": "city, state",
+      "type": "Full-time or Internship",
+      "salary": "realistic salary/stipend",
       "skills_required": ["skill1", "skill2"],
-      "experience_required": "0-1 years/Fresher",
-      "description": "2-3 line job description",
-      "match_percent": 78,
-      "match_reasons": [
-        "Your MBA matches their requirement",
-        "Marketing skills align well"
-      ],
-      "gap_reasons": [
-        "They want 1 year experience"
-      ],
-      "interview_probability": 65,
-      "apply_url": "https://linkedin.com/jobs or #",
-      "posted_days_ago": 2,
-      "is_easy_apply": true,
+      "experience_required": "0-1 years",
+      "description": "2-3 line description",
+      "match_percent": (realistic 40-90),
+      "match_reasons": ["reason1", "reason2"],
+      "gap_reasons": ["gap1"],
+      "interview_probability": (realistic 30-80),
+      "apply_url": "EXACT real URL from job data",
+      "posted_days_ago": (number),
+      "is_easy_apply": true/false,
       "company_size": "Startup/Mid-size/MNC",
-      "perks": ["Remote", "Health Insurance"]
+      "perks": ["perk1", "perk2"],
+      "source": "LinkedIn/Indeed/Naukri"
     }
   ],
   "profile_insights": {
-    "strongest_match": "Marketing roles at startups",
-    "improvement_tip": "Add Python to skills for better matches",
-    "market_demand": "High/Medium/Low for your profile",
-    "avg_match_score": 72
+    "strongest_match": "best role type for profile",
+    "improvement_tip": "one specific tip",
+    "market_demand": "High/Medium/Low",
+    "avg_match_score": (number),
+    "total_jobs_found": ${realJobs.length}
   }
 }`;
 
     const matchMsg = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 3000,
-      messages: [{ 
-        role: 'user', 
-        content: matchPrompt 
-      }]
+      messages: [{ role: 'user', content: matchPrompt }]
     });
 
     const matchText = matchMsg.content[0].text
@@ -181,7 +202,19 @@ Return ONLY valid JSON:
       .replace(/```/g, '')
       .trim();
 
-    return Response.json(JSON.parse(matchText));
+    const result = JSON.parse(matchText);
+    
+    // Double check apply URLs are real
+    result.jobs = result.jobs.map(job => ({
+      ...job,
+      apply_url: job.apply_url?.startsWith('http') 
+        ? job.apply_url 
+        : `https://www.linkedin.com/jobs/search/?keywords=${
+            encodeURIComponent(job.title)
+          }&location=India`
+    }));
+
+    return Response.json(result);
   }
 
   // ACTION 3: Smart Apply - analyze job URL

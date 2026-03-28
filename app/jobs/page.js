@@ -144,14 +144,28 @@ export default function JobsPage() {
     return 'bg-red-500/20 border-red-500/30';
   };
 
+  const handleApply = (job) => {
+    if (job.apply_url && 
+        job.apply_url.startsWith('http')) {
+      window.open(job.apply_url, '_blank');
+    } else {
+      // Fallback to LinkedIn search
+      window.open(
+        `https://www.linkedin.com/jobs/search/?keywords=${
+          encodeURIComponent(job.title)
+        }&location=India`,
+        '_blank'
+      );
+    }
+  };
+
   const handleJobAction = (job, action) => {
     if (action === 'interview') {
       // Store job data for smart interview
       sessionStorage.setItem('job_data', JSON.stringify(job));
       window.location.href = '/smart-interview';
     } else if (action === 'apply') {
-      const url = job.apply_url || `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(job.title)} ${encodeURIComponent(job.company)}`;
-      window.open(url, '_blank');
+      handleApply(job);
     }
   };
 
