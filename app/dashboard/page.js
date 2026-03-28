@@ -8,6 +8,14 @@ import toast from "react-hot-toast";
 
 const actionCards = [
   {
+    icon: Briefcase,
+    title: "Jobs & Internships",
+    subtitle: "Find your perfect match",
+    href: "/jobs",
+    color: "blue",
+    badge: "NEW"
+  },
+  {
     icon: Brain,
     title: "Smart Interview",
     subtitle: "Upload resume, get personalized interview",
@@ -180,6 +188,7 @@ export default function Dashboard() {
                 item.color === 'purple' ? 'bg-purple-500' :
                 item.color === 'coral' ? 'bg-red-500' :
                 item.color === 'green' ? 'bg-green-500' :
+                item.color === 'blue' ? 'bg-blue-500' :
                 'bg-yellow-500'
               }`}>
                 <item.icon className="w-5 h-5 text-white" />
