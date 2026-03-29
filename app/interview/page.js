@@ -1043,7 +1043,6 @@ export default function InterviewPage() {
           }
         }
       `}</style>
-      </div>
     </PageLayout>
   );
 }
