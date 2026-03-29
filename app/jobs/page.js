@@ -24,14 +24,17 @@ export default function JobsPage() {
     const saved = localStorage.getItem('bridge_profile');
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        setProfile(parsed);
+        const p = JSON.parse(saved);
+        console.log('Profile loaded:', p.name);
+        setProfile(p);
         setResumeUploaded(true);
         // Auto fetch jobs if profile exists
-        fetchJobs(parsed);
-      } catch (e) {
-        console.error('Error parsing saved profile:', e);
+        fetchJobs(p);
+      } catch(e) {
+        console.error('Profile parse error:', e);
       }
+    } else {
+      console.log('No profile in localStorage');
     }
   }, []);
 
@@ -100,36 +103,76 @@ export default function JobsPage() {
   };
 
   const handleSmartApply = async () => {
-    if (!profile) {
-      alert('Please upload your resume first');
+  console.log('=== SMART APPLY CLICKED ===');
+  console.log('Profile:', profile);
+  console.log('Mode:', smartApplyMode);
+  console.log('JD:', smartApplyJD?.substring(0, 100));
+  console.log('URL:', smartApplyUrl);
+
+  if (!profile) {
+    alert('Please upload your resume first!');
+    setActiveTab('foryou');
+    return;
+  }
+
+  if (smartApplyMode === 'paste' && !smartApplyJD?.trim()) {
+    alert('Please paste the job description!');
+    return;
+  }
+
+  if (smartApplyMode === 'url' && !smartApplyUrl?.trim()) {
+    alert('Please enter a job URL!');
+    return;
+  }
+
+  setSmartApplyLoading(true);
+  setSmartApplyResult(null);
+
+  try {
+    const requestBody = {
+      action: 'smart_apply',
+      job_url: smartApplyMode === 'url' 
+        ? smartApplyUrl.trim() : null,
+      job_description: smartApplyMode === 'paste'
+        ? smartApplyJD.trim() : null,
+      profile: profile
+    };
+
+    console.log('Sending to API:', {
+      action: requestBody.action,
+      hasUrl: !!requestBody.job_url,
+      hasJD: !!requestBody.job_description,
+      jdLength: requestBody.job_description?.length,
+      hasProfile: !!requestBody.profile,
+      profileName: requestBody.profile?.name
+    });
+
+    const res = await fetch('/api/jobs', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    console.log('Response status:', res.status);
+    const data = await res.json();
+    console.log('API response:', data);
+
+    if (data.error) {
+      alert('Error: ' + data.error);
       return;
     }
-    
-    setSmartApplyLoading(true);
-    try {
-      const res = await fetch('/api/jobs', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify({
-          action: 'smart_apply',
-          job_url: smartApplyMode === 'url' 
-            ? smartApplyUrl : null,
-          job_description: smartApplyMode === 'paste'
-            ? smartApplyJD : null,
-          profile: profile
-        })
-      });
-      
-      const data = await res.json();
-      setSmartApplyResult(data);
-    } catch (err) {
-      console.error('Smart apply error:', err);
-    } finally {
-      setSmartApplyLoading(false);
-    }
-  };
+
+    setSmartApplyResult(data);
+
+  } catch (err) {
+    console.error('Smart apply error:', err);
+    alert('Failed: ' + err.message);
+  } finally {
+    setSmartApplyLoading(false);
+  }
+};
 
   const getMatchColor = (percent) => {
     if (percent >= 80) return 'text-green-400';
@@ -517,6 +560,34 @@ export default function JobsPage() {
               <h2 className="text-xl font-bold mb-2">Analyze Any Job</h2>
               <p className="text-gray-400 text-sm">Get personalized insights and preparation tips</p>
             </div>
+
+            {!profile && (
+              <div className="bg-red-500/20 border border-red-500/30 
+                rounded-2xl p-4 mb-4">
+                <p className="text-red-400 font-bold">
+                  ⚠️ No Resume Uploaded
+                </p>
+                <p className="text-gray-400 text-sm mt-1">
+                  Please upload your resume in the "For You" tab first
+                </p>
+                <button
+                  onClick={() => setActiveTab('foryou')}
+                  className="mt-2 bg-purple-600 px-4 py-2 
+                    rounded-xl text-white text-sm">
+                  Upload Resume →
+                </button>
+              </div>
+            )}
+
+            {profile && (
+              <div className="bg-green-500/20 border border-green-500/30 
+                rounded-2xl p-3 mb-4">
+                <p className="text-green-400 text-sm">
+                  ✅ Using profile: {profile.name} | 
+                  {profile.domains?.[0]} | {profile.experience_level}
+                </p>
+              </div>
+            )}
 
             {/* Mode Toggle */}
             <div className="flex gap-2 mb-4">
