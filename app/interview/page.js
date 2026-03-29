@@ -442,21 +442,7 @@ export default function InterviewPage() {
                 }}
               />
             </div>
-        <div className="mb-8">
-          <div className="flex items-center justify-between text-xs font-semibold mb-3">
-            <span className={step >= 1 ? "text-purple-400" : "text-gray-500"}>Step 1: Choose Domain</span>
-            <span className={step >= 2 ? "text-purple-400" : "text-gray-500"}>Step 2: Answer Questions</span>
-            <span className={step >= 3 ? "text-purple-400" : "text-gray-500"}>Step 3: Get Feedback</span>
           </div>
-          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
-              style={{
-                width: step === 1 ? "33%" : step === 2 ? "66%" : "100%",
-              }}
-            />
-          </div>
-        </div>
 
         {/* Main Content */}
         <main className="mb-20">
