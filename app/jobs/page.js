@@ -11,7 +11,10 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(false);
   const [resumeUploaded, setResumeUploaded] = useState(false);
   const [smartApplyUrl, setSmartApplyUrl] = useState('');
+  const [smartApplyJD, setSmartApplyJD] = useState('');
   const [smartApplyResult, setSmartApplyResult] = useState(null);
+  const [smartApplyLoading, setSmartApplyLoading] = useState(false);
+  const [smartApplyMode, setSmartApplyMode] = useState('url'); // 'url' or 'paste'
   const [refreshing, setRefreshing] = useState(false);
   const [expandedJob, setExpandedJob] = useState(null);
   const [expandedSection, setExpandedSection] = useState(null);
@@ -97,29 +100,34 @@ export default function JobsPage() {
   };
 
   const handleSmartApply = async () => {
-    if (!smartApplyUrl) {
-      toast.error('Please enter a job URL');
+    if (!profile) {
+      alert('Please upload your resume first');
       return;
     }
-
-    setLoading(true);
+    
+    setSmartApplyLoading(true);
     try {
-      const response = await fetch('/api/jobs', {
+      const res = await fetch('/api/jobs', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json' 
+        },
         body: JSON.stringify({
           action: 'smart_apply',
-          job_url: smartApplyUrl,
+          job_url: smartApplyMode === 'url' 
+            ? smartApplyUrl : null,
+          job_description: smartApplyMode === 'paste'
+            ? smartApplyJD : null,
           profile: profile
         })
       });
-
-      const result = await response.json();
-      setSmartApplyResult(result);
-    } catch (error) {
-      toast.error('Failed to analyze job');
+      
+      const data = await res.json();
+      setSmartApplyResult(data);
+    } catch (err) {
+      console.error('Smart apply error:', err);
     } finally {
-      setLoading(false);
+      setSmartApplyLoading(false);
     }
   };
 
@@ -506,155 +514,241 @@ export default function JobsPage() {
         {activeTab === 'smartapply' && (
           <div className="space-y-4">
             <div className="text-center mb-6">
-              <h2 className="text-xl font-bold mb-2">Paste any job link</h2>
-              <p className="text-gray-400 text-sm">LinkedIn, Naukri, Internshala, company website</p>
+              <h2 className="text-xl font-bold mb-2">Analyze Any Job</h2>
+              <p className="text-gray-400 text-sm">Get personalized insights and preparation tips</p>
             </div>
 
-            {/* URL Input */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-              <input
-                type="url"
-                value={smartApplyUrl}
-                onChange={(e) => setSmartApplyUrl(e.target.value)}
-                placeholder="https://linkedin.com/jobs/view/..."
-                className="w-full bg-transparent text-white placeholder-gray-400 outline-none"
-              />
+            {/* Mode Toggle */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setSmartApplyMode('url')}
+                className={`flex-1 py-2 rounded-xl text-sm
+                  ${smartApplyMode === 'url'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-white/10 text-gray-400'}`}>
+                🔗 Paste URL
+              </button>
+              <button
+                onClick={() => setSmartApplyMode('paste')}
+                className={`flex-1 py-2 rounded-xl text-sm
+                  ${smartApplyMode === 'paste'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-white/10 text-gray-400'}`}>
+                📋 Paste JD
+              </button>
             </div>
+
+            {/* URL Mode */}
+            {smartApplyMode === 'url' && (
+              <div>
+                <p className="text-gray-400 text-xs mb-2">
+                  Works best with: talent.com, indeed.com, company career pages
+                </p>
+                <input
+                  type="url"
+                  value={smartApplyUrl}
+                  onChange={(e) => setSmartApplyUrl(e.target.value)}
+                  placeholder="https://in.talent.com/view?id=..."
+                  className="w-full bg-white/10 border border-white/20 
+                    rounded-xl p-3 text-white text-sm mb-3"
+                />
+              </div>
+            )}
+
+            {/* Paste JD Mode */}
+            {smartApplyMode === 'paste' && (
+              <div>
+                <p className="text-gray-400 text-xs mb-2">
+                  Copy full job description from any website
+                </p>
+                <textarea
+                  value={smartApplyJD}
+                  onChange={(e) => setSmartApplyJD(e.target.value)}
+                  placeholder="Paste complete job description here..."
+                  rows={6}
+                  className="w-full bg-white/10 border border-white/20 
+                    rounded-xl p-3 text-white text-sm mb-3"
+                />
+              </div>
+            )}
 
             {/* Analyze Button */}
             <button
               onClick={handleSmartApply}
-              disabled={loading || !smartApplyUrl}
-              className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white py-3 rounded-xl font-semibold transition-all disabled:opacity-50"
+              disabled={smartApplyLoading || (!smartApplyUrl && !smartApplyJD)}
+              className="w-full bg-purple-600 py-3 rounded-xl
+                text-white font-bold disabled:opacity-50"
             >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 animate-spin rounded-full border-2 border-white/30 border-t-white inline-block mr-2"></div>
-                  🤖 Reading job description...
-                </>
-              ) : (
-                'Analyze Job'
-              )}
+              {smartApplyLoading 
+                ? '🤖 Analyzing...' 
+                : 'Analyze Job →'}
             </button>
 
             {/* Results */}
             {smartApplyResult && (
-              <div className="space-y-4">
-                {/* Job Summary */}
-                <div className={`rounded-2xl p-4 border ${getMatchBg(smartApplyResult.match_percent)}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <h3 className="font-bold text-lg">{smartApplyResult.company}</h3>
-                      <p className="text-purple-400">{smartApplyResult.job_title}</p>
-                    </div>
-                    <div className={`text-2xl font-bold ${getMatchColor(smartApplyResult.match_percent)}`}>
-                      {smartApplyResult.match_percent}%
-                    </div>
-                  </div>
-                  
-                  <div className="mb-3">
-                    <div className="text-xs text-gray-400 mb-1">Interview Chance: {smartApplyResult.interview_probability}%</div>
-                    <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-purple-500 to-blue-500"
-                        style={{ width: `${smartApplyResult.interview_probability}%` }}
-                      />
-                    </div>
-                  </div>
+              <div className="mt-4 space-y-4">
+                
+                {/* Job Header */}
+                <div className="bg-white/10 rounded-2xl p-4">
+                  <h3 className="text-white font-bold text-lg">
+                    {smartApplyResult.job_title}
+                  </h3>
+                  <p className="text-purple-400">
+                    {smartApplyResult.company}
+                  </p>
+                  <p className="text-gray-400 text-sm">
+                    {smartApplyResult.location} • 
+                    {smartApplyResult.job_type}
+                  </p>
+                </div>
 
-                  <div className={`p-3 rounded-lg text-center font-semibold ${
-                    smartApplyResult.should_apply 
-                      ? 'bg-green-500/20 text-green-400' 
-                      : 'bg-red-500/20 text-red-400'
-                  }`}>
+                {/* Match Score */}
+                <div className={`rounded-2xl p-4 border
+                  ${smartApplyResult.match_percent >= 70
+                    ? 'bg-green-500/20 border-green-500/30'
+                    : smartApplyResult.match_percent >= 50
+                    ? 'bg-yellow-500/20 border-yellow-500/30'
+                    : 'bg-red-500/20 border-red-500/30'}`}>
+                  <div className="text-5xl font-bold text-white mb-1">
+                    {smartApplyResult.match_percent}%
+                  </div>
+                  <div className="text-sm text-gray-300">
+                    Profile Match
+                  </div>
+                  <div className="mt-2 text-sm font-medium
+                    text-white">
                     {smartApplyResult.apply_recommendation}
                   </div>
                 </div>
 
-                {/* Expandable Sections */}
-                {[
-                  { key: 'requirements', title: '📋 Key Requirements vs Your Profile', data: smartApplyResult },
-                  { key: 'prep', title: '🎯 Preparation Plan', data: smartApplyResult },
-                  { key: 'questions', title: '❓ Likely Interview Questions', data: smartApplyResult },
-                  { key: 'tips', title: '📝 Resume Tips', data: smartApplyResult }
-                ].map((section) => (
-                  <div key={section.key} className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
-                    <button
-                      onClick={() => setExpandedSection(expandedSection === section.key ? null : section.key)}
-                      className="w-full p-4 text-left flex items-center justify-between"
-                    >
-                      <span className="font-semibold">{section.title}</span>
-                      <ChevronLeft className={`w-4 h-4 transition-transform ${expandedSection === section.key ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    {expandedSection === section.key && (
-                      <div className="px-4 pb-4">
-                        {section.key === 'requirements' && (
-                          <div className="space-y-2">
-                            <div>
-                              <div className="text-sm font-semibold text-green-400 mb-1">✅ Your Strengths:</div>
-                              {section.data.your_strengths?.map((strength, i) => (
-                                <div key={i} className="text-sm text-gray-300">• {strength}</div>
-                              ))}
-                            </div>
-                            <div>
-                              <div className="text-sm font-semibold text-red-400 mb-1">❌ Gaps:</div>
-                              {section.data.your_gaps?.map((gap, i) => (
-                                <div key={i} className="text-sm text-gray-300">• {gap}</div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {section.key === 'prep' && (
-                          <div className="space-y-2">
-                            {section.data.preparation_plan?.map((step, i) => (
-                              <div key={i} className="text-sm text-gray-300">
-                                <span className="font-semibold text-purple-400">Step {i + 1}:</span> {step}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        
-                        {section.key === 'questions' && (
-                          <div className="space-y-2">
-                            {section.data.likely_interview_questions?.map((question, i) => (
-                              <div key={i} className="text-sm text-gray-300">• {question}</div>
-                            ))}
-                          </div>
-                        )}
-                        
-                        {section.key === 'tips' && (
-                          <div className="space-y-2">
-                            {section.data.resume_tips?.map((tip, i) => (
-                              <div key={i} className="text-sm text-gray-300">• {tip}</div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                {/* Interview Probability */}
+                <div className="bg-white/10 rounded-2xl p-4">
+                  <p className="text-gray-400 text-sm mb-2">
+                    Interview Probability
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 bg-white/10 rounded-full h-3">
+                      <div 
+                        className="bg-purple-500 h-3 rounded-full"
+                        style={{width: `${smartApplyResult.interview_probability}%`}}
+                      />
+                    </div>
+                    <span className="text-white font-bold">
+                      {smartApplyResult.interview_probability}%
+                    </span>
                   </div>
-                ))}
+                </div>
+
+                {/* Should Apply Banner */}
+                <div className={`rounded-2xl p-4 text-center
+                  ${smartApplyResult.should_apply
+                    ? 'bg-green-500/20 border border-green-500/30'
+                    : 'bg-red-500/20 border border-red-500/30'}`}>
+                  <p className="text-white font-bold text-lg">
+                    {smartApplyResult.should_apply
+                      ? '✅ Yes, Apply for This Job!'
+                      : '⚠️ Not the Best Match Right Now'}
+                  </p>
+                </div>
+
+                {/* Strengths */}
+                <div className="bg-white/10 rounded-2xl p-4">
+                  <p className="text-green-400 font-bold mb-2">
+                    ✅ Your Strengths
+                  </p>
+                  {smartApplyResult.your_strengths?.map((s, i) => (
+                    <p key={i} className="text-gray-300 text-sm mb-1">
+                      • {s}
+                    </p>
+                  ))}
+                </div>
+
+                {/* Gaps */}
+                <div className="bg-white/10 rounded-2xl p-4">
+                  <p className="text-red-400 font-bold mb-2">
+                    ❌ Gaps to Address
+                  </p>
+                  {smartApplyResult.your_gaps?.map((g, i) => (
+                    <p key={i} className="text-gray-300 text-sm mb-1">
+                      • {g}
+                    </p>
+                  ))}
+                </div>
+
+                {/* Interview Questions */}
+                <div className="bg-white/10 rounded-2xl p-4">
+                  <p className="text-purple-400 font-bold mb-2">
+                    ❓ Likely Interview Questions
+                  </p>
+                  {smartApplyResult.likely_interview_questions
+                    ?.map((q, i) => (
+                    <p key={i} className="text-gray-300 text-sm mb-2">
+                      {i+1}. {q}
+                    </p>
+                  ))}
+                </div>
+
+                {/* Preparation Plan */}
+                <div className="bg-white/10 rounded-2xl p-4">
+                  <p className="text-orange-400 font-bold mb-2">
+                    🎯 Preparation Plan
+                  </p>
+                  {smartApplyResult.preparation_plan?.map((s, i) => (
+                    <p key={i} className="text-gray-300 text-sm mb-2">
+                      {s}
+                    </p>
+                  ))}
+                </div>
+
+                {/* Resume Keywords */}
+                <div className="bg-white/10 rounded-2xl p-4">
+                  <p className="text-yellow-400 font-bold mb-2">
+                    📝 Add These to Resume
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {smartApplyResult.resume_keywords?.map((k, i) => (
+                      <span key={i} 
+                        className="bg-yellow-500/20 text-yellow-300 
+                          text-xs px-2 py-1 rounded-full">
+                        {k}
+                      </span>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2">
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => window.open(
+                      smartApplyResult.apply_url || smartApplyUrl, 
+                      '_blank'
+                    )}
+                    className="flex-1 bg-green-600 py-3 
+                      rounded-xl text-white font-bold text-sm">
+                    Apply Now →
+                  </button>
                   <button
                     onClick={() => {
-                      sessionStorage.setItem('job_data', JSON.stringify(smartApplyResult));
+                      sessionStorage.setItem('smart_interview_job',
+                        JSON.stringify(smartApplyResult));
                       window.location.href = '/smart-interview';
                     }}
-                    className="flex-1 bg-purple-500 hover:bg-purple-600 text-white py-3 rounded-xl font-semibold transition-colors"
-                  >
-                    Start Interview Prep
-                  </button>
-                  <button
-                    onClick={() => window.open(smartApplyUrl, '_blank')}
-                    className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-1"
-                  >
-                    Apply Now
-                    <ExternalLink className="w-4 h-4" />
+                    className="flex-1 bg-purple-600 py-3 
+                      rounded-xl text-white font-bold text-sm">
+                    Practice Interview
                   </button>
                 </div>
+
+                {/* Clear button */}
+                <button
+                  onClick={() => {
+                    setSmartApplyResult(null);
+                    setSmartApplyUrl('');
+                    setSmartApplyJD('');
+                  }}
+                  className="w-full text-gray-400 text-sm py-2">
+                  ← Analyze Another Job
+                </button>
               </div>
             )}
           </div>
