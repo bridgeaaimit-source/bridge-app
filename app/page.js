@@ -181,6 +181,13 @@ export default function Home() {
               <ArrowRight className="w-5 h-5" />
             </div>
           </Link>
+
+          {/* Recruiter Link */}
+          <div className="mt-4">
+            <Link href="/recruiter" className="text-gray-400 hover:text-white text-sm transition-colors">
+              Are you a recruiter? Find talent here →
+            </Link>
+          </div>
         </div>
 
         {/* Social proof */}

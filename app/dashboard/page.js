@@ -51,6 +51,13 @@ const actionCards = [
     href: "/leaderboard",
     color: "gold"
   },
+  {
+    icon: User,
+    title: "For Recruiters",
+    subtitle: "Find talent",
+    href: "/recruiter",
+    color: "purple"
+  },
 ];
 
 export default function Dashboard() {
