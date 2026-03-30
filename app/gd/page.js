@@ -264,7 +264,7 @@ export default function GDPage() {
                           : "bg-cyan-600 hover:bg-cyan-700 text-white"
                       }`}
                     >
-                      {isRecording ? <Square className="w-6 h-6" /> <Mic className="w-6 h-6" />}
+                      {isRecording ? <Square className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
                     </button>
                   </div>
                   <div className="mt-3 text-sm text-gray-600">
