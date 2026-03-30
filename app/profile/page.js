@@ -1,268 +1,331 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Home, Mic, Zap, Trophy, User, Edit3, LogOut, Target, Award, TrendingUp, Calendar, ChevronLeft } from "lucide-react";
+import { Home, Mic, Zap, Trophy, User, Edit3, Target, Award, TrendingUp, Calendar, Mail, Phone, MapPin, GraduationCap, Briefcase } from "lucide-react";
+import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
-const domainOptions = ["IT", "Marketing", "Finance", "MBA"];
-const companyOptions = ["TCS", "Infosys", "Wipro", "Accenture", "Capgemini", "Deloitte"];
-const achievements = [
-  { id: 1, name: "First Interview", icon: "🎯", earned: true },
-  { id: 2, name: "Week Warrior", icon: "🔥", earned: true },
-  { id: 3, name: "Score Master", icon: "⭐", earned: true },
-  { id: 4, name: "Streak Champion", icon: "🏆", earned: false },
-  { id: 5, name: "Perfect 10", icon: "💯", earned: false },
-  { id: 6, name: "AI Expert", icon: "🤖", earned: false },
-];
+const domainOptions = ["IT", "Marketing", "Finance", "HR", "Analytics", "Consulting", "Operations"];
+const lookingForOptions = ["Full-time", "Internship", "Both"];
 
 export default function ProfilePage() {
-  const [collegeName, setCollegeName] = useState("VIT Vellore");
-  const [domain, setDomain] = useState("IT");
-  const [targets, setTargets] = useState(["TCS", "Infosys", "Amazon"]);
+  const [userData, setUserData] = useState({
+    name: '',
+    email: '',
+    photo: '',
+    college: '',
+    degree: '',
+    domain: '',
+    location: '',
+    lookingFor: 'Full-time',
+    bridgeScore: 0,
+    interviewsDone: 0,
+    avgScore: 0,
+    streak: 0,
+    phone: '',
+    bio: ''
+  });
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    setIsEditing(false);
-    toast.success("Profile updated successfully!");
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userRef);
+          
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            setUserData({
+              name: user.displayName || '',
+              email: user.email || '',
+              photo: user.photoURL || '',
+              college: data.college || '',
+              degree: data.degree || '',
+              domain: data.domain || '',
+              location: data.location || '',
+              lookingFor: data.lookingFor || 'Full-time',
+              bridgeScore: data.bridgeScore || 0,
+              interviewsDone: data.interviewsDone || 0,
+              avgScore: data.avgScore || 0,
+              streak: data.streak || 0,
+              phone: data.phone || '',
+              bio: data.bio || ''
+            });
+          }
+        } catch (error) {
+          console.error('Error loading user data:', error);
+          toast.error('Failed to load profile data');
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, {
+            college: userData.college,
+            degree: userData.degree,
+            domain: userData.domain,
+            location: userData.location,
+            lookingFor: userData.lookingFor,
+            phone: userData.phone,
+            bio: userData.bio,
+            updatedAt: new Date().toISOString()
+          });
+          toast.success("Profile updated successfully!");
+          setIsEditing(false);
+        }
+      });
+      unsubscribe();
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      toast.error('Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const toggleTarget = (company) => {
-    setTargets((prev) => (prev.includes(company) ? prev.filter((c) => c !== company) : [...prev, company]));
-  };
-
-  const logout = () => {
-    localStorage.removeItem('userToken');
-    localStorage.removeItem('userEmail');
-    toast.success("Logged out successfully!");
-    window.location.href = '/login';
-  };
-
-  const skills = [
-    { name: "Technical", level: 85 },
-    { name: "Communication", level: 70 },
-    { name: "Problem Solving", level: 90 },
-    { name: "Aptitude", level: 75 },
+  const achievements = [
+    { id: 1, name: "First Interview", icon: "🎯", earned: userData.interviewsDone > 0 },
+    { id: 2, name: "Week Warrior", icon: "🔥", earned: userData.streak >= 7 },
+    { id: 3, name: "Score Master", icon: "⭐", earned: userData.bridgeScore >= 800 },
+    { id: 4, name: "Streak Champion", icon: "🏆", earned: userData.streak >= 30 },
+    { id: 5, name: "Perfect 10", icon: "💯", earned: userData.avgScore >= 9 },
+    { id: 6, name: "AI Expert", icon: "🤖", earned: userData.interviewsDone >= 10 },
   ];
 
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="w-8 h-8 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent mx-auto mb-4"></div>
+            <div className="text-gray-600">Loading profile...</div>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-white">
-      <div className="max-w-md mx-auto px-6 py-6">
-        
-        {/* Header */}
-        <header className="flex items-center gap-3 mb-6">
-          <button 
-            onClick={() => window.history.back()}
-            className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-3">
-            <User className="w-8 h-8 text-purple-400" />
-            <h1 className="text-2xl font-bold">Profile</h1>
-          </div>
-          <button
-            onClick={() => setIsEditing(!isEditing)}
-            className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors ml-auto"
-          >
-            <Edit3 className="w-5 h-5" />
-          </button>
-        </header>
-
-        {/* User Info */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-6">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                U
+    <AppShell>
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-[#0891B2] to-[#0D9488] p-8">
+            <div className="flex items-center gap-6">
+              {userData.photo ? (
+                <img src={userData.photo} alt={userData.name} className="w-24 h-24 rounded-full object-cover border-4 border-white" />
+              ) : (
+                <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                  <User className="w-12 h-12 text-white" />
+                </div>
+              )}
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold text-white mb-2">{userData.name || 'User'}</h1>
+                <p className="text-cyan-100 mb-1">{userData.email}</p>
+                <div className="flex items-center gap-4 text-cyan-100 text-sm">
+                  <span className="flex items-center gap-1">
+                    <GraduationCap className="w-4 h-4" />
+                    {userData.college || 'Add College'}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Briefcase className="w-4 h-4" />
+                    {userData.domain || 'Add Domain'}
+                  </span>
+                </div>
               </div>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-xs">
-                
-              </div>
-            </div>
-            <div className="flex-1">
-              <h2 className="font-semibold text-lg">BRIDGE User</h2>
-              <p className="text-sm text-gray-400">user@bridge.app</p>
-              <div className="mt-2">
-                <span className="text-xs bg-purple-500/20 px-2 py-1 rounded-lg text-purple-300">
-                  BRIDGE Score: {null || "---"}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
-            <div className="text-2xl font-bold text-purple-400">12</div>
-            <div className="text-xs text-gray-400">Interviews</div>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
-            <div className="text-2xl font-bold text-green-400">7.4</div>
-            <div className="text-xs text-gray-400">Avg Score</div>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
-            <div className="text-2xl font-bold text-orange-400">5</div>
-            <div className="text-xs text-gray-400">Day Streak</div>
-          </div>
-        </div>
-
-        {/* Achievements */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-6">
-          <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <Award className="w-5 h-5 text-yellow-400" />
-            Achievements
-          </h3>
-          <div className="grid grid-cols-3 gap-3">
-            {achievements.map((achievement) => (
-              <div
-                key={achievement.id}
-                className={`text-center p-3 rounded-xl border transition-all ${
-                  achievement.earned
-                    ? "bg-yellow-500/20 border-yellow-500/30"
-                    : "bg-white/5 border-white/10 opacity-50"
-                }`}
+              <button
+                onClick={() => setIsEditing(!isEditing)}
+                className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-lg hover:bg-white/30 transition-colors flex items-center gap-2"
               >
-                <div className="text-2xl mb-1">{achievement.icon}</div>
-                <div className="text-xs font-semibold">{achievement.name}</div>
-              </div>
-            ))}
+                <Edit3 className="w-4 h-4" />
+                {isEditing ? 'Cancel' : 'Edit Profile'}
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Skills Progress */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-6">
-          <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-green-400" />
-            Skills Progress
-          </h3>
-          <div className="space-y-3">
-            {skills.map((skill) => (
-              <div key={skill.name}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>{skill.name}</span>
-                  <span className="text-gray-400">{skill.level}%</span>
-                </div>
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-1000"
-                    style={{ width: `${skill.level}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 border-b border-gray-200">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-cyan-600 mb-1">{userData.bridgeScore}</div>
+              <div className="text-sm text-gray-600">BRIDGE Score</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-blue-600 mb-1">{userData.interviewsDone}</div>
+              <div className="text-sm text-gray-600">Interviews</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-green-600 mb-1">{userData.avgScore.toFixed(1)}</div>
+              <div className="text-sm text-gray-600">Avg Score</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-orange-600 mb-1">{userData.streak}</div>
+              <div className="text-sm text-gray-600">Day Streak</div>
+            </div>
           </div>
-        </div>
 
-        {/* Editable Profile Info */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-6">
-          <h3 className="font-semibold mb-4">Profile Information</h3>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">College Name</label>
-              <input
-                value={collegeName}
-                onChange={(e) => setCollegeName(e.target.value)}
+          {/* Form */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">College</label>
+                <input
+                  type="text"
+                  value={userData.college}
+                  onChange={(e) => setUserData({...userData, college: e.target.value})}
+                  disabled={!isEditing}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  placeholder="Enter your college"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Degree</label>
+                <input
+                  type="text"
+                  value={userData.degree}
+                  onChange={(e) => setUserData({...userData, degree: e.target.value})}
+                  disabled={!isEditing}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  placeholder="Enter your degree"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Domain</label>
+                <select
+                  value={userData.domain}
+                  onChange={(e) => setUserData({...userData, domain: e.target.value})}
+                  disabled={!isEditing}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                >
+                  <option value="">Select Domain</option>
+                  {domainOptions.map(domain => (
+                    <option key={domain} value={domain}>{domain}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                <input
+                  type="text"
+                  value={userData.location}
+                  onChange={(e) => setUserData({...userData, location: e.target.value})}
+                  disabled={!isEditing}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  placeholder="Enter your location"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Looking For</label>
+                <select
+                  value={userData.lookingFor}
+                  onChange={(e) => setUserData({...userData, lookingFor: e.target.value})}
+                  disabled={!isEditing}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                >
+                  {lookingForOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  value={userData.phone}
+                  onChange={(e) => setUserData({...userData, phone: e.target.value})}
+                  disabled={!isEditing}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  placeholder="Enter your phone number"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+              <textarea
+                value={userData.bio}
+                onChange={(e) => setUserData({...userData, bio: e.target.value})}
                 disabled={!isEditing}
-                placeholder="Enter your college name"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20 disabled:opacity-50"
+                rows={4}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                placeholder="Tell us about yourself..."
               />
             </div>
 
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Domain</label>
-              <select
-                value={domain}
-                onChange={(e) => setDomain(e.target.value)}
-                disabled={!isEditing}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20 disabled:opacity-50"
-              >
-                {domainOptions.map((option) => (
-                  <option key={option} value={option} className="bg-[#0A0A0F]">
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Target Companies</label>
-              <div className="flex flex-wrap gap-2">
-                {companyOptions.map((company) => (
-                  <button
-                    key={company}
-                    onClick={() => isEditing && toggleTarget(company)}
-                    disabled={!isEditing}
-                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                      targets.includes(company)
-                        ? "bg-purple-500 text-white"
-                        : "bg-white/10 border border-white/20 text-gray-400"
-                    } ${!isEditing ? "cursor-not-allowed opacity-70" : "hover:bg-purple-600"}`}
-                  >
-                    {company}
-                  </button>
-                ))}
+            {isEditing && (
+              <div className="mt-6 flex justify-end gap-4">
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
               </div>
+            )}
+          </div>
+
+          {/* Achievements */}
+          <div className="p-6 border-t border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Achievements</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {achievements.map(achievement => (
+                <div
+                  key={achievement.id}
+                  className={`p-4 rounded-lg border text-center ${
+                    achievement.earned
+                      ? 'bg-cyan-50 border-cyan-200'
+                      : 'bg-gray-50 border-gray-200 opacity-60'
+                  }`}
+                >
+                  <div className="text-2xl mb-2">{achievement.icon}</div>
+                  <div className={`text-sm font-medium ${
+                    achievement.earned ? 'text-cyan-700' : 'text-gray-500'
+                  }`}>
+                    {achievement.name}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-
-        {/* Activity Calendar */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-20">
-          <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-blue-400" />
-            Activity This Month
-          </h3>
-          <div className="grid grid-cols-7 gap-1 text-xs">
-            {Array.from({ length: 28 }, (_, i) => (
-              <div
-                key={i}
-                className={`aspect-square rounded flex items-center justify-center ${
-                  i % 3 === 0 ? "bg-purple-500" : i % 5 === 0 ? "bg-purple-500/50" : "bg-white/10"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Logout Button */}
-        <button
-          onClick={logout}
-          className="w-full py-3 bg-red-500/20 border border-red-500/30 rounded-xl font-semibold text-red-400 hover:bg-red-500/30 transition-all flex items-center justify-center gap-2 mb-20"
-        >
-          <LogOut className="w-4 h-4" />
-          Logout
-        </button>
-
-        {/* Bottom Navigation */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-[#0A0A0F]/90 backdrop-blur-xl border-t border-white/10">
-          <div className="max-w-md mx-auto px-6 py-3">
-            <div className="grid grid-cols-5 gap-4">
-              <a href="/dashboard" className="flex flex-col items-center gap-1 text-gray-400">
-                <Home className="w-5 h-5" />
-                <span className="text-xs">Home</span>
-              </a>
-              <a href="/interview" className="flex flex-col items-center gap-1 text-gray-400">
-                <Mic className="w-5 h-5" />
-                <span className="text-xs">Practice</span>
-              </a>
-              <a href="/pulse" className="flex flex-col items-center gap-1 text-gray-400">
-                <Zap className="w-5 h-5" />
-                <span className="text-xs">PULSE</span>
-              </a>
-              <a href="/leaderboard" className="flex flex-col items-center gap-1 text-gray-400">
-                <Trophy className="w-5 h-5" />
-                <span className="text-xs">Trophy</span>
-              </a>
-              <a href="/profile" className="flex flex-col items-center gap-1 text-purple-400">
-                <User className="w-5 h-5" />
-                <span className="text-xs">Profile</span>
-              </a>
-            </div>
-          </div>
-        </nav>
       </div>
-    </div>
+    </AppShell>
   );
 }

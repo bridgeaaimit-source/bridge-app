@@ -1,234 +1,304 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Home, Mic, Zap, Trophy, User, Crown, Flame, Star, ChevronLeft } from "lucide-react";
+import { Home, Mic, Zap, Trophy, User, Crown, Flame, Star, Medal, Award } from "lucide-react";
+import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
-
-const mockStudents = [
-  { rank: 1, name: "Priya Sharma", college: "IIT Madras", score: 945, badge: "👑 Interview King", streak: 45, avatar: "PS" },
-  { rank: 2, name: "Akhil Kumar", college: "VIT Vellore", score: 912, badge: "⚡ Speed Demon", streak: 32, avatar: "AK" },
-  { rank: 3, name: "Neha Patel", college: "NIT Trichy", score: 898, badge: "🔥 On Fire", streak: 28, avatar: "NP" },
-  { rank: 4, name: "Raj Verma", college: "IIIT Hyderabad", score: 876, badge: "🎯 Sharp Shooter", streak: 21, avatar: "RV" },
-  { rank: 5, name: "Ananya Reddy", college: "SRM Chennai", score: 854, badge: "🚀 Rising Star", streak: 19, avatar: "AR" },
-  { rank: 6, name: "Vikram Singh", college: "Manipal", score: 832, badge: "💪 Consistent", streak: 15, avatar: "VS" },
-  { rank: 7, name: "Kavya Nair", college: "RVCE Bangalore", score: 821, badge: "📚 Knowledge Hub", streak: 12, avatar: "KN" },
-  { rank: 8, name: "Arjun Mehta", college: "DTU Delhi", score: 809, badge: "🌟 Bright Mind", streak: 10, avatar: "AM" },
-  { rank: 9, name: "Divya Goyal", college: "JNU Delhi", score: 798, badge: "🎯 Goal Getter", streak: 8, avatar: "DG" },
-  { rank: 10, name: "You", college: "Your College", score: null, badge: "🔥 On Fire", streak: 5, avatar: "YU", isCurrentUser: true },
-];
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function LeaderboardPage() {
-  const [timeFilter, setTimeFilter] = useState("week");
-  const [scopeFilter, setScopeFilter] = useState("all");
+  const [students, setStudents] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [timeFilter, setTimeFilter] = useState("all");
 
-  const top3 = mockStudents.slice(0, 3);
-  const restOfStudents = mockStudents.slice(3);
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch all users from Firestore
+        const usersQuery = query(
+          collection(db, 'users'),
+          orderBy('bridgeScore', 'desc'),
+          limit(50)
+        );
+        
+        const querySnapshot = await getDocs(usersQuery);
+        const usersData = [];
+        
+        querySnapshot.forEach((doc) => {
+          const userData = doc.data();
+          if (userData.bridgeScore > 0) {
+            usersData.push({
+              uid: doc.id,
+              name: userData.name || 'Anonymous Student',
+              college: userData.college || 'Unknown College',
+              score: userData.bridgeScore,
+              interviewsDone: userData.interviewsDone || 0,
+              avgScore: userData.avgScore || 0,
+              streak: userData.streak || 0,
+              photo: userData.photo || null
+            });
+          }
+        });
+
+        // Sort by score and add rank
+        usersData.sort((a, b) => b.score - a.score);
+        usersData.forEach((student, index) => {
+          student.rank = index + 1;
+        });
+
+        // Get current user
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          if (user) {
+            setCurrentUser(user);
+            
+            // Check if current user is in leaderboard
+            const currentUserIndex = usersData.findIndex(s => s.uid === user.uid);
+            if (currentUserIndex === -1) {
+              // Add current user at the end if not in top 50
+              const userRef = usersData.find(doc => doc.id === user.uid);
+              if (userRef) {
+                usersData.push({
+                  ...userRef,
+                  rank: usersData.length + 1,
+                  isCurrentUser: true
+                });
+              }
+            } else {
+              usersData[currentUserIndex].isCurrentUser = true;
+            }
+          }
+        });
+
+        // Fill with placeholders if less than 10 students
+        while (students.length < 10) {
+          usersData.push({
+            rank: usersData.length + 1,
+            name: "Be the first! 🚀",
+            college: "Start practicing to appear here",
+            score: 0,
+            interviewsDone: 0,
+            avgScore: 0,
+            streak: 0,
+            isPlaceholder: true
+          });
+        }
+
+        setStudents(usersData);
+      } catch (error) {
+        console.error('Error fetching leaderboard:', error);
+        toast.error('Failed to load leaderboard');
+        
+        // Fallback data
+        setStudents([
+          { rank: 1, name: "Be the first! 🚀", college: "Start practicing to appear here", score: 0, isPlaceholder: true },
+          { rank: 2, name: "Be the first! 🚀", college: "Start practicing to appear here", score: 0, isPlaceholder: true },
+          { rank: 3, name: "Be the first! 🚀", college: "Start practicing to appear here", score: 0, isPlaceholder: true },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, [timeFilter]);
+
+  const getBadge = (rank) => {
+    switch(rank) {
+      case 1: return { icon: Crown, text: "Champion", color: "text-yellow-600 bg-yellow-50" };
+      case 2: return { icon: Medal, text: "Runner-up", color: "text-gray-600 bg-gray-50" };
+      case 3: return { icon: Award, text: "Third Place", color: "text-orange-600 bg-orange-50" };
+      default: return { icon: Star, text: `Top ${rank}`, color: "text-cyan-600 bg-cyan-50" };
+    }
+  };
+
+  const getScoreColor = (score) => {
+    if (score >= 900) return "text-purple-600";
+    if (score >= 800) return "text-blue-600";
+    if (score >= 700) return "text-cyan-600";
+    if (score >= 600) return "text-green-600";
+    if (score >= 500) return "text-yellow-600";
+    return "text-gray-600";
+  };
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="w-8 h-8 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent mx-auto mb-4"></div>
+            <div className="text-gray-600">Loading leaderboard...</div>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const top3 = students.slice(0, 3);
+  const restOfStudents = students.slice(3);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-white">
-      <div className="max-w-md mx-auto px-6 py-6">
-        
+    <AppShell>
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <header className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <button 
-              onClick={() => window.history.back()}
-              className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Trophy className="w-8 h-8 text-yellow-400" />
-              Leaderboard
-            </h1>
-            <div className="w-10"></div>
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Trophy className="w-8 h-8 text-yellow-500" />
+            <h1 className="text-3xl font-bold text-gray-900">Leaderboard</h1>
+            <Trophy className="w-8 h-8 text-yellow-500" />
           </div>
-          <p className="text-gray-400 text-sm">India's brightest placement prep stars</p>
-        </header>
-
-        {/* Filters */}
-        <div className="mb-6 space-y-4">
-          <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
-            <button
-              onClick={() => setTimeFilter("week")}
-              className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
-                timeFilter === "week" ? "bg-purple-500 text-white" : "text-gray-400 hover:text-white"
-              }`}
-            >
-              This Week
-            </button>
-            <button
-              onClick={() => setTimeFilter("month")}
-              className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
-                timeFilter === "month" ? "bg-purple-500 text-white" : "text-gray-400 hover:text-white"
-              }`}
-            >
-              This Month
-            </button>
-            <button
-              onClick={() => setTimeFilter("all")}
-              className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
-                timeFilter === "all" ? "bg-purple-500 text-white" : "text-gray-400 hover:text-white"
-              }`}
-            >
-              All Time
-            </button>
-          </div>
-
-          <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
-            <button
-              onClick={() => setScopeFilter("college")}
-              className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
-                scopeFilter === "college" ? "bg-purple-500 text-white" : "text-gray-400 hover:text-white"
-              }`}
-            >
-              My College
-            </button>
-            <button
-              onClick={() => setScopeFilter("all")}
-              className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
-                scopeFilter === "all" ? "bg-purple-500 text-white" : "text-gray-400 hover:text-white"
-              }`}
-            >
-              All India
-            </button>
-          </div>
+          <p className="text-gray-600">India's brightest placement prep stars</p>
         </div>
 
-        {/* Podium - Top 3 */}
-        <div className="mb-8">
-          <div className="flex items-end justify-center gap-4 mb-6">
-            {/* 2nd Place */}
-            <div className="flex flex-col items-center animate-fade-up" style={{ animationDelay: '0.2s' }}>
-              <div className="relative">
-                <div className="w-16 h-16 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-lg mb-2 shadow-lg">
-                  {top3[1].avatar}
+        {/* Top 3 Podium */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {top3.map((student, index) => {
+            const badge = getBadge(student.rank);
+            const BadgeIcon = badge.icon;
+            
+            return (
+              <div
+                key={student.uid || `placeholder-${index}`}
+                className={`relative bg-white rounded-2xl border-2 ${
+                  student.isCurrentUser ? 'border-cyan-500 shadow-lg' : 'border-gray-200'
+                } p-6 text-center ${
+                  index === 0 ? 'md:transform md:-translate-y-4' : index === 2 ? 'md:transform md:translate-y-2' : ''
+                }`}
+              >
+                {student.isCurrentUser && (
+                  <div className="absolute -top-2 -right-2 bg-cyan-500 text-white text-xs px-2 py-1 rounded-full">
+                    YOU
+                  </div>
+                )}
+                
+                <div className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                  student.isPlaceholder ? 'bg-gray-100' : 'bg-gradient-to-r from-[#0891B2] to-[#0D9488]'
+                }`}>
+                  {student.photo && !student.isPlaceholder ? (
+                    <img src={student.photo} alt={student.name} className="w-full h-full rounded-full object-cover" />
+                  ) : (
+                    <span className="text-2xl font-bold text-white">
+                      {student.isPlaceholder ? '🚀' : student.name?.charAt(0)?.toUpperCase()}
+                    </span>
+                  )}
                 </div>
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center text-xs font-bold">2</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center w-20" style={{ boxShadow: '0 10px 25px rgba(156, 163, 175, 0.2)' }}>
-                <div className="text-xs font-semibold truncate">{top3[1].name}</div>
-                <div className="text-lg font-bold text-gray-300">{top3[1].score}</div>
-              </div>
-            </div>
-
-            {/* 1st Place */}
-            <div className="flex flex-col items-center animate-fade-up">
-              <div className="relative">
-                <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-xl mb-2 shadow-lg" style={{ boxShadow: '0 0 30px rgba(251, 191, 36, 0.5)' }}>
-                  {top3[0].avatar}
+                
+                <div className="mb-2">
+                  <BadgeIcon className={`w-6 h-6 mx-auto ${badge.color.split(' ')[0]}`} />
                 </div>
-                <div className="absolute -top-2 -right-2 w-7 h-7 bg-yellow-400 rounded-full flex items-center justify-center text-sm font-bold text-yellow-900">1</div>
-                <Crown className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-6 h-6 text-yellow-400" />
-              </div>
-              <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-xl p-4 border border-yellow-400/30 text-center w-24" style={{ boxShadow: '0 20px 40px rgba(251, 191, 36, 0.3)' }}>
-                <div className="text-sm font-semibold truncate">{top3[0].name}</div>
-                <div className="text-xl font-bold text-yellow-400">{top3[0].score}</div>
-                <div className="text-xs text-yellow-300 mt-1">{top3[0].badge}</div>
-              </div>
-            </div>
-
-            {/* 3rd Place */}
-            <div className="flex flex-col items-center animate-fade-up" style={{ animationDelay: '0.4s' }}>
-              <div className="relative">
-                <div className="w-16 h-16 bg-gradient-to-br from-orange-600 to-orange-800 rounded-full flex items-center justify-center text-white font-bold text-lg mb-2 shadow-lg">
-                  {top3[2].avatar}
+                
+                <h3 className="font-bold text-gray-900 mb-1">{student.name}</h3>
+                <p className="text-sm text-gray-600 mb-3">{student.college}</p>
+                
+                <div className="space-y-2">
+                  <div className={`text-3xl font-bold ${getScoreColor(student.score)}`}>
+                    {student.score}
+                  </div>
+                  <div className="text-xs text-gray-500">BRIDGE Score</div>
+                  
+                  <div className="flex justify-center gap-4 text-xs text-gray-500">
+                    <span>{student.interviewsDone} interviews</span>
+                    <span>{student.streak} day streak</span>
+                  </div>
                 </div>
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-orange-600 rounded-full flex items-center justify-center text-xs font-bold">3</div>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center w-20" style={{ boxShadow: '0 10px 25px rgba(234, 88, 12, 0.2)' }}>
-                <div className="text-xs font-semibold truncate">{top3[2].name}</div>
-                <div className="text-lg font-bold text-orange-400">{top3[2].score}</div>
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
-        {/* Rest of Leaderboard */}
-        <div className="space-y-3 mb-20">
-          {restOfStudents.map((student, index) => (
-            <div
-              key={student.rank}
-              className={`bg-white/10 backdrop-blur-sm rounded-xl p-4 border transition-all duration-300 hover:bg-white/20 ${
-                student.isCurrentUser 
-                  ? "border-purple-400 shadow-lg shadow-purple-500/25" 
-                  : "border-white/20"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center text-sm font-bold">
-                  {student.rank}
-                </div>
-                
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                  {student.avatar}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="font-semibold text-sm truncate">{student.name}</div>
-                    {student.isCurrentUser && (
-                      <div className="px-2 py-0.5 bg-purple-500/20 border border-purple-400/30 rounded text-xs font-semibold text-purple-400">
-                        You
-                      </div>
+        {/* Rest of Students */}
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">All Rankings</h2>
+            <div className="space-y-2">
+              {restOfStudents.map((student) => (
+                <div
+                  key={student.uid || `placeholder-${student.rank}`}
+                  className={`flex items-center gap-4 p-4 rounded-lg ${
+                    student.isCurrentUser ? 'bg-cyan-50 border border-cyan-200' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="w-8 text-center">
+                    <span className={`font-bold ${
+                      student.rank <= 3 ? 'text-lg' : 'text-sm'
+                    } ${
+                      student.rank === 1 ? 'text-yellow-600' :
+                      student.rank === 2 ? 'text-gray-600' :
+                      student.rank === 3 ? 'text-orange-600' :
+                      'text-gray-500'
+                    }`}>
+                      {student.rank}
+                    </span>
+                  </div>
+                  
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100">
+                    {student.photo && !student.isPlaceholder ? (
+                      <img src={student.photo} alt={student.name} className="w-full h-full rounded-full object-cover" />
+                    ) : (
+                      <span className="text-sm font-bold text-gray-600">
+                        {student.isPlaceholder ? '🚀' : student.name?.charAt(0)?.toUpperCase()}
+                      </span>
                     )}
                   </div>
-                  <div className="text-xs text-gray-400 truncate">{student.college}</div>
-                </div>
-                
-                <div className="text-right">
-                  <div className="font-bold text-lg">{student.score || "---"}</div>
-                  <div className="flex items-center gap-1 text-xs text-gray-400">
-                    <Flame className="w-3 h-3 text-orange-500" />
-                    {student.streak}
+                  
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-gray-900">{student.name}</h4>
+                      {student.isCurrentUser && (
+                        <span className="bg-cyan-500 text-white text-xs px-2 py-1 rounded-full">YOU</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600">{student.college}</p>
+                  </div>
+                  
+                  <div className="text-right">
+                    <div className={`font-bold ${getScoreColor(student.score)}`}>
+                      {student.score}
+                    </div>
+                    <div className="text-xs text-gray-500">Score</div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="mt-2 flex items-center justify-between">
-                <div className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300">
-                  {student.badge}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Star className="w-3 h-3 text-yellow-400" />
-                  <Star className="w-3 h-3 text-yellow-400" />
-                  <Star className="w-3 h-3 text-yellow-400" />
-                  <Star className="w-3 h-3 text-yellow-400" />
-                  <Star className="w-3 h-3 text-gray-600" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Bottom Navigation */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-[#0A0A0F]/90 backdrop-blur-xl border-t border-white/10">
-          <div className="max-w-md mx-auto px-6 py-3">
-            <div className="grid grid-cols-5 gap-4">
-              <a href="/dashboard" className="flex flex-col items-center gap-1 text-gray-400">
-                <Home className="w-5 h-5" />
-                <span className="text-xs">Home</span>
-              </a>
-              <a href="/interview" className="flex flex-col items-center gap-1 text-gray-400">
-                <Mic className="w-5 h-5" />
-                <span className="text-xs">Practice</span>
-              </a>
-              <a href="/pulse" className="flex flex-col items-center gap-1 text-gray-400">
-                <Zap className="w-5 h-5" />
-                <span className="text-xs">PULSE</span>
-              </a>
-              <a href="/leaderboard" className="flex flex-col items-center gap-1 text-purple-400">
-                <Trophy className="w-5 h-5" />
-                <span className="text-xs">Trophy</span>
-              </a>
-              <a href="/profile" className="flex flex-col items-center gap-1 text-gray-400">
-                <User className="w-5 h-5" />
-                <span className="text-xs">Profile</span>
-              </a>
+              ))}
             </div>
           </div>
-        </nav>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
+            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Crown className="w-6 h-6 text-yellow-600" />
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{students[0]?.score || 0}</div>
+            <div className="text-sm text-gray-600">Highest Score</div>
+          </div>
+          
+          <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
+            <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Users className="w-6 h-6 text-cyan-600" />
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">
+              {students.filter(s => !s.isPlaceholder).length}
+            </div>
+            <div className="text-sm text-gray-600">Active Students</div>
+          </div>
+          
+          <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Flame className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">
+              {Math.max(...students.filter(s => !s.isPlaceholder).map(s => s.streak), 0)}
+            </div>
+            <div className="text-sm text-gray-600">Longest Streak</div>
+          </div>
+        </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

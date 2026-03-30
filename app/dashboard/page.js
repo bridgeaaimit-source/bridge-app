@@ -27,7 +27,7 @@ import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function Dashboard() {
@@ -40,13 +40,7 @@ export default function Dashboard() {
     currentStreak: 0,
     avgScore: 0
   });
-  const [recentActivity, setRecentActivity] = useState([
-    { type: 'interview', title: 'Amazon SDE Mock', time: '2 hours ago', score: 8.2 },
-    { type: 'gd', title: 'GD Battle: AI Ethics', time: '5 hours ago', result: 'Won' },
-    { type: 'interview', title: 'Infosys Technical', time: '1 day ago', score: 7.8 },
-    { type: 'pulse', title: 'Read TCS Insights', time: '2 days ago' },
-    { type: 'coach', title: 'Answer Rewriter Practice', time: '3 days ago' }
-  ]);
+  const [recentActivity, setRecentActivity] = useState([]);
   const [leaderboard, setLeaderboard] = useState([
     { rank: 1, name: 'Priya Sharma', college: 'VIT', score: 892 },
     { rank: 2, name: 'Rahul Kumar', college: 'PSG', score: 856 },
@@ -84,6 +78,32 @@ export default function Dashboard() {
             });
             setBridgeScore(userData.bridgeScore || 0);
           }
+
+          // Fetch recent interview sessions
+          const sessionsQuery = query(
+            collection(db, 'interviews', user.uid, 'sessions'),
+            orderBy('date', 'desc'),
+            limit(5)
+          );
+          
+          const sessionsSnapshot = await getDocs(sessionsQuery);
+          const activities = [];
+          
+          sessionsSnapshot.forEach((doc) => {
+            const sessionData = doc.data();
+            const date = new Date(sessionData.date);
+            const timeAgo = getTimeAgo(date);
+            
+            activities.push({
+              type: 'interview',
+              title: `${sessionData.domain} Interview`,
+              time: timeAgo,
+              score: sessionData.score,
+              date: sessionData.date
+            });
+          });
+          
+          setRecentActivity(activities);
         } catch (error) {
           console.error('Error loading user data:', error);
         }
@@ -92,6 +112,16 @@ export default function Dashboard() {
 
     return () => unsubscribe();
   }, []);
+
+  const getTimeAgo = (date) => {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+    return date.toLocaleDateString();
+  };
 
   const features = [
     {
@@ -333,28 +363,40 @@ export default function Dashboard() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <h3 className="font-semibold text-gray-900 mb-4">Recent Activity</h3>
               <div className="space-y-3">
-                {recentActivity.slice(0, 5).map((activity, index) => {
-                  const Icon = getActivityIcon(activity.type);
-                  return (
-                    <div key={index} className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getActivityColor(activity.type)}`}>
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 truncate">
-                          {activity.title}
+                {recentActivity.length > 0 ? (
+                  recentActivity.slice(0, 5).map((activity, index) => {
+                    const Icon = getActivityIcon(activity.type);
+                    return (
+                      <div key={index} className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getActivityColor(activity.type)}`}>
+                          <Icon className="w-4 h-4" />
                         </div>
-                        <div className="text-xs text-gray-500">{activity.time}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">
+                            {activity.title}
+                          </div>
+                          <div className="text-xs text-gray-500">{activity.time}</div>
+                        </div>
+                        {activity.score && (
+                          <div className="text-sm font-semibold text-green-600">{activity.score}</div>
+                        )}
+                        {activity.result && (
+                          <div className="text-xs font-semibold text-green-600">{activity.result}</div>
+                        )}
                       </div>
-                      {activity.score && (
-                        <div className="text-sm font-semibold text-green-600">{activity.score}</div>
-                      )}
-                      {activity.result && (
-                        <div className="text-xs font-semibold text-green-600">{activity.result}</div>
-                      )}
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Target className="w-6 h-6 text-gray-400" />
                     </div>
-                  );
-                })}
+                    <div className="text-gray-500 text-sm mb-2">No activity yet</div>
+                    <Link href="/interview" className="text-cyan-600 text-sm hover:text-cyan-700 font-medium inline-flex items-center gap-1">
+                      Start your first interview! →
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
 
