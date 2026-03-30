@@ -34,6 +34,7 @@ export default function Dashboard() {
   const [bridgeScore, setBridgeScore] = useState(null);
   const [greeting, setGreeting] = useState("");
   const [todayDate, setTodayDate] = useState("");
+  const [userName, setUserName] = useState("");
   const [stats, setStats] = useState({
     bridgeScore: 0,
     interviewsDone: 0,
@@ -65,6 +66,9 @@ export default function Dashboard() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
+          // Set user name for greeting
+          setUserName(user.displayName || 'User');
+          
           const userRef = doc(db, 'users', user.uid);
           const userSnap = await getDoc(userRef);
           
@@ -175,7 +179,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {greeting}, Siddhesh 👋
+                {greeting}, {userName} 👋
               </h1>
               <p className="text-gray-600">Here's your placement prep summary for today</p>
             </div>

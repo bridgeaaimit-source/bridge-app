@@ -29,6 +29,7 @@ export default function ProfilePage() {
     phone: '',
     bio: ''
   });
+  const [currentUser, setCurrentUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -36,6 +37,7 @@ export default function ProfilePage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        setCurrentUser(user);
         try {
           const userRef = doc(db, 'users', user.uid);
           const userSnap = await getDoc(userRef);
@@ -74,26 +76,26 @@ export default function ProfilePage() {
   }, []);
 
   const handleSave = async () => {
+    if (!currentUser) {
+      toast.error('User not authenticated');
+      return;
+    }
+    
     setSaving(true);
     try {
-      const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          const userRef = doc(db, 'users', user.uid);
-          await updateDoc(userRef, {
-            college: userData.college,
-            degree: userData.degree,
-            domain: userData.domain,
-            location: userData.location,
-            lookingFor: userData.lookingFor,
-            phone: userData.phone,
-            bio: userData.bio,
-            updatedAt: new Date().toISOString()
-          });
-          toast.success("Profile updated successfully!");
-          setIsEditing(false);
-        }
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, {
+        college: userData.college,
+        degree: userData.degree,
+        domain: userData.domain,
+        location: userData.location,
+        lookingFor: userData.lookingFor,
+        phone: userData.phone,
+        bio: userData.bio,
+        updatedAt: new Date().toISOString()
       });
-      unsubscribe();
+      toast.success("Profile updated successfully!");
+      setIsEditing(false);
     } catch (error) {
       console.error('Error saving profile:', error);
       toast.error('Failed to update profile');

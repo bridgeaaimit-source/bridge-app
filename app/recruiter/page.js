@@ -7,6 +7,9 @@ import {
   query, orderBy, serverTimestamp,
   getDoc
 } from 'firebase/firestore';
+import AppShell from "@/components/AppShell";
+import { Users, Star, MessageSquare, Briefcase, Search, Filter, ChevronRight, Mail, Phone, MapPin, Award, TrendingUp } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function RecruiterPage() {
   const [activeTab, setActiveTab] = useState('browse');
@@ -20,12 +23,6 @@ export default function RecruiterPage() {
   const [typeFilter, setTypeFilter] = useState('All');
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
-  const [requirements, setRequirements] = useState([]);
-  const [messages, setMessages] = useState([]);
-  const [activeChat, setActiveChat] = useState(null);
-  const [newMessage, setNewMessage] = useState('');
-  const [recruiterName, setRecruiterName] = useState('Recruiter');
-  const [recruiterCompany, setRecruiterCompany] = useState('');
 
   // Fetch real students from Firestore
   useEffect(() => {
@@ -81,22 +78,18 @@ export default function RecruiterPage() {
 
   // Filter logic
   useEffect(() => {
-    let filtered = [...students];
+    let filtered = students;
     
     if (searchQuery) {
       filtered = filtered.filter(s => 
-        s.name?.toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
-        s.college?.toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
-        s.skills?.some(skill => 
-          skill.toLowerCase()
-            .includes(searchQuery.toLowerCase()))
+        s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.college?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.skills?.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
     
     if (domainFilter !== 'All') {
-      filtered = filtered.filter(s =>
+      filtered = filtered.filter(s => 
         s.domains?.includes(domainFilter) ||
         s.domain === domainFilter
       );
@@ -127,1086 +120,463 @@ export default function RecruiterPage() {
     if (isShortlisted) {
       newList = shortlisted
         .filter(s => s.uid !== student.uid);
+      toast.success('Removed from shortlist');
     } else {
       newList = [...shortlisted, student];
+      toast.success('Added to shortlist');
     }
     setShortlisted(newList);
     localStorage.setItem('bridge_shortlist', 
       JSON.stringify(newList));
   };
 
-  // Messaging logic
-  const sendMessage = async (studentUid, studentName) => {
-    if (!newMessage.trim()) return;
-    
-    const convId = `recruiter_${studentUid}`;
-    const messagesRef = collection(
-      db, 'messages', convId, 'chats');
-    
-    await addDoc(messagesRef, {
-      senderId: 'recruiter',
-      senderName: recruiterName,
-      text: newMessage,
-      timestamp: serverTimestamp(),
-      read: false
-    });
-
-    // Update conversation metadata
-    await setDoc(doc(db, 'messages', convId), {
-      recruiterName,
-      recruiterCompany,
-      studentUid,
-      studentName,
-      lastMessage: newMessage,
-      lastTime: serverTimestamp(),
-      unreadCount: 1
-    }, { merge: true });
-
-    setNewMessage('');
+  const getScoreColor = (score) => {
+    if (score >= 900) return 'text-purple-600';
+    if (score >= 800) return 'text-blue-600';
+    if (score >= 700) return 'text-cyan-600';
+    if (score >= 600) return 'text-green-600';
+    return 'text-gray-600';
   };
 
-  const openChat = async (student) => {
-    setActiveChat(student);
-    const convId = `recruiter_${student.uid}`;
-    const chatsRef = collection(
-      db, 'messages', convId, 'chats');
-    const q = query(chatsRef, 
-      orderBy('timestamp', 'asc'));
-    
-    onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map(d => ({
-        id: d.id,
-        ...d.data()
-      }));
-      setMessages(msgs);
-    });
+  const getScoreBadge = (score) => {
+    if (score >= 900) return { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Exceptional' };
+    if (score >= 800) return { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Excellent' };
+    if (score >= 700) return { bg: 'bg-cyan-100', text: 'text-cyan-700', label: 'Good' };
+    if (score >= 600) return { bg: 'bg-green-100', text: 'text-green-700', label: 'Average' };
+    return { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Beginner' };
   };
 
-  // Render content function
-  const renderContent = () => {
-    switch(activeTab) {
-
-      case 'browse':
-        return (
-          <div>
-            {/* Header */}
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white">
-                Browse Students
-              </h2>
-              <p className="text-gray-400">
-                {filteredStudents.length} students found
-              </p>
-            </div>
-
-            {/* Search + Filters */}
-            <div className="flex flex-wrap gap-3 mb-6">
-              <input
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search by name, college, skills..."
-                className="flex-1 min-w-[200px] bg-white/10 
-                  border border-white/20 rounded-xl px-4 
-                  py-2 text-white text-sm"/>
-              
-              {/* Domain Filter */}
-              <select
-                value={domainFilter}
-                onChange={e => setDomainFilter(e.target.value)}
-                className="bg-white/10 border border-white/20 
-                  rounded-xl px-3 py-2 text-white text-sm">
-                {['All','Tech','Marketing','Finance',
-                  'HR','Operations','MBA'].map(d => (
-                  <option key={d} value={d} 
-                    className="bg-[#0A0A0F]">{d}</option>
-                ))}
-              </select>
-
-              {/* Score Filter */}
-              <select
-                value={scoreFilter}
-                onChange={e => setScoreFilter(e.target.value)}
-                className="bg-white/10 border border-white/20 
-                  rounded-xl px-3 py-2 text-white text-sm">
-                {[
-                  {label:'All Scores', value:'All'},
-                  {label:'900+', value:'900'},
-                  {label:'800+', value:'800'},
-                  {label:'700+', value:'700'},
-                  {label:'600+', value:'600'},
-                ].map(o => (
-                  <option key={o.value} value={o.value}
-                    className="bg-[#0A0A0F]">
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-
-              {/* Type Filter */}
-              <select
-                value={typeFilter}
-                onChange={e => setTypeFilter(e.target.value)}
-                className="bg-white/10 border border-white/20 
-                  rounded-xl px-3 py-2 text-white text-sm">
-                {['All','Full-time','Internship'].map(t => (
-                  <option key={t} value={t}
-                    className="bg-[#0A0A0F]">{t}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Loading */}
-            {loading && (
-              <div className="grid grid-cols-1 md:grid-cols-3 
-                gap-4">
-                {[1,2,3,4,5,6].map(i => (
-                  <div key={i} 
-                    className="h-48 bg-white/5 rounded-2xl 
-                      animate-pulse"/>
-                ))}
-              </div>
-            )}
-
-            {/* No students */}
-            {!loading && filteredStudents.length === 0 && (
-              <div className="text-center py-16">
-                <p className="text-4xl mb-4">👥</p>
-                <p className="text-white font-bold text-lg">
-                  No students found
-                </p>
-                <p className="text-gray-400 text-sm mt-2">
-                  Try adjusting your filters
-                </p>
-              </div>
-            )}
-
-            {/* Student Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 
-              gap-4">
-              {filteredStudents.map(student => (
-                <div key={student.uid}
-                  className="bg-white/5 border border-white/10 
-                    rounded-2xl p-5 hover:border-purple-500/30 
-                    transition-all">
-                  
-                  {/* Header */}
-                  <div className="flex items-start 
-                    justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      {student.photo ? (
-                        <img src={student.photo}
-                          alt={student.name}
-                          className="w-12 h-12 rounded-full 
-                            object-cover"/>
-                      ) : (
-                        <div className="w-12 h-12 rounded-full 
-                          bg-purple-600 flex items-center 
-                          justify-center text-white font-bold">
-                          {student.name?.charAt(0) || 'S'}
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-white font-bold 
-                          text-sm">
-                          {student.name}
-                        </p>
-                        <p className="text-gray-400 text-xs">
-                          {student.degree}
-                        </p>
-                        <p className="text-gray-500 text-xs">
-                          {student.college}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* BRIDGE Score */}
-                    <div className={`text-center px-3 py-1 
-                      rounded-xl
-                      ${student.bridgeScore >= 900
-                        ? 'bg-yellow-500/20 text-yellow-400'
-                        : student.bridgeScore >= 800
-                        ? 'bg-green-500/20 text-green-400'
-                        : student.bridgeScore >= 700
-                        ? 'bg-blue-500/20 text-blue-400'
-                        : 'bg-gray-500/20 text-gray-400'}`}>
-                      <div className="text-lg font-black">
-                        {student.bridgeScore}
-                      </div>
-                      <div className="text-xs">Score</div>
-                    </div>
-                  </div>
-
-                  {/* Location + Type */}
-                  <div className="flex gap-2 mb-3">
-                    <span className="bg-white/10 text-gray-300 
-                      text-xs px-2 py-1 rounded-full">
-                      📍 {student.location}
-                    </span>
-                    <span className="bg-white/10 text-gray-300 
-                      text-xs px-2 py-1 rounded-full">
-                      💼 {student.lookingFor}
-                    </span>
-                  </div>
-
-                  {/* Domains */}
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {student.domains?.slice(0,3).map(d => (
-                      <span key={d}
-                        className="bg-purple-500/20 
-                          text-purple-300 text-xs px-2 
-                          py-0.5 rounded-full">
-                        {d}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Skills */}
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {student.skills?.slice(0,3).map(s => (
-                      <span key={s}
-                        className="bg-white/10 text-gray-400 
-                          text-xs px-2 py-0.5 rounded-full">
-                        {s}
-                      </span>
-                    ))}
-                    {student.skills?.length > 3 && (
-                      <span className="text-gray-500 text-xs">
-                        +{student.skills.length - 3} more
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Stats */}
-                  <div className="flex gap-4 mb-4 
-                    text-center">
-                    <div className="flex-1 bg-white/5 
-                      rounded-xl py-2">
-                      <div className="text-white font-bold 
-                        text-sm">
-                        {student.interviewsDone}
-                      </div>
-                      <div className="text-gray-500 
-                        text-xs">
-                        Interviews
-                      </div>
-                    </div>
-                    <div className="flex-1 bg-white/5 
-                      rounded-xl py-2">
-                      <div className="text-white font-bold 
-                        text-sm">
-                        {student.avgScore || '--'}
-                      </div>
-                      <div className="text-gray-500 
-                        text-xs">
-                        Avg Score
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Buttons */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedStudent(student);
-                        setShowProfile(true);
-                      }}
-                      className="flex-1 bg-purple-600 
-                        hover:bg-purple-700 text-white 
-                        py-2 rounded-xl text-sm font-medium
-                        transition-all">
-                      View Profile
-                    </button>
-                    <button
-                      onClick={() => toggleShortlist(student)}
-                      className={`px-3 py-2 rounded-xl 
-                        text-sm transition-all
-                        ${shortlisted.find(
-                          s => s.uid === student.uid)
-                          ? 'bg-yellow-500/20 text-yellow-400'
-                          : 'bg-white/10 text-gray-400'}`}>
-                      {shortlisted.find(
-                        s => s.uid === student.uid)
-                        ? '⭐' : '☆'}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="w-8 h-8 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent mx-auto mb-4"></div>
+            <div className="text-gray-600">Loading students...</div>
           </div>
-        );
-
-      case 'shortlist':
-        return (
-          <div>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white">
-                My Shortlist
-              </h2>
-              <p className="text-gray-400">
-                {shortlisted.length} candidates shortlisted
-              </p>
-            </div>
-
-            {shortlisted.length === 0 ? (
-              <div className="text-center py-16">
-                <p className="text-4xl mb-4">⭐</p>
-                <p className="text-white font-bold">
-                  No candidates shortlisted yet
-                </p>
-                <p className="text-gray-400 text-sm mt-2">
-                  Browse students and click ☆ to shortlist
-                </p>
-                <button
-                  onClick={() => setActiveTab('browse')}
-                  className="mt-4 bg-purple-600 px-6 py-2 
-                    rounded-xl text-white text-sm">
-                  Browse Students →
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 
-                md:grid-cols-3 gap-4">
-                {shortlisted.map(student => (
-                  <div key={student.uid}
-                    className="bg-white/5 border 
-                      border-yellow-500/30 rounded-2xl p-5">
-                    
-                    <div className="flex items-center 
-                      gap-3 mb-4">
-                      {student.photo ? (
-                        <img src={student.photo}
-                          className="w-12 h-12 rounded-full"/>
-                      ) : (
-                        <div className="w-12 h-12 
-                          rounded-full bg-purple-600 
-                          flex items-center justify-center 
-                          text-white font-bold">
-                          {student.name?.charAt(0)}
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-white font-bold">
-                          {student.name}
-                        </p>
-                        <p className="text-gray-400 text-xs">
-                          {student.college}
-                        </p>
-                      </div>
-                      <div className="ml-auto text-yellow-400 
-                        font-black text-lg">
-                        {student.bridgeScore}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setActiveTab('messages');
-                          openChat(student);
-                        }}
-                        className="flex-1 bg-purple-600 
-                          text-white py-2 rounded-xl 
-                          text-sm">
-                        💬 Message
-                      </button>
-                      <button
-                        onClick={() => toggleShortlist(student)}
-                        className="px-3 py-2 bg-red-500/20 
-                          text-red-400 rounded-xl text-sm">
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-
-      case 'post':
-        return <PostRequirement db={db} />;
-
-      case 'messages':
-        return (
-          <MessagesTab 
-            db={db}
-            activeChat={activeChat}
-            setActiveChat={setActiveChat}
-            messages={messages}
-            newMessage={newMessage}
-            setNewMessage={setNewMessage}
-            sendMessage={sendMessage}
-            openChat={openChat}
-            recruiterName={recruiterName}
-            shortlisted={shortlisted}
-          />
-        );
-    }
-  };
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
-    <>
-      {/* MOBILE LAYOUT */}
-      <div className="md:hidden min-h-screen 
-        bg-[#0A0A0F] text-white">
-        
-        {/* Mobile Top Bar */}
-        <div className="sticky top-0 bg-[#0A0A0F]/95 
-          backdrop-blur-lg border-b border-white/10 
-          px-4 py-3 flex justify-between items-center z-10">
+    <AppShell>
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Recruiter Portal</h1>
+          <p className="text-gray-600">Find and connect with talented students</p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
+                <Users className="w-6 h-6 text-cyan-600" />
+              </div>
+              <div className="text-sm text-green-600 font-medium">+12%</div>
+            </div>
+            <div className="text-2xl font-bold text-gray-900">{filteredStudents.length}</div>
+            <div className="text-sm text-gray-600">Total Students</div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                <Star className="w-6 h-6 text-purple-600" />
+              </div>
+              <div className="text-sm text-green-600 font-medium">+8%</div>
+            </div>
+            <div className="text-2xl font-bold text-gray-900">{shortlisted.length}</div>
+            <div className="text-sm text-gray-600">Shortlisted</div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <Award className="w-6 h-6 text-green-600" />
+              </div>
+              <div className="text-sm text-green-600 font-medium">+15%</div>
+            </div>
+            <div className="text-2xl font-bold text-gray-900">
+              {students.filter(s => s.bridgeScore >= 800).length}
+            </div>
+            <div className="text-sm text-gray-600">Top Performers</div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="text-sm text-green-600 font-medium">+25%</div>
+            </div>
+            <div className="text-2xl font-bold text-gray-900">
+              {Math.round(students.reduce((acc, s) => acc + s.bridgeScore, 0) / students.length) || 0}
+            </div>
+            <div className="text-sm text-gray-600">Avg Score</div>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="bg-white rounded-xl border border-gray-200 p-1 mb-6">
+          <div className="flex space-x-1">
+            {[
+              { id: 'browse', label: 'Browse Students', icon: Users },
+              { id: 'shortlist', label: 'Shortlisted', icon: Star },
+              { id: 'post', label: 'Post Job', icon: Briefcase },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                    activeTab === tab.id
+                      ? 'bg-cyan-600 text-white'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Content */}
+        {activeTab === 'browse' && (
           <div>
-            <h1 className="text-lg font-bold text-white">
-              Recruiter Portal
-            </h1>
-            <p className="text-xs text-gray-400">
-              {filteredStudents.length} students available
-            </p>
-          </div>
-          <a href="/dashboard" 
-            className="text-gray-400 text-sm">
-            ← Back
-          </a>
-        </div>
+            {/* Search and Filters */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      placeholder="Search by name, college, skills..."
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                
+                <select
+                  value={domainFilter}
+                  onChange={e => setDomainFilter(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                >
+                  <option value="All">All Domains</option>
+                  {['Tech', 'Marketing', 'Finance', 'HR', 'Operations', 'MBA'].map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
 
-        {/* Mobile Bottom Nav */}
-        <div className="fixed bottom-0 left-0 right-0 
-          bg-[#0A0A0F]/95 backdrop-blur-lg 
-          border-t border-white/10 z-10">
-          <div className="flex justify-around py-3">
-            {[
-              {id:'browse', icon:'👥', label:'Students'},
-              {id:'shortlist', icon:'⭐', label:'Shortlist'},
-              {id:'post', icon:'💼', label:'Post Job'},
-              {id:'messages', icon:'💬', label:'Messages'},
-            ].map(tab => (
-              <button key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex flex-col items-center gap-1
-                  ${activeTab === tab.id 
-                    ? 'text-purple-400' 
-                    : 'text-gray-500'}`}>
-                <span className="text-xl">{tab.icon}</span>
-                <span className="text-xs">{tab.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+                <select
+                  value={scoreFilter}
+                  onChange={e => setScoreFilter(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                >
+                  <option value="All">All Scores</option>
+                  <option value="900">900+</option>
+                  <option value="800">800+</option>
+                  <option value="700">700+</option>
+                  <option value="600">600+</option>
+                </select>
 
-        {/* Mobile Content */}
-        <div className="px-4 pt-4 pb-24">
-          {renderContent()}
-        </div>
-      </div>
-
-      {/* DESKTOP LAYOUT */}
-      <div className="hidden md:flex min-h-screen 
-        bg-[#0A0A0F] text-white">
-        
-        {/* Sidebar */}
-        <div className="w-64 fixed left-0 top-0 bottom-0 
-          bg-[#111118] border-r border-white/10 
-          flex flex-col">
-          
-          {/* Logo */}
-          <div className="p-6 border-b border-white/10">
-            <div className="text-2xl font-black text-white">
-              BRIDGE
+                <select
+                  value={typeFilter}
+                  onChange={e => setTypeFilter(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                >
+                  <option value="All">All Types</option>
+                  <option value="Full-time">Full-time</option>
+                  <option value="Internship">Internship</option>
+                  <option value="Both">Both</option>
+                </select>
+              </div>
             </div>
-            <div className="text-xs text-purple-400 mt-1">
-              Recruiter Portal
+
+            {/* Students Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredStudents.map((student) => {
+                const scoreBadge = getScoreBadge(student.bridgeScore);
+                const isShortlisted = shortlisted.find(s => s.uid === student.uid);
+                
+                return (
+                  <div key={student.uid} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+                    <div className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          {student.photo ? (
+                            <img src={student.photo} alt={student.name} className="w-12 h-12 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-12 h-12 bg-gradient-to-r from-[#0891B2] to-[#0D9488] rounded-full flex items-center justify-center text-white font-bold">
+                              {student.name?.charAt(0)?.toUpperCase() || 'A'}
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{student.name}</h3>
+                            <p className="text-sm text-gray-600">{student.college}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => toggleShortlist(student)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            isShortlisted
+                              ? 'bg-yellow-100 text-yellow-600'
+                              : 'bg-gray-100 text-gray-400 hover:text-yellow-500'
+                          }`}
+                        >
+                          <Star className={`w-5 h-5 ${isShortlisted ? 'fill-current' : ''}`} />
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">BRIDGE Score</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`font-bold ${getScoreColor(student.bridgeScore)}`}>
+                              {student.bridgeScore}
+                            </span>
+                            <span className={`text-xs px-2 py-1 rounded-full ${scoreBadge.bg} ${scoreBadge.text}`}>
+                              {scoreBadge.label}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Interviews</span>
+                          <span className="text-sm font-medium">{student.interviewsDone}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Avg Score</span>
+                          <span className="text-sm font-medium">{student.avgScore.toFixed(1)}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Looking for</span>
+                          <span className="text-sm font-medium">{student.lookingFor}</span>
+                        </div>
+
+                        {student.skills && student.skills.length > 0 && (
+                          <div>
+                            <span className="text-sm text-gray-600">Skills</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {student.skills.slice(0, 3).map((skill, index) => (
+                                <span key={index} className="text-xs bg-cyan-100 text-cyan-700 px-2 py-1 rounded">
+                                  {skill}
+                                </span>
+                              ))}
+                              {student.skills.length > 3 && (
+                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                                  +{student.skills.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2 mt-4">
+                        <button
+                          onClick={() => {
+                            setSelectedStudent(student);
+                            setShowProfile(true);
+                          }}
+                          className="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                        >
+                          View Profile
+                        </button>
+                        <button className="flex-1 bg-cyan-600 text-white px-3 py-2 rounded-lg hover:bg-cyan-700 transition-colors text-sm font-medium">
+                          Contact
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
+        )}
 
-          {/* Recruiter Info */}
-          <div className="p-4 border-b border-white/10">
-            <input
-              value={recruiterName}
-              onChange={e => setRecruiterName(e.target.value)}
-              placeholder="Your name"
-              className="w-full bg-white/5 rounded-lg px-3 
-                py-2 text-white text-sm mb-2"/>
-            <input
-              value={recruiterCompany}
-              onChange={e => setRecruiterCompany(e.target.value)}
-              placeholder="Company name"
-              className="w-full bg-white/5 rounded-lg px-3 
-                py-2 text-white text-sm"/>
-          </div>
-
-          {/* Nav */}
-          <nav className="flex-1 p-4 space-y-1">
-            {[
-              {id:'browse', icon:'👥', 
-                label:'Browse Students',
-                count: filteredStudents.length},
-              {id:'shortlist', icon:'⭐', 
-                label:'My Shortlist',
-                count: shortlisted.length},
-              {id:'post', icon:'💼', 
-                label:'Post Requirement',
-                count: null},
-              {id:'messages', icon:'💬', 
-                label:'Messages',
-                count: null},
-            ].map(tab => (
-              <button key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center 
-                  justify-between px-4 py-3 rounded-xl 
-                  text-sm transition-all
-                  ${activeTab === tab.id
-                    ? 'bg-purple-600 text-white'
-                    : 'text-gray-400 hover:bg-white/5'}`}>
-                <span className="flex items-center gap-3">
-                  {tab.icon} {tab.label}
-                </span>
-                {tab.count !== null && (
-                  <span className={`text-xs px-2 py-0.5 
-                    rounded-full
-                    ${activeTab === tab.id
-                      ? 'bg-white/20'
-                      : 'bg-white/10'}`}>
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-
-          {/* Back to app */}
-          <div className="p-4 border-t border-white/10">
-            <a href="/dashboard"
-              className="flex items-center gap-2 
-                text-gray-400 hover:text-white 
-                text-sm transition-colors">
-              ← Back to Student App
-            </a>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="ml-64 flex-1 p-8">
-          {renderContent()}
-        </div>
-      </div>
-
-      {/* Student Profile Modal */}
-      {showProfile && selectedStudent && (
-        <div className="fixed inset-0 bg-black/80 
-          backdrop-blur-sm z-50 flex items-center 
-          justify-center p-4"
-          onClick={() => setShowProfile(false)}>
-          <div className="bg-[#111118] border border-white/20 
-            rounded-3xl p-6 w-full max-w-lg max-h-[90vh] 
-            overflow-y-auto"
-            onClick={e => e.stopPropagation()}>
-            
-            {/* Close */}
-            <button 
-              onClick={() => setShowProfile(false)}
-              className="float-right text-gray-400 
-                hover:text-white text-xl">
-              ✕
-            </button>
-
-            {/* Profile header */}
-            <div className="text-center mb-6">
-              {selectedStudent.photo ? (
-                <img src={selectedStudent.photo}
-                  className="w-20 h-20 rounded-full 
-                    mx-auto mb-3"/>
+        {activeTab === 'shortlist' && (
+          <div>
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Shortlisted Students</h2>
+              {shortlisted.length === 0 ? (
+                <div className="text-center py-8">
+                  <Star className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No students shortlisted yet</p>
+                  <button
+                    onClick={() => setActiveTab('browse')}
+                    className="mt-4 text-cyan-600 hover:text-cyan-700 font-medium"
+                  >
+                    Browse Students →
+                  </button>
+                </div>
               ) : (
-                <div className="w-20 h-20 rounded-full 
-                  bg-purple-600 flex items-center 
-                  justify-center text-white text-2xl 
-                  font-bold mx-auto mb-3">
-                  {selectedStudent.name?.charAt(0)}
+                <div className="space-y-4">
+                  {shortlisted.map((student) => (
+                    <div key={student.uid} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        {student.photo ? (
+                          <img src={student.photo} alt={student.name} className="w-10 h-10 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 bg-gradient-to-r from-[#0891B2] to-[#0D9488] rounded-full flex items-center justify-center text-white font-bold text-sm">
+                            {student.name?.charAt(0)?.toUpperCase() || 'A'}
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="font-medium text-gray-900">{student.name}</h4>
+                          <p className="text-sm text-gray-600">{student.college}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <div className={`font-bold ${getScoreColor(student.bridgeScore)}`}>
+                            {student.bridgeScore}
+                          </div>
+                          <div className="text-xs text-gray-500">Score</div>
+                        </div>
+                        <button
+                          onClick={() => toggleShortlist(student)}
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
-              <h2 className="text-white text-xl font-bold">
-                {selectedStudent.name}
-              </h2>
-              <p className="text-gray-400">
-                {selectedStudent.degree} • 
-                {selectedStudent.college}
-              </p>
-              <p className="text-gray-500 text-sm">
-                📍 {selectedStudent.location}
-              </p>
             </div>
+          </div>
+        )}
 
-            {/* BRIDGE Score */}
-            <div className={`rounded-2xl p-4 text-center mb-4
-              ${selectedStudent.bridgeScore >= 800
-                ? 'bg-green-500/20 border border-green-500/30'
-                : 'bg-purple-500/20 border border-purple-500/30'}`}>
-              <div className="text-4xl font-black text-white">
-                {selectedStudent.bridgeScore}
-              </div>
-              <div className="text-sm text-gray-300">
-                BRIDGE Score
-              </div>
+        {activeTab === 'post' && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Post Job Requirement</h2>
+            <p className="text-gray-600 mb-6">Share your job requirements with our student community</p>
+            
+            <div className="text-center py-12">
+              <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Coming Soon</h3>
+              <p className="text-gray-600">Job posting feature will be available soon</p>
             </div>
+          </div>
+        )}
 
-            {/* Details */}
-            <div className="space-y-3 mb-6">
-              <div className="bg-white/5 rounded-xl p-3">
-                <p className="text-gray-400 text-xs mb-1">
-                  Looking For
-                </p>
-                <p className="text-white text-sm">
-                  {selectedStudent.lookingFor}
-                </p>
-              </div>
-              <div className="bg-white/5 rounded-xl p-3">
-                <p className="text-gray-400 text-xs mb-1">
-                  Domains
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {selectedStudent.domains?.map(d => (
-                    <span key={d} 
-                      className="bg-purple-500/20 
-                        text-purple-300 text-xs px-2 
-                        py-0.5 rounded-full">
-                      {d}
-                    </span>
-                  ))}
+        {/* Profile Modal */}
+        {showProfile && selectedStudent && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">Student Profile</h2>
+                  <button
+                    onClick={() => setShowProfile(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
                 </div>
-              </div>
-              <div className="bg-white/5 rounded-xl p-3">
-                <p className="text-gray-400 text-xs mb-1">
-                  Skills
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {selectedStudent.skills?.map(s => (
-                    <span key={s}
-                      className="bg-white/10 text-gray-300 
-                        text-xs px-2 py-0.5 rounded-full">
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  toggleShortlist(selectedStudent);
-                  setShowProfile(false);
-                }}
-                className={`flex-1 py-3 rounded-xl 
-                  font-medium text-sm transition-all
-                  ${shortlisted.find(
-                    s => s.uid === selectedStudent.uid)
-                    ? 'bg-yellow-500/20 text-yellow-400'
-                    : 'bg-white/10 text-white'}`}>
-                {shortlisted.find(
-                  s => s.uid === selectedStudent.uid)
-                  ? '⭐ Shortlisted'
-                  : '☆ Shortlist'}
-              </button>
-              <button
-                onClick={() => {
-                  setShowProfile(false);
-                  setActiveTab('messages');
-                  openChat(selectedStudent);
-                }}
-                className="flex-1 bg-purple-600 text-white 
-                  py-3 rounded-xl font-medium text-sm">
-                💬 Send Message
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-// POST REQUIREMENT COMPONENT
-function PostRequirement({ db }) {
-  const [form, setForm] = useState({
-    title: '',
-    type: 'Full-time',
-    location: '',
-    salary: '',
-    skills: '',
-    domain: 'Tech',
-    openings: 1,
-    description: '',
-    deadline: '',
-    company: '',
-    contact: ''
-  });
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!form.title || !form.company) {
-      alert('Please fill job title and company name');
-      return;
-    }
-    setLoading(true);
-    try {
-      await addDoc(
-        collection(db, 'job_requirements'), {
-        ...form,
-        skills: form.skills.split(',')
-          .map(s => s.trim()),
-        postedAt: serverTimestamp(),
-        status: 'active'
-      });
-      setSubmitted(true);
-    } catch (err) {
-      console.error('Post error:', err);
-      alert('Failed to post. Try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (submitted) return (
-    <div className="text-center py-16">
-      <div className="text-6xl mb-4">🎉</div>
-      <h2 className="text-white text-2xl font-bold mb-2">
-        Requirement Posted!
-      </h2>
-      <p className="text-gray-400 mb-6">
-        Students will be notified about this opportunity
-      </p>
-      <button
-        onClick={() => setSubmitted(false)}
-        className="bg-purple-600 px-6 py-3 rounded-xl 
-          text-white font-medium">
-        Post Another →
-      </button>
-    </div>
-  );
-
-  return (
-    <div className="max-w-2xl">
-      <h2 className="text-2xl font-bold text-white mb-6">
-        Post Job Requirement
-      </h2>
-
-      <div className="space-y-4">
-        {/* Company */}
-        <div>
-          <label className="text-gray-400 text-sm mb-1 
-            block">Company Name *</label>
-          <input
-            value={form.company}
-            onChange={e => setForm({
-              ...form, company: e.target.value})}
-            placeholder="e.g. TCS, Startup India"
-            className="w-full bg-white/10 border 
-              border-white/20 rounded-xl px-4 py-3 
-              text-white"/>
-        </div>
-
-        {/* Job Title */}
-        <div>
-          <label className="text-gray-400 text-sm mb-1 
-            block">Job Title *</label>
-          <input
-            value={form.title}
-            onChange={e => setForm({
-              ...form, title: e.target.value})}
-            placeholder="e.g. Marketing Executive"
-            className="w-full bg-white/10 border 
-              border-white/20 rounded-xl px-4 py-3 
-              text-white"/>
-        </div>
-
-        {/* Type + Domain */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-gray-400 text-sm 
-              mb-1 block">Type</label>
-            <select
-              value={form.type}
-              onChange={e => setForm({
-                ...form, type: e.target.value})}
-              className="w-full bg-white/10 border 
-                border-white/20 rounded-xl px-4 py-3 
-                text-white">
-              <option className="bg-[#0A0A0F]">
-                Full-time
-              </option>
-              <option className="bg-[#0A0A0F]">
-                Internship
-              </option>
-            </select>
-          </div>
-          <div>
-            <label className="text-gray-400 text-sm 
-              mb-1 block">Domain</label>
-            <select
-              value={form.domain}
-              onChange={e => setForm({
-                ...form, domain: e.target.value})}
-              className="w-full bg-white/10 border 
-                border-white/20 rounded-xl px-4 py-3 
-                text-white">
-              {['Tech','Marketing','Finance',
-                'HR','Operations','MBA'].map(d => (
-                <option key={d} 
-                  className="bg-[#0A0A0F]">{d}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Location + Salary */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-gray-400 text-sm 
-              mb-1 block">Location</label>
-            <input
-              value={form.location}
-              onChange={e => setForm({
-                ...form, location: e.target.value})}
-              placeholder="Mumbai / Remote"
-              className="w-full bg-white/10 border 
-                border-white/20 rounded-xl px-4 py-3 
-                text-white"/>
-          </div>
-          <div>
-            <label className="text-gray-400 text-sm 
-              mb-1 block">Salary/Stipend</label>
-            <input
-              value={form.salary}
-              onChange={e => setForm({
-                ...form, salary: e.target.value})}
-              placeholder="3-5 LPA / ₹15,000/month"
-              className="w-full bg-white/10 border 
-                border-white/20 rounded-xl px-4 py-3 
-                text-white"/>
-          </div>
-        </div>
-
-        {/* Skills */}
-        <div>
-          <label className="text-gray-400 text-sm 
-            mb-1 block">Required Skills 
-            (comma separated)</label>
-          <input
-            value={form.skills}
-            onChange={e => setForm({
-              ...form, skills: e.target.value})}
-            placeholder="Excel, Canva, Digital Marketing"
-            className="w-full bg-white/10 border 
-              border-white/20 rounded-xl px-4 py-3 
-              text-white"/>
-        </div>
-
-        {/* Openings */}
-        <div>
-          <label className="text-gray-400 text-sm 
-            mb-1 block">Number of Openings</label>
-          <input
-            type="number"
-            value={form.openings}
-            onChange={e => setForm({
-              ...form, openings: e.target.value})}
-            min="1"
-            className="w-full bg-white/10 border 
-              border-white/20 rounded-xl px-4 py-3 
-              text-white"/>
-        </div>
-
-        {/* Description */}
-        <div>
-          <label className="text-gray-400 text-sm 
-            mb-1 block">Job Description</label>
-          <textarea
-            value={form.description}
-            onChange={e => setForm({
-              ...form, description: e.target.value})}
-            placeholder="Describe the role, 
-              responsibilities, requirements..."
-            rows={4}
-            className="w-full bg-white/10 border 
-              border-white/20 rounded-xl px-4 py-3 
-              text-white resize-none"/>
-        </div>
-
-        {/* Contact */}
-        <div>
-          <label className="text-gray-400 text-sm 
-            mb-1 block">Contact Email/WhatsApp</label>
-          <input
-            value={form.contact}
-            onChange={e => setForm({
-              ...form, contact: e.target.value})}
-            placeholder="hr@company.com or +91XXXXXXXXXX"
-            className="w-full bg-white/10 border 
-              border-white/20 rounded-xl px-4 py-3 
-              text-white"/>
-        </div>
-
-        {/* Submit */}
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="w-full bg-purple-600 
-            hover:bg-purple-700 text-white py-4 
-            rounded-xl font-bold text-lg 
-            disabled:opacity-50 transition-all">
-          {loading 
-            ? 'Posting...' 
-            : 'Post Requirement →'}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// MESSAGES COMPONENT
-function MessagesTab({ 
-  db, activeChat, setActiveChat,
-  messages, newMessage, setNewMessage,
-  sendMessage, openChat, 
-  recruiterName, shortlisted 
-}) {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-white mb-6">
-        Messages
-      </h2>
-
-      {!activeChat ? (
-        <div>
-          {shortlisted.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-4xl mb-4">💬</p>
-              <p className="text-white font-bold">
-                No conversations yet
-              </p>
-              <p className="text-gray-400 text-sm mt-2">
-                Shortlist students to message them
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {shortlisted.map(student => (
-                <div key={student.uid}
-                  onClick={() => openChat(student)}
-                  className="bg-white/5 border 
-                    border-white/10 rounded-2xl p-4 
-                    flex items-center gap-4 
-                    cursor-pointer hover:bg-white/10 
-                    transition-all">
-                  {student.photo ? (
-                    <img src={student.photo}
-                      className="w-12 h-12 rounded-full"/>
+                <div className="flex items-center gap-4 mb-6">
+                  {selectedStudent.photo ? (
+                    <img src={selectedStudent.photo} alt={selectedStudent.name} className="w-16 h-16 rounded-full object-cover" />
                   ) : (
-                    <div className="w-12 h-12 rounded-full 
-                      bg-purple-600 flex items-center 
-                      justify-center text-white font-bold">
-                      {student.name?.charAt(0)}
+                    <div className="w-16 h-16 bg-gradient-to-r from-[#0891B2] to-[#0D9488] rounded-full flex items-center justify-center text-white font-bold text-xl">
+                      {selectedStudent.name?.charAt(0)?.toUpperCase() || 'A'}
                     </div>
                   )}
-                  <div className="flex-1">
-                    <p className="text-white font-medium">
-                      {student.name}
-                    </p>
-                    <p className="text-gray-400 text-sm">
-                      {student.college}
-                    </p>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{selectedStudent.name}</h3>
+                    <p className="text-gray-600">{selectedStudent.college}</p>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <Mail className="w-4 h-4" />
+                        {selectedStudent.email || 'No email'}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Phone className="w-4 h-4" />
+                        {selectedStudent.phone || 'No phone'}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-purple-400 text-sm">
-                    Chat →
-                  </span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col h-[600px]">
-          {/* Chat header */}
-          <div className="flex items-center gap-3 
-            pb-4 border-b border-white/10 mb-4">
-            <button
-              onClick={() => setActiveChat(null)}
-              className="text-gray-400 hover:text-white">
-              ←
-            </button>
-            {activeChat.photo ? (
-              <img src={activeChat.photo}
-                className="w-10 h-10 rounded-full"/>
-            ) : (
-              <div className="w-10 h-10 rounded-full 
-                bg-purple-600 flex items-center 
-                justify-center text-white font-bold">
-                {activeChat.name?.charAt(0)}
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="text-2xl font-bold text-cyan-600">{selectedStudent.bridgeScore}</div>
+                    <div className="text-sm text-gray-600">BRIDGE Score</div>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">{selectedStudent.interviewsDone}</div>
+                    <div className="text-sm text-gray-600">Interviews Done</div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-2">Education</h4>
+                    <p className="text-gray-600">{selectedStudent.degree || 'Not specified'}</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-2">Domain</h4>
+                    <p className="text-gray-600">{selectedStudent.domain || 'Not specified'}</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-2">Location</h4>
+                    <p className="text-gray-600">{selectedStudent.location || 'Not specified'}</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-2">Looking For</h4>
+                    <p className="text-gray-600">{selectedStudent.lookingFor}</p>
+                  </div>
+                  
+                  {selectedStudent.skills && selectedStudent.skills.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Skills</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedStudent.skills.map((skill, index) => (
+                          <span key={index} className="bg-cyan-100 text-cyan-700 px-3 py-1 rounded-full text-sm">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => toggleShortlist(selectedStudent)}
+                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                      shortlisted.find(s => s.uid === selectedStudent.uid)
+                        ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                        : 'bg-cyan-600 text-white hover:bg-cyan-700'
+                    }`}
+                  >
+                    {shortlisted.find(s => s.uid === selectedStudent.uid) ? '⭐ Shortlisted' : '☆ Shortlist'}
+                  </button>
+                  <button className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors font-medium">
+                    Contact Student
+                  </button>
+                </div>
               </div>
-            )}
-            <div>
-              <p className="text-white font-medium">
-                {activeChat.name}
-              </p>
-              <p className="text-gray-400 text-xs">
-                {activeChat.college}
-              </p>
             </div>
           </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto 
-            space-y-3 mb-4">
-            {messages.length === 0 ? (
-              <p className="text-center text-gray-500 
-                text-sm py-8">
-                Start the conversation!
-              </p>
-            ) : (
-              messages.map(msg => (
-                <div key={msg.id}
-                  className={`flex 
-                    ${msg.senderId === 'recruiter'
-                      ? 'justify-end'
-                      : 'justify-start'}`}>
-                  <div className={`max-w-[70%] px-4 
-                    py-2 rounded-2xl text-sm
-                    ${msg.senderId === 'recruiter'
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-white/10 text-white'}`}>
-                    {msg.text}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Input */}
-          <div className="flex gap-3">
-            <input
-              value={newMessage}
-              onChange={e => setNewMessage(e.target.value)}
-              onKeyPress={e => e.key === 'Enter' && 
-                sendMessage(
-                  activeChat.uid, 
-                  activeChat.name)}
-              placeholder="Type a message..."
-              className="flex-1 bg-white/10 border 
-                border-white/20 rounded-xl px-4 py-3 
-                text-white text-sm"/>
-            <button
-              onClick={() => sendMessage(
-                activeChat.uid, 
-                activeChat.name)}
-              className="bg-purple-600 px-6 py-3 
-                rounded-xl text-white font-medium">
-              Send
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </AppShell>
   );
 }
