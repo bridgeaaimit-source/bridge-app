@@ -390,6 +390,8 @@ export default function SmartInterviewPage() {
       try {
         const user = auth.currentUser;
         if (user) {
+          console.log('🔄 Starting feedback save process...');
+          
           // Save interview feedback
           await addDoc(collection(db, 'users', user.uid, 'interview_feedback'), {
             jobRole,
@@ -399,9 +401,10 @@ export default function SmartInterviewPage() {
             timestamp: new Date().toISOString(),
             createdAt: Date.now()
           });
-          console.log('Feedback saved to history');
+          console.log('✅ Feedback saved to history');
           
           // Update user stats (interviewsDone, avgScore, bridgeScore)
+          console.log('📈 Starting user stats update...');
           const userRef = doc(db, 'users', user.uid);
           const userSnap = await getDoc(userRef);
           
