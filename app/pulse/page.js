@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Home, Mic, Zap, Trophy, User, Plus, Filter, TrendingUp, X, RefreshCw, ExternalLink, Users, Calendar, Search, Clock, MessageSquare, Lightbulb, Target, ArrowUpRight, Bookmark, Share2, Eye, Flame, Star } from "lucide-react";
+import { Home, Mic, Zap, Trophy, User, Plus, Filter, TrendingUp, X, RefreshCw, ExternalLink, Users, Calendar, Search, Clock, MessageSquare, Lightbulb, Target, ArrowUpRight, Bookmark, Share2, Eye, Flame, Star, Sparkles, Brain, Rocket, Award, BarChart3, Globe, Building2, Briefcase, GraduationCap, Code, DollarSign, MapPin, ChevronRight, Bell, Settings, Menu, TrendingUpIcon, UsersIcon, CalendarIcon, Heart } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 
@@ -17,6 +17,8 @@ export default function PulsePage() {
   const [gdLoading, setGdLoading] = useState(true);
   const [gdPracticeLoading, setGdPracticeLoading] = useState(false);
   const [loadingArticle, setLoadingArticle] = useState('');
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [savedArticles, setSavedArticles] = useState([]);
 
   useEffect(() => {
     // Load initial data
@@ -50,17 +52,6 @@ export default function PulsePage() {
       setGdInsights(data);
     } catch (err) {
       console.error('GD insights error:', err);
-      let errorMessage = 'Failed to load GD insights';
-      
-      if (err.message.includes('JSON')) {
-        errorMessage = 'Server returned invalid GD data format';
-      } else if (err.message.includes('529') || err.message.includes('overloaded')) {
-        errorMessage = 'AI service is temporarily busy. Please try again.';
-      } else if (err.message.includes('Failed to fetch')) {
-        errorMessage = 'Network error. Please check your connection.';
-      }
-      
-      console.error('GD insights fetch error:', errorMessage);
     } finally {
       setGdLoading(false);
     }
@@ -97,18 +88,7 @@ export default function PulsePage() {
       console.log(`Successfully loaded ${data.articles?.length || 0} articles for ${category}`);
     } catch (err) {
       console.error('News fetch error:', err);
-      let errorMessage = 'Failed to load news';
-      
-      if (err.message.includes('JSON')) {
-        errorMessage = 'Server returned invalid data format';
-      } else if (err.message.includes('529') || err.message.includes('overloaded')) {
-        errorMessage = 'AI service is temporarily busy. Please try again.';
-      } else if (err.message.includes('Failed to fetch')) {
-        errorMessage = 'Network error. Please check your connection.';
-      }
-      
-      setError(errorMessage);
-      // Set empty data to prevent infinite loading
+      setError('Failed to load news. Please try again.');
       setNewsData({ articles: [] });
     } finally {
       setNewsLoading(false);
@@ -121,10 +101,6 @@ export default function PulsePage() {
     fetchNews(activeCategory);
   };
 
-  const handlePullToRefresh = () => {
-    refreshNews();
-  };
-
   const handleCategoryChange = (category) => {
     setActiveCategory(category);
     fetchNews(category);
@@ -135,10 +111,8 @@ export default function PulsePage() {
     setGdPracticeLoading(true);
     
     try {
-      // Store in sessionStorage and redirect
       sessionStorage.setItem('gd_topic', JSON.stringify(gdInsights));
       window.location.href = '/gd';
-      
     } catch (err) {
       console.error('GD generation error:', err);
     } finally {
@@ -146,27 +120,30 @@ export default function PulsePage() {
     }
   };
 
-  const formatTimeAgo = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
+  const toggleSaveArticle = (article) => {
+    setSavedArticles(prev => 
+      prev.some(a => a.title === article.title) 
+        ? prev.filter(a => a.title !== article.title)
+        : [...prev, article]
+    );
+  };
 
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
+  const isArticleSaved = (article) => {
+    return savedArticles.some(a => a.title === article.title);
   };
 
   if (loading) {
     return (
       <AppShell>
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center h-64">
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
+          <div className="flex items-center justify-center h-96">
             <div className="text-center">
-              <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500/30 border-t-purple-500 mx-auto mb-4"></div>
-              <div className="text-gray-600">Loading PULSE Feed...</div>
+              <div className="relative">
+                <div className="w-16 h-16 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600 mx-auto mb-6"></div>
+                <div className="absolute inset-0 w-16 h-16 animate-ping rounded-full bg-purple-200 opacity-20 mx-auto"></div>
+              </div>
+              <div className="text-2xl font-bold text-gray-800 mb-2">Loading Amazing Content</div>
+              <div className="text-gray-600">Preparing your personalized feed...</div>
             </div>
           </div>
         </div>
@@ -176,372 +153,492 @@ export default function PulsePage() {
 
   return (
     <AppShell>
-      <div className="max-w-7xl mx-auto">
-        {/* Enhanced Header */}
-        <div className="bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 rounded-3xl p-8 mb-8 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Zap className="w-6 h-6" />
-                </div>
-                <div>
-                  <h1 className="text-4xl font-bold">PULSE Feed</h1>
-                  <p className="text-purple-100 text-lg">Real-time placement news & company insights</p>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 opacity-90"></div>
+          <div className="absolute inset-0">
+            <div className="absolute top-0 left-0 w-96 h-96 bg-purple-300 rounded-full filter blur-3xl opacity-20 animate-pulse"></div>
+            <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-300 rounded-full filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
+            <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-purple-400 rounded-full filter blur-3xl opacity-10 animate-pulse delay-500"></div>
+          </div>
+          
+          <div className="relative max-w-7xl mx-auto px-6 py-16">
+            <div className="text-center text-white">
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <div className="relative">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                    <Zap className="w-8 h-8 text-yellow-300" />
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
+                    <Sparkles className="w-3 h-3 text-white" />
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-4 mt-4">
-                <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-sm">Live Feed</span>
+              
+              <h1 className="text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-100">
+                PULSE Feed
+              </h1>
+              <p className="text-xl text-purple-100 mb-8 max-w-2xl mx-auto">
+                Your gateway to real-time placement insights, company news, and career opportunities that shape your future
+              </p>
+              
+              <div className="flex items-center justify-center gap-6 mb-8">
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium">Live Feed</span>
                 </div>
-                <span className="text-purple-200 text-sm">Updated {new Date().toLocaleTimeString()}</span>
+                <div className="text-purple-200 text-sm">
+                  {newsData?.articles?.length || 0} Articles Available
+                </div>
+                <div className="text-purple-200 text-sm">
+                  Updated {new Date().toLocaleTimeString()}
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={() => {
+                    fetchNews(activeCategory);
+                    fetchGDInsights(activeCategory);
+                  }}
+                  className="bg-white text-purple-700 px-8 py-4 rounded-2xl font-bold hover:bg-purple-50 transition-all duration-300 transform hover:scale-105 shadow-2xl flex items-center gap-3"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                  Refresh Feed
+                </button>
               </div>
             </div>
-            <button
-              onClick={() => {
-                fetchNews(activeCategory);
-                fetchGDInsights(activeCategory);
-              }}
-              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-6 py-3 rounded-xl flex items-center gap-2 transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Refresh
-            </button>
           </div>
         </div>
 
         {/* GD Booster Hero Banner */}
         {!gdLoading && gdInsights && (
-          <div 
-            className="mb-8 rounded-2xl p-6 text-white"
-            style={{
-              background: 'linear-gradient(135deg, #6C3FE8 0%, #9B6DFF 100%)',
-              borderRadius: '16px',
-              padding: '24px 36px',
-              marginBottom: '24px',
-              display: 'grid',
-              gridTemplateColumns: 'auto 1fr auto auto',
-              alignItems: 'center',
-              gap: '32px'
-            }}
-          >
-            {/* Label column */}
-            <div>
-              <div className="text-xs uppercase tracking-wide mb-2" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px' }}>
-                Today's GD Topic
-              </div>
-              <div className="text-xl font-bold leading-tight" style={{ maxWidth: '240px', fontSize: '20px', fontWeight: '700' }}>
-                {gdInsights.gd_topic}
-              </div>
-            </div>
+          <div className="max-w-7xl mx-auto px-6 -mt-8 relative z-10">
+            <div 
+              className="relative overflow-hidden rounded-3xl shadow-2xl transform hover:scale-[1.02] transition-all duration-500"
+              style={{
+                background: 'linear-gradient(135deg, #6C3FE8 0%, #9B6DFF 50%, #C084FC 100%)'
+              }}
+            >
+              <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full filter blur-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full filter blur-3xl"></div>
+              
+              <div className="relative p-8 text-white">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-center">
+                  {/* Label column */}
+                  <div className="lg:col-span-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                        <Brain className="w-6 h-6" />
+                      </div>
+                      <div className="text-xs uppercase tracking-wider font-bold" style={{ color: 'rgba(255,255,255,0.8)' }}>
+                        Today's GD Topic
+                      </div>
+                    </div>
+                    <div className="text-2xl font-bold leading-tight mb-4">
+                      {gdInsights.gd_topic}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-purple-200">Hot Topic</span>
+                    </div>
+                  </div>
 
-            {/* Key points column */}
-            <div>
-              <div className="text-sm" style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>
-                <span className="inline-block">• {gdInsights.pros}</span>
-                <span className="mx-2">·</span>
-                <span className="inline-block">• {gdInsights.cons}</span>
-              </div>
-            </div>
+                  {/* Key points column */}
+                  <div className="lg:col-span-1">
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-6 h-6 bg-green-400/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                        </div>
+                        <div>
+                          <div className="text-sm font-semibold mb-1 text-green-100">FOR</div>
+                          <div className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.9)' }}>
+                            {gdInsights.pros}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-6 h-6 bg-red-400/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                          <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                        </div>
+                        <div>
+                          <div className="text-sm font-semibold mb-1 text-red-100">AGAINST</div>
+                          <div className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.9)' }}>
+                            {gdInsights.cons}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-            {/* Power phrase column */}
-            <div>
-              <div 
-                className="text-sm italic"
-                style={{
-                  color: 'rgba(255,255,255,0.8)',
-                  fontSize: '13px',
-                  borderLeft: '2px solid rgba(255,255,255,0.4)',
-                  paddingLeft: '14px',
-                  maxWidth: '260px'
-                }}
-              >
-                "{gdInsights.power_phrase}"
-              </div>
-            </div>
+                  {/* Power phrase column */}
+                  <div className="lg:col-span-1">
+                    <div 
+                      className="relative p-4 rounded-2xl backdrop-blur-sm"
+                      style={{
+                        background: 'rgba(255,255,255,0.1)',
+                        borderLeft: '3px solid rgba(255,255,255,0.4)'
+                      }}
+                    >
+                      <div className="absolute top-2 left-2">
+                        <Sparkles className="w-4 h-4 text-yellow-300" />
+                      </div>
+                      <div className="text-sm italic leading-relaxed pl-6" style={{ color: 'rgba(255,255,255,0.9)' }}>
+                        "{gdInsights.power_phrase}"
+                      </div>
+                    </div>
+                  </div>
 
-            {/* CTA column */}
-            <div>
-              <button
-                onClick={handleGDPractice}
-                disabled={gdPracticeLoading}
-                className="px-6 py-3 rounded-lg font-bold transition-all duration-300 hover:transform hover:-translate-y-0.5"
-                style={{
-                  background: 'white',
-                  color: '#6C3FE8',
-                  padding: '12px 24px',
-                  borderRadius: '10px',
-                  fontWeight: '700',
-                  fontSize: '14px'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)';
-                  e.target.style.transform = 'translateY(-2px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.boxShadow = 'none';
-                  e.target.style.transform = 'translateY(0)';
-                }}
-              >
-                {gdPracticeLoading ? 'Loading...' : 'Practice Now →'}
-              </button>
+                  {/* CTA column */}
+                  <div className="lg:col-span-1">
+                    <button
+                      onClick={handleGDPractice}
+                      disabled={gdPracticeLoading}
+                      className="w-full bg-white text-purple-700 px-8 py-4 rounded-2xl font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-2xl flex items-center justify-center gap-3 disabled:opacity-50"
+                    >
+                      {gdPracticeLoading ? (
+                        <>
+                          <div className="w-5 h-5 animate-spin rounded-full border-2 border-purple-600 border-t-transparent"></div>
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <Rocket className="w-5 h-5" />
+                          Practice Now
+                          <ChevronRight className="w-5 h-5" />
+                        </>
+                      )}
+                    </button>
+                    <div className="mt-3 text-center text-sm text-purple-200">
+                      Join 2,847 students practicing today
+                </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Sidebar - Category Filters */}
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center gap-2 mb-4">
-                <Filter className="w-5 h-5 text-purple-600" />
-                <h3 className="font-semibold text-gray-900">Categories</h3>
-              </div>
-              <div className="space-y-2">
-                {categories.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => {
-                      setActiveCategory(category);
-                      fetchNews(category);
-                      fetchGDInsights(category);
-                    }}
-                    className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 flex items-center justify-between group ${
-                      activeCategory === category
-                        ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg transform scale-105'
-                        : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700'
-                    }`}
-                  >
-                    <span className="font-medium">{category}</span>
-                    {activeCategory === category && (
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Center Column - News Feed */}
-          <div className="lg:col-span-6">
-            {/* Search Bar */}
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search news, companies, topics..."
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            {/* Live Feed Indicator */}
-            <div className="flex items-center gap-3 mb-6 p-4 bg-green-50 rounded-2xl border border-green-200">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-semibold text-green-800">Live Feed Active</span>
-              <span className="text-sm text-green-600">• {newsData?.articles?.length || 0} new articles</span>
-            </div>
-
-            {/* News Cards */}
-            <div className="space-y-6">
-              {newsLoading ? (
-                <div className="space-y-4">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                      <div className="animate-pulse space-y-4">
-                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                        <div className="h-3 bg-gray-200 rounded w-full"></div>
-                        <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-                      </div>
-                    </div>
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Left Sidebar - Categories */}
+            <div className="lg:col-span-3">
+              <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20 sticky top-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center">
+                    <Filter className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="font-bold text-gray-900 text-lg">Categories</h3>
+                </div>
+                
+                <div className="space-y-3">
+                  {categories.map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => handleCategoryChange(category)}
+                      className={`w-full text-left px-4 py-3 rounded-2xl transition-all duration-300 flex items-center justify-between group ${
+                        activeCategory === category
+                          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg transform scale-105'
+                          : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700'
+                      }`}
+                    >
+                      <span className="font-semibold">{category}</span>
+                      {activeCategory === category && (
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      )}
+                    </button>
                   ))}
                 </div>
-              ) : error ? (
-                <div className="bg-red-50 rounded-2xl p-6 border border-red-200">
-                  <div className="text-red-600 text-center">{error}</div>
-                  <button
-                    onClick={() => fetchNews(activeCategory)}
-                    className="mt-4 mx-auto block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                  >
-                    Retry
-                  </button>
+
+                {/* Trending Tags */}
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Flame className="w-5 h-5 text-orange-500" />
+                    <h3 className="font-bold text-gray-900">Trending</h3>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {['AI', 'Remote', 'Startups', 'Campus'].map((tag) => (
+                      <span key={tag} className="px-3 py-1 bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 rounded-full text-xs font-semibold">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              ) : newsData && newsData.articles && newsData.articles.length > 0 ? (
-                newsData.articles.map((article, index) => (
-                  <div key={index} className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 overflow-hidden group">
-                    {/* Article Header */}
-                    <div className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs font-semibold text-purple-700 bg-purple-100 rounded-full px-3 py-1">
-                              {article.source || 'Unknown'}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {article.time || 'Just now'}
-                            </span>
-                            {article.trending && (
-                              <span className="flex items-center gap-1 text-xs font-semibold text-orange-700 bg-orange-100 rounded-full px-2 py-1">
-                                <Flame className="w-3 h-3" />
-                                Trending
-                              </span>
-                            )}
-                          </div>
-                          <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-purple-700 transition-colors">
-                            {article.title}
-                          </h3>
-                          <p className="text-gray-600 mb-4 line-clamp-3">{article.description}</p>
+              </div>
+            </div>
+
+            {/* Center Column - News Feed */}
+            <div className="lg:col-span-6">
+              {/* Search Bar */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-4 shadow-xl border border-white/20 mb-8">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Search for companies, topics, or insights..."
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder-gray-500"
+                  />
+                </div>
+              </div>
+
+              {/* Live Feed Indicator */}
+              <div className="flex items-center gap-4 mb-8 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-200">
+                <div className="relative">
+                  <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
+                  <div className="absolute inset-0 w-4 h-4 bg-green-500 rounded-full animate-ping"></div>
+                </div>
+                <div>
+                  <div className="font-bold text-green-800">Live Feed Active</div>
+                  <div className="text-sm text-green-600">{newsData?.articles?.length || 0} new articles</div>
+                </div>
+              </div>
+
+              {/* News Cards */}
+              <div className="space-y-6">
+                {newsLoading ? (
+                  <div className="space-y-6">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
+                        <div className="animate-pulse space-y-4">
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                          <div className="h-3 bg-gray-200 rounded w-full"></div>
+                          <div className="h-3 bg-gray-200 rounded w-5/6"></div>
                         </div>
-                        {article.image && (
+                      </div>
+                    ))}
+                  </div>
+                ) : error ? (
+                  <div className="bg-red-50 rounded-3xl p-8 border border-red-200 text-center">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <X className="w-8 h-8 text-red-600" />
+                    </div>
+                    <div className="text-red-600 font-semibold mb-4">{error}</div>
+                    <button
+                      onClick={() => fetchNews(activeCategory)}
+                      className="bg-red-600 text-white px-6 py-3 rounded-2xl font-semibold hover:bg-red-700 transition-colors"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : newsData && newsData.articles && newsData.articles.length > 0 ? (
+                  newsData.articles.map((article, index) => (
+                    <div key={index} className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1">
+                      {/* Article Image */}
+                      {article.image && (
+                        <div className="relative h-48 overflow-hidden">
                           <img
                             src={article.image}
                             alt={article.title}
-                            className="w-32 h-32 object-cover rounded-xl flex-shrink-0 ml-4"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           />
-                        )}
-                      </div>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                          <div className="absolute top-4 left-4">
+                            <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                              {article.source || 'Unknown'}
+                            </span>
+                          </div>
+                          <div className="absolute top-4 right-4">
+                            <button
+                              onClick={() => toggleSaveArticle(article)}
+                              className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
+                            >
+                              <Bookmark className={`w-5 h-5 ${isArticleSaved(article) ? 'text-yellow-400 fill-current' : 'text-white'}`} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
-                      {/* Tags and Actions */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex flex-wrap gap-2">
+                      {/* Article Content */}
+                      <div className="p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                          <span className="text-xs font-semibold text-purple-700 bg-purple-100 rounded-full px-3 py-1">
+                            {article.source || 'Unknown'}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {article.time || 'Just now'}
+                          </span>
+                          {article.trending && (
+                            <span className="flex items-center gap-1 text-xs font-semibold text-orange-700 bg-orange-100 rounded-full px-2 py-1">
+                              <Flame className="w-3 h-3" />
+                              Trending
+                            </span>
+                          )}
+                        </div>
+
+                        <h3 className="text-2xl font-bold text-gray-900 mb-4 line-clamp-2 group-hover:text-purple-700 transition-colors">
+                          {article.title}
+                        </h3>
+                        
+                        <p className="text-gray-600 mb-6 line-clamp-3 text-lg leading-relaxed">
+                          {article.description}
+                        </p>
+
+                        {/* Tags */}
+                        <div className="flex flex-wrap gap-2 mb-6">
                           {article.placement_insight && (
-                            <div className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-full">
-                              <Target className="w-3 h-3" />
+                            <div className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-700 text-sm font-semibold rounded-full">
+                              <Target className="w-4 h-4" />
                               Placement Insight
                             </div>
                           )}
                           {article.gd_topic && (
-                            <button
-                              onClick={() => {
-                                toast.success('GD topic saved for practice!');
-                              }}
-                              className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full hover:bg-green-100 transition-colors cursor-pointer"
-                            >
-                              <MessageSquare className="w-3 h-3" />
+                            <div className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 text-sm font-semibold rounded-full">
+                              <MessageSquare className="w-4 h-4" />
                               GD Topic
-                            </button>
+                            </div>
                           )}
                         </div>
                         
-                        <div className="flex items-center gap-2">
-                          <button className="p-2 text-gray-400 hover:text-purple-600 transition-colors">
-                            <Bookmark className="w-4 h-4" />
-                          </button>
-                          <button className="p-2 text-gray-400 hover:text-purple-600 transition-colors">
-                            <Share2 className="w-4 h-4" />
-                          </button>
-                          <a
-                            href={article.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-                          >
-                            Read More
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
+                        {/* Actions */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <Eye className="w-4 h-4" />
+                              {Math.floor(Math.random() * 1000) + 100}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MessageSquare className="w-4 h-4" />
+                              {Math.floor(Math.random() * 50) + 5}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Heart className="w-4 h-4" />
+                              {Math.floor(Math.random() * 100) + 10}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-3">
+                            <button className="p-2 text-gray-400 hover:text-purple-600 transition-colors">
+                              <Share2 className="w-5 h-5" />
+                            </button>
+                            <a
+                              href={article.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105"
+                            >
+                              Read More
+                              <ArrowUpRight className="w-4 h-4" />
+                            </a>
+                          </div>
                         </div>
                       </div>
                     </div>
-
-                    {/* Engagement Bar */}
-                    <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                      <div className="flex items-center gap-4">
-                        <span className="flex items-center gap-1">
-                          <Eye className="w-3 h-3" />
-                          {Math.floor(Math.random() * 1000) + 100} views
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MessageSquare className="w-3 h-3" />
-                          {Math.floor(Math.random() * 50) + 5} comments
-                        </span>
-                      </div>
-                      <span>Relevance: {Math.floor(Math.random() * 30) + 70}%</span>
+                  ))
+                ) : (
+                  <div className="bg-gray-50 rounded-3xl p-12 text-center border border-gray-200">
+                    <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Search className="w-10 h-10 text-gray-400" />
                     </div>
+                    <div className="text-gray-500 text-xl font-semibold mb-2">No articles found</div>
+                    <div className="text-gray-400">Try selecting a different category</div>
                   </div>
-                ))
-              ) : (
-                <div className="bg-gray-50 rounded-2xl p-12 text-center border border-gray-200">
-                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <div className="text-gray-500 text-lg font-medium mb-2">No articles found</div>
-                  <div className="text-gray-400 text-sm">Try selecting a different category</div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right Sidebar - Only Top Companies, Pro Tip, Today's Activity */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Top Companies */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center gap-2 mb-4">
-                <Trophy className="w-5 h-5 text-purple-500" />
-                <h3 className="font-semibold text-gray-900">Top Companies</h3>
+                )}
               </div>
-              <div className="space-y-3">
-                {[
-                  { name: 'Google', jobs: 245, trend: 'up' },
-                  { name: 'Microsoft', jobs: 189, trend: 'up' },
-                  { name: 'Amazon', jobs: 167, trend: 'down' },
-                  { name: 'TCS', jobs: 423, trend: 'up' },
-                  { name: 'Infosys', jobs: 378, trend: 'stable' }
-                ].map((company, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-purple-50 transition-colors group cursor-pointer">
+            </div>
+
+            {/* Right Sidebar */}
+            <div className="lg:col-span-3 space-y-6">
+              {/* Top Companies */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
+                    <Trophy className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="font-bold text-gray-900 text-lg">Top Companies</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  {[
+                    { name: 'Google', jobs: 245, trend: 'up', logo: '🔍' },
+                    { name: 'Microsoft', jobs: 189, trend: 'up', logo: '🪟' },
+                    { name: 'Amazon', jobs: 167, trend: 'down', logo: '📦' },
+                    { name: 'TCS', jobs: 423, trend: 'up', logo: '💼' },
+                    { name: 'Infosys', jobs: 378, trend: 'stable', logo: '🏢' }
+                  ].map((company, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-purple-50 transition-all duration-300 group cursor-pointer transform hover:scale-105">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center text-2xl">
+                          {company.logo}
+                        </div>
+                        <div>
+                          <div className="font-bold text-gray-900 group-hover:text-purple-700">{company.name}</div>
+                          <div className="text-sm text-gray-500">{company.jobs} positions</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {company.trend === 'up' && <TrendingUp className="w-5 h-5 text-green-500" />}
+                        {company.trend === 'down' && <TrendingUp className="w-5 h-5 text-red-500 rotate-180" />}
+                        {company.trend === 'stable' && <div className="w-5 h-5 bg-gray-300 rounded-full"></div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Pro Tip */}
+              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl p-6 shadow-xl border border-yellow-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
+                    <Star className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="font-bold text-gray-900 text-lg">Pro Tip</h3>
+                </div>
+                
+                <div className="p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-yellow-200">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <Lightbulb className="w-4 h-4 text-yellow-600" />
+                    </div>
+                    <p className="text-gray-800 leading-relaxed">
+                      "Research the company's recent achievements and challenges before your interview. This shows genuine interest and helps you ask insightful questions that impress recruiters."
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Activity Stats */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                    <BarChart3 className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="font-bold text-gray-900 text-lg">Today's Activity</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-purple-50 rounded-2xl">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-purple-700 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                        {company.name.charAt(0)}
+                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Zap className="w-5 h-5 text-purple-600" />
                       </div>
-                      <div>
-                        <div className="font-semibold text-gray-900 group-hover:text-purple-700">{company.name}</div>
-                        <div className="text-xs text-gray-500">{company.jobs} open positions</div>
-                      </div>
+                      <span className="font-semibold text-purple-900">Articles</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {company.trend === 'up' && <TrendingUp className="w-4 h-4 text-green-500" />}
-                      {company.trend === 'down' && <TrendingUp className="w-4 h-4 text-red-500 rotate-180" />}
-                      {company.trend === 'stable' && <div className="w-4 h-4 bg-gray-300 rounded-full" />}
-                    </div>
+                    <span className="text-2xl font-bold text-purple-700">{newsData?.articles?.length || 0}</span>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Interview Tip of the Day */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center gap-2 mb-4">
-                <Star className="w-5 h-5 text-yellow-500" />
-                <h3 className="font-semibold text-gray-900">Pro Tip</h3>
-              </div>
-              <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
-                <p className="text-sm text-gray-800 leading-relaxed">
-                  "Always research the company's recent achievements and challenges before your interview. This shows genuine interest and helps you ask insightful questions."
-                </p>
-              </div>
-            </div>
-
-            {/* Today's Activity */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <h3 className="font-semibold text-gray-900 mb-4">Today's Activity</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-xl">
-                  <span className="text-sm font-medium text-purple-900">News Articles</span>
-                  <span className="text-lg font-bold text-purple-700">{newsData?.articles?.length || 0}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-green-50 rounded-xl">
-                  <span className="text-sm font-medium text-green-900">GD Topics</span>
-                  <span className="text-lg font-bold text-green-700">1</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
-                  <span className="text-sm font-medium text-blue-900">Active Users</span>
-                  <span className="text-lg font-bold text-blue-700">2.8K</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl">
-                  <span className="text-sm font-medium text-orange-900">Last Updated</span>
-                  <span className="text-lg font-bold text-orange-700">{new Date().toLocaleTimeString()}</span>
+                  
+                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <Users className="w-5 h-5 text-green-600" />
+                      </div>
+                      <span className="font-semibold text-green-900">Active Users</span>
+                    </div>
+                    <span className="text-2xl font-bold text-green-700">2.8K</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Clock className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <span className="font-semibold text-blue-900">Last Update</span>
+                    </div>
+                    <span className="text-lg font-bold text-blue-700">{new Date().toLocaleTimeString()}</span>
+                  </div>
                 </div>
               </div>
             </div>
