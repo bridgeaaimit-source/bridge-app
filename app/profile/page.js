@@ -6,7 +6,7 @@ import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const domainOptions = ["IT", "Marketing", "Finance", "HR", "Analytics", "Consulting", "Operations"];
@@ -84,7 +84,9 @@ export default function ProfilePage() {
     setSaving(true);
     try {
       const userRef = doc(db, 'users', currentUser.uid);
-      await updateDoc(userRef, {
+      const userSnap = await getDoc(userRef);
+      
+      const updateData = {
         college: userData.college,
         degree: userData.degree,
         domain: userData.domain,
@@ -93,12 +95,36 @@ export default function ProfilePage() {
         phone: userData.phone,
         bio: userData.bio,
         updatedAt: new Date().toISOString()
-      });
+      };
+      
+      if (userSnap.exists()) {
+        // Update existing document
+        await updateDoc(userRef, updateData);
+      } else {
+        // Create new document with user info
+        await setDoc(userRef, {
+          uid: currentUser.uid,
+          name: currentUser.displayName || '',
+          email: currentUser.email || '',
+          photo: currentUser.photoURL || '',
+          role: 'student',
+          approved: true,
+          bridgeScore: 500,
+          interviewsDone: 0,
+          avgScore: 0,
+          streak: 0,
+          domains: [],
+          skills: [],
+          createdAt: new Date().toISOString(),
+          ...updateData
+        });
+      }
+      
       toast.success("Profile updated successfully!");
       setIsEditing(false);
     } catch (error) {
       console.error('Error saving profile:', error);
-      toast.error('Failed to update profile');
+      toast.error(`Failed to update profile: ${error.message}`);
     } finally {
       setSaving(false);
     }
