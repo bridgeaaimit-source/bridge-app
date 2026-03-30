@@ -4,7 +4,7 @@ import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle,
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { auth, db } from "@/lib/firebase";
-import { doc, setDoc, collection, addDoc, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { doc, setDoc, collection, addDoc, query, orderBy, limit, getDocs, getDoc, updateDoc } from "firebase/firestore";
 
 export default function SmartInterviewPage() {
   const [stage, setStage] = useState('setup'); // 'setup' | 'interviewing' | 'feedback' | 'history'
@@ -390,6 +390,7 @@ export default function SmartInterviewPage() {
       try {
         const user = auth.currentUser;
         if (user) {
+          // Save interview feedback
           await addDoc(collection(db, 'users', user.uid, 'interview_feedback'), {
             jobRole,
             round,
@@ -399,6 +400,32 @@ export default function SmartInterviewPage() {
             createdAt: Date.now()
           });
           console.log('Feedback saved to history');
+          
+          // Update user stats (interviewsDone, avgScore, bridgeScore)
+          const userRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userRef);
+          
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            const newInterviewsDone = (userData.interviewsDone || 0) + 1;
+            const overallScore = data.overall_score || 5;
+            const newAvgScore = ((userData.avgScore || 0) * (userData.interviewsDone || 0) + overallScore) / newInterviewsDone;
+            const newBridgeScore = Math.min(1000, (userData.bridgeScore || 500) + (overallScore * 10));
+            
+            await updateDoc(userRef, {
+              interviewsDone: newInterviewsDone,
+              avgScore: Math.round(newAvgScore * 10) / 10, // Round to 1 decimal
+              bridgeScore: newBridgeScore,
+              streak: (userData.streak || 0) + 1,
+              updatedAt: new Date().toISOString()
+            });
+            
+            console.log('✅ User stats updated:', {
+              interviewsDone: newInterviewsDone,
+              avgScore: newAvgScore,
+              bridgeScore: newBridgeScore
+            });
+          }
         }
       } catch (saveError) {
         console.error('Error saving feedback:', saveError);

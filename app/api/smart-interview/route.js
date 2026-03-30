@@ -371,6 +371,18 @@ Return ONLY valid JSON:
   "hire_reasoning": "Honest one paragraph hiring decision"
 }`;
 
+    console.log('📝 Prompt length:', prompt.length);
+    console.log('📝 History length:', historyText.length);
+    console.log('📝 Number of Q&A pairs:', conversation_history.length);
+
+    if (prompt.length > 15000) {
+      console.error('⚠️ Prompt too long, truncating...');
+      // Truncate history if too long
+      const truncatedHistory = historyText.substring(0, 8000);
+      const truncatedPrompt = prompt.replace(historyText, truncatedHistory);
+      console.log('📝 Truncated prompt length:', truncatedPrompt.length);
+    }
+
     const message = await retryClaudeCall(() =>
       client.messages.create({
         model: 'claude-haiku-4-5-20251001',
@@ -379,15 +391,22 @@ Return ONLY valid JSON:
       })
     );
 
+    console.log('✅ Claude API call successful');
+    console.log('Raw Claude response:', message.content[0].text);
+    
     const text = message.content[0].text
       .replace(/```json/g, '').replace(/```/g, '').trim();
     
-    console.log('Raw Claude response:', message.content[0].text);
     console.log('Cleaned text:', text);
     console.log('Text length:', text.length);
     
     if (!text || text.length === 0) {
-      console.error('Empty response from Claude');
+      console.error('❌ Empty response from Claude - API call succeeded but no content');
+      console.error('This might be due to:');
+      console.error('1. Prompt too long');
+  
+      console.error('2. API rate limiting');
+      console.error('3. Model content filtering');
       return Response.json({
         placement_chance: 50,
         verdict: "Weak Maybe",
