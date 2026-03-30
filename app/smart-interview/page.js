@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause } from "lucide-react";
+import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause, Volume2, Lightbulb, Star } from "lucide-react";
+import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 
 export default function SmartInterviewPage() {
@@ -368,9 +369,229 @@ export default function SmartInterviewPage() {
   // SETUP SCREEN
   if (stage === 'setup') {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] text-white">
-        <div className="max-w-md mx-auto px-6 py-6">
+      <AppShell>
+        <div className="max-w-7xl mx-auto">
           {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Smart Interview</h1>
+            <p className="text-gray-600 mt-1">Personalized based on your resume & job description</p>
+          </div>
+
+          {/* Step Indicators */}
+          <div className="flex items-center justify-center mb-8">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 text-purple-700">
+              <span className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs">1</span>
+              <span>Upload</span>
+            </div>
+            <div className="w-12 h-0.5 bg-gray-300"></div>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-500">
+              <span className="w-6 h-6 bg-gray-400 text-white rounded-full flex items-center justify-center text-xs">2</span>
+              <span>Configure</span>
+            </div>
+            <div className="w-12 h-0.5 bg-gray-300"></div>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-500">
+              <span className="w-6 h-6 bg-gray-400 text-white rounded-full flex items-center justify-center text-xs">3</span>
+              <span>Interview</span>
+            </div>
+            <div className="w-12 h-0.5 bg-gray-300"></div>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-500">
+              <span className="w-6 h-6 bg-gray-400 text-white rounded-full flex items-center justify-center text-xs">4</span>
+              <span>Results</span>
+            </div>
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Setup Form */}
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                {/* Resume Upload */}
+                <div className="mb-8">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Upload Resume</h2>
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-400 transition-colors">
+                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 mb-2">Drop your resume here or click to browse</p>
+                    <p className="text-sm text-gray-500">PDF, DOC, DOCX (Max 5MB)</p>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleResumeUpload}
+                      className="hidden"
+                      id="resume-upload"
+                    />
+                    <label
+                      htmlFor="resume-upload"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors cursor-pointer mt-4"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Choose File
+                    </label>
+                  </div>
+                  {resumeFileName && (
+                    <div className="mt-4 flex items-center gap-2 p-3 bg-green-50 rounded-lg">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <span className="text-sm text-green-700">{resumeFileName}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Job Details */}
+                <div className="mb-8">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Job Details</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Job Role</label>
+                      <input
+                        type="text"
+                        value={jobRole}
+                        onChange={(e) => setJobRole(e.target.value)}
+                        placeholder="e.g. Software Engineer, Product Manager"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Job Description</label>
+                      <textarea
+                        value={jobDescription}
+                        onChange={(e) => setJobDescription(e.target.value)}
+                        placeholder="Paste the job description here..."
+                        rows={6}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Interview Settings */}
+                <div className="mb-8">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Interview Settings</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Interview Round</label>
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        {['HR Round', 'Technical Round', 'Managerial Round', 'Final Round'].map((r) => (
+                          <button
+                            key={r}
+                            onClick={() => setRound(r)}
+                            className={`px-4 py-2 rounded-lg transition-colors ${
+                              round === r
+                                ? 'bg-purple-100 text-purple-700 font-semibold'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Interview Mode</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => setMode('text')}
+                          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${
+                            mode === 'text'
+                              ? 'bg-purple-100 text-purple-700 font-semibold'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          <Keyboard className="w-4 h-4" />
+                          Text Mode
+                        </button>
+                        <button
+                          onClick={() => setMode('voice')}
+                          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${
+                            mode === 'voice'
+                              ? 'bg-purple-100 text-purple-700 font-semibold'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          <Mic className="w-4 h-4" />
+                          Voice Mode
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Start Button */}
+                <button
+                  onClick={startInterview}
+                  disabled={!resumeBase64 || !jobRole || loading}
+                  className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-4 rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Preparing Interview...' : 'Start Interview'}
+                </button>
+              </div>
+            </div>
+
+            {/* Right Column - Instructions & Tips */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Lightbulb className="w-5 h-5 text-yellow-500" />
+                  How it Works
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-purple-600">1</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Upload Resume</div>
+                      <div className="text-sm text-gray-600">AI analyzes your skills and experience</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-purple-600">2</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Provide Job Details</div>
+                      <div className="text-sm text-gray-600">Helps tailor questions to your target role</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-purple-600">3</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">AI Interview</div>
+                      <div className="text-sm text-gray-600">Get personalized questions and feedback</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Star className="w-5 h-5 text-purple-500" />
+                  Pro Tips
+                </h3>
+                <div className="space-y-3">
+                  <div className="p-3 bg-purple-50 rounded-lg">
+                    <p className="text-sm text-purple-900">
+                      💡 Be specific in your job description for better question matching
+                    </p>
+                  </div>
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-900">
+                      🎯 Choose the right interview round for relevant questions
+                    </p>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <p className="text-sm text-green-900">
+                      📈 Use voice mode for more natural interview practice
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <button 

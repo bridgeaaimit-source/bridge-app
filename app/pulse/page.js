@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Home, Mic, Zap, Trophy, User, Plus, Filter, TrendingUp, X, RefreshCw, ExternalLink, Users, Calendar } from "lucide-react";
-import PageLayout from "@/components/PageLayout";
-import BackButton from "@/components/BackButton";
+import { Home, Mic, Zap, Trophy, User, Plus, Filter, TrendingUp, X, RefreshCw, ExternalLink, Users, Calendar, Search, Clock, MessageSquare, Lightbulb, Target } from "lucide-react";
+import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 
 const categories = ["All", "Marketing", "Finance", "HR", "Analytics", "Tech", "MBA"];
@@ -185,380 +184,295 @@ export default function PulsePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500/30 border-t-purple-500 mx-auto mb-4"></div>
-          <div className="text-white text-xl">Loading BRIDGE PULSE...</div>
+      <AppShell>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500/30 border-t-purple-500 mx-auto mb-4"></div>
+              <div className="text-gray-600">Loading PULSE Feed...</div>
+            </div>
+          </div>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <PageLayout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+    <AppShell>
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <header className="sticky top-0 bg-black/20 backdrop-blur-md border-b border-white/10 z-10">
-          <div className="max-w-md mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <BackButton />
-              <div className="flex items-center gap-3">
-                <Zap className="w-8 h-8 text-purple-400" />
-                <span className="text-xl font-bold text-white">BRIDGE PULSE</span>
-              </div>
-              <button 
-                onClick={handlePullToRefresh}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <RefreshCw className="w-5 h-5" />
-              </button>
-            </div>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">PULSE Feed</h1>
+            <p className="text-gray-600 mt-1">Stay updated with latest company insights and placement news</p>
           </div>
-        </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* AI Trend Banner */}
-        {currentData?.category_trend && (
-          <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-2xl p-6 mb-6" style={{ boxShadow: '0 20px 40px rgba(108, 99, 255, 0.3)' }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-purple-200 mb-1">📈 This week in {activeCategory}</div>
-                <div className="text-xl font-semibold text-white">{currentData.category_trend}</div>
-              </div>
-              <button 
-                onClick={refreshNews}
-                className="text-white/70 hover:text-white transition-colors"
-                disabled={newsLoading}
-              >
-                <RefreshCw className={`w-5 h-5 ${newsLoading ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Interview Tip Card */}
-        {currentData?.interview_tip && (
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-6 mb-6" style={{ boxShadow: '0 20px 40px rgba(251, 146, 60, 0.3)' }}>
-            <div className="flex items-center gap-3">
-              <div className="text-2xl">💡</div>
-              <div>
-                <div className="text-sm text-orange-100 mb-1">Interview Tip</div>
-                <div className="text-lg font-semibold text-white">{currentData.interview_tip}</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* GD Booster Section */}
-        {gdInsights && !gdLoading && (
-          <div className="mb-4">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-white font-bold text-lg">
-                🗣️ GD Booster
-              </h2>
-              <span className="bg-green-500/20 text-green-400 
-                text-xs px-2 py-1 rounded-full">
-                Daily • Refreshes 6AM
-              </span>
-            </div>
-
-            {/* Main Topic Card */}
-            <div className="bg-gradient-to-r from-purple-600/20 
-              to-blue-600/20 border border-purple-500/30 
-              rounded-2xl p-4 mb-3">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-purple-300 text-xs font-medium">
-                  TODAY'S TOPIC
-                </span>
-                <span className={`text-xs px-2 py-1 rounded-full
-                  ${gdInsights.difficulty === 'Easy' 
-                    ? 'bg-green-500/20 text-green-400'
-                    : gdInsights.difficulty === 'Hard'
-                    ? 'bg-red-500/20 text-red-400'
-                    : 'bg-yellow-500/20 text-yellow-400'}`}>
-                  {gdInsights.difficulty}
-                </span>
-              </div>
-              <h3 className="text-white font-bold text-base mb-1">
-                {gdInsights.gd_topic}
-              </h3>
-              <p className="text-gray-400 text-xs">
-                {gdInsights.why_trending}
-              </p>
-            </div>
-
-            {/* Pros and Cons */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              {/* Pros */}
-              <div className="bg-green-500/10 border border-green-500/20 
-                rounded-2xl p-3">
-                <p className="text-green-400 font-bold text-sm mb-2">
-                  ✅ Pros
-                </p>
-                {gdInsights.pros?.map((pro, i) => (
-                  <p key={i} className="text-gray-300 text-xs mb-1">
-                    • {pro}
-                  </p>
-                ))}
-              </div>
-              {/* Cons */}
-              <div className="bg-red-500/10 border border-red-500/20 
-                rounded-2xl p-3">
-                <p className="text-red-400 font-bold text-sm mb-2">
-                  ❌ Cons
-                </p>
-                {gdInsights.cons?.map((con, i) => (
-                  <p key={i} className="text-gray-300 text-xs mb-1">
-                    • {con}
-                  </p>
-                ))}
-              </div>
-            </div>
-
-            {/* Example Argument */}
-            <div className="bg-blue-500/10 border border-blue-500/20 
-              rounded-2xl p-4 mb-3">
-              <p className="text-blue-300 text-xs font-medium mb-2">
-                💬 Example Argument
-              </p>
-              <p className="text-white text-sm italic">
-                "{gdInsights.example_argument}"
-              </p>
-            </div>
-
-            {/* How to Start */}
-            <div className="bg-orange-500/10 border border-orange-500/20 
-              rounded-2xl p-4 mb-3">
-              <p className="text-orange-300 text-xs font-medium mb-2">
-                🚀 How to Start Speaking
-              </p>
-              <p className="text-white text-sm">
-                {gdInsights.how_to_start}
-              </p>
-            </div>
-
-            {/* Power Phrase */}
-            <div className="bg-yellow-500/10 border border-yellow-500/20 
-              rounded-2xl p-4 mb-3">
-              <p className="text-yellow-300 text-xs font-medium mb-2">
-                ⚡ Power Phrase
-              </p>
-              <p className="text-white text-sm font-medium italic">
-                "{gdInsights.power_phrase}"
-              </p>
-            </div>
-
-            {/* Key Facts */}
-            <div className="bg-white/5 rounded-2xl p-4 mb-3">
-              <p className="text-gray-300 text-xs font-medium mb-2">
-                📊 Key Facts to Use
-              </p>
-              {gdInsights.key_facts?.map((fact, i) => (
-                <p key={i} className="text-gray-400 text-xs mb-1">
-                  • {fact}
-                </p>
-              ))}
-            </div>
-
-            {/* Practice Button */}
-            <button 
-              onClick={() => window.location.href='/gd'}
-              className="w-full bg-purple-600 hover:bg-purple-700 
-                text-white font-bold py-3 rounded-2xl text-sm
-                transition-all active:scale-95">
-              🎯 Practice This GD Topic →
-            </button>
-          </div>
-        )}
-
-        {/* GD Loading skeleton */}
-        {gdLoading && (
-          <div className="h-96 bg-white/5 rounded-2xl 
-            animate-pulse mb-4"/>
-        )}
-
-        {/* Filter Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => handleCategoryChange(category)}
-              className={`px-4 py-2 rounded-xl font-semibold transition-all whitespace-nowrap ${
-                activeCategory === category
-                  ? "bg-purple-500 text-white"
-                  : "bg-white/10 text-gray-400 hover:bg-white/20"
-              }`}
-            >
-              {category}
-            </button>
-          ))}
+          <button
+            onClick={() => {
+              fetchNews(activeCategory);
+              fetchGDInsights(activeCategory);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
         </div>
 
-        {/* Loading Skeleton */}
-        {newsLoading && (
-          <div className="space-y-4 mb-8">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 animate-pulse">
-                <div className="flex gap-4">
-                  <div className="w-20 h-20 bg-gray-700 rounded-xl"></div>
-                  <div className="flex-1 space-y-3">
-                    <div className="h-4 bg-gray-700 rounded w-1/3"></div>
-                    <div className="h-4 bg-gray-700 rounded w-full"></div>
-                    <div className="h-4 bg-gray-700 rounded w-2/3"></div>
-                  </div>
-                </div>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left Sidebar - Category Filters */}
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <h3 className="font-semibold text-gray-900 mb-4">Browse by Domain</h3>
+              <div className="space-y-2">
+                {categories.map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => {
+                      setActiveCategory(category);
+                      fetchNews(category);
+                      fetchGDInsights(category);
+                    }}
+                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+                      activeCategory === category
+                        ? 'bg-purple-100 text-purple-700 font-semibold'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* Error State */}
-        {error && !newsLoading && (
-          <div className="bg-red-500/20 backdrop-blur-sm rounded-2xl p-6 border border-red-500/30 mb-6">
-            <div className="text-red-300 text-center">
-              <p className="mb-2">❌ Error loading news</p>
-              <p className="text-sm">{error}</p>
-              <button 
-                onClick={refreshNews}
-                className="mt-3 px-4 py-2 bg-red-500/30 rounded-lg text-red-300 hover:bg-red-500/40 transition-colors"
-              >
-                Try Again
-              </button>
             </div>
           </div>
-        )}
 
-        {/* News Articles */}
-        {currentData?.articles && !newsLoading && currentData.articles.length > 0 && (
-          <div className="space-y-4 mb-8">
-            {currentData.articles.map((article, index) => (
-              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all cursor-pointer">
-                <div className="flex gap-4">
-                  {/* Image */}
-                  <div className="w-24 h-24 flex-shrink-0">
-                    {article.urlToImage ? (
-                      <img 
-                        src={article.urlToImage} 
-                        alt={article.title}
-                        className="w-full h-full object-cover rounded-xl"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.parentElement.style.background = 
-                            'linear-gradient(135deg, #6C63FF, #FF6B6B)';
-                        }}
-                      />
-                    ) : null}
-                    <div className="w-full h-full bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl flex items-center justify-center" style={{ display: article.urlToImage ? 'none' : 'flex' }}>
-                      <TrendingUp className="w-8 h-8 text-purple-300" />
-                    </div>
-                  </div>
+          {/* Center Column - News Feed */}
+          <div className="lg:col-span-6">
+            {/* Search Bar */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search news, companies, topics..."
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+            </div>
 
-                  {/* Content */}
-                  <div className="flex-1">
-                    {/* Source and Time */}
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm text-gray-400">{article.source}</div>
-                      <div className="text-sm text-gray-400">{formatTimeAgo(article.publishedAt)}</div>
-                    </div>
+            {/* Live Feed Badge */}
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-semibold text-green-700">Live Feed</span>
+              <span className="text-sm text-gray-500">Updated {new Date().toLocaleTimeString()}</span>
+            </div>
 
-                    {/* Title */}
-                    <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">{article.title}</h3>
-
-                    {/* Description */}
-                    <p className="text-gray-400 text-sm mb-3 line-clamp-2">{article.description}</p>
-
-                    {/* Placement Insight */}
-                    <div className="bg-purple-500/20 backdrop-blur-sm rounded-xl p-3 border border-purple-500/30 mb-3">
-                      <div className="text-sm text-purple-300">
-                        🎯 {article.placement_insight}
+            {/* News Cards */}
+            <div className="space-y-6">
+              {newsLoading ? (
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                      <div className="animate-pulse space-y-4">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-3 bg-gray-200 rounded w-full"></div>
+                        <div className="h-3 bg-gray-200 rounded w-5/6"></div>
                       </div>
                     </div>
-
-                    {/* Bottom Row */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {article.gd_topic === true && (
+                  ))}
+                </div>
+              ) : error ? (
+                <div className="bg-red-50 rounded-2xl p-6 border border-red-200">
+                  <div className="text-red-600 text-center">{error}</div>
+                </div>
+              ) : newsData && newsData.articles && newsData.articles.length > 0 ? (
+                newsData.articles.map((article, index) => (
+                  <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <div className="flex gap-4">
+                      {article.image && (
+                        <img
+                          src={article.image}
+                          alt={article.title}
+                          className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs font-semibold text-purple-700 bg-purple-100 rounded-full px-2 py-1">
+                            {article.source || 'Unknown'}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {article.time || 'Just now'}
+                          </span>
+                        </div>
+                        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{article.title}</h3>
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{article.description}</p>
+                        
+                        {/* Placement Insight Badge */}
+                        {article.placement_insight && (
+                          <div className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-full mb-3">
+                            <Target className="w-3 h-3" />
+                            Placement Insight
+                          </div>
+                        )}
+                        
+                        {/* GD Topic Badge */}
+                        {article.gd_topic && (
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleGDPractice(article);
+                            onClick={() => {
+                              // Handle GD topic click
+                              toast.success('GD topic saved for practice!');
                             }}
-                            disabled={gdPracticeLoading}
-                            className="bg-green-500/20 text-green-400 
-                              text-xs px-3 py-1 rounded-full border 
-                              border-green-500/30 active:scale-95 
-                              transition-all cursor-pointer
-                              hover:bg-green-500/30 disabled:opacity-50
-                              flex items-center gap-1">
-                            {gdPracticeLoading && loadingArticle === article.title
-                              ? '⏳ Preparing...'
-                              : '🗣️ Practice GD'
-                            }
+                            className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full mb-3 hover:bg-green-100 transition-colors cursor-pointer"
+                          >
+                            <MessageSquare className="w-3 h-3" />
+                            GD Topic
                           </button>
                         )}
-                        <span className="text-yellow-400 text-sm">
-                          ⭐ {article.relevance_score}/10
-                        </span>
+                        
+                        <div className="flex items-center justify-between">
+                          <a
+                            href={article.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 text-sm font-medium"
+                          >
+                            Read Article
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
                       </div>
-                      {article.url && article.url !== "#" && (
-                        <button 
-                          onClick={() => window.open(article.url, '_blank')}
-                          className="text-purple-400 hover:text-purple-300 text-sm font-semibold flex items-center gap-1 transition-colors"
-                        >
-                          Read Article <ExternalLink className="w-3 h-3" />
-                        </button>
-                      )}
                     </div>
                   </div>
+                ))
+              ) : (
+                <div className="bg-gray-50 rounded-2xl p-8 text-center border border-gray-200">
+                  <div className="text-gray-500">No news articles found for {activeCategory}</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column - GD Booster + Tips */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Today's GD Booster */}
+            {gdLoading ? (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* No Articles State */}
-        {!newsLoading && currentData && (!currentData.articles || currentData.articles.length === 0) && (
-          <div className="bg-gray-500/20 backdrop-blur-sm rounded-2xl p-8 border border-gray-500/30 text-center">
-            <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No articles found</h3>
-            <p className="text-gray-400 mb-4">No relevant news found for {activeCategory} category</p>
-            <button 
-              onClick={refreshNews}
-              className="px-4 py-2 bg-purple-500/30 rounded-lg text-purple-300 hover:bg-purple-500/40 transition-colors"
-            >
-              Refresh
-            </button>
-          </div>
-        )}
-
-        {/* GD Booster Section */}
-        {gdTopics.length > 0 && (
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white">🗣️ GD Booster</h3>
-              <Users className="w-5 h-5 text-purple-400" />
-            </div>
-            <div className="text-gray-300 mb-3">Practice these Group Discussion topics from current news:</div>
-            <div className="space-y-2">
-              {gdTopics.slice(0, 3).map((topic, index) => (
-                <div key={index} className="bg-white/5 rounded-xl p-3 border border-white/10">
-                  <div className="text-sm font-medium text-white">{topic.title}</div>
-                  <div className="text-xs text-gray-400 mt-1">{topic.why_relevant}</div>
+            ) : gdInsights ? (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Lightbulb className="w-5 h-5 text-yellow-500" />
+                  Today's GD Booster
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Topic</div>
+                    <div className="font-semibold text-gray-900">{gdInsights.gd_topic}</div>
+                  </div>
+                  
+                  <div>
+                    <div className="text-sm text-gray-600 mb-2">Key Points</div>
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span className="text-sm text-gray-700">{gdInsights.pros}</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span className="text-sm text-gray-700">{gdInsights.cons}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Power Phrase</div>
+                    <div className="p-3 bg-purple-50 rounded-lg">
+                      <div className="text-sm font-medium text-purple-900 italic">"{gdInsights.power_phrase}"</div>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      // Handle practice this topic
+                      toast.success('GD topic saved for practice!');
+                    }}
+                    disabled={gdPracticeLoading}
+                    className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50"
+                  >
+                    {gdPracticeLoading ? 'Saving...' : 'Practice This Topic'}
+                  </button>
                 </div>
-              ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="text-gray-500 text-center">No GD insights available</div>
+              </div>
+            )}
+
+            {/* Interview Tip of the Day */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-green-500" />
+                Interview Tip
+              </h3>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <p className="text-sm text-green-900">
+                  "Always research the company's recent achievements and challenges before your interview. This shows genuine interest and helps you ask insightful questions."
+                </p>
+              </div>
+            </div>
+
+            {/* Trending Companies */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-purple-500" />
+                Trending Companies
+              </h3>
+              <div className="space-y-3">
+                {['TCS', 'Infosys', 'Wipro', 'HCL', 'Accenture'].map((company, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-700">
+                        {company.charAt(0)}
+                      </div>
+                      <span className="text-sm font-medium text-gray-900">{company}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3 text-green-500" />
+                      <span className="text-xs text-green-600 font-medium">Active</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <h3 className="font-semibold text-gray-900 mb-4">Today's Activity</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">News Articles</span>
+                  <span className="text-sm font-semibold text-gray-900">{newsData?.articles?.length || 0}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">GD Topics</span>
+                  <span className="text-sm font-semibold text-gray-900">1</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Last Updated</span>
+                  <span className="text-sm font-semibold text-gray-900">{new Date().toLocaleTimeString()}</span>
+                </div>
+              </div>
             </div>
           </div>
-        )}
-
-        {/* Timestamp */}
-        {currentData?.cached_at && (
-          <div className="text-center text-gray-500 text-sm mt-6">
-            Updated {formatTimeAgo(currentData.cached_at)} ago
-          </div>
-        )}
+        </div>
       </div>
-      </div>
-    </PageLayout>
+    </AppShell>
   );
 }

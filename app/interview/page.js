@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { ChevronLeft, Info, Send, RotateCcw, Share2, Home, Mic, Zap, Trophy, User } from "lucide-react";
+import { ChevronLeft, Info, Send, RotateCcw, Share2, Home, Mic, Zap, Trophy, User, Volume2, Lightbulb, Star, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
-import PageLayout from "@/components/PageLayout";
-import BackButton from "@/components/BackButton";
+import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 
 const domains = [
@@ -51,218 +50,109 @@ export default function InterviewPage() {
         window.speechSynthesis.getVoices();
       };
     }
-    
-    // Cleanup TTS on unmount
-    return () => {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
   }, []);
 
-  // Auto-speak when new question appears
-  useEffect(() => {
-    if (questions.length > 0 && currentQuestionIndex < questions.length && autoSpeak) {
-      const currentQuestion = questions[currentQuestionIndex];
-      // Small delay so UI renders first
-      setTimeout(() => speakQuestion(currentQuestion), 500);
+  const speakText = (text) => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+      
+      window.speechSynthesis.speak(utterance);
     }
-  }, [currentQuestionIndex, questions, autoSpeak]);
-
-  const speakQuestion = (text) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    // Voice settings for professional interviewer feel
-    utterance.lang = 'en-IN'; // Indian English
-    utterance.rate = 0.9;     // Slightly slower = clearer
-    utterance.pitch = 1.0;    // Natural pitch
-    utterance.volume = 1.0;   // Full volume
-    
-    // Try to find a good voice
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(v => 
-      v.lang === 'en-IN' || 
-      v.lang === 'en-GB' ||
-      v.name.includes('Google') ||
-      v.name.includes('Microsoft')
-    );
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
-    }
-    
-    // States
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-    
-    window.speechSynthesis.speak(utterance);
   };
 
   const startRecording = () => {
     if (!browserSupport) return;
-
-    // Stop TTS when recording starts
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-
+    
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognitionInstance = new SpeechRecognition();
     
-    recognitionInstance.continuous = true;
+    recognitionInstance.continuous = false;
     recognitionInstance.interimResults = true;
     recognitionInstance.lang = 'en-US';
-
+    
     recognitionInstance.onstart = () => {
       setIsRecording(true);
       setTranscript("");
     };
-
+    
     recognitionInstance.onresult = (event) => {
-      let finalTranscript = '';
-      let interimTranscript = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          finalTranscript += result[0].transcript;
-        } else {
-          interimTranscript += result[0].transcript;
-        }
-      }
-
-      setTranscript(finalTranscript + interimTranscript);
+      const current = event.resultIndex;
+      const transcript = event.results[current][0].transcript;
+      setTranscript(transcript);
     };
-
+    
     recognitionInstance.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
       setIsRecording(false);
+      toast.error('Speech recognition failed. Please try again.');
     };
-
+    
     recognitionInstance.onend = () => {
       setIsRecording(false);
+      if (transcript.trim()) {
+        submitVoiceAnswer();
+      }
     };
-
-    recognitionInstance.start();
+    
     setRecognition(recognitionInstance);
+    recognitionInstance.start();
   };
 
   const stopRecording = () => {
     if (recognition) {
       recognition.stop();
-      setRecognition(null);
     }
   };
 
-  useEffect(() => {
-    if (step === 3 && feedback) {
-      // Trigger confetti when interview is complete
-      setTimeout(() => {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-      }, 500);
-    }
-  }, [step, feedback]);
-
-  const wordCount = useMemo(() => {
-    return answer.trim() ? answer.trim().split(/\s+/).length : 0;
-  }, [answer]);
-
-  const currentQuestion = questions[currentQuestionIndex] ?? "";
-  const totalQuestions = questions.length || 5;
-
-  const aggregateFeedback = (allAnalyses) => {
-    if (!allAnalyses.length) return null;
-
-    const avg = (key) => {
-      const total = allAnalyses.reduce((sum, item) => sum + (Number(item?.[key]) || 0), 0);
-      return Number((total / allAnalyses.length).toFixed(1));
-    };
-
-    const strengths = allAnalyses
-      .flatMap((item) => (Array.isArray(item?.strengths) ? item.strengths : []))
-      .filter(Boolean)
-      .slice(0, 4);
-
-    const improvements = allAnalyses
-      .flatMap((item) => (Array.isArray(item?.improvements) ? item.improvements : []))
-      .filter(Boolean)
-      .slice(0, 4);
-
-    const betterAnswer =
-      [...allAnalyses]
-        .reverse()
-        .find((item) => typeof item?.better_answer === "string" && item.better_answer.trim())?.better_answer ||
-      "";
-
-    return {
-      score: avg("score"),
-      clarity: avg("clarity"),
-      confidence: avg("confidence"),
-      content: avg("content"),
-      strengths,
-      improvements,
-      better_answer: betterAnswer,
-    };
-  };
-
-  const startInterview = async (mode) => {
-    console.log('=== START INTERVIEW CALLED ===');
-    console.log('Mode:', mode);
-    console.log('Selected domain:', selectedDomain);
-    
-    setInterviewMode(mode);
-    setErrorMessage("");
+  const generateQuestions = async () => {
     setIsLoadingQuestions(true);
-
+    setErrorMessage("");
+    
     try {
-      console.log('Making API call to /api/interview...');
       const response = await fetch("/api/interview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: selectedDomain, count: 5 }),
+        body: JSON.stringify({
+          domain: selectedDomain,
+          count: 5,
+        }),
       });
 
-      console.log('API response status:', response.status);
       const data = await response.json();
-      console.log('API response data:', data);
 
-      if (!response.ok || !Array.isArray(data?.questions) || !data.questions.length) {
-        throw new Error(data?.error || "Could not generate interview questions right now.");
+      if (!response.ok) {
+        throw new Error(data?.error || "Could not generate questions right now.");
       }
 
-      setQuestions(data.questions.slice(0, 5));
+      setQuestions(data.questions || []);
       setCurrentQuestionIndex(0);
-      setAnalyses([]);
-      setResponses([]);
-      setSelectedFeedbackTab(0);
-      setFeedback(null);
-      setAnswer("");
-      setTranscript("");
       setStep(2);
     } catch (error) {
-      console.error('Start interview error:', error);
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "Something went wrong while starting your interview. Please try again."
+          : "Something went wrong while generating questions. Please try again."
       );
     } finally {
       setIsLoadingQuestions(false);
     }
   };
 
+  const startInterview = () => {
+    generateQuestions();
+  };
+
   const submitVoiceAnswer = async () => {
     if (!transcript.trim()) {
-      setErrorMessage("Please speak your answer before submitting.");
+      setErrorMessage("Please speak an answer before submitting.");
       return;
     }
 
@@ -270,6 +160,7 @@ export default function InterviewPage() {
     setIsAnalyzingAnswer(true);
 
     try {
+      const currentQuestion = questions[currentQuestionIndex];
       const response = await fetch("/api/interview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -298,7 +189,7 @@ export default function InterviewPage() {
       ];
       setResponses(updatedResponses);
 
-      const isLastQuestion = currentQuestionIndex >= totalQuestions - 1;
+      const isLastQuestion = currentQuestionIndex >= questions.length - 1;
       if (isLastQuestion) {
         setSelectedFeedbackTab(0);
         setFeedback(aggregateFeedback(updatedAnalyses));
@@ -329,6 +220,7 @@ export default function InterviewPage() {
     setIsAnalyzingAnswer(true);
 
     try {
+      const currentQuestion = questions[currentQuestionIndex];
       const response = await fetch("/api/interview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -357,7 +249,7 @@ export default function InterviewPage() {
       ];
       setResponses(updatedResponses);
 
-      const isLastQuestion = currentQuestionIndex >= totalQuestions - 1;
+      const isLastQuestion = currentQuestionIndex >= questions.length - 1;
       if (isLastQuestion) {
         setSelectedFeedbackTab(0);
         setFeedback(aggregateFeedback(updatedAnalyses));
@@ -392,8 +284,7 @@ export default function InterviewPage() {
   };
 
   const shareResult = () => {
-    // Generate shareable text
-    const shareText = `I scored ${feedback?.score.toFixed(1)}/10 in my AI Mock Interview on BRIDGE! 🚀 My BRIDGE Score is growing stronger. Join me!`;
+    const shareText = `I scored ${feedback?.overall_score}/10 in my AI Mock Interview on BRIDGE! 🚀 My BRIDGE Score is growing stronger. Join me!`;
     
     if (navigator.share) {
       navigator.share({
@@ -402,647 +293,488 @@ export default function InterviewPage() {
         url: window.location.origin,
       });
     } else {
-      // Fallback - copy to clipboard
       navigator.clipboard.writeText(shareText);
       alert("Result copied to clipboard!");
     }
   };
 
+  const aggregateFeedback = (analyses) => {
+    if (!analyses || analyses.length === 0) return null;
+
+    const totalScore = analyses.reduce((sum, analysis) => sum + (analysis.score || 0), 0);
+    const overallScore = totalScore / analyses.length;
+
+    const allFillerWords = new Set();
+    const allStrengths = [];
+    const allImprovements = [];
+
+    analyses.forEach(analysis => {
+      if (analysis.filler_words) {
+        analysis.filler_words.forEach(word => allFillerWords.add(word));
+      }
+      if (analysis.strengths) {
+        allStrengths.push(...analysis.strengths);
+      }
+      if (analysis.improvements) {
+        allImprovements.push(...analysis.improvements);
+      }
+    });
+
+    return {
+      overall_score: overallScore,
+      filler_words: Array.from(allFillerWords),
+      strengths: allStrengths,
+      improvements: allImprovements,
+      metrics: {
+        clarity: overallScore,
+        relevance: overallScore,
+        confidence: overallScore,
+        structure: overallScore,
+        completeness: overallScore
+      },
+      model_answer: "Based on your responses, a strong answer would demonstrate clear communication of your skills and experiences with specific examples, showing how they align with the role requirements."
+    };
+  };
+
   return (
-    <PageLayout>
-      <div className="px-6 py-6">
-        
+    <AppShell>
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <header className="flex items-center justify-between mb-6">
-          <BackButton />
-          <div className="text-center flex-1">
-            <h1 className="text-xl font-bold">Mock Interview</h1>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">AI Mock Interview</h1>
+            <p className="text-gray-600 mt-1">Practice with real questions from top companies</p>
           </div>
-          <div className="w-10 flex items-center justify-center">
+          <div className="flex items-center gap-4">
             {typeof window !== 'undefined' && 'speechSynthesis' in window ? (
-              <span className="text-purple-400" title="Text-to-Speech Available">🔊</span>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Volume2 className="w-4 h-4" />
+                <span>TTS Available</span>
+              </div>
             ) : (
-              <span className="text-gray-500" title="Use Chrome for best experience">🔕</span>
+              <div className="flex items-center gap-2 text-sm text-orange-600">
+                <AlertCircle className="w-4 h-4" />
+                <span>Use Chrome for voice features</span>
+              </div>
             )}
           </div>
-        </header>
+        </div>
 
-          {/* Step Indicator */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between text-xs font-semibold mb-3">
-              <span className={step >= 1 ? "text-purple-400" : "text-gray-500"}>Step 1: Choose Domain</span>
-              <span className={step >= 2 ? "text-purple-400" : "text-gray-500"}>Step 2: Answer Questions</span>
-              <span className={step >= 3 ? "text-purple-400" : "text-gray-500"}>Step 3: Get Feedback</span>
+        {/* Step Indicator */}
+        <div className="mb-8">
+          <div className="flex items-center justify-center text-sm font-semibold mb-4">
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+              step >= 1 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'
+            }`}>
+              <span className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs">1</span>
+              <span>Choose Domain</span>
             </div>
-            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
-                style={{
-                  width: step === 1 ? "33%" : step === 2 ? "66%" : "100%",
-                }}
-              />
+            <div className={`w-12 h-0.5 ${step >= 2 ? 'bg-purple-600' : 'bg-gray-300'}`}></div>
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+              step >= 2 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'
+            }`}>
+              <span className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs">2</span>
+              <span>Answer Questions</span>
+            </div>
+            <div className={`w-12 h-0.5 ${step >= 3 ? 'bg-purple-600' : 'bg-gray-300'}`}></div>
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+              step >= 3 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'
+            }`}>
+              <span className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs">3</span>
+              <span>Get Feedback</span>
             </div>
           </div>
+        </div>
 
         {/* Main Content */}
-        <main className="mb-20">
-          {step === 1 && (
-            <section className="animate-fade-up">
-              <h2 className="text-2xl font-bold mb-2">What role are you preparing for?</h2>
-              <p className="text-gray-400 text-sm mb-6">We'll ask you 5 targeted questions</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Main Interview Panel */}
+          <div className="lg:col-span-2">
+            {step === 1 && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Select your domain to begin</h2>
+                  <p className="text-gray-600 mb-8">We'll ask you 5 targeted questions based on your chosen field</p>
 
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                {domains.map((domain) => {
-                  const active = selectedDomain === domain.label;
-                  return (
-                    <button
-                      key={domain.label}
-                      onClick={() => setSelectedDomain(domain.label)}
-                      className={`p-4 rounded-2xl border transition-all duration-300 ${
-                        active
-                          ? "bg-purple-500/20 border-purple-400 shadow-lg shadow-purple-500/25"
-                          : "bg-white/10 border-white/20 hover:bg-white/20"
-                      }`}
-                    >
-                      <div className="text-2xl mb-2">{domain.icon}</div>
-                      <div className="text-sm font-semibold">{domain.label}</div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={() => startInterview("text")}
-                disabled={isLoadingQuestions}
-                className="w-full py-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl font-semibold shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed mb-3"
-                style={{ boxShadow: '0 10px 25px rgba(108, 99, 255, 0.3)' }}
-              >
-                {isLoadingQuestions ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
-                    Generating Questions...
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                    {domains.map((domain) => {
+                      const active = selectedDomain === domain.label;
+                      return (
+                        <button
+                          key={domain.label}
+                          onClick={() => setSelectedDomain(domain.label)}
+                          className={`p-6 rounded-2xl border-2 transition-all ${
+                            active 
+                              ? 'border-purple-600 bg-purple-50 shadow-md' 
+                              : 'border-gray-200 bg-white hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="text-3xl mb-3">{domain.icon}</div>
+                          <div className="font-semibold text-gray-900">{domain.label}</div>
+                        </button>
+                      );
+                    })}
                   </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2">
-                    <span>📝</span>
-                    Start Text Interview
-                  </div>
-                )}
-              </button>
 
-              <button
-                onClick={() => startInterview("voice")}
-                disabled={isLoadingQuestions || !browserSupport}
-                className="w-full py-4 bg-gradient-to-r from-red-500 to-red-600 rounded-2xl font-semibold shadow-lg hover:shadow-red-500/25 transition-all duration-300 hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed"
-                style={{ boxShadow: '0 10px 25px rgba(239, 68, 68, 0.3)' }}
-              >
-                {isLoadingQuestions ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
-                    Generating Questions...
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2">
-                    <span>🎤</span>
-                    Start Voice Interview
-                  </div>
-                )}
-              </button>
-
-              {!browserSupport && (
-                <div className="mt-4 px-4 py-3 bg-yellow-500/20 border border-yellow-500/30 rounded-xl text-yellow-300 text-sm text-center">
-                  ⚠️ Please use Chrome on Android for voice interview
-                </div>
-              )}
-
-              {errorMessage && (
-                <div className="mt-4 px-4 py-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 text-sm text-center">
-                  {errorMessage}
-                </div>
-              )}
-            </section>
-          )}
-
-          {step === 2 && interviewMode === "voice" && (
-            <section className="animate-fade-up">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-sm font-semibold text-purple-400">
-                  Question {currentQuestionIndex + 1} of {totalQuestions}
-                </div>
-                <div className="px-3 py-1 bg-red-500/20 border border-red-500/30 rounded-lg text-xs font-semibold text-red-400">
-                  02:30
-                </div>
-              </div>
-
-              <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-6">
-                <div
-                  className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
-                  style={{
-                    width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%`,
-                  }}
-                />
-              </div>
-
-              <div className={`bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 mb-6 ${isSpeaking ? 'border border-purple-500 shadow-purple-500/30 shadow-lg' : ''}`} style={{ boxShadow: '0 20px 40px rgba(108, 99, 255, 0.3)' }}>
-                <div className="text-sm text-purple-200 mb-2">Current prompt</div>
-                <h3 className="text-lg font-semibold leading-relaxed">
-                  {currentQuestion || "Loading your interview question..."}
-                </h3>
-                
-                {/* TTS Controls */}
-                <div className="flex items-center gap-2 mt-3">
-                  
-                  {/* Speak button */}
-                  <button
-                    onClick={() => isSpeaking 
-                      ? window.speechSynthesis.cancel() 
-                      : speakQuestion(currentQuestion)
-                    }
-                    className={`flex items-center gap-2 px-3 py-1.5 
-                      rounded-full text-xs font-medium transition-all
-                      ${isSpeaking 
-                        ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
-                        : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                      }`}>
-                    {isSpeaking ? (
-                      <>
-                        <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse"/>
-                        Stop Speaking
-                      </>
-                    ) : (
-                      <>
-                        🔊 Hear Question
-                      </>
-                    )}
-                  </button>
-
-                  {/* Auto-speak toggle */}
-                  <button
-                    onClick={() => setAutoSpeak(!autoSpeak)}
-                    className={`px-3 py-1.5 rounded-full text-xs 
-                      font-medium transition-all border
-                      ${autoSpeak 
-                        ? 'bg-green-500/20 text-green-400 border-green-500/30' 
-                        : 'bg-white/10 text-gray-400 border-white/20'
-                      }`}>
-                    {autoSpeak ? '🔔 Auto-speak ON' : '🔕 Auto-speak OFF'}
-                  </button>
-
-                </div>
-              </div>
-
-              {/* Microphone Button */}
-              <div className="flex flex-col items-center mb-6">
-                <button
-                  onClick={isRecording ? stopRecording : startRecording}
-                  className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
-                    isRecording 
-                      ? 'bg-red-500 animate-pulse shadow-lg shadow-red-500/50' 
-                      : 'bg-purple-500 shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40'
-                  }`}
-                  style={{ 
-                    boxShadow: isRecording 
-                      ? '0 0 30px rgba(239, 68, 68, 0.6)' 
-                      : '0 10px 25px rgba(108, 99, 255, 0.3)' 
-                  }}
-                >
-                  <span className="text-3xl">{isRecording ? '🔴' : '🎤'}</span>
-                </button>
-                <div className="text-sm text-gray-400 mt-3">
-                  {isRecording ? 'Recording...' : 'Tap to Speak'}
-                </div>
-              </div>
-
-              {/* Live Transcription */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-4 min-h-[120px]">
-                <div className="text-xs text-gray-400 mb-2">Live Transcription</div>
-                <div className="text-white min-h-[80px]">
-                  {transcript || "Your speech will appear here..."}
-                </div>
-              </div>
-
-              <button
-                onClick={submitVoiceAnswer}
-                disabled={!transcript.trim() || isAnalyzingAnswer}
-                className="w-full py-4 bg-gradient-to-r from-red-500 to-red-600 rounded-2xl font-semibold shadow-lg hover:shadow-red-500/25 transition-all duration-300 hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed"
-                style={{ boxShadow: '0 10px 25px rgba(239, 68, 68, 0.3)' }}
-              >
-                {isAnalyzingAnswer ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
-                    AI is analyzing your answer...
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2">
-                    Stop & Analyze
-                    <Send className="w-4 h-4" />
-                  </div>
-                )}
-              </button>
-
-              {errorMessage && (
-                <div className="mt-4 px-4 py-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 text-sm text-center">
-                  {errorMessage}
-                </div>
-              )}
-            </section>
-          )}
-
-          {step === 2 && interviewMode === "text" && (
-            <section className="animate-fade-up">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-sm font-semibold text-purple-400">
-                  Question {currentQuestionIndex + 1} of {totalQuestions}
-                </div>
-                <div className="px-3 py-1 bg-red-500/20 border border-red-500/30 rounded-lg text-xs font-semibold text-red-400">
-                  02:30
-                </div>
-              </div>
-
-              <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-6">
-                <div
-                  className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
-                  style={{
-                    width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%`,
-                  }}
-                />
-              </div>
-
-              <div className={`bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 mb-6 ${isSpeaking ? 'border border-purple-500 shadow-purple-500/30 shadow-lg' : ''}`} style={{ boxShadow: '0 20px 40px rgba(108, 99, 255, 0.3)' }}>
-                <div className="text-sm text-purple-200 mb-2">Current prompt</div>
-                <h3 className="text-lg font-semibold leading-relaxed">
-                  {currentQuestion || "Loading your interview question..."}
-                </h3>
-                
-                {/* TTS Controls */}
-                <div className="flex items-center gap-2 mt-3">
-                  
-                  {/* Speak button */}
-                  <button
-                    onClick={() => isSpeaking 
-                      ? window.speechSynthesis.cancel() 
-                      : speakQuestion(currentQuestion)
-                    }
-                    className={`flex items-center gap-2 px-3 py-1.5 
-                      rounded-full text-xs font-medium transition-all
-                      ${isSpeaking 
-                        ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
-                        : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                      }`}>
-                    {isSpeaking ? (
-                      <>
-                        <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse"/>
-                        Stop Speaking
-                      </>
-                    ) : (
-                      <>
-                        🔊 Hear Question
-                      </>
-                    )}
-                  </button>
-
-                  {/* Auto-speak toggle */}
-                  <button
-                    onClick={() => setAutoSpeak(!autoSpeak)}
-                    className={`px-3 py-1.5 rounded-full text-xs 
-                      font-medium transition-all border
-                      ${autoSpeak 
-                        ? 'bg-green-500/20 text-green-400 border-green-500/30' 
-                        : 'bg-white/10 text-gray-400 border-white/20'
-                      }`}>
-                    {autoSpeak ? '🔔 Auto-speak ON' : '🔕 Auto-speak OFF'}
-                  </button>
-
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <textarea
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  placeholder="Type your answer here..."
-                  className="w-full min-h-[180px] bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20 transition-all"
-                />
-                <div className="text-right text-xs text-gray-400 mt-2">{wordCount} words</div>
-              </div>
-
-              <button
-                onClick={submitAnswer}
-                disabled={isAnalyzingAnswer}
-                className="w-full py-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl font-semibold shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed"
-                style={{ boxShadow: '0 10px 25px rgba(108, 99, 255, 0.3)' }}
-              >
-                {isAnalyzingAnswer ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
-                    AI is analyzing your answer...
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2">
-                    Submit Answer
-                    <Send className="w-4 h-4" />
-                  </div>
-                )}
-              </button>
-
-              {errorMessage && (
-                <div className="mt-4 px-4 py-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 text-sm text-center">
-                  {errorMessage}
-                </div>
-              )}
-            </section>
-          )}
-
-          {step === 3 && (
-            <section className="animate-fade-up">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold mb-2">Interview Complete! 🎉</h2>
-                <p className="text-gray-400 text-sm">Great effort. Here's your AI feedback summary.</p>
-              </div>
-
-              <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 text-center mb-6" style={{ boxShadow: '0 20px 40px rgba(108, 99, 255, 0.3)' }}>
-                <div className="text-sm text-purple-200 mb-2">BRIDGE Score Change</div>
-                <div className="text-4xl font-black mb-2">+23 points! 🚀</div>
-                <div className="text-2xl font-bold">{feedback?.score ?? 0} / 10</div>
-              </div>
-
-              <div className="grid grid-cols-4 gap-3 mb-6">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
-                  <div className="text-xs text-gray-400 mb-1">Clarity</div>
-                  <div className="text-lg font-bold text-green-400">{feedback?.clarity ?? 0}/10</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
-                  <div className="text-xs text-gray-400 mb-1">Confidence</div>
-                  <div className="text-lg font-bold text-green-400">{feedback?.confidence ?? 0}/10</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
-                  <div className="text-xs text-gray-400 mb-1">Content</div>
-                  <div className="text-lg font-bold text-green-400">{feedback?.content ?? 0}/10</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
-                  <div className="text-xs text-gray-400 mb-1">Communication</div>
-                  <div className="text-lg font-bold text-green-400">{feedback?.communication ?? 0}/10</div>
-                </div>
-              </div>
-
-              {/* Word Count Analysis */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-6">
-                <div className="text-sm font-semibold mb-3">Word Count Analysis</div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-2xl font-bold">{feedback?.word_count ?? 0}</div>
-                    <div className="text-xs text-gray-400">words used</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-green-400">Ideal: 80-120</div>
-                    <div className="text-xs text-gray-400">Good range for interview answers</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Filler Words Analysis */}
-              <div className="bg-red-500/10 backdrop-blur-sm rounded-2xl p-4 border border-red-500/20 mb-6">
-                <div className="text-sm font-semibold text-red-400 mb-3">Filler Words Detected</div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-2xl font-bold text-red-400">{feedback?.filler_words?.count ?? 0}</div>
-                  <div className="text-sm text-red-300">filler words found</div>
-                </div>
-                {(feedback?.filler_words?.found?.length > 0) && (
-                  <div className="space-y-2">
-                    <div className="text-xs text-red-300">Found: {feedback?.filler_words?.found?.join(", ")}</div>
-                    <div className="text-xs text-gray-400 bg-red-500/5 rounded p-2">{feedback?.filler_words?.examples}</div>
-                    <div className="text-xs text-red-200">{feedback?.filler_feedback}</div>
-                  </div>
-                )}
-              </div>
-
-              {/* Structure Analysis */}
-              <div className="bg-blue-500/10 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20 mb-6">
-                <div className="text-sm font-semibold text-blue-400 mb-3">Answer Structure</div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Overall Rating</span>
-                    <span className="text-sm font-bold text-blue-300">{feedback?.structure?.rating || "Poor"}</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className={`text-center p-2 rounded ${feedback?.structure?.has_opening ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                      <div className="text-xs">Opening</div>
-                    </div>
-                    <div className={`text-center p-2 rounded ${feedback?.structure?.has_examples ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                      <div className="text-xs">Examples</div>
-                    </div>
-                    <div className={`text-center p-2 rounded ${feedback?.structure?.has_conclusion ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                      <div className="text-xs">Conclusion</div>
-                    </div>
-                  </div>
-                  {feedback?.structure_feedback && (
-                    <div className="text-xs text-blue-200 bg-blue-500/5 rounded p-2">{feedback?.structure_feedback}</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Language Analysis */}
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="bg-orange-500/10 backdrop-blur-sm rounded-2xl p-4 border border-orange-500/20">
-                  <div className="text-sm font-semibold text-orange-400 mb-3">Weak Language</div>
-                  <div className="space-y-1">
-                    {feedback?.weak_language?.length > 0 ? (
-                      feedback?.weak_language?.map((phrase, idx) => (
-                        <div key={`weak-${idx}`} className="text-xs text-orange-300">• {phrase}</div>
-                      ))
-                    ) : (
-                      <div className="text-xs text-green-400">No weak phrases detected!</div>
-                    )}
-                  </div>
-                </div>
-                <div className="bg-green-500/10 backdrop-blur-sm rounded-2xl p-4 border border-green-500/20">
-                  <div className="text-sm font-semibold text-green-400 mb-3">Strong Language</div>
-                  <div className="space-y-1">
-                    {feedback?.strong_language?.length > 0 ? (
-                      feedback?.strong_language?.map((phrase, idx) => (
-                        <div key={`strong-${idx}`} className="text-xs text-green-300">• {phrase}</div>
-                      ))
-                    ) : (
-                      <div className="text-xs text-gray-400">Could be stronger</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 mb-6">
-                <div className="font-semibold mb-3">Per-question feedback</div>
-                <div className="grid grid-cols-5 gap-2 mb-4">
-                  {responses.map((item, idx) => {
-                    const active = idx === selectedFeedbackTab;
-                    return (
+                  {/* Interview Mode Toggle */}
+                  <div className="mb-8">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">Interview Mode</label>
+                    <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
                       <button
-                        key={`tab-${idx}`}
-                        onClick={() => setSelectedFeedbackTab(idx)}
-                        className={`py-2 px-2 rounded-lg text-xs font-semibold transition-all ${
-                          active
-                            ? "bg-purple-500 text-white"
-                            : "bg-white/10 text-gray-400 hover:bg-white/20"
+                        onClick={() => setInterviewMode("text")}
+                        className={`flex-1 py-2 px-4 rounded-md transition-colors ${
+                          interviewMode === "text"
+                            ? "bg-white text-purple-600 shadow-sm"
+                            : "text-gray-600 hover:text-gray-900"
                         }`}
                       >
-                        Q{idx + 1}
+                        Text Mode
                       </button>
-                    );
-                  })}
+                      <button
+                        onClick={() => setInterviewMode("voice")}
+                        className={`flex-1 py-2 px-4 rounded-md transition-colors ${
+                          interviewMode === "voice"
+                            ? "bg-white text-purple-600 shadow-sm"
+                            : "text-gray-600 hover:text-gray-900"
+                        }`}
+                      >
+                        Voice Mode
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={startInterview}
+                    disabled={isLoadingQuestions}
+                    className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-4 rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoadingQuestions ? "Loading Questions..." : "Begin Interview →"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-6">
+                {/* Question Card */}
+                <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Mic className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-600">Question {currentQuestionIndex + 1} of 5</div>
+                        <div className="font-semibold text-gray-900">AI Interviewer</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => speakText(questions[currentQuestionIndex])}
+                      className="p-2 text-gray-600 hover:text-purple-600 transition-colors"
+                      title="Speak Question"
+                    >
+                      <Volume2 className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="mb-6">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-purple-600 to-purple-700 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Question */}
+                  <div className="mb-8">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                      {questions[currentQuestionIndex]}
+                    </h3>
+                  </div>
+
+                  {/* Answer Area */}
+                  {interviewMode === "text" ? (
+                    <div className="space-y-4">
+                      <textarea
+                        value={answer}
+                        onChange={(e) => setAnswer(e.target.value)}
+                        placeholder="Type your answer here..."
+                        className="w-full h-32 p-4 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                      <div className="flex justify-between items-center">
+                        <div className="text-sm text-gray-500">
+                          {answer.length} characters
+                        </div>
+                        <button
+                          onClick={submitAnswer}
+                          disabled={!answer.trim() || isAnalyzingAnswer}
+                          className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isAnalyzingAnswer ? "Analyzing..." : "Submit Answer"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="bg-gray-50 rounded-xl p-8 text-center">
+                        {isRecording ? (
+                          <div className="space-y-4">
+                            <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                              <Mic className="w-8 h-8 text-white" />
+                            </div>
+                            <div className="text-gray-900">Recording... Speak now</div>
+                            <button
+                              onClick={stopRecording}
+                              className="bg-red-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors"
+                            >
+                              Stop Recording
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
+                              <Mic className="w-8 h-8 text-purple-600" />
+                            </div>
+                            <div className="text-gray-600">Click to start recording</div>
+                            <button
+                              onClick={startRecording}
+                              disabled={!browserSupport}
+                              className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Start Recording
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      {transcript && (
+                        <div className="mt-4 p-4 bg-blue-50 rounded-xl">
+                          <div className="text-sm text-blue-600 font-medium mb-2">Transcript:</div>
+                          <div className="text-gray-900">{transcript}</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {responses[selectedFeedbackTab] && (
-                  <div className="space-y-3">
-                    <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-                      <div className="text-xs font-semibold text-gray-400 mb-1">Question</div>
-                      <div className="text-sm font-medium">
-                        {responses[selectedFeedbackTab].question}
-                      </div>
-                    </div>
-
-                    <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs font-semibold text-gray-400">Your answer</div>
-                        <div className="bg-purple-500/20 px-2 py-1 rounded text-xs font-bold text-purple-400">
-                          Score: {Number(responses[selectedFeedbackTab]?.analysis?.score ?? 0).toFixed(1)}/10
-                        </div>
-                      </div>
-                      <div className="text-sm leading-relaxed text-gray-300">
-                        {responses[selectedFeedbackTab].answer}
-                      </div>
-                    </div>
-
-                    <div className="bg-green-500/10 rounded-xl p-3 border border-green-500/20">
-                      <div className="text-sm font-bold text-green-400 mb-2">Strengths</div>
-                      <ul className="list-disc space-y-1 pl-5 text-sm text-green-300">
-                        {(
-                          responses[selectedFeedbackTab]?.analysis?.strengths?.length
-                            ? responses[selectedFeedbackTab].analysis.strengths
-                            : ["Clear attempt and relevant framing."]
-                        ).map((item, idx) => (
-                          <li key={`q-strength-${selectedFeedbackTab}-${idx}`}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="bg-red-500/10 rounded-xl p-3 border border-red-500/20">
-                      <div className="text-sm font-bold text-red-400 mb-2">Improvements</div>
-                      <ul className="list-disc space-y-1 pl-5 text-sm text-red-300">
-                        {(
-                          responses[selectedFeedbackTab]?.analysis?.improvements?.length
-                            ? responses[selectedFeedbackTab].analysis.improvements
-                            : ["Add stronger specifics and measurable outcomes."]
-                        ).map((item, idx) => (
-                          <li key={`q-improvement-${selectedFeedbackTab}-${idx}`}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
+                {errorMessage && (
+                  <div className="p-4 bg-red-50 rounded-xl border border-red-200">
+                    <div className="text-red-600 text-sm">{errorMessage}</div>
                   </div>
                 )}
               </div>
+            )}
 
-              <div className="bg-purple-500/10 backdrop-blur-sm rounded-2xl p-4 border border-purple-500/20 mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-sm font-bold text-purple-400">Model Answer</div>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(feedback?.better_answer || "")}
-                    className="text-xs bg-purple-500/20 px-2 py-1 rounded text-purple-300 hover:bg-purple-500/30 transition-colors"
-                  >
-                    📋 Copy
-                  </button>
+            {step === 3 && feedback && (
+              <div className="space-y-6">
+                {/* Overall Score */}
+                <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 text-center">
+                  <div className="mb-6">
+                    <div className={`text-6xl font-bold ${
+                      feedback.overall_score >= 8 ? 'text-green-600' :
+                      feedback.overall_score >= 6 ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>
+                      {feedback.overall_score}/10
+                    </div>
+                    <div className="text-gray-600 mt-2">Overall Score</div>
+                  </div>
+                  
+                  <div className="flex justify-center gap-4 mb-8">
+                    <button
+                      onClick={shareResult}
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      Share Result
+                    </button>
+                    <button
+                      onClick={resetInterview}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      Try Again
+                    </button>
+                  </div>
                 </div>
-                <div className="text-sm leading-relaxed text-purple-200">
-                  {feedback?.better_answer || "A well-structured answer should include specific examples, measurable results, and a clear conclusion that demonstrates your capabilities and alignment with the role requirements."}
-                </div>
-              </div>
 
-              <div className="bg-green-500/10 backdrop-blur-sm rounded-2xl p-4 border border-green-500/20 mb-4">
-                <div className="text-sm font-bold text-green-400 mb-3">Overall Strengths</div>
-                <ul className="list-disc space-y-1 pl-5 text-sm text-green-300">
-                  {(feedback?.strengths?.length ? feedback.strengths : ["Strong effort and thoughtful responses."]).map(
-                    (item, idx) => (
-                      <li key={`strength-${idx}`}>{item}</li>
-                    )
+                {/* Detailed Feedback */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Metrics */}
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <h3 className="font-semibold text-gray-900 mb-4">Performance Metrics</h3>
+                    <div className="space-y-3">
+                      {Object.entries(feedback.metrics || {}).map(([key, value]) => (
+                        <div key={key} className="flex items-center justify-between">
+                          <span className="text-gray-600 capitalize">{key.replace('_', ' ')}</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-24 bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-purple-600 h-2 rounded-full"
+                                style={{ width: `${(value / 10) * 100}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-medium w-8">{value}/10</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Filler Words */}
+                  {feedback.filler_words && feedback.filler_words.length > 0 && (
+                    <div className="bg-orange-50 rounded-2xl p-6 shadow-sm border border-orange-200">
+                      <h3 className="font-semibold text-orange-900 mb-3 flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5" />
+                        Filler Words Detected
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {feedback.filler_words.map((word, index) => (
+                          <span key={index} className="px-3 py-1 bg-orange-200 text-orange-800 rounded-full text-sm">
+                            {word}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                </ul>
-              </div>
+                </div>
 
-              <div className="bg-orange-500/10 backdrop-blur-sm rounded-2xl p-4 border border-orange-500/20 mb-6">
-                <div className="text-sm font-bold text-orange-400 mb-3">Areas to Improve</div>
-                <ul className="list-disc space-y-1 pl-5 text-sm text-orange-300">
-                  {(
-                    feedback?.improvements?.length
-                      ? feedback.improvements
-                      : ["Add more specific examples and measurable outcomes."]
-                  ).map((item, idx) => (
-                    <li key={`improvement-${idx}`}>{item}</li>
-                  ))}
-                </ul>
-              </div>
+                {/* Strengths and Improvements */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-green-50 rounded-2xl p-6 shadow-sm border border-green-200">
+                    <h3 className="font-semibold text-green-900 mb-4 flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5" />
+                      Strengths
+                    </h3>
+                    <ul className="space-y-2">
+                      {(feedback.strengths || []).map((strength, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <Star className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700">{strength}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={resetInterview}
-                  className="py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl font-semibold hover:bg-white/20 transition-all flex items-center justify-center gap-2"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  Practice Again
-                </button>
-                <button
-                  onClick={shareResult}
-                  className="py-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl font-semibold shadow-lg hover:shadow-purple-500/25 transition-all flex items-center justify-center gap-2"
-                >
-                  <Share2 className="w-4 h-4" />
-                  Share Result
-                </button>
-              </div>
-            </section>
-          )}
-        </main>
+                  <div className="bg-yellow-50 rounded-2xl p-6 shadow-sm border border-yellow-200">
+                    <h3 className="font-semibold text-yellow-900 mb-4 flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5" />
+                      Areas to Improve
+                    </h3>
+                    <ul className="space-y-2">
+                      {(feedback.improvements || []).map((improvement, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <Lightbulb className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700">{improvement}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
 
-        {/* Bottom Navigation */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-[#0A0A0F]/90 backdrop-blur-xl border-t border-white/10">
-          <div className="max-w-md mx-auto px-6 py-3">
-            <div className="grid grid-cols-5 gap-4">
-              <Link href="/dashboard" className="flex flex-col items-center gap-1 text-gray-400">
-                <Home className="w-5 h-5" />
-                <span className="text-xs">Home</span>
-              </Link>
-              <Link href="/interview" className="flex flex-col items-center gap-1 text-purple-400">
-                <Mic className="w-5 h-5" />
-                <span className="text-xs">Practice</span>
-              </Link>
-              <Link href="/pulse" className="flex flex-col items-center gap-1 text-gray-400">
-                <Zap className="w-5 h-5" />
-                <span className="text-xs">PULSE</span>
-              </Link>
-              <Link href="/leaderboard" className="flex flex-col items-center gap-1 text-gray-400">
-                <Trophy className="w-5 h-5" />
-                <span className="text-xs">Trophy</span>
-              </Link>
-              <Link href="/profile" className="flex flex-col items-center gap-1 text-gray-400">
-                <User className="w-5 h-5" />
-                <span className="text-xs">Profile</span>
-              </Link>
-            </div>
+                {/* Model Answer */}
+                {feedback.model_answer && (
+                  <div className="bg-purple-50 rounded-2xl p-6 shadow-sm border border-purple-200">
+                    <h3 className="font-semibold text-purple-900 mb-4">Model Answer</h3>
+                    <p className="text-gray-700">{feedback.model_answer}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </nav>
-      </div>
 
-      <style jsx global>{`
-        .animate-fade-up {
-          animation: fadeUp 350ms ease both;
-        }
-        @keyframes fadeUp {
-          from {
-            opacity: 0;
-            transform: translateY(8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </PageLayout>
+          {/* Right Column - Tips and Progress */}
+          <div className="space-y-6">
+            {/* Tips Card */}
+            {step === 2 && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Lightbulb className="w-5 h-5 text-yellow-500" />
+                  Quick Tips
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-purple-600">1</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Structure your answer</div>
+                      <div className="text-sm text-gray-600">Start with context, then main points, conclusion</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-purple-600">2</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Use STAR method</div>
+                      <div className="text-sm text-gray-600">Situation, Task, Action, Result</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-purple-600">3</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Avoid filler words</div>
+                      <div className="text-sm text-gray-600">Minimize "um", "like", "you know"</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Progress Card */}
+            {step === 2 && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <h3 className="font-semibold text-gray-900 mb-4">Your Progress</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Questions Answered</span>
+                    <span className="font-semibold text-gray-900">{currentQuestionIndex}/{questions.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Time Spent</span>
+                    <span className="font-semibold text-gray-900">~2 min/question</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Mode</span>
+                    <span className="font-semibold text-gray-900 capitalize">{interviewMode}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Domain Info */}
+            {step === 1 && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <h3 className="font-semibold text-gray-900 mb-4">About {selectedDomain}</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                      <Trophy className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">High Demand</div>
+                      <div className="text-sm text-gray-600">Top companies are hiring</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Great Growth</div>
+                      <div className="text-sm text-gray-600">Career advancement opportunities</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </AppShell>
   );
 }

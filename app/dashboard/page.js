@@ -2,223 +2,368 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Home, Mic, Zap, Trophy, User, Bell, Flame, Briefcase, MessageSquare, TrendingUp, Target, Brain } from "lucide-react";
-import PageLayout from "@/components/PageLayout";
+import { 
+  Home, 
+  Mic, 
+  Zap, 
+  Trophy, 
+  User, 
+  Bell, 
+  Flame, 
+  Briefcase, 
+  MessageSquare, 
+  TrendingUp, 
+  Target, 
+  Brain, 
+  Calendar,
+  ArrowUp,
+  ArrowDown,
+  Clock,
+  Award,
+  Star,
+  ChevronRight
+} from "lucide-react";
+import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
-
-const actionCards = [
-  {
-    icon: Briefcase,
-    title: "Jobs & Internships",
-    subtitle: "Find your perfect match",
-    href: "/jobs",
-    color: "blue",
-    badge: "NEW"
-  },
-  {
-    icon: Brain,
-    title: "Smart Interview",
-    subtitle: "Upload resume, get personalized interview",
-    href: "/smart-interview",
-    color: "purple",
-    badge: "NEW"
-  },
-  {
-    icon: Mic,
-    title: "Mock Interview",
-    subtitle: "AI-powered practice",
-    href: "/interview",
-    color: "purple"
-  },
-  {
-    icon: MessageSquare,
-    title: "GD Battle",
-    subtitle: "Group discussions",
-    href: "/gd",
-    color: "coral"
-  },
-  {
-    icon: Zap,
-    title: "PULSE Feed",
-    subtitle: "Company insights",
-    href: "/pulse",
-    color: "green"
-  },
-  {
-    icon: Trophy,
-    title: "Leaderboard",
-    subtitle: "Top performers",
-    href: "/leaderboard",
-    color: "gold"
-  },
-  {
-    icon: User,
-    title: "For Recruiters",
-    subtitle: "Find talent",
-    href: "/recruiter",
-    color: "purple"
-  },
-];
 
 export default function Dashboard() {
   const [bridgeScore, setBridgeScore] = useState(null);
   const [greeting, setGreeting] = useState("");
+  const [todayDate, setTodayDate] = useState("");
+  const [stats, setStats] = useState({
+    bridgeScore: 742,
+    interviewsDone: 12,
+    currentStreak: 5,
+    avgScore: 7.4
+  });
+  const [recentActivity, setRecentActivity] = useState([
+    { type: 'interview', title: 'Amazon SDE Mock', time: '2 hours ago', score: 8.2 },
+    { type: 'gd', title: 'GD Battle: AI Ethics', time: '5 hours ago', result: 'Won' },
+    { type: 'interview', title: 'Infosys Technical', time: '1 day ago', score: 7.8 },
+    { type: 'pulse', title: 'Read TCS Insights', time: '2 days ago' },
+    { type: 'coach', title: 'Answer Rewriter Practice', time: '3 days ago' }
+  ]);
+  const [leaderboard, setLeaderboard] = useState([
+    { rank: 1, name: 'Priya Sharma', college: 'VIT', score: 892 },
+    { rank: 2, name: 'Rahul Kumar', college: 'PSG', score: 856 },
+    { rank: 3, name: 'Anjali Nair', college: 'SRMIST', score: 834 }
+  ]);
 
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour < 12) {
-      setGreeting("Good morning! 🌅");
+      setGreeting("Good Morning");
     } else if (hour < 17) {
-      setGreeting("Good afternoon! ☀️");
+      setGreeting("Good Afternoon");
     } else {
-      setGreeting("Good evening! 🌙");
+      setGreeting("Good Evening");
+    }
+
+    const today = new Date();
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    setTodayDate(today.toLocaleDateString('en-US', options));
+
+    // Load saved profile
+    const saved = localStorage.getItem('bridge_profile');
+    if (saved) {
+      try {
+        const profile = JSON.parse(saved);
+        setBridgeScore(profile.bridgeScore || 742);
+      } catch (e) {
+        console.error('Profile parse error:', e);
+      }
     }
   }, []);
 
-  const scorePercentage = bridgeScore ? (bridgeScore / 1000) * 100 : 0;
-  const circumference = 2 * Math.PI * 45;
-  const strokeDashoffset = circumference - (scorePercentage / 100) * circumference;
+  const features = [
+    {
+      icon: Mic,
+      title: 'AI Mock Interview',
+      description: 'Practice with real questions from top companies',
+      href: '/interview',
+      color: 'purple'
+    },
+    {
+      icon: Zap,
+      title: 'PULSE Feed',
+      description: 'Stay updated with latest company insights',
+      href: '/pulse',
+      color: 'yellow'
+    },
+    {
+      icon: Brain,
+      title: 'Smart Interview',
+      description: 'Personalized interviews based on your resume',
+      href: '/smart-interview',
+      color: 'blue'
+    }
+  ];
+
+  const getActivityIcon = (type) => {
+    switch(type) {
+      case 'interview': return Mic;
+      case 'gd': return MessageSquare;
+      case 'pulse': return Zap;
+      case 'coach': return Brain;
+      default: return Target;
+    }
+  };
+
+  const getActivityColor = (type) => {
+    switch(type) {
+      case 'interview': return 'text-blue-600 bg-blue-50';
+      case 'gd': return 'text-green-600 bg-green-50';
+      case 'pulse': return 'text-yellow-600 bg-yellow-50';
+      case 'coach': return 'text-purple-600 bg-purple-50';
+      default: return 'text-gray-600 bg-gray-50';
+    }
+  };
 
   return (
-    <PageLayout>
-      <div className="px-6 py-6">
-        
-        {/* Top bar */}
-        <header className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold mb-1">{greeting}</h1>
-            <p className="text-gray-400">Ready to ace your placement?</p>
-          </div>
-          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-            U
-          </div>
-        </header>
-
-        {/* BRIDGE SCORE Card */}
-        <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-3xl p-6 mb-6 relative overflow-hidden" style={{ boxShadow: '0 20px 40px rgba(108, 99, 255, 0.3)' }}>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold">BRIDGE SCORE</h2>
-                <p className="text-purple-200 text-sm">Interview Ready �</p>
-              </div>
-              <div className="relative w-24 h-24">
-                <svg className="w-24 h-24 transform -rotate-90">
-                  <circle
-                    cx="48"
-                    cy="48"
-                    r="45"
-                    stroke="rgba(255,255,255,0.2)"
-                    strokeWidth="6"
-                    fill="none"
-                  />
-                  <circle
-                    cx="48"
-                    cy="48"
-                    r="45"
-                    stroke="white"
-                    strokeWidth="6"
-                    fill="none"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={strokeDashoffset}
-                    strokeLinecap="round"
-                    className="transition-all duration-1000 ease-out"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">{bridgeScore || "---"}</div>
-                    <div className="text-xs text-purple-200">/1000</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
-            <div className="flex justify-center mb-1">
-              <Briefcase className="w-4 h-4 text-purple-400" />
-            </div>
-            <div className="text-lg font-bold">12</div>
-            <div className="text-xs text-gray-400">Practices</div>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
-            <div className="flex justify-center mb-1">
-              <Target className="w-4 h-4 text-purple-400" />
-            </div>
-            <div className="text-lg font-bold">7.4</div>
-            <div className="text-xs text-gray-400">Avg Score</div>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
-            <div className="flex justify-center mb-1">
-              <Flame className="w-4 h-4 text-orange-500" />
-            </div>
-            <div className="text-lg font-bold">5</div>
-            <div className="text-xs text-gray-400">Day Streak</div>
-          </div>
-        </div>
-
-        {/* Continue where you left off */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 mb-6">
-          <h3 className="font-semibold mb-2">Continue Where You Left Off</h3>
-          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Technical Interview</p>
-                <p className="text-xs text-gray-400">Completed 3/5 questions</p>
-              </div>
-              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                <span className="text-xs font-bold">60%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Feature Grid */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          {actionCards.map((item) => (
-            <Link
-              key={item.title}
-              href={item.href}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-[1.02] relative"
-            >
-              {item.badge && (
-                <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                  {item.badge}
-                </div>
-              )}
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${
-                item.color === 'purple' ? 'bg-purple-500' :
-                item.color === 'coral' ? 'bg-red-500' :
-                item.color === 'green' ? 'bg-green-500' :
-                item.color === 'blue' ? 'bg-blue-500' :
-                'bg-yellow-500'
-              }`}>
-                <item.icon className="w-5 h-5 text-white" />
-              </div>
-              <h4 className="font-semibold text-sm mb-1">{item.title}</h4>
-              <p className="text-xs text-gray-400">{item.subtitle}</p>
-            </Link>
-          ))}
-        </div>
-
-        {/* Daily Challenge */}
-        <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-4 mb-20" style={{ boxShadow: '0 10px 25px rgba(255, 107, 107, 0.3)' }}>
+    <AppShell>
+      <div className="max-w-7xl mx-auto">
+        {/* Greeting Section */}
+        <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-sm">Daily Challenge</h3>
-              <p className="text-xs text-red-100 mt-1">Record 60s self-introduction</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {greeting}, Siddhesh 👋
+              </h1>
+              <p className="text-gray-600">Here's your placement prep summary for today</p>
             </div>
-            <div className="bg-white/20 rounded-lg px-3 py-1">
-              <span className="text-xs font-semibold">+50 pts</span>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200">
+              <Calendar className="w-4 h-4 text-gray-500" />
+              <span className="text-sm text-gray-600">{todayDate}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                <Trophy className="w-6 h-6 text-purple-600" />
+              </div>
+              <div className="flex items-center text-green-600 text-sm">
+                <ArrowUp className="w-4 h-4 mr-1" />
+                <span>+12</span>
+              </div>
+            </div>
+            <div className="text-3xl font-bold gradient-text mb-1">{stats.bridgeScore}</div>
+            <div className="text-sm text-gray-600">BRIDGE Score</div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <Mic className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="flex items-center text-green-600 text-sm">
+                <ArrowUp className="w-4 h-4 mr-1" />
+                <span>+3</span>
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.interviewsDone}</div>
+            <div className="text-sm text-gray-600">Interviews Done</div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                <Flame className="w-6 h-6 text-orange-600" />
+              </div>
+              <div className="flex items-center text-red-600 text-sm">
+                <ArrowDown className="w-4 h-4 mr-1" />
+                <span>-1</span>
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.currentStreak} <span className="text-lg">🔥</span></div>
+            <div className="text-sm text-gray-600">Current Streak</div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <Star className="w-6 h-6 text-green-600" />
+              </div>
+              <div className="flex items-center text-green-600 text-sm">
+                <ArrowUp className="w-4 h-4 mr-1" />
+                <span>+0.3</span>
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.avgScore}/10</div>
+            <div className="text-sm text-gray-600">Avg Score</div>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Continue Preparing */}
+          <div className="lg:col-span-2 space-y-6">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Continue Preparing</h2>
+              <div className="space-y-4">
+                {features.map((feature, index) => {
+                  const Icon = feature.icon;
+                  return (
+                    <Link
+                      key={index}
+                      href={feature.href}
+                      className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-14 h-14 rounded-full flex items-center justify-center ${
+                            feature.color === 'purple' ? 'bg-purple-100' :
+                            feature.color === 'yellow' ? 'bg-yellow-100' :
+                            'bg-blue-100'
+                          }`}>
+                            <Icon className={`w-7 h-7 ${
+                              feature.color === 'purple' ? 'text-purple-600' :
+                              feature.color === 'yellow' ? 'text-yellow-600' :
+                              'text-blue-600'
+                            }`} />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900 mb-1">{feature.title}</h3>
+                            <p className="text-sm text-gray-600">{feature.description}</p>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Today's Challenge */}
+            <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 text-white">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Today's Challenge</h2>
+                <div className="flex items-center gap-2 text-purple-200">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-sm">15 min</span>
+                </div>
+              </div>
+              <p className="text-purple-100 mb-6">
+                Complete a full Amazon SDE technical interview with AI feedback
+              </p>
+              <button className="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-colors">
+                Start Challenge
+              </button>
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-6">
+            {/* BRIDGE Score Card */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <h3 className="font-semibold text-gray-900 mb-4">BRIDGE Score</h3>
+              <div className="flex flex-col items-center">
+                <div className="relative w-32 h-32 mb-4">
+                  <svg className="w-32 h-32 transform -rotate-90">
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="#E5E7EB"
+                      strokeWidth="12"
+                      fill="none"
+                    />
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="url(#gradient)"
+                      strokeWidth="12"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 56 * 0.742} ${2 * Math.PI * 56}`}
+                      strokeLinecap="round"
+                    />
+                    <defs>
+                      <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#6C3FE8" />
+                        <stop offset="100%" stopColor="#9B6DFF" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <div className="text-3xl font-bold gradient-text">{stats.bridgeScore}</div>
+                    <div className="text-xs text-gray-500">Interview Ready</div>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">
+                    <Award className="w-3 h-3 mr-1" />
+                    Top 15%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <h3 className="font-semibold text-gray-900 mb-4">Recent Activity</h3>
+              <div className="space-y-3">
+                {recentActivity.slice(0, 5).map((activity, index) => {
+                  const Icon = getActivityIcon(activity.type);
+                  return (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getActivityColor(activity.type)}`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          {activity.title}
+                        </div>
+                        <div className="text-xs text-gray-500">{activity.time}</div>
+                      </div>
+                      {activity.score && (
+                        <div className="text-sm font-semibold text-green-600">{activity.score}</div>
+                      )}
+                      {activity.result && (
+                        <div className="text-xs font-semibold text-green-600">{activity.result}</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Leaderboard Preview */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-900">Leaderboard</h3>
+                <Link href="/leaderboard" className="text-purple-600 text-sm hover:text-purple-700">
+                  View All
+                </Link>
+              </div>
+              <div className="space-y-3">
+                {leaderboard.map((student) => (
+                  <div key={student.rank} className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                      student.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
+                      student.rank === 2 ? 'bg-gray-100 text-gray-700' :
+                      'bg-orange-100 text-orange-700'
+                    }`}>
+                      {student.rank}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 truncate">
+                        {student.name}
+                      </div>
+                      <div className="text-xs text-gray-500">{student.college}</div>
+                    </div>
+                    <div className="text-sm font-bold text-gray-900">{student.score}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </PageLayout>
+    </AppShell>
   );
 }
