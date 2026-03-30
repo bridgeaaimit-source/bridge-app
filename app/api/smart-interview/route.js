@@ -298,78 +298,29 @@ Return ONLY valid JSON:
       `Q${i+1}: ${h.question}\nA${i+1}: ${h.answer}\nScore: ${h.score || 'N/A'}` 
     ).join('\n\n');
 
-    const prompt = `You are a fair and balanced senior hiring manager evaluating a candidate.
+    const prompt = `You are evaluating a candidate interview.
+
 Job Role: ${job_role}
 Round: ${round}
 
-Resume:
-${resume_text}
-
-Job Description:
-${jd}
-
-Complete Interview Transcript:
+Interview History:
 ${historyText}
 
-Provide a comprehensive and FAIR evaluation. Be honest but constructive.
-Consider: answer quality, communication, resume fit, technical accuracy, confidence, specific examples given.
-
-IMPORTANT SCORING GUIDELINES:
-- Score 1-3: Very poor, major red flags
-- Score 4-5: Below expectations, needs significant improvement
-- Score 6-7: Meets basic expectations, acceptable performance
-- Score 8-9: Good performance, above average
-- Score 10: Exceptional, outstanding performance
-
-Most candidates should score in the 5-8 range. Reserve 1-3 for truly poor responses and 9-10 for exceptional ones.
-
-Return ONLY valid JSON:
+Provide a simple evaluation in JSON format:
 {
-  "placement_chance": (0-100, be realistic:
-    0-20: Major concerns, not suitable,
-    21-40: Significant gaps, unlikely to proceed,
-    41-60: Mixed performance, borderline,
-    61-75: Decent candidate, could proceed,
-    76-85: Good candidate, likely to proceed,
-    86-95: Strong candidate, highly recommended,
-    96-100: Exceptional - top tier),
-  "verdict": "Selected/Strong Maybe/Weak Maybe/Rejected",
-  "overall_score": (1-10, be fair and balanced),
+  "placement_chance": 75,
+  "verdict": "Strong Maybe",
+  "overall_score": 8,
   "scores": {
-    "communication": (1-10, how clearly they expressed ideas),
-    "technical_knowledge": (1-10, depth of technical understanding),
-    "resume_jd_fit": (1-10, how well their background matches the role),
-    "confidence": (1-10, their self-assurance and composure),
-    "answer_quality": (1-10, thoroughness and relevance of answers)
-  },
-  "best_answer": {
-    "question": "question they answered best",
-    "why": "specific reasons why this answer stood out"
-  },
-  "worst_answer": {
-    "question": "question they answered worst",
-    "why": "specific areas for improvement"
-  },
-  "filler_words_summary": "Overall assessment of verbal clarity and filler word usage",
-  "strengths": [
-    "specific strength with example from interview",
-    "specific strength with example from interview",
-    "specific strength with example from interview"
-  ],
-  "weaknesses": [
-    "specific weakness with example from interview",
-    "specific weakness with example from interview"
-  ],
-  "improvement_roadmap": [
-    "Specific action item 1 to improve before next interview",
-    "Specific action item 2 to improve",
-    "Specific action item 3 to improve"
-  ],
-  "interviewer_notes": "What the interviewer would write 
-    about this candidate internally - be honest",
-  "should_hire": true/false,
-  "hire_reasoning": "Honest one paragraph hiring decision"
-}`;
+    "communication": 8,
+    "technical_knowledge": 7,
+    "resume_jd_fit": 8,
+    "confidence": 7,
+    "answer_quality": 8
+  }
+}
+
+Return ONLY the JSON, no other text.`;
 
     console.log('📝 Prompt length:', prompt.length);
     console.log('📝 History length:', historyText.length);
