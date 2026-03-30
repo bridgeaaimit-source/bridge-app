@@ -407,23 +407,38 @@ export default function SmartInterviewPage() {
           
           if (userSnap.exists()) {
             const userData = userSnap.data();
+            console.log('📈 Smart Interview - Current user data before update:', userData);
             const newInterviewsDone = (userData.interviewsDone || 0) + 1;
             const overallScore = data.overall_score || 5;
             const newAvgScore = ((userData.avgScore || 0) * (userData.interviewsDone || 0) + overallScore) / newInterviewsDone;
             const newBridgeScore = Math.min(1000, (userData.bridgeScore || 500) + (overallScore * 10));
             
-            await updateDoc(userRef, {
+            const updateData = {
               interviewsDone: newInterviewsDone,
               avgScore: Math.round(newAvgScore * 10) / 10, // Round to 1 decimal
               bridgeScore: newBridgeScore,
               streak: (userData.streak || 0) + 1,
               updatedAt: new Date().toISOString()
-            });
+            };
+            
+            console.log('📈 Smart Interview - Updating user stats with:', updateData);
+            
+            await updateDoc(userRef, updateData);
             
             console.log('✅ User stats updated:', {
               interviewsDone: newInterviewsDone,
               avgScore: newAvgScore,
               bridgeScore: newBridgeScore
+            });
+          } else {
+            console.log('❌ Smart Interview - No user document found, creating new one...');
+            // Create user document if it doesn't exist
+            await setDoc(userRef, {
+              interviewsDone: 1,
+              avgScore: data.overall_score || 5,
+              bridgeScore: 500 + (data.overall_score || 5) * 10,
+              streak: 1,
+              updatedAt: new Date().toISOString()
             });
           }
         }

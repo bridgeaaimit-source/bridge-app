@@ -27,7 +27,7 @@ import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { doc, getDoc, collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { doc, collection, query, orderBy, limit, getDocs, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function Dashboard() {
@@ -42,11 +42,7 @@ export default function Dashboard() {
     avgScore: 0
   });
   const [recentActivity, setRecentActivity] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([
-    { rank: 1, name: 'Priya Sharma', college: 'VIT', score: 892 },
-    { rank: 2, name: 'Rahul Kumar', college: 'PSG', score: 856 },
-    { rank: 3, name: 'Anjali Nair', college: 'SRMIST', score: 834 }
-  ]);
+  const [leaderboard, setLeaderboard] = useState([]);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -82,15 +78,18 @@ export default function Dashboard() {
           
           if (userSnap.exists()) {
             const userData = userSnap.data();
+            console.log('📊 Dashboard - User data from Firestore:', userData);
             const userStats = {
               bridgeScore: userData.bridgeScore || 0,
               interviewsDone: userData.interviewsDone || 0,
               currentStreak: userData.streak || 0,
               avgScore: userData.avgScore || 0
             };
+            console.log('📊 Dashboard - Setting stats:', userStats);
             setStats(userStats);
             setBridgeScore(userStats.bridgeScore);
           } else {
+            console.log('📊 Dashboard - No user data found, using defaults');
             // Use default stats for new users
             setStats(defaultStats);
             setBridgeScore(0);
@@ -121,6 +120,30 @@ export default function Dashboard() {
           });
           
           setRecentActivity(activities);
+
+          // Fetch real leaderboard data
+          const leaderboardQuery = query(
+            collection(db, 'users'),
+            where('role', '==', 'student'),
+            orderBy('bridgeScore', 'desc'),
+            limit(10)
+          );
+          
+          const leaderboardSnapshot = await getDocs(leaderboardQuery);
+          const leaderboardData = [];
+          
+          leaderboardSnapshot.forEach((doc, index) => {
+            const userData = doc.data();
+            leaderboardData.push({
+              rank: index + 1,
+              name: userData.name || 'Anonymous',
+              college: userData.college || 'Unknown',
+              score: userData.bridgeScore || 0
+            });
+          });
+          
+          setLeaderboard(leaderboardData);
+          console.log('🏆 Dashboard - Leaderboard data:', leaderboardData);
         } catch (error) {
           console.error('Error loading user data:', error);
         }
