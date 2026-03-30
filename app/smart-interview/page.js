@@ -102,8 +102,17 @@ export default function SmartInterviewPage() {
   const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
+      reader.readAsArrayBuffer(file);
+      reader.onload = () => {
+        const arrayBuffer = reader.result;
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64 = btoa(binary);
+        resolve(base64);
+      };
       reader.onerror = reject;
     });
   };
@@ -324,14 +333,11 @@ export default function SmartInterviewPage() {
     }
   };
 
-  const getFeedback = async (conversationHistory) => {
+  const getFeedback = async (formattedHistory) => {
     setIsEvaluating(true);
     
-    // Convert conversation history to API format
-    const formattedHistory = conversationHistory.map((item, index) => ({
-      question: item.role === 'interviewer' ? item.message : (conversationHistory[index - 1]?.message || ''),
-      answer: item.role === 'user' ? item.message : (conversationHistory[index + 1]?.message || '')
-    })).filter(item => item.question && item.answer);
+    // formattedHistory is already in the correct format: [{question, answer}, ...]
+    console.log('Sending conversation history to API:', formattedHistory);
     
     try {
       const response = await fetch('/api/smart-interview', {

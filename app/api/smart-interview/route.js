@@ -76,18 +76,13 @@ Return ONLY valid JSON:
 
     let message;
     if (resume_base64) {
-      // Clean and validate base64 data
-      const cleanBase64 = resume_base64
-        .replace(/^data:application\/pdf;base64,/, '') // Remove data URL prefix if present
-        .replace(/\s/g, '') // Remove whitespace
-        .replace(/[^A-Za-z0-9+/=]/g, ''); // Remove non-base64 characters
-      
-      if (!cleanBase64 || cleanBase64.length < 100) {
+      // Validate base64 data
+      if (!resume_base64 || resume_base64.length < 100) {
         console.error('Invalid base64 data detected');
         return Response.json({ error: 'Invalid resume data provided' }, { status: 400 });
       }
       
-      console.log('Base64 data length after cleaning:', cleanBase64.length);
+      console.log('Base64 data length:', resume_base64.length);
       
       // Handle PDF resume
       message = await retryClaudeCall(() => 
@@ -102,7 +97,7 @@ Return ONLY valid JSON:
                 source: {
                   type: 'base64',
                   media_type: 'application/pdf',
-                  data: cleanBase64
+                  data: resume_base64
                 }
               },
               {
