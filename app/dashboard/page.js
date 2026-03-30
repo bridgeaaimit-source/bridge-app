@@ -126,10 +126,9 @@ export default function Dashboard() {
           
           setRecentActivity(activities);
 
-          // Fetch real leaderboard data
+          // Fetch real leaderboard data (simplified query)
           const leaderboardQuery = query(
             collection(db, 'users'),
-            where('role', '==', 'student'),
             orderBy('bridgeScore', 'desc'),
             limit(10)
           );
@@ -139,12 +138,15 @@ export default function Dashboard() {
           
           leaderboardSnapshot.forEach((doc, index) => {
             const userData = doc.data();
-            leaderboardData.push({
-              rank: index + 1,
-              name: userData.name || 'Anonymous',
-              college: userData.college || 'Unknown',
-              score: userData.bridgeScore || 0
-            });
+            // Only include students in leaderboard
+            if (userData.role === 'student') {
+              leaderboardData.push({
+                rank: leaderboardData.length + 1,
+                name: userData.name || 'Anonymous',
+                college: userData.college || 'Unknown',
+                score: userData.bridgeScore || 0
+              });
+            }
           });
           
           setLeaderboard(leaderboardData);
