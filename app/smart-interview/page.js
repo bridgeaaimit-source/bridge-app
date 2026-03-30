@@ -169,9 +169,10 @@ export default function SmartInterviewPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          resume: resumeBase64,
-          jobRole,
-          jobDescription,
+          action: 'init',
+          resume_base64: resumeBase64,
+          job_role: jobRole,
+          jd: jobDescription,
           round,
           mode,
         }),
@@ -183,15 +184,15 @@ export default function SmartInterviewPage() {
         throw new Error(data.error || 'Failed to start interview');
       }
 
-      setCurrentQuestion(data.firstQuestion);
+      setCurrentQuestion(data.question);
       setConversationHistory([
-        { role: 'interviewer', message: data.firstQuestion }
+        { role: 'interviewer', message: data.question }
       ]);
       setStage('interviewing');
       setQuestionNumber(1);
       
       if (autoSpeak) {
-        speakText(data.firstQuestion);
+        speakText(data.question);
       }
       
     } catch (error) {
@@ -213,19 +214,32 @@ export default function SmartInterviewPage() {
     setIsTyping(true);
     
     // Add user's answer to conversation
-    const newHistory = [...conversationHistory, { role: 'user', message: answer }];
-    setConversationHistory(newHistory);
+    const formattedHistory = conversationHistory.map((item, index) => ({
+      question: item.role === 'interviewer' ? item.message : (conversationHistory[index - 1]?.message || ''),
+      answer: item.role === 'user' ? item.message : (conversationHistory[index + 1]?.message || '')
+    })).filter(item => item.question && item.answer);
+    
+    const newHistory = [...formattedHistory, { question: currentQuestion, answer }];
+    setConversationHistory([
+      ...conversationHistory,
+      { role: 'interviewer', message: currentQuestion },
+      { role: 'user', message: answer }
+    ]);
 
     try {
-      const response = await fetch('/api/smart-interview/answer', {
+      const response = await fetch('/api/smart-interview', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          answer,
-          questionNumber,
-          conversationHistory: newHistory,
+          action: 'continue',
+          resume_base64: resumeBase64,
+          job_role: jobRole,
+          jd: jobDescription,
+          round,
+          conversation_history: newHistory,
+          last_answer: answer,
         }),
       });
 
@@ -235,16 +249,16 @@ export default function SmartInterviewPage() {
         throw new Error(data.error || 'Failed to process answer');
       }
 
-      if (data.nextQuestion) {
-        setCurrentQuestion(data.nextQuestion);
+      if (data.question) {
+        setCurrentQuestion(data.question);
         setConversationHistory([
           ...newHistory,
-          { role: 'interviewer', message: data.nextQuestion }
+          { role: 'interviewer', message: data.question }
         ]);
         setQuestionNumber(questionNumber + 1);
         
         if (autoSpeak) {
-          speakText(data.nextQuestion);
+          speakText(data.question);
         }
       } else {
         // Interview ended, get feedback
@@ -261,19 +275,28 @@ export default function SmartInterviewPage() {
     }
   };
 
-  const getFeedback = async (history) => {
+  const getFeedback = async (conversationHistory) => {
     setIsEvaluating(true);
     
+    // Convert conversation history to API format
+    const formattedHistory = conversationHistory.map((item, index) => ({
+      question: item.role === 'interviewer' ? item.message : (conversationHistory[index - 1]?.message || ''),
+      answer: item.role === 'user' ? item.message : (conversationHistory[index + 1]?.message || '')
+    })).filter(item => item.question && item.answer);
+    
     try {
-      const response = await fetch('/api/smart-interview/feedback', {
+      const response = await fetch('/api/smart-interview', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          conversationHistory: history,
-          jobRole,
-          resumeText,
+          action: 'evaluate',
+          resume_base64: resumeBase64,
+          job_role: jobRole,
+          jd: jobDescription,
+          round,
+          conversation_history: formattedHistory,
         }),
       });
 

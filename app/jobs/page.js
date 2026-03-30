@@ -45,7 +45,16 @@ export default function JobsPage() {
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/jobs');
+      const response = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'fetch_jobs',
+          profile: profile
+        }),
+      });
       const data = await response.json();
       
       if (!response.ok) {
@@ -470,10 +479,22 @@ export default function JobsPage() {
 
                     {/* Actions */}
                     <div className="flex gap-3">
-                      <button className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                      <button 
+                        onClick={() => {
+                          // Handle apply now - would integrate with application system
+                          toast.success('Application process started!');
+                        }}
+                        className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                      >
                         Apply Now
                       </button>
-                      <button className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                      <button 
+                        onClick={() => {
+                          // Handle prepare - redirect to interview prep
+                          window.location.href = '/interview';
+                        }}
+                        className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+                      >
                         Prepare
                       </button>
                     </div>
