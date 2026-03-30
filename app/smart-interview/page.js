@@ -1,11 +1,13 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause, Volume2, Lightbulb, Star } from "lucide-react";
+import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause, Volume2, Lightbulb, Star, History } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
+import { auth, db } from "@/lib/firebase";
+import { doc, setDoc, collection, addDoc, query, orderBy, limit, getDocs } from "firebase/firestore";
 
 export default function SmartInterviewPage() {
-  const [stage, setStage] = useState('setup'); // 'setup' | 'interviewing' | 'feedback'
+  const [stage, setStage] = useState('setup'); // 'setup' | 'interviewing' | 'feedback' | 'history'
   const [resumeBase64, setResumeBase64] = useState('');
   const [resumeFileName, setResumeFileName] = useState('');
   const [resumeText, setResumeText] = useState('');
@@ -30,6 +32,7 @@ export default function SmartInterviewPage() {
   const [tooFewAnswers, setTooFewAnswers] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
+  const [feedbackHistory, setFeedbackHistory] = useState([]);
   
   const fileInputRef = useRef(null);
 
@@ -361,9 +364,13 @@ export default function SmartInterviewPage() {
         throw new Error('Empty response from server');
       }
 
-      let data;
+            let data;
       try {
         data = JSON.parse(responseText);
+        console.log('✅ Feedback data received:', data);
+        console.log('Placement chance:', data.placement_chance);
+        console.log('Scores:', data.scores);
+        console.log('Verdict:', data.verdict);
       } catch (parseError) {
         console.error('JSON Parse Error:', parseError);
         console.error('Response that failed to parse:', responseText);
@@ -372,6 +379,25 @@ export default function SmartInterviewPage() {
 
       setFeedback(data);
       setStage('feedback');
+      
+      // Save feedback to Firestore
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          await addDoc(collection(db, 'users', user.uid, 'interview_feedback'), {
+            jobRole,
+            round,
+            feedback: data,
+            conversationHistory: conversationHistory,
+            timestamp: new Date().toISOString(),
+            createdAt: Date.now()
+          });
+          console.log('Feedback saved to history');
+        }
+      } catch (saveError) {
+        console.error('Error saving feedback:', saveError);
+        // Don't show error to user, just log it
+      }
       
     } catch (error) {
       toast.error(error.message || 'Failed to get feedback');
@@ -393,15 +419,59 @@ export default function SmartInterviewPage() {
     setTooFewAnswers(false);
   };
 
+  const loadFeedbackHistory = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        toast.error('Please login to view history');
+        return;
+      }
+
+      setLoading(true);
+      const feedbackRef = collection(db, 'users', user.uid, 'interview_feedback');
+      const q = query(feedbackRef, orderBy('createdAt', 'desc'), limit(10));
+      const querySnapshot = await getDocs(q);
+      
+      const history = [];
+      querySnapshot.forEach((doc) => {
+        history.push({ id: doc.id, ...doc.data() });
+      });
+      
+      setFeedbackHistory(history);
+      setStage('history');
+    } catch (error) {
+      console.error('Error loading history:', error);
+      toast.error('Failed to load history');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const viewHistoricalFeedback = (historicalData) => {
+    setFeedback(historicalData.feedback);
+    setJobRole(historicalData.jobRole);
+    setRound(historicalData.round);
+    setStage('feedback');
+  };
+
   // SETUP SCREEN
   if (stage === 'setup') {
     return (
       <AppShell>
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Smart Interview</h1>
-            <p className="text-gray-600 mt-1">Personalized based on your resume & job description</p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Smart Interview</h1>
+              <p className="text-gray-600 mt-1">Personalized based on your resume & job description</p>
+            </div>
+            <button
+              onClick={loadFeedbackHistory}
+              className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
+            >
+              <History className="w-5 h-5" />
+              View History
+            </button>
           </div>
 
           {/* Step Indicators */}
@@ -824,17 +894,17 @@ export default function SmartInterviewPage() {
               <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 text-center">
                 <div className="mb-6">
                   <div className="text-6xl font-bold gradient-text mb-2">
-                    {feedback.placementChance}%
+                    {feedback.placement_chance || feedback.placementChance || 0}%
                   </div>
                   <div className="text-gray-600">Placement Chance</div>
                 </div>
                 
                 <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
-                  feedback.placementChance >= 75 ? 'bg-green-100 text-green-700' :
-                  feedback.placementChance >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                  (feedback.placement_chance || feedback.placementChance || 0) >= 75 ? 'bg-green-100 text-green-700' :
+                  (feedback.placement_chance || feedback.placementChance || 0) >= 50 ? 'bg-yellow-100 text-yellow-700' :
                   'bg-red-100 text-red-700'
                 }`}>
-                  {feedback.verdict}
+                  {feedback.verdict || 'Pending'}
                 </div>
               </div>
 
@@ -849,10 +919,98 @@ export default function SmartInterviewPage() {
               </div>
 
               {/* Interviewer Notes */}
-              {feedback.interviewerNotes && (
+              {feedback.interviewer_notes && (
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                  <h3 className="font-semibold text-gray-900 mb-4">Interviewer Notes</h3>
-                  <p className="text-gray-700">{feedback.interviewerNotes}</p>
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-cyan-600" />
+                    Interviewer Notes
+                  </h3>
+                  <p className="text-gray-700">{feedback.interviewer_notes}</p>
+                </div>
+              )}
+
+              {/* Strengths & Weaknesses */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Strengths */}
+                {feedback.strengths && feedback.strengths.length > 0 && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      Your Strengths
+                    </h3>
+                    <ul className="space-y-3">
+                      {feedback.strengths.map((strength, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <Star className="w-4 h-4 text-green-600 mt-1 flex-shrink-0" />
+                          <span className="text-gray-700 text-sm">{strength}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Weaknesses */}
+                {feedback.weaknesses && feedback.weaknesses.length > 0 && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-orange-600" />
+                      Areas to Improve
+                    </h3>
+                    <ul className="space-y-3">
+                      {feedback.weaknesses.map((weakness, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <Target className="w-4 h-4 text-orange-600 mt-1 flex-shrink-0" />
+                          <span className="text-gray-700 text-sm">{weakness}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Improvement Roadmap */}
+              {feedback.improvement_roadmap && feedback.improvement_roadmap.length > 0 && (
+                <div className="bg-gradient-to-br from-cyan-50 to-teal-50 rounded-2xl p-6 border border-cyan-100">
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5 text-cyan-600" />
+                    Your Improvement Roadmap
+                  </h3>
+                  <div className="space-y-3">
+                    {feedback.improvement_roadmap.map((item, index) => (
+                      <div key={index} className="flex items-start gap-3 bg-white rounded-lg p-4">
+                        <div className="flex-shrink-0 w-6 h-6 bg-cyan-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                          {index + 1}
+                        </div>
+                        <p className="text-gray-700 text-sm flex-1">{item}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Best & Worst Answers */}
+              {(feedback.best_answer || feedback.worst_answer) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {feedback.best_answer && (
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-green-100">
+                      <h3 className="font-semibold text-green-700 mb-3 flex items-center gap-2">
+                        <Award className="w-5 h-5" />
+                        Best Answer
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-2 font-medium">{feedback.best_answer.question}</p>
+                      <p className="text-sm text-gray-700">{feedback.best_answer.why}</p>
+                    </div>
+                  )}
+                  {feedback.worst_answer && (
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-orange-100">
+                      <h3 className="font-semibold text-orange-700 mb-3 flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5" />
+                        Needs Improvement
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-2 font-medium">{feedback.worst_answer.question}</p>
+                      <p className="text-sm text-gray-700">{feedback.worst_answer.why}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -870,6 +1028,96 @@ export default function SmartInterviewPage() {
               </div>
             </div>
           ) : null}
+        </div>
+      </AppShell>
+    );
+  }
+
+  // HISTORY SCREEN
+  if (stage === 'history') {
+    return (
+      <AppShell>
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Interview History</h1>
+              <p className="text-gray-600 mt-1">View your previous interview feedback</p>
+            </div>
+            <button
+              onClick={() => setStage('setup')}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+              Back to Setup
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="w-8 h-8 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent mx-auto mb-4"></div>
+                <div className="text-gray-600">Loading history...</div>
+              </div>
+            </div>
+          ) : feedbackHistory.length === 0 ? (
+            <div className="text-center py-12">
+              <History className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Interview History</h3>
+              <p className="text-gray-600 mb-6">Complete your first interview to see feedback here</p>
+              <button
+                onClick={() => setStage('setup')}
+                className="px-6 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
+              >
+                Start Interview
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {feedbackHistory.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => viewHistoricalFeedback(item)}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{item.jobRole}</h3>
+                      <p className="text-sm text-gray-600">{item.round}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold gradient-text">
+                        {item.feedback?.placement_chance || item.feedback?.placementChance || 0}%
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(item.timestamp).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-5 gap-2">
+                    {Object.entries(item.feedback?.scores || {}).map(([key, value]) => (
+                      <div key={key} className="text-center">
+                        <div className="text-sm font-semibold text-gray-900">{value}/10</div>
+                        <div className="text-xs text-gray-500 capitalize">{key.replace('_', ' ')}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                      (item.feedback?.placement_chance || item.feedback?.placementChance || 0) >= 75 ? 'bg-green-100 text-green-700' :
+                      (item.feedback?.placement_chance || item.feedback?.placementChance || 0) >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {item.feedback?.verdict}
+                    </span>
+                    <span className="text-sm text-cyan-600 font-medium">Click to view details →</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </AppShell>
     );

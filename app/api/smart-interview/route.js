@@ -249,7 +249,7 @@ Return ONLY valid JSON:
       `Q${i+1}: ${h.question}\nA${i+1}: ${h.answer}\nScore: ${h.score || 'N/A'}` 
     ).join('\n\n');
 
-    const prompt = `You are a strict senior hiring manager.
+    const prompt = `You are a fair and balanced senior hiring manager evaluating a candidate.
 Job Role: ${job_role}
 Round: ${round}
 
@@ -262,39 +262,48 @@ ${jd}
 Complete Interview Transcript:
 ${historyText}
 
-Give a brutally honest final evaluation.
-Consider: answer quality, communication, resume fit,
-technical accuracy, confidence, specific examples given.
+Provide a comprehensive and FAIR evaluation. Be honest but constructive.
+Consider: answer quality, communication, resume fit, technical accuracy, confidence, specific examples given.
+
+IMPORTANT SCORING GUIDELINES:
+- Score 1-3: Very poor, major red flags
+- Score 4-5: Below expectations, needs significant improvement
+- Score 6-7: Meets basic expectations, acceptable performance
+- Score 8-9: Good performance, above average
+- Score 10: Exceptional, outstanding performance
+
+Most candidates should score in the 5-8 range. Reserve 1-3 for truly poor responses and 9-10 for exceptional ones.
 
 Return ONLY valid JSON:
 {
-  "placement_chance": (0-100, be very strict:
-    0-30: Not suitable,
-    31-50: Weak candidate,
-    51-65: Below average,
-    66-75: Average, might get through,
-    76-85: Good candidate,
-    86-95: Strong candidate,
-    96-100: Exceptional - rare),
+  "placement_chance": (0-100, be realistic:
+    0-20: Major concerns, not suitable,
+    21-40: Significant gaps, unlikely to proceed,
+    41-60: Mixed performance, borderline,
+    61-75: Decent candidate, could proceed,
+    76-85: Good candidate, likely to proceed,
+    86-95: Strong candidate, highly recommended,
+    96-100: Exceptional - top tier),
   "verdict": "Selected/Strong Maybe/Weak Maybe/Rejected",
-  "overall_score": (1-10),
+  "overall_score": (1-10, be fair and balanced),
   "scores": {
-    "communication": (1-10),
-    "technical_knowledge": (1-10),
-    "resume_jd_fit": (1-10),
-    "confidence": (1-10),
-    "answer_quality": (1-10)
+    "communication": (1-10, how clearly they expressed ideas),
+    "technical_knowledge": (1-10, depth of technical understanding),
+    "resume_jd_fit": (1-10, how well their background matches the role),
+    "confidence": (1-10, their self-assurance and composure),
+    "answer_quality": (1-10, thoroughness and relevance of answers)
   },
   "best_answer": {
     "question": "question they answered best",
-    "why": "why it was good"
+    "why": "specific reasons why this answer stood out"
   },
   "worst_answer": {
     "question": "question they answered worst",
-    "why": "why it was weak"
+    "why": "specific areas for improvement"
   },
-  "filler_words_summary": "Overall filler word usage assessment",
+  "filler_words_summary": "Overall assessment of verbal clarity and filler word usage",
   "strengths": [
+    "specific strength with example from interview",
     "specific strength with example from interview",
     "specific strength with example from interview"
   ],
