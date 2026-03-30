@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Trophy, Zap, Target, Flame, Star, Users, Briefcase, TrendingUp, Menu, X, CheckCircle, Play, Quote, GraduationCap, Building, Award, MessageSquare, BarChart3, Twitter, Linkedin, Instagram } from 'lucide-react';
+import { ArrowRight, Trophy, Zap, Target, Flame, Star, Users, Briefcase, TrendingUp, Menu, X, CheckCircle, Play, Quote, GraduationCap, Building, Award, MessageSquare, BarChart3, Mail, Phone, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -658,13 +658,13 @@ export default function Home() {
               <p className="text-sm mb-4">India's AI-powered placement prep platform</p>
               <div className="flex space-x-4">
                 <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <Twitter className="w-5 h-5" />
+                  <Mail className="w-5 h-5" />
                 </a>
                 <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <Linkedin className="w-5 h-5" />
+                  <Phone className="w-5 h-5" />
                 </a>
                 <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <Instagram className="w-5 h-5" />
+                  <MapPin className="w-5 h-5" />
                 </a>
               </div>
             </div>
