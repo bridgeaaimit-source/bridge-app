@@ -42,9 +42,9 @@ export default function RecruiterPage() {
           studentList.push({
             uid: doc.id,
             ...data,
-            // Generate BRIDGE score if not exists
+            // Generate BRIDGE score if not exists (500-900 range)
             bridgeScore: data.bridgeScore || 
-              Math.floor(Math.random() * 300) + 600,
+              Math.floor(Math.random() * 400) + 500,
             interviewsDone: data.interviewsDone || 0,
             avgScore: data.avgScore || 0,
             skills: data.skills || [],
@@ -54,7 +54,7 @@ export default function RecruiterPage() {
             location: data.city || data.location || 'India',
             lookingFor: data.lookingFor || 'Full-time',
             photo: data.photo || data.photoURL || null,
-            name: data.name || data.displayName || 'Student',
+            name: data.name || data.displayName || 'Anonymous Student',
           });
         });
 

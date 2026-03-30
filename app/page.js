@@ -49,7 +49,7 @@ export default function Home() {
   const startCountUp = () => {
     const duration = 2000;
     const startTime = Date.now();
-    const targets = { students: 1200, interviews: 340, companies: 50, confidence: 89 };
+    const targets = { students: 25000, interviews: 500, companies: 98, confidence: 98 };
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
