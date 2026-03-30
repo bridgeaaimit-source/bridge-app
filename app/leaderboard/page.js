@@ -32,7 +32,8 @@ export default function LeaderboardPage() {
         
         querySnapshot.forEach((doc) => {
           const userData = doc.data();
-          if (userData.bridgeScore > 0) {
+          // Only include students with bridgeScore > 0
+          if (userData.role === 'student' && userData.bridgeScore > 0) {
             usersData.push({
               uid: doc.id,
               name: userData.name || 'Anonymous Student',
@@ -45,6 +46,8 @@ export default function LeaderboardPage() {
             });
           }
         });
+
+        console.log('🏆 Leaderboard - Fetched users:', usersData.length);
 
         // Sort by score and add rank
         usersData.sort((a, b) => b.score - a.score);
@@ -91,7 +94,7 @@ export default function LeaderboardPage() {
 
         setStudents(usersData);
       } catch (error) {
-        console.error('Error fetching leaderboard:', error);
+        console.error('🏆 Leaderboard - Error fetching data:', error);
         toast.error('Failed to load leaderboard');
         
         // Fallback data
