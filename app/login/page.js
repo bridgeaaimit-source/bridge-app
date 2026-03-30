@@ -93,8 +93,8 @@ export default function LoginPage() {
       <div className="max-w-md w-full">
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-[#0891B2] to-[#0D9488] rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="w-8 h-8 text-white" />
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <img src="/logo.svg" alt="BRIDGE" className="w-12 h-12" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
             <p className="text-gray-600">Sign in to continue your BRIDGE journey</p>

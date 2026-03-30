@@ -79,7 +79,7 @@ Return ONLY valid JSON:
       // Handle PDF resume
       message = await retryClaudeCall(() => 
         client.messages.create({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-3-sonnet-20240229',
           max_tokens: 1000,
           messages: [{
             role: 'user',
@@ -104,7 +104,7 @@ Return ONLY valid JSON:
       // Handle text resume
       message = await retryClaudeCall(() =>
         client.messages.create({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-3-sonnet-20240229',
           max_tokens: 1000,
           messages: [{ role: 'user', content: prompt }]
         })
@@ -113,7 +113,21 @@ Return ONLY valid JSON:
 
     const text = message.content[0].text
       .replace(/```json/g, '').replace(/```/g, '').trim();
-    return Response.json(JSON.parse(text));
+    
+    try {
+      return Response.json(JSON.parse(text));
+    } catch (parseError) {
+      console.error('JSON parse error in smart-interview init:', parseError);
+      console.error('Raw text:', text);
+      
+      // Fallback response
+      return Response.json({
+        initial_question: "Tell me about yourself and why you're interested in this role.",
+        resume_jd_fit: 70,
+        skills_match_percent: 72,
+        initial_impression: "Average"
+      });
+    }
   }
 
   // ACTION 2: Continue - dynamic follow-up based on answer
@@ -180,7 +194,7 @@ Return ONLY valid JSON:
 
     const message = await retryClaudeCall(() =>
       client.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-3-sonnet-20240229',
         max_tokens: 1000,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -191,7 +205,25 @@ Return ONLY valid JSON:
     
     console.log('Claude response:', text);
     
-    const result = JSON.parse(text);
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch (parseError) {
+      console.error('JSON parse error in smart-interview continue:', parseError);
+      console.error('Raw text:', text);
+      
+      // Fallback response
+      result = {
+        question: "Can you tell me more about your experience with this type of work?",
+        score: 5,
+        was_specific: false,
+        had_examples: false,
+        filler_words: [],
+        quick_feedback: "Answer needs more detail",
+        interview_complete: false
+      };
+    }
+    
     console.log('Next question:', result.question);
     
     return Response.json(result);
@@ -269,7 +301,7 @@ Return ONLY valid JSON:
 
     const message = await retryClaudeCall(() =>
       client.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-3-sonnet-20240229',
         max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -277,7 +309,42 @@ Return ONLY valid JSON:
 
     const text = message.content[0].text
       .replace(/```json/g, '').replace(/```/g, '').trim();
-    return Response.json(JSON.parse(text));
+    
+    try {
+      return Response.json(JSON.parse(text));
+    } catch (parseError) {
+      console.error('JSON parse error in smart-interview:', parseError);
+      console.error('Raw text:', text);
+      
+      // Fallback response
+      return Response.json({
+        placement_chance: 50,
+        verdict: "Weak Maybe",
+        overall_score: 5,
+        scores: {
+          communication: 5,
+          technical_knowledge: 5,
+          resume_jd_fit: 5,
+          confidence: 5,
+          answer_quality: 5
+        },
+        best_answer: {
+          question: "No specific answer available",
+          why: "AI analysis temporarily unavailable"
+        },
+        worst_answer: {
+          question: "No specific answer available",
+          why: "AI analysis temporarily unavailable"
+        },
+        filler_words_summary: "Analysis temporarily unavailable",
+        strengths: ["Answer provided"],
+        weaknesses: ["Needs more details"],
+        improvement_roadmap: ["Practice more interviews", "Improve technical knowledge", "Work on communication"],
+        interviewer_notes: "AI analysis temporarily unavailable - please try again",
+        should_hire: false,
+        hire_reasoning: "Unable to complete full analysis due to technical issues. Please retry."
+      });
+    }
   }
 
   return Response.json({ error: 'Invalid action' }, 

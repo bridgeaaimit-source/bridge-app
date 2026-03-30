@@ -94,18 +94,18 @@ export default function Home() {
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
 
         :root {
-          --brand-primary: #6C3FE8;
-          --brand-secondary: #FF6B35;
-          --brand-gradient: linear-gradient(135deg, #6C3FE8 0%, #9B6DFF 100%);
+          --brand-primary: #0891B2;
+          --brand-secondary: #0D9488;
+          --brand-gradient: linear-gradient(135deg, #0891B2 0%, #0D9488 100%);
           --bg-white: #FFFFFF;
-          --bg-soft: #F8F7FF;
+          --bg-soft: #F0FDFA;
           --bg-gray: #F4F4F6;
           --text-heading: #0D0D1A;
           --text-body: #44445A;
           --text-muted: #8888A0;
           --border: #E8E8F0;
-          --card-shadow: 0 4px 24px rgba(108, 63, 232, 0.08);
-          --card-shadow-hover: 0 12px 40px rgba(108, 63, 232, 0.18);
+          --card-shadow: 0 4px 24px rgba(8, 145, 178, 0.08);
+          --card-shadow-hover: 0 12px 40px rgba(8, 145, 178, 0.18);
         }
 
         * {
@@ -170,17 +170,18 @@ export default function Home() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <Link href="/" className="flex items-center">
+              <Link href="/" className="flex items-center gap-2">
+                <img src="/logo.svg" alt="BRIDGE" className="w-8 h-8" />
                 <span className="font-display text-2xl font-bold gradient-text">BRIDGE</span>
               </Link>
             </div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-9">
-              <Link href="#features" className="text-gray-600 hover:text-purple-600 text-sm font-medium transition-colors">Features</Link>
-              <Link href="#how-it-works" className="text-gray-600 hover:text-purple-600 text-sm font-medium transition-colors">How it Works</Link>
-              <Link href="#testimonials" className="text-gray-600 hover:text-purple-600 text-sm font-medium transition-colors">Success Stories</Link>
-              <Link href="#pricing" className="text-gray-600 hover:text-purple-600 text-sm font-medium transition-colors">Pricing</Link>
+              <Link href="#features" className="text-gray-600 hover:text-cyan-600 text-sm font-medium transition-colors">Features</Link>
+              <Link href="#how-it-works" className="text-gray-600 hover:text-cyan-600 text-sm font-medium transition-colors">How it Works</Link>
+              <Link href="#testimonials" className="text-gray-600 hover:text-cyan-600 text-sm font-medium transition-colors">Success Stories</Link>
+              <Link href="#pricing" className="text-gray-600 hover:text-cyan-600 text-sm font-medium transition-colors">Pricing</Link>
             </div>
 
             {/* Desktop CTA */}
@@ -188,7 +189,7 @@ export default function Home() {
               <Link href="/login" className="px-5 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                 Login
               </Link>
-              <Link href="/login" className="px-6 py-2 text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg hover:opacity-90 transition-opacity shadow-lg">
+              <Link href="/login" className="px-6 py-2 text-sm font-semibold text-white bg-gradient-to-r from-cyan-600 to-cyan-700 rounded-lg hover:opacity-90 transition-opacity shadow-lg">
                 Start Free
               </Link>
             </div>
@@ -207,13 +208,13 @@ export default function Home() {
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-gray-100">
             <div className="px-6 py-4 space-y-3">
-              <Link href="#features" className="block py-2 text-gray-600 hover:text-purple-600 font-medium">Features</Link>
-              <Link href="#how-it-works" className="block py-2 text-gray-600 hover:text-purple-600 font-medium">How it Works</Link>
-              <Link href="#testimonials" className="block py-2 text-gray-600 hover:text-purple-600 font-medium">Success Stories</Link>
-              <Link href="#pricing" className="block py-2 text-gray-600 hover:text-purple-600 font-medium">Pricing</Link>
+              <Link href="#features" className="block py-2 text-gray-600 hover:text-cyan-600 font-medium">Features</Link>
+              <Link href="#how-it-works" className="block py-2 text-gray-600 hover:text-cyan-600 font-medium">How it Works</Link>
+              <Link href="#testimonials" className="block py-2 text-gray-600 hover:text-cyan-600 font-medium">Success Stories</Link>
+              <Link href="#pricing" className="block py-2 text-gray-600 hover:text-cyan-600 font-medium">Pricing</Link>
               <div className="pt-4 border-t border-gray-100 space-y-3">
                 <Link href="/login" className="block py-2 text-center text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium">Login</Link>
-                <Link href="/login" className="block py-2 text-center text-white bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg font-semibold">Start Free</Link>
+                <Link href="/login" className="block py-2 text-center text-white bg-gradient-to-r from-cyan-600 to-cyan-700 rounded-lg font-semibold">Start Free</Link>
               </div>
             </div>
           </div>
@@ -223,15 +224,15 @@ export default function Home() {
       {/* HERO SECTION */}
       <section className="min-h-screen flex items-center pt-16 relative">
         {/* Background gradient blob */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-100 rounded-full filter blur-3xl opacity-30"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-100 rounded-full filter blur-3xl opacity-30"></div>
         
         <div className="max-w-7xl mx-auto px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left Column */}
           <div className="space-y-8">
             {/* Eyebrow badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 border border-purple-100 animate-fade-up" style={{ animationDelay: '0ms' }}>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-50 border border-cyan-100 animate-fade-up" style={{ animationDelay: '0ms' }}>
               <span className="text-lg">🇮🇳</span>
-              <span className="text-sm font-semibold text-purple-700">Built for Bharat</span>
+              <span className="text-sm font-semibold text-cyan-700">Built for Bharat</span>
             </div>
 
             {/* Headline */}
@@ -248,10 +249,10 @@ export default function Home() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 animate-fade-up" style={{ animationDelay: '300ms' }}>
-              <Link href="/login" className="px-8 py-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 inline-flex items-center justify-center">
+              <Link href="/login" className="px-8 py-4 bg-gradient-to-r from-cyan-600 to-cyan-700 text-white font-semibold rounded-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 inline-flex items-center justify-center">
                 Start for Free <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
-              <button className="px-7 py-4 bg-white text-purple-600 font-semibold rounded-lg border-2 border-purple-600 hover:bg-purple-50 transition-colors inline-flex items-center justify-center">
+              <button className="px-7 py-4 bg-white text-cyan-600 font-semibold rounded-lg border-2 border-cyan-600 hover:bg-cyan-50 transition-colors inline-flex items-center justify-center">
                 <Play className="mr-2 w-5 h-5" />
                 Watch Demo
               </button>
@@ -622,7 +623,8 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
             {/* Column 1 */}
             <div className="lg:col-span-1">
-              <div className="flex items-center mb-4">
+              <div className="flex items-center gap-2 mb-4">
+                <img src="/logo.svg" alt="BRIDGE" className="w-8 h-8" />
                 <span className="font-display text-2xl font-bold text-white">BRIDGE</span>
               </div>
               <p className="text-sm mb-4">India's AI-powered placement prep platform</p>

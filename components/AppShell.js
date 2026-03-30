@@ -90,7 +90,8 @@ export default function AppShell({ children }) {
         <div className="flex items-center justify-between h-full px-6">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/dashboard" className="flex items-center">
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <img src="/logo.svg" alt="BRIDGE" className="w-8 h-8" />
               <span className="font-display text-2xl font-bold gradient-text">BRIDGE</span>
             </Link>
           </div>
