@@ -178,10 +178,28 @@ export default function SmartInterviewPage() {
         }),
       });
 
-      const data = await response.json();
-      
+      // Check if response is OK before trying to parse JSON
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to start interview');
+        const errorText = await response.text();
+        console.error('API Error Response (init):', errorText);
+        throw new Error(errorText || 'Failed to start interview');
+      }
+
+      // Check if response has content before parsing JSON
+      const responseText = await response.text();
+      console.log('API Response Text (init):', responseText);
+      
+      if (!responseText || responseText.trim() === '') {
+        throw new Error('Empty response from server');
+      }
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON Parse Error (init):', parseError);
+        console.error('Response that failed to parse:', responseText);
+        throw new Error('Invalid response format from server');
       }
 
       setCurrentQuestion(data.question);
@@ -243,10 +261,28 @@ export default function SmartInterviewPage() {
         }),
       });
 
-      const data = await response.json();
-      
+      // Check if response is OK before trying to parse JSON
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to process answer');
+        const errorText = await response.text();
+        console.error('API Error Response (continue):', errorText);
+        throw new Error(errorText || 'Failed to process answer');
+      }
+
+      // Check if response has content before parsing JSON
+      const responseText = await response.text();
+      console.log('API Response Text (continue):', responseText);
+      
+      if (!responseText || responseText.trim() === '') {
+        throw new Error('Empty response from server');
+      }
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON Parse Error (continue):', parseError);
+        console.error('Response that failed to parse:', responseText);
+        throw new Error('Invalid response format from server');
       }
 
       if (data.question) {
@@ -300,10 +336,28 @@ export default function SmartInterviewPage() {
         }),
       });
 
-      const data = await response.json();
-      
+      // Check if response is OK before trying to parse JSON
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to get feedback');
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        throw new Error(errorText || 'Failed to get feedback');
+      }
+
+      // Check if response has content before parsing JSON
+      const responseText = await response.text();
+      console.log('API Response Text:', responseText);
+      
+      if (!responseText || responseText.trim() === '') {
+        throw new Error('Empty response from server');
+      }
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError);
+        console.error('Response that failed to parse:', responseText);
+        throw new Error('Invalid response format from server');
       }
 
       setFeedback(data);
