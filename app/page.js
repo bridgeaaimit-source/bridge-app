@@ -283,7 +283,7 @@ export default function Home() {
             <div className="bg-white rounded-3xl p-8 shadow-2xl float-animation">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-display text-xl font-bold">Your BRIDGE Score</h3>
-                <span className="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">Today</span>
+                <span className="px-3 py-1 bg-cyan-100 text-cyan-700 text-xs font-semibold rounded-full">Today</span>
               </div>
 　　 　 　 　
               <div className="text-center mb-6">
@@ -297,40 +297,40 @@ export default function Home() {
                   <span className="text-gray-900 font-semibold">74%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-purple-600 to-purple-700 h-2 rounded-full" style={{ width: '74%' }}></div>
+                  <div className="bg-gradient-to-r from-[#0891B2] to-[#0D9488] h-2 rounded-full" style={{ width: '74%' }}></div>
                 </div>
               </div>
 
               <div className="space-y-3 mb-6">
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <Target className="w-5 h-5 text-purple-600" />
+                    <Target className="w-5 h-5 text-cyan-600" />
                     <span className="text-sm font-medium">Mock Interviews</span>
                   </div>
                   <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">12 done</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <MessageSquare className="w-5 h-5 text-purple-600" />
+                    <MessageSquare className="w-5 h-5 text-cyan-600" />
                     <span className="text-sm font-medium">GD Battles</span>
                   </div>
-                  <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded">5 won</span>
+                  <span className="px-2 py-1 bg-cyan-100 text-cyan-700 text-xs font-semibold rounded">5 won</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <TrendingUp className="w-5 h-5 text-purple-600" />
+                    <TrendingUp className="w-5 h-5 text-cyan-600" />
                     <span className="text-sm font-medium">Improvement</span>
                   </div>
                   <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded">+23%</span>
                 </div>
               </div>
 
-              <div className="p-4 bg-purple-50 rounded-lg">
+              <div className="p-4 bg-cyan-50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-purple-900">Next Challenge:</span>
-                  <span className="text-xs text-purple-600">Amazon SDE Mock</span>
+                  <span className="text-sm font-semibold text-cyan-900">Next Challenge:</span>
+                  <span className="text-xs text-cyan-600">Amazon SDE Mock</span>
                 </div>
-                <button className="w-full px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition-colors">
+                <button className="w-full px-4 py-2 bg-cyan-600 text-white text-sm font-semibold rounded-lg hover:bg-cyan-700 transition-colors">
                   Start Now →
                 </button>
               </div>

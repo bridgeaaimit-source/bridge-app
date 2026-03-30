@@ -131,6 +131,8 @@ export default function InterviewPage() {
     setErrorMessage("");
     
     try {
+      console.log('Generating questions for domain:', selectedDomain);
+      
       const response = await fetch("/api/interview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -140,21 +142,31 @@ export default function InterviewPage() {
         }),
       });
 
+      console.log('Response status:', response.status);
+      
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (!response.ok) {
         throw new Error(data?.error || "Could not generate questions right now.");
       }
 
-      setQuestions(data.questions || []);
+      if (!data.questions || !Array.isArray(data.questions)) {
+        throw new Error("Invalid response format from server");
+      }
+
+      setQuestions(data.questions);
       setCurrentQuestionIndex(0);
       setStep(2);
+      toast.success(`Generated ${data.questions.length} questions!`);
     } catch (error) {
+      console.error('Error generating questions:', error);
       setErrorMessage(
         error instanceof Error
           ? error.message
           : "Something went wrong while generating questions. Please try again."
       );
+      toast.error("Failed to generate questions");
     } finally {
       setIsLoadingQuestions(false);
     }
@@ -170,11 +182,18 @@ export default function InterviewPage() {
       return;
     }
 
+    if (!uid || !sessionId) {
+      setErrorMessage("User session not initialized. Please refresh and try again.");
+      return;
+    }
+
     setErrorMessage("");
     setIsAnalyzingAnswer(true);
 
     try {
       const currentQuestion = questions[currentQuestionIndex];
+      console.log('Submitting voice answer:', { currentQuestion, transcript: transcript.trim(), domain: selectedDomain, uid, sessionId });
+      
       const response = await fetch("/api/interview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -187,7 +206,9 @@ export default function InterviewPage() {
         }),
       });
 
+      console.log('Voice answer response status:', response.status);
       const data = await response.json();
+      console.log('Voice answer response data:', data);
 
       if (!response.ok) {
         throw new Error(data?.error || "Could not analyze your answer right now.");
@@ -200,22 +221,25 @@ export default function InterviewPage() {
         {
           question: currentQuestion,
           answer: transcript.trim(),
-          analysis: data,
-        },
+          analysis: data
+        }
       ];
       setResponses(updatedResponses);
-
-      const isLastQuestion = currentQuestionIndex >= questions.length - 1;
-      if (isLastQuestion) {
-        setSelectedFeedbackTab(0);
-        setFeedback(aggregateFeedback(updatedAnalyses));
-        setStep(3);
+      setTranscript("");
+      
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
       } else {
-        setCurrentQuestionIndex((prev) => prev + 1);
-        setTranscript("");
-        setAnswer("");
+        setStep(3);
+        setFeedback(data);
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
       }
     } catch (error) {
+      console.error('Error submitting voice answer:', error);
       setErrorMessage(
         error instanceof Error
           ? error.message

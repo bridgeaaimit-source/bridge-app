@@ -34,7 +34,7 @@ export async function POST(request) {
       {"questions": ["q1", "q2", "q3", "q4", "q5"]}`;
 
       const message = await client.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 500,
         messages: [{ role: 'user', content: prompt }]
       });
@@ -117,7 +117,7 @@ Return ONLY valid JSON, no markdown, no extra text:
 }`;
 
       const message = await client.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }]
       });

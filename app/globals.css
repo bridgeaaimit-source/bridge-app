@@ -2,25 +2,18 @@
 @import "tailwindcss";
 
 :root {
-  --brand-primary: #6C3FE8;
-  --brand-secondary: #FF6B35;
-  --brand-gradient: linear-gradient(135deg, #6C3FE8 0%, #9B6DFF 100%);
+  --brand-primary: #0891B2;
+  --brand-secondary: #0D9488;
+  --brand-gradient: linear-gradient(135deg, #0891B2 0%, #0D9488 100%);
   --bg-white: #FFFFFF;
-  --bg-soft: #F8F7FF;
+  --bg-soft: #F0FDFA;
   --bg-gray: #F4F4F6;
   --text-heading: #0D0D1A;
   --text-body: #44445A;
   --text-muted: #8888A0;
   --border: #E8E8F0;
-  --card-shadow: 0 4px 24px rgba(108, 63, 232, 0.08);
-  --card-shadow-hover: 0 12px 40px rgba(108, 63, 232, 0.18);
-}
-
-@theme {
-  --color-background: var(--bg-white);
-  --color-foreground: var(--text-body);
-  --font-sans: 'DM Sans', sans-serif;
-  --font-mono: var(--font-geist-mono);
+  --card-shadow: 0 4px 24px rgba(8, 145, 178, 0.08);
+  --card-shadow-hover: 0 12px 40px rgba(8, 145, 178, 0.18);
 }
 
 body {

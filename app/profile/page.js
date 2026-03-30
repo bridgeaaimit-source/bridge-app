@@ -42,12 +42,29 @@ export default function ProfilePage() {
           const userRef = doc(db, 'users', user.uid);
           const userSnap = await getDoc(userRef);
           
+          // Always set base user data from Firebase auth
+          const baseUserData = {
+            name: user.displayName || '',
+            email: user.email || '',
+            photo: user.photoURL || '',
+            college: '',
+            degree: '',
+            domain: '',
+            location: '',
+            lookingFor: 'Full-time',
+            bridgeScore: 0,
+            interviewsDone: 0,
+            avgScore: 0,
+            streak: 0,
+            phone: '',
+            bio: ''
+          };
+          
           if (userSnap.exists()) {
+            // Merge Firestore data with base data
             const data = userSnap.data();
             setUserData({
-              name: user.displayName || '',
-              email: user.email || '',
-              photo: user.photoURL || '',
+              ...baseUserData,
               college: data.college || '',
               degree: data.degree || '',
               domain: data.domain || '',
@@ -60,10 +77,30 @@ export default function ProfilePage() {
               phone: data.phone || '',
               bio: data.bio || ''
             });
+          } else {
+            // Use only base data from Firebase auth
+            setUserData(baseUserData);
           }
         } catch (error) {
           console.error('Error loading user data:', error);
           toast.error('Failed to load profile data');
+          // Still set basic data from auth even on error
+          setUserData({
+            name: user.displayName || '',
+            email: user.email || '',
+            photo: user.photoURL || '',
+            college: '',
+            degree: '',
+            domain: '',
+            location: '',
+            lookingFor: 'Full-time',
+            bridgeScore: 0,
+            interviewsDone: 0,
+            avgScore: 0,
+            streak: 0,
+            phone: '',
+            bio: ''
+          });
         } finally {
           setLoading(false);
         }

@@ -72,15 +72,28 @@ export default function Dashboard() {
           const userRef = doc(db, 'users', user.uid);
           const userSnap = await getDoc(userRef);
           
+          // Always set default stats, then override with Firestore data if exists
+          const defaultStats = {
+            bridgeScore: 0,
+            interviewsDone: 0,
+            currentStreak: 0,
+            avgScore: 0
+          };
+          
           if (userSnap.exists()) {
             const userData = userSnap.data();
-            setStats({
+            const userStats = {
               bridgeScore: userData.bridgeScore || 0,
               interviewsDone: userData.interviewsDone || 0,
               currentStreak: userData.streak || 0,
               avgScore: userData.avgScore || 0
-            });
-            setBridgeScore(userData.bridgeScore || 0);
+            };
+            setStats(userStats);
+            setBridgeScore(userStats.bridgeScore);
+          } else {
+            // Use default stats for new users
+            setStats(defaultStats);
+            setBridgeScore(0);
           }
 
           // Fetch recent interview sessions
