@@ -446,7 +446,8 @@ export default function SmartInterviewPage() {
           }
         }
       } catch (saveError) {
-        console.error('Error saving feedback:', saveError);
+        console.error('❌ Error saving feedback/updating stats:', saveError);
+        toast.error('Failed to save interview results');
         // Don't show error to user, just log it
       }
       

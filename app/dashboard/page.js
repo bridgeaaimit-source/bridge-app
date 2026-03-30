@@ -27,7 +27,7 @@ import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { doc, collection, query, orderBy, limit, getDocs, getDoc, where } from "firebase/firestore";
+import { doc, collection, query, orderBy, limit, getDocs, getDoc, where, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function Dashboard() {
@@ -93,11 +93,33 @@ export default function Dashboard() {
             setStats(userStats);
             setBridgeScore(userStats.bridgeScore);
           } else {
-            console.log('📊 Dashboard - No user data found, using defaults');
-            // Use default stats for new users
+            console.log('📊 Dashboard - No user data found, creating new user...');
+            // Create user document if it doesn't exist
+            await setDoc(userRef, {
+              uid: user.uid,
+              name: user.displayName || 'User',
+              email: user.email || '',
+              photo: user.photoURL || '',
+              role: 'student',
+              approved: true,
+              bridgeScore: 500,
+              interviewsDone: 0,
+              avgScore: 0,
+              streak: 0,
+              domains: [],
+              skills: [],
+              college: '',
+              degree: '',
+              location: '',
+              lookingFor: 'Full-time',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            });
+            
             setUserName(user.displayName || 'User');
             setStats(defaultStats);
             setBridgeScore(0);
+            console.log('✅ Dashboard - Created new user document');
           }
 
           // Fetch recent interview sessions
