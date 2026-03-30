@@ -28,13 +28,24 @@ export async function POST(request) {
     // Generate questions
     if (count && domain && !answer) {
       const prompt = `Generate ${count} realistic interview questions 
-      for ${domain} role at Indian companies like TCS, Infosys, Wipro.
-      Mix HR and technical questions for freshers.
-      Return ONLY this JSON, no markdown, no extra text:
-      {"questions": ["q1", "q2", "q3", "q4", "q5"]}`;
+for ${domain} role at Indian companies like TCS, Infosys, Wipro.
+Mix HR and technical questions for freshers.
+
+IMPORTANT: Return ONLY valid JSON format. No markdown, no extra text.
+Format exactly like this:
+{"questions": ["question1", "question2", "question3", "question4", "question5"]}
+
+Examples of good questions:
+- "Tell me about yourself"
+- "What are your strengths and weaknesses?"
+- "Why do you want to work for our company?"
+- "Describe a challenging situation you faced"
+- "Where do you see yourself in 5 years?"
+
+Now generate the questions:`;
 
       const message = await client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-sonnet-20240229',
         max_tokens: 500,
         messages: [{ role: 'user', content: prompt }]
       });
@@ -45,7 +56,36 @@ export async function POST(request) {
         .trim();
       
       console.log('Questions response:', text);
-      return Response.json(JSON.parse(text));
+      
+      try {
+        const parsed = JSON.parse(text);
+        return Response.json(parsed);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        console.error('Raw text:', text);
+        
+        // Fallback: try to extract questions manually
+        const questionMatch = text.match(/"questions":\s*\[(.*?)\]/s);
+        if (questionMatch) {
+          try {
+            const questionsText = questionMatch[1];
+            const questions = questionsText
+              .split('"')
+              .filter(q => q.trim() && !q.includes(','))
+              .map(q => q.trim().replace(/^,|,$/g, ''))
+              .filter(q => q.length > 0);
+            
+            return Response.json({ questions });
+          } catch (fallbackError) {
+            console.error('Fallback parsing failed:', fallbackError);
+          }
+        }
+        
+        return Response.json({ 
+          error: 'Failed to parse AI response. Please try again.',
+          rawResponse: text
+        }, { status: 500 });
+      }
     }
 
     // Analyze answer
@@ -117,7 +157,7 @@ Return ONLY valid JSON, no markdown, no extra text:
 }`;
 
       const message = await client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-sonnet-20240229',
         max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }]
       });
@@ -128,7 +168,28 @@ Return ONLY valid JSON, no markdown, no extra text:
         .trim();
       
       console.log('Analysis response:', text);
-      const analysis = JSON.parse(text);
+      
+      let analysis;
+      try {
+        analysis = JSON.parse(text);
+      } catch (parseError) {
+        console.error('JSON parse error for analysis:', parseError);
+        console.error('Raw text:', text);
+        
+        // Fallback: create a basic analysis object
+        analysis = {
+          score: 5,
+          confidence: 5,
+          content: 5,
+          clarity: 5,
+          overall_feedback: "AI analysis temporarily unavailable. Please try again.",
+          strengths: ["Answer provided"],
+          improvements: ["Try again with more details"],
+          filler_feedback: "No filler analysis available",
+          structure_feedback: "No structure analysis available",
+          better_answer: "A comprehensive answer would include specific examples and details."
+        };
+      }
       
       // Save interview results to Firestore if uid provided
       if (uid && sessionId) {
