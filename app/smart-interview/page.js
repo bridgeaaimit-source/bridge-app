@@ -244,6 +244,16 @@ export default function SmartInterviewPage() {
       { role: 'user', message: answer }
     ]);
 
+    // Hard limit: End interview after 10 questions
+    if (questionNumber >= 10) {
+      setIsTyping(false);
+      setCurrentAnswer('');
+      setTranscript('');
+      toast.success('Interview completed! Generating feedback...');
+      await getFeedback(newHistory);
+      return;
+    }
+
     try {
       const response = await fetch('/api/smart-interview', {
         method: 'POST',

@@ -171,6 +171,8 @@ Latest answer from candidate:
 
 This is question ${conversation_history.length + 1} of 10 questions.
 
+${conversation_history.length >= 9 ? 'CRITICAL: This is the LAST question. After this, the interview MUST end. Set "interview_complete": true in your response.' : ''}
+
 IMPORTANT: Look at the conversation history above. DO NOT repeat any previous questions. Ask a completely NEW question that follows logically from their latest answer.
 
 Your task:
@@ -180,7 +182,7 @@ Your task:
    - If answer mentioned something interesting → follow up on it
    - If answer was weak → note it, move to next topic
    - If answer was strong → acknowledge briefly, probe harder
-3. Ask the next question
+3. Ask the next question OR end the interview if we've reached 10 questions
 
 Rules:
 - ONE question only
@@ -188,8 +190,7 @@ Rules:
 - If they mentioned a project, ask technical details
 - If they mentioned a number/achievement, verify it
 - Sound like a real interviewer
-- After question 8, start wrapping up
-- After question 10, say interview is complete
+- After question 9, set "interview_complete": true and provide NO question
 - NEVER repeat a previous question
 
 Return ONLY valid JSON:
