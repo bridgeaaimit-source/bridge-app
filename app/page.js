@@ -4,12 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Trophy, Zap, Target, Flame, Star, Users, Briefcase, TrendingUp, Menu, X, CheckCircle, Play, Quote, GraduationCap, Building, Award, MessageSquare, BarChart3, Mail, Phone, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 
 export default function Home() {
   const router = useRouter();
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [counters, setCounters] = useState({ students: 0, interviews: 0, companies: 0, confidence: 0 });
@@ -20,20 +17,6 @@ export default function Home() {
   const howItWorksRef = useRef(null);
   const testimonialsRef = useRef(null);
   const ctaRef = useRef(null);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        document.cookie = "bridge_auth=1; path=/; max-age=2592000; samesite=lax";
-        router.replace("/dashboard");
-        return;
-      }
-      document.cookie = "bridge_auth=; path=/; max-age=0; samesite=lax";
-      setIsCheckingAuth(false);
-    });
-
-    return () => unsubscribe();
-  }, [router]);
 
   // Navbar scroll effect
   useEffect(() => {
@@ -46,7 +29,7 @@ export default function Home() {
 
   // Count-up animation for stats
   useEffect(() => {
-    if (!isCheckingAuth && statsRef.current) {
+    if (statsRef.current) {
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -61,7 +44,7 @@ export default function Home() {
       observer.observe(statsRef.current);
       return () => observer.disconnect();
     }
-  }, [isCheckingAuth]);
+  }, []);
 
   const startCountUp = () => {
     const duration = 2000;
@@ -90,32 +73,19 @@ export default function Home() {
 
   // Scroll reveal animations
   useEffect(() => {
-    if (!isCheckingAuth) {
-      const observerOptions = { threshold: 0.15 };
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('animate-reveal');
-          }
-        });
-      }, observerOptions);
+    const observerOptions = { threshold: 0.15 };
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-reveal');
+        }
+      });
+    }, observerOptions);
 
-      const elements = document.querySelectorAll('.scroll-reveal');
-      elements.forEach(el => observer.observe(el));
-      return () => observer.disconnect();
-    }
-  }, [isCheckingAuth]);
-
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500/30 border-t-purple-500 mx-auto mb-4"></div>
-          <div className="text-purple-600 font-semibold">Checking your session...</div>
-        </div>
-      </div>
-    );
-  }
+    const elements = document.querySelectorAll('.scroll-reveal');
+    elements.forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">

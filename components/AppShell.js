@@ -17,11 +17,8 @@ import {
   Bell, 
   Search, 
   TrendingUp,
-  LogOut,
   ChevronRight
 } from 'lucide-react';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 
 export default function AppShell({ children }) {
   const router = useRouter();
@@ -42,17 +39,6 @@ export default function AppShell({ children }) {
     }
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      localStorage.removeItem('bridge_profile');
-      localStorage.removeItem('bridge_auth');
-      router.replace('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
   const navigation = [
     { href: '/dashboard', icon: Home, label: 'Dashboard' },
     { href: '/interview', icon: Mic, label: 'Mock Interview' },
@@ -69,7 +55,7 @@ export default function AppShell({ children }) {
   const isActive = (href) => pathname === href;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F5FAFA]">
       {/* Top Navbar */}
       <nav className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-40">
         <div className="flex items-center justify-between h-full px-6">
@@ -128,7 +114,7 @@ export default function AppShell({ children }) {
           {/* User Profile Mini Card */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-purple-700 rounded-full flex items-center justify-center text-white font-bold">
+              <div className="w-12 h-12 bg-gradient-to-r from-[#0891B2] to-[#0D9488] rounded-full flex items-center justify-center text-white font-bold">
                 {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
               </div>
               <div className="flex-1 min-w-0">
@@ -152,8 +138,8 @@ export default function AppShell({ children }) {
                   href={item.href}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                     isActive(item.href)
-                      ? 'bg-purple-50 text-purple-600 border-l-3 border-purple-600'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-cyan-50 text-cyan-600 border-l-3 border-cyan-600'
+                      : 'text-gray-700 hover:bg-cyan-50'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -166,7 +152,7 @@ export default function AppShell({ children }) {
 
           {/* BRIDGE Score Pill */}
           <div className="p-4 border-t border-gray-200">
-            <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg p-3 text-white">
+            <div className="bg-gradient-to-r from-[#0891B2] to-[#0D9488] rounded-lg p-3 text-white">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-medium">BRIDGE Score</span>
                 <TrendingUp className="w-3 h-3" />

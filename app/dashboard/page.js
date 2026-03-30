@@ -81,21 +81,21 @@ export default function Dashboard() {
       title: 'AI Mock Interview',
       description: 'Practice with real questions from top companies',
       href: '/interview',
-      color: 'purple'
+      color: 'cyan'
     },
     {
       icon: Zap,
       title: 'PULSE Feed',
       description: 'Stay updated with latest company insights',
       href: '/pulse',
-      color: 'yellow'
+      color: 'teal'
     },
     {
       icon: Brain,
       title: 'Smart Interview',
       description: 'Personalized interviews based on your resume',
       href: '/smart-interview',
-      color: 'blue'
+      color: 'sky'
     }
   ];
 
@@ -114,7 +114,7 @@ export default function Dashboard() {
       case 'interview': return 'text-blue-600 bg-blue-50';
       case 'gd': return 'text-green-600 bg-green-50';
       case 'pulse': return 'text-yellow-600 bg-yellow-50';
-      case 'coach': return 'text-purple-600 bg-purple-50';
+      case 'coach': return 'text-cyan-600 bg-cyan-50';
       default: return 'text-gray-600 bg-gray-50';
     }
   };
@@ -142,8 +142,8 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Trophy className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
+                <Trophy className="w-6 h-6 text-cyan-600" />
               </div>
               <div className="flex items-center text-green-600 text-sm">
                 <ArrowUp className="w-4 h-4 mr-1" />
@@ -215,14 +215,14 @@ export default function Dashboard() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div className={`w-14 h-14 rounded-full flex items-center justify-center ${
-                            feature.color === 'purple' ? 'bg-purple-100' :
-                            feature.color === 'yellow' ? 'bg-yellow-100' :
-                            'bg-blue-100'
+                            feature.color === 'cyan' ? 'bg-cyan-100' :
+                            feature.color === 'teal' ? 'bg-teal-100' :
+                            'bg-sky-100'
                           }`}>
                             <Icon className={`w-7 h-7 ${
-                              feature.color === 'purple' ? 'text-purple-600' :
-                              feature.color === 'yellow' ? 'text-yellow-600' :
-                              'text-blue-600'
+                              feature.color === 'cyan' ? 'text-cyan-600' :
+                              feature.color === 'teal' ? 'text-teal-600' :
+                              'text-sky-600'
                             }`} />
                           </div>
                           <div>
@@ -239,18 +239,18 @@ export default function Dashboard() {
             </div>
 
             {/* Today's Challenge */}
-            <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 text-white">
+            <div className="bg-gradient-to-r from-[#0891B2] to-[#0D9488] rounded-2xl p-6 text-white">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Today's Challenge</h2>
-                <div className="flex items-center gap-2 text-purple-200">
+                <div className="flex items-center gap-2 text-cyan-200">
                   <Clock className="w-4 h-4" />
                   <span className="text-sm">15 min</span>
                 </div>
               </div>
-              <p className="text-purple-100 mb-6">
+              <p className="text-cyan-100 mb-6">
                 Complete a full Amazon SDE technical interview with AI feedback
               </p>
-              <button className="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-colors">
+              <button className="bg-white text-cyan-600 px-6 py-3 rounded-lg font-semibold hover:bg-cyan-50 transition-colors">
                 Start Challenge
               </button>
             </div>
@@ -336,7 +336,7 @@ export default function Dashboard() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-900">Leaderboard</h3>
-                <Link href="/leaderboard" className="text-purple-600 text-sm hover:text-purple-700">
+                <Link href="/leaderboard" className="text-cyan-600 text-sm hover:text-cyan-700">
                   View All
                 </Link>
               </div>

@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { Home, Mic, Zap, Trophy, User, Download, Share2, Sparkles } from "lucide-react";
 
 const templates = [
@@ -27,27 +25,12 @@ const templates = [
 ];
 
 export default function FlyerPage() {
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState(templates[0]);
   const [score, setScore] = useState("");
   const [bridgeScore, setBridgeScore] = useState("");
   const [streak, setStreak] = useState("5");
   const [isGenerating, setIsGenerating] = useState(false);
   const canvasRef = useRef(null);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        document.cookie = "bridge_auth=; path=/; max-age=0; samesite=lax";
-        window.location.replace("/login");
-        return;
-      }
-      document.cookie = "bridge_auth=1; path=/; max-age=2592000; samesite=lax";
-      setIsCheckingAuth(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   const generateFlyer = async () => {
     if (!canvasRef.current) return;
@@ -218,17 +201,6 @@ export default function FlyerPage() {
       alert('Error sharing. Please try downloading instead.');
     }
   };
-
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500/30 border-t-purple-500 mx-auto mb-4"></div>
-          <div className="text-purple-400 font-semibold">Loading flyer generator...</div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-white">
