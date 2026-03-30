@@ -6,6 +6,8 @@ import Link from "next/link";
 import confetti from "canvas-confetti";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 const domains = [
   { icon: "💻", label: "Software Engineer" },
@@ -28,6 +30,8 @@ export default function InterviewPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [analyses, setAnalyses] = useState([]);
   const [responses, setResponses] = useState([]);
+  const [uid, setUid] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [selectedFeedbackTab, setSelectedFeedbackTab] = useState(0);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
@@ -38,6 +42,14 @@ export default function InterviewPage() {
   const [autoSpeak, setAutoSpeak] = useState(true);
 
   useEffect(() => {
+    // Get user ID and generate session ID
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUid(user.uid);
+        setSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+      }
+    });
+
     // Check browser support for Web Speech API
     if (typeof window !== 'undefined' && !('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       setBrowserSupport(false);
@@ -50,6 +62,8 @@ export default function InterviewPage() {
         window.speechSynthesis.getVoices();
       };
     }
+
+    return () => unsubscribe();
   }, []);
 
   const speakText = (text) => {
@@ -168,6 +182,8 @@ export default function InterviewPage() {
           question: currentQuestion,
           answer: transcript.trim(),
           domain: selectedDomain,
+          uid,
+          sessionId
         }),
       });
 
@@ -228,6 +244,8 @@ export default function InterviewPage() {
           question: currentQuestion,
           answer: answer.trim(),
           domain: selectedDomain,
+          uid,
+          sessionId
         }),
       });
 

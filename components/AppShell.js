@@ -19,6 +19,10 @@ import {
   TrendingUp,
   ChevronRight
 } from 'lucide-react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function AppShell({ children }) {
   const router = useRouter();
@@ -28,15 +32,40 @@ export default function AppShell({ children }) {
   const [notifications, setNotifications] = useState(3);
 
   useEffect(() => {
-    // Load user profile from localStorage
-    const saved = localStorage.getItem('bridge_profile');
-    if (saved) {
-      try {
-        setUserProfile(JSON.parse(saved));
-      } catch (e) {
-        console.error('Profile parse error:', e);
+    // Load real user data from Firebase
+    return onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userRef);
+          
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            setUserProfile({
+              name: user.displayName,
+              college: userData.college || 'Add College',
+              bridgeScore: userData.bridgeScore || 0,
+              photo: user.photoURL
+            });
+          } else {
+            setUserProfile({
+              name: user.displayName,
+              college: 'Add College',
+              bridgeScore: 0,
+              photo: user.photoURL
+            });
+          }
+        } catch (error) {
+          console.error('Error loading user profile:', error);
+          setUserProfile({
+            name: user.displayName,
+            college: 'Add College',
+            bridgeScore: 0,
+            photo: user.photoURL
+          });
+        }
       }
-    }
+    });
   }, []);
 
   const navigation = [
@@ -114,15 +143,23 @@ export default function AppShell({ children }) {
           {/* User Profile Mini Card */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-[#0891B2] to-[#0D9488] rounded-full flex items-center justify-center text-white font-bold">
-                {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
-              </div>
+              {userProfile?.photo ? (
+                <img 
+                  src={userProfile.photo} 
+                  alt={userProfile.name}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-12 h-12 bg-gradient-to-r from-[#0891B2] to-[#0D9488] rounded-full flex items-center justify-center text-white font-bold">
+                  {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-gray-900 truncate">
                   {userProfile?.name || 'User'}
                 </div>
                 <div className="text-xs text-gray-500 truncate">
-                  {userProfile?.college || 'College'}
+                  {userProfile?.college || 'Add College'}
                 </div>
               </div>
             </div>

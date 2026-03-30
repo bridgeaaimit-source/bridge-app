@@ -1,11 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { doc, setDoc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export async function POST(request) {
   try {
     console.log('ANTHROPIC KEY:', process.env.ANTHROPIC_API_KEY?.substring(0, 15));
     
     const body = await request.json();
-    const { question, answer, domain, count } = body;
+    const { question, answer, domain, count, uid, sessionId } = body;
     
     console.log('=== API ROUTE HIT ===');
     console.log('Body:', { question, answer, domain, count });
@@ -126,7 +128,46 @@ Return ONLY valid JSON, no markdown, no extra text:
         .trim();
       
       console.log('Analysis response:', text);
-      return Response.json(JSON.parse(text));
+      const analysis = JSON.parse(text);
+      
+      // Save interview results to Firestore if uid provided
+      if (uid && sessionId) {
+        try {
+          // Save session data
+          const sessionRef = doc(db, 'interviews', uid, 'sessions', sessionId);
+          await setDoc(sessionRef, {
+            domain,
+            score: analysis.score,
+            date: new Date().toISOString(),
+            questionsCount: 1,
+            fillerWords: analysis.filler_words.count,
+            feedback: analysis.better_answer
+          });
+          
+          // Update user document
+          const userRef = doc(db, 'users', uid);
+          const userSnap = await getDoc(userRef);
+          
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            const newBridgeScore = Math.min(1000, (userData.bridgeScore || 500) + (analysis.score * 10));
+            const newInterviewsDone = (userData.interviewsDone || 0) + 1;
+            const newAvgScore = ((userData.avgScore || 0) * (userData.interviewsDone || 0) + analysis.score) / newInterviewsDone;
+            
+            await updateDoc(userRef, {
+              bridgeScore: newBridgeScore,
+              interviewsDone: newInterviewsDone,
+              avgScore: newAvgScore,
+              streak: (userData.streak || 0) + 1
+            });
+          }
+        } catch (firestoreError) {
+          console.error('Error saving to Firestore:', firestoreError);
+          // Don't fail the API response if Firestore fails
+        }
+      }
+      
+      return Response.json(analysis);
     }
 
     return Response.json({ error: 'Invalid request' }, 

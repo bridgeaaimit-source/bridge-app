@@ -25,16 +25,20 @@ import {
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function Dashboard() {
   const [bridgeScore, setBridgeScore] = useState(null);
   const [greeting, setGreeting] = useState("");
   const [todayDate, setTodayDate] = useState("");
   const [stats, setStats] = useState({
-    bridgeScore: 742,
-    interviewsDone: 12,
-    currentStreak: 5,
-    avgScore: 7.4
+    bridgeScore: 0,
+    interviewsDone: 0,
+    currentStreak: 0,
+    avgScore: 0
   });
   const [recentActivity, setRecentActivity] = useState([
     { type: 'interview', title: 'Amazon SDE Mock', time: '2 hours ago', score: 8.2 },
@@ -63,16 +67,30 @@ export default function Dashboard() {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     setTodayDate(today.toLocaleDateString('en-US', options));
 
-    // Load saved profile
-    const saved = localStorage.getItem('bridge_profile');
-    if (saved) {
-      try {
-        const profile = JSON.parse(saved);
-        setBridgeScore(profile.bridgeScore || 742);
-      } catch (e) {
-        console.error('Profile parse error:', e);
+    // Load real user data from Firestore
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userRef);
+          
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            setStats({
+              bridgeScore: userData.bridgeScore || 0,
+              interviewsDone: userData.interviewsDone || 0,
+              currentStreak: userData.streak || 0,
+              avgScore: userData.avgScore || 0
+            });
+            setBridgeScore(userData.bridgeScore || 0);
+          }
+        } catch (error) {
+          console.error('Error loading user data:', error);
+        }
       }
-    }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const features = [
@@ -150,8 +168,12 @@ export default function Dashboard() {
                 <span>+12</span>
               </div>
             </div>
-            <div className="text-3xl font-bold gradient-text mb-1">{stats.bridgeScore}</div>
-            <div className="text-sm text-gray-600">BRIDGE Score</div>
+            <div className="text-3xl font-bold gradient-text mb-1">
+              {stats.bridgeScore === 0 ? "—" : stats.bridgeScore}
+            </div>
+            <div className="text-sm text-gray-600">
+              {stats.bridgeScore === 0 ? "Complete an interview to get your score" : "BRIDGE Score"}
+            </div>
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -290,8 +312,12 @@ export default function Dashboard() {
                     </defs>
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="text-3xl font-bold gradient-text">{stats.bridgeScore}</div>
-                    <div className="text-xs text-gray-500">Interview Ready</div>
+                    <div className="text-3xl font-bold gradient-text">
+                      {stats.bridgeScore === 0 ? "—" : stats.bridgeScore}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {stats.bridgeScore === 0 ? "Complete an interview to get your score" : "Interview Ready"}
+                    </div>
                   </div>
                 </div>
                 <div className="text-center">

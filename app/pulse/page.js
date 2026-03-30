@@ -56,6 +56,13 @@ export default function PulsePage() {
       setGdInsights(data);
     } catch (err) {
       console.error('GD insights error:', err);
+      // Fallback GD content
+      setGdInsights({
+        gd_topic: "The Impact of Artificial Intelligence on Job Markets",
+        pros: "New opportunities, increased productivity",
+        cons: "Job displacement, skill requirements",
+        power_phrase: "AI is changing how we work, not replacing human potential"
+      });
     } finally {
       setGdLoading(false);
     }
@@ -85,8 +92,35 @@ export default function PulsePage() {
       setNewsData(data);
     } catch (err) {
       console.error('News fetch error:', err);
-      setError('Failed to load news. Please try again.');
-      setNewsData({ articles: [] });
+      const errorMessage = err.message || 'Unknown error occurred';
+      setError(`Failed to load news: ${errorMessage}. Please check your API keys.`);
+      
+      // Fallback content
+      setNewsData({
+        articles: [
+          {
+            title: "TCS Announces 10,000 New Hiring for 2024",
+            description: "Tata Consultancy Services plans to hire 10,000 fresh graduates in FY2024 with focus on AI and digital skills.",
+            url: "https://example.com/tcs-hiring",
+            source: "TCS",
+            time: "2 hours ago"
+          },
+          {
+            title: "Infosys Expands Campus Recruitment Program",
+            description: "Infosys launches enhanced campus recruitment program with competitive packages for engineering graduates.",
+            url: "https://example.com/infosys-campus",
+            source: "Infosys",
+            time: "5 hours ago"
+          },
+          {
+            title: "Wipro Partners with Colleges for Skill Development",
+            description: "Wipro announces partnership with 50 engineering colleges for skill development and placement training.",
+            url: "https://example.com/wipro-partners",
+            source: "Wipro",
+            time: "1 day ago"
+          }
+        ]
+      });
     } finally {
       setNewsLoading(false);
       setLoading(false);
