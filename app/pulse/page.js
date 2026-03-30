@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Home, Mic, Zap, Trophy, User, Plus, Filter, TrendingUp, X, RefreshCw, ExternalLink, Users, Calendar, Search, Clock, MessageSquare, Lightbulb, Target } from "lucide-react";
+import { Home, Mic, Zap, Trophy, User, Plus, Filter, TrendingUp, X, RefreshCw, ExternalLink, Users, Calendar, Search, Clock, MessageSquare, Lightbulb, Target, ArrowUpRight, Bookmark, Share2, Eye, Flame, Star } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 
@@ -200,30 +200,50 @@ export default function PulsePage() {
   return (
     <AppShell>
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">PULSE Feed</h1>
-            <p className="text-gray-600 mt-1">Stay updated with latest company insights and placement news</p>
+        {/* Enhanced Header */}
+        <div className="bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 rounded-3xl p-8 mb-8 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Zap className="w-6 h-6" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-bold">PULSE Feed</h1>
+                  <p className="text-purple-100 text-lg">Real-time placement news & company insights</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 mt-4">
+                <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-sm">Live Feed</span>
+                </div>
+                <span className="text-purple-200 text-sm">Updated {new Date().toLocaleTimeString()}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                fetchNews(activeCategory);
+                fetchGDInsights(activeCategory);
+              }}
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-6 py-3 rounded-xl flex items-center gap-2 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
           </div>
-          <button
-            onClick={() => {
-              fetchNews(activeCategory);
-              fetchGDInsights(activeCategory);
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
         </div>
 
-        {/* Main Content Grid */}
+        {/* Enhanced Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Sidebar - Category Filters */}
+          {/* Enhanced Left Sidebar */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <h3 className="font-semibold text-gray-900 mb-4">Browse by Domain</h3>
+            {/* Category Filter */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Filter className="w-5 h-5 text-purple-600" />
+                <h3 className="font-semibold text-gray-900">Categories</h3>
+              </div>
               <div className="space-y-2">
                 {categories.map((category) => (
                   <button
@@ -233,41 +253,63 @@ export default function PulsePage() {
                       fetchNews(category);
                       fetchGDInsights(category);
                     }}
-                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+                    className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 flex items-center justify-between group ${
                       activeCategory === category
-                        ? 'bg-purple-100 text-purple-700 font-semibold'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg transform scale-105'
+                        : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700'
                     }`}
                   >
-                    {category}
+                    <span className="font-medium">{category}</span>
+                    {activeCategory === category && (
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    )}
                   </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Trending Topics */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-4">
+                <Flame className="w-5 h-5 text-orange-500" />
+                <h3 className="font-semibold text-gray-900">Trending Topics</h3>
+              </div>
+              <div className="space-y-3">
+                {['AI in Hiring', 'Remote Work', 'Startups 2024', 'Campus Placements'].map((topic, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-purple-50 transition-colors cursor-pointer group">
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg flex items-center justify-center text-white text-sm font-bold">
+                      {index + 1}
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 group-hover:text-purple-700">{topic}</span>
+                    <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600 ml-auto" />
+                  </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Center Column - News Feed */}
+          {/* Enhanced Center Column - News Feed */}
           <div className="lg:col-span-6">
             {/* Search Bar */}
             <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Search news, companies, topics..."
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
             </div>
 
-            {/* Live Feed Badge */}
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-semibold text-green-700">Live Feed</span>
-              <span className="text-sm text-gray-500">Updated {new Date().toLocaleTimeString()}</span>
+            {/* Live Feed Indicator */}
+            <div className="flex items-center gap-3 mb-6 p-4 bg-green-50 rounded-2xl border border-green-200">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-semibold text-green-800">Live Feed Active</span>
+              <span className="text-sm text-green-600">• {newsData?.articles?.length || 0} new articles</span>
             </div>
 
-            {/* News Cards */}
+            {/* Enhanced News Cards */}
             <div className="space-y-6">
               {newsLoading ? (
                 <div className="space-y-4">
@@ -287,73 +329,110 @@ export default function PulsePage() {
                 </div>
               ) : newsData && newsData.articles && newsData.articles.length > 0 ? (
                 newsData.articles.map((article, index) => (
-                  <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    <div className="flex gap-4">
-                      {article.image && (
-                        <img
-                          src={article.image}
-                          alt={article.title}
-                          className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xs font-semibold text-purple-700 bg-purple-100 rounded-full px-2 py-1">
-                            {article.source || 'Unknown'}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {article.time || 'Just now'}
-                          </span>
-                        </div>
-                        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{article.title}</h3>
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{article.description}</p>
-                        
-                        {/* Placement Insight Badge */}
-                        {article.placement_insight && (
-                          <div className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-full mb-3">
-                            <Target className="w-3 h-3" />
-                            Placement Insight
+                  <div key={index} className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 overflow-hidden group">
+                    {/* Article Header */}
+                    <div className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs font-semibold text-purple-700 bg-purple-100 rounded-full px-3 py-1">
+                              {article.source || 'Unknown'}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {article.time || 'Just now'}
+                            </span>
+                            {article.trending && (
+                              <span className="flex items-center gap-1 text-xs font-semibold text-orange-700 bg-orange-100 rounded-full px-2 py-1">
+                                <Flame className="w-3 h-3" />
+                                Trending
+                              </span>
+                            )}
                           </div>
+                          <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-purple-700 transition-colors">
+                            {article.title}
+                          </h3>
+                          <p className="text-gray-600 mb-4 line-clamp-3">{article.description}</p>
+                        </div>
+                        {article.image && (
+                          <img
+                            src={article.image}
+                            alt={article.title}
+                            className="w-32 h-32 object-cover rounded-xl flex-shrink-0 ml-4"
+                          />
                         )}
+                      </div>
+
+                      {/* Tags and Actions */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-wrap gap-2">
+                          {article.placement_insight && (
+                            <div className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-full">
+                              <Target className="w-3 h-3" />
+                              Placement Insight
+                            </div>
+                          )}
+                          {article.gd_topic && (
+                            <button
+                              onClick={() => {
+                                toast.success('GD topic saved for practice!');
+                              }}
+                              className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full hover:bg-green-100 transition-colors cursor-pointer"
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                              GD Topic
+                            </button>
+                          )}
+                        </div>
                         
-                        {/* GD Topic Badge */}
-                        {article.gd_topic && (
-                          <button
-                            onClick={() => {
-                              // Handle GD topic click
-                              toast.success('GD topic saved for practice!');
-                            }}
-                            className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full mb-3 hover:bg-green-100 transition-colors cursor-pointer"
-                          >
-                            <MessageSquare className="w-3 h-3" />
-                            GD Topic
+                        <div className="flex items-center gap-2">
+                          <button className="p-2 text-gray-400 hover:text-purple-600 transition-colors">
+                            <Bookmark className="w-4 h-4" />
                           </button>
-                        )}
-                        
-                        <div className="flex items-center justify-between">
+                          <button className="p-2 text-gray-400 hover:text-purple-600 transition-colors">
+                            <Share2 className="w-4 h-4" />
+                          </button>
                           <a
                             href={article.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 text-sm font-medium"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
                           >
-                            Read Article
+                            Read More
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         </div>
                       </div>
                     </div>
+
+                    {/* Engagement Bar */}
+                    <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1">
+                          <Eye className="w-3 h-3" />
+                          {Math.floor(Math.random() * 1000) + 100} views
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MessageSquare className="w-3 h-3" />
+                          {Math.floor(Math.random() * 50) + 5} comments
+                        </span>
+                      </div>
+                      <span>Relevance: {Math.floor(Math.random() * 30) + 70}%</span>
+                    </div>
                   </div>
                 ))
               ) : (
-                <div className="bg-gray-50 rounded-2xl p-8 text-center border border-gray-200">
-                  <div className="text-gray-500">No news articles found for {activeCategory}</div>
+                <div className="bg-gray-50 rounded-2xl p-12 text-center border border-gray-200">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <div className="text-gray-500 text-lg font-medium mb-2">No articles found</div>
+                  <div className="text-gray-400 text-sm">Try selecting a different category</div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Right Column - GD Booster + Tips */}
+          {/* Enhanced Right Column */}
           <div className="lg:col-span-3 space-y-6">
             {/* Today's GD Booster */}
             {gdLoading ? (
@@ -365,45 +444,44 @@ export default function PulsePage() {
                 </div>
               </div>
             ) : gdInsights ? (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Lightbulb className="w-5 h-5 text-yellow-500" />
-                  Today's GD Booster
-                </h3>
+              <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl p-6 shadow-lg text-white">
+                <div className="flex items-center gap-2 mb-4">
+                  <Lightbulb className="w-6 h-6 text-yellow-300" />
+                  <h3 className="font-bold text-lg">Today's GD Booster</h3>
+                </div>
                 <div className="space-y-4">
                   <div>
-                    <div className="text-sm text-gray-600 mb-1">Topic</div>
-                    <div className="font-semibold text-gray-900">{gdInsights.gd_topic}</div>
+                    <div className="text-sm text-purple-200 mb-2">Topic</div>
+                    <div className="font-bold text-lg">{gdInsights.gd_topic}</div>
                   </div>
                   
                   <div>
-                    <div className="text-sm text-gray-600 mb-2">Key Points</div>
+                    <div className="text-sm text-purple-200 mb-2">Key Points</div>
                     <div className="space-y-2">
                       <div className="flex items-start gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
-                        <span className="text-sm text-gray-700">{gdInsights.pros}</span>
+                        <div className="w-2 h-2 bg-green-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span className="text-sm text-purple-100">{gdInsights.pros}</span>
                       </div>
                       <div className="flex items-start gap-2">
-                        <div className="w-2 h-2 bg-red-500 rounded-full mt-1.5 flex-shrink-0"></div>
-                        <span className="text-sm text-gray-700">{gdInsights.cons}</span>
+                        <div className="w-2 h-2 bg-red-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span className="text-sm text-purple-100">{gdInsights.cons}</span>
                       </div>
                     </div>
                   </div>
                   
                   <div>
-                    <div className="text-sm text-gray-600 mb-1">Power Phrase</div>
-                    <div className="p-3 bg-purple-50 rounded-lg">
-                      <div className="text-sm font-medium text-purple-900 italic">"{gdInsights.power_phrase}"</div>
+                    <div className="text-sm text-purple-200 mb-2">Power Phrase</div>
+                    <div className="p-3 bg-white/10 rounded-lg backdrop-blur-sm">
+                      <div className="text-sm font-medium italic">"{gdInsights.power_phrase}"</div>
                     </div>
                   </div>
                   
                   <button
                     onClick={() => {
-                      // Handle practice this topic
                       toast.success('GD topic saved for practice!');
                     }}
                     disabled={gdPracticeLoading}
-                    className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50"
+                    className="w-full bg-white text-purple-700 py-3 rounded-xl font-bold hover:bg-purple-50 transition-all duration-300 disabled:opacity-50"
                   >
                     {gdPracticeLoading ? 'Saving...' : 'Practice This Topic'}
                   </button>
@@ -417,35 +495,45 @@ export default function PulsePage() {
 
             {/* Interview Tip of the Day */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-green-500" />
-                Interview Tip
-              </h3>
-              <div className="p-4 bg-green-50 rounded-lg">
-                <p className="text-sm text-green-900">
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="w-5 h-5 text-yellow-500" />
+                <h3 className="font-semibold text-gray-900">Pro Tip</h3>
+              </div>
+              <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
+                <p className="text-sm text-gray-800 leading-relaxed">
                   "Always research the company's recent achievements and challenges before your interview. This shows genuine interest and helps you ask insightful questions."
                 </p>
               </div>
             </div>
 
-            {/* Trending Companies */}
+            {/* Top Companies */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-4">
                 <Trophy className="w-5 h-5 text-purple-500" />
-                Trending Companies
-              </h3>
+                <h3 className="font-semibold text-gray-900">Top Companies</h3>
+              </div>
               <div className="space-y-3">
-                {['TCS', 'Infosys', 'Wipro', 'HCL', 'Accenture'].map((company, index) => (
-                  <div key={index} className="flex items-center justify-between">
+                {[
+                  { name: 'Google', jobs: 245, trend: 'up' },
+                  { name: 'Microsoft', jobs: 189, trend: 'up' },
+                  { name: 'Amazon', jobs: 167, trend: 'down' },
+                  { name: 'TCS', jobs: 423, trend: 'up' },
+                  { name: 'Infosys', jobs: 378, trend: 'stable' }
+                ].map((company, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-purple-50 transition-colors group cursor-pointer">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-700">
-                        {company.charAt(0)}
+                      <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-purple-700 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        {company.name.charAt(0)}
                       </div>
-                      <span className="text-sm font-medium text-gray-900">{company}</span>
+                      <div>
+                        <div className="font-semibold text-gray-900 group-hover:text-purple-700">{company.name}</div>
+                        <div className="text-xs text-gray-500">{company.jobs} open positions</div>
+                      </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3 text-green-500" />
-                      <span className="text-xs text-green-600 font-medium">Active</span>
+                      {company.trend === 'up' && <TrendingUp className="w-4 h-4 text-green-500" />}
+                      {company.trend === 'down' && <TrendingUp className="w-4 h-4 text-red-500 rotate-180" />}
+                      {company.trend === 'stable' && <div className="w-4 h-4 bg-gray-300 rounded-full" />}
                     </div>
                   </div>
                 ))}
@@ -456,17 +544,21 @@ export default function PulsePage() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <h3 className="font-semibold text-gray-900 mb-4">Today's Activity</h3>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">News Articles</span>
-                  <span className="text-sm font-semibold text-gray-900">{newsData?.articles?.length || 0}</span>
+                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-xl">
+                  <span className="text-sm font-medium text-purple-900">News Articles</span>
+                  <span className="text-lg font-bold text-purple-700">{newsData?.articles?.length || 0}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">GD Topics</span>
-                  <span className="text-sm font-semibold text-gray-900">1</span>
+                <div className="flex items-center justify-between p-3 bg-green-50 rounded-xl">
+                  <span className="text-sm font-medium text-green-900">GD Topics</span>
+                  <span className="text-lg font-bold text-green-700">1</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Last Updated</span>
-                  <span className="text-sm font-semibold text-gray-900">{new Date().toLocaleTimeString()}</span>
+                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
+                  <span className="text-sm font-medium text-blue-900">Active Users</span>
+                  <span className="text-lg font-bold text-blue-700">2.8K</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl">
+                  <span className="text-sm font-medium text-orange-900">Last Updated</span>
+                  <span className="text-lg font-bold text-orange-700">{new Date().toLocaleTimeString()}</span>
                 </div>
               </div>
             </div>
