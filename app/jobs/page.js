@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, Upload, Briefcase, Target, TrendingUp, Users, RefreshCw, ExternalLink, Lock, CheckCircle, XCircle, AlertCircle, Star, MapPin, DollarSign, Clock, Building, Award, Brain, Send } from "lucide-react";
+import { ChevronLeft, Upload, Briefcase, Target, TrendingUp, Users, RefreshCw, ExternalLink, Lock, CheckCircle, XCircle, AlertCircle, Star, MapPin, DollarSign, Clock, Building, Award, Brain, Send, FileText } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function JobsPage() {
@@ -220,6 +220,14 @@ export default function JobsPage() {
     }
   };
 
+  const handleChangeResume = () => {
+    localStorage.removeItem('bridge_profile');
+    setProfile(null);
+    setResumeUploaded(false);
+    setJobs([]);
+    toast.success('You can now upload a new resume');
+  };
+
   if (!resumeUploaded) {
     return (
       <div className="min-h-screen bg-[#0A0A0F] text-white">
@@ -332,6 +340,16 @@ export default function JobsPage() {
             </div>
             <div className="text-xs text-gray-400">
               {profile?.domains?.[0]} | {profile?.location}
+            </div>
+            <div className="flex gap-2 mt-2 justify-end">
+              <button
+                onClick={handleChangeResume}
+                className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg flex items-center gap-1 transition-colors"
+                title="Change Resume"
+              >
+                <FileText className="w-3 h-3" />
+                Change Resume
+              </button>
             </div>
           </div>
         </header>
