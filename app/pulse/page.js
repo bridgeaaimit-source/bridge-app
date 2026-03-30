@@ -70,7 +70,6 @@ export default function PulsePage() {
     console.log('Fetching news for:', category);
     setNewsLoading(true);
     setError(null);
-    setNewsData(null); // Clear previous articles
     
     try {
       console.log('Making API call to /api/news...');
@@ -109,6 +108,8 @@ export default function PulsePage() {
       }
       
       setError(errorMessage);
+      // Set empty data to prevent infinite loading
+      setNewsData({ articles: [] });
     } finally {
       setNewsLoading(false);
       setLoading(false);
@@ -130,39 +131,18 @@ export default function PulsePage() {
     fetchGDInsights(category);
   };
 
-  const handleGDPractice = async (article) => {
+  const handleGDPractice = async () => {
     setGdPracticeLoading(true);
-    setLoadingArticle(article.title);
     
     try {
-      const res = await fetch('/api/gd-from-article', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          article_title: article.title,
-          article_description: article.description,
-          placement_insight: article.placement_insight
-        })
-      });
-      
-      const gdData = await res.json();
-      
       // Store in sessionStorage and redirect
-      sessionStorage.setItem('gd_topic', 
-        JSON.stringify(gdData));
+      sessionStorage.setItem('gd_topic', JSON.stringify(gdInsights));
       window.location.href = '/gd';
       
     } catch (err) {
       console.error('GD generation error:', err);
-      // Fallback - just go to GD with article title
-      sessionStorage.setItem('gd_topic', JSON.stringify({
-        gd_topic: article.title,
-        why_relevant: article.placement_insight
-      }));
-      window.location.href = '/gd';
     } finally {
       setGdPracticeLoading(false);
-      setLoadingArticle('');
     }
   };
 
@@ -178,9 +158,6 @@ export default function PulsePage() {
     if (diffHours < 24) return `${diffHours}h ago`;
     return `${diffDays}d ago`;
   };
-
-  const currentData = newsData;
-  const gdTopics = currentData?.articles?.filter(a => a.gd_topic === true) || [];
 
   if (loading) {
     return (
@@ -234,12 +211,90 @@ export default function PulsePage() {
           </div>
         </div>
 
-        {/* Enhanced Main Content Grid */}
+        {/* GD Booster Hero Banner */}
+        {!gdLoading && gdInsights && (
+          <div 
+            className="mb-8 rounded-2xl p-6 text-white"
+            style={{
+              background: 'linear-gradient(135deg, #6C3FE8 0%, #9B6DFF 100%)',
+              borderRadius: '16px',
+              padding: '24px 36px',
+              marginBottom: '24px',
+              display: 'grid',
+              gridTemplateColumns: 'auto 1fr auto auto',
+              alignItems: 'center',
+              gap: '32px'
+            }}
+          >
+            {/* Label column */}
+            <div>
+              <div className="text-xs uppercase tracking-wide mb-2" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px' }}>
+                Today's GD Topic
+              </div>
+              <div className="text-xl font-bold leading-tight" style={{ maxWidth: '240px', fontSize: '20px', fontWeight: '700' }}>
+                {gdInsights.gd_topic}
+              </div>
+            </div>
+
+            {/* Key points column */}
+            <div>
+              <div className="text-sm" style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>
+                <span className="inline-block">• {gdInsights.pros}</span>
+                <span className="mx-2">·</span>
+                <span className="inline-block">• {gdInsights.cons}</span>
+              </div>
+            </div>
+
+            {/* Power phrase column */}
+            <div>
+              <div 
+                className="text-sm italic"
+                style={{
+                  color: 'rgba(255,255,255,0.8)',
+                  fontSize: '13px',
+                  borderLeft: '2px solid rgba(255,255,255,0.4)',
+                  paddingLeft: '14px',
+                  maxWidth: '260px'
+                }}
+              >
+                "{gdInsights.power_phrase}"
+              </div>
+            </div>
+
+            {/* CTA column */}
+            <div>
+              <button
+                onClick={handleGDPractice}
+                disabled={gdPracticeLoading}
+                className="px-6 py-3 rounded-lg font-bold transition-all duration-300 hover:transform hover:-translate-y-0.5"
+                style={{
+                  background: 'white',
+                  color: '#6C3FE8',
+                  padding: '12px 24px',
+                  borderRadius: '10px',
+                  fontWeight: '700',
+                  fontSize: '14px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)';
+                  e.target.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.boxShadow = 'none';
+                  e.target.style.transform = 'translateY(0)';
+                }}
+              >
+                {gdPracticeLoading ? 'Loading...' : 'Practice Now →'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Enhanced Left Sidebar */}
+          {/* Left Sidebar - Category Filters */}
           <div className="lg:col-span-3">
-            {/* Category Filter */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center gap-2 mb-4">
                 <Filter className="w-5 h-5 text-purple-600" />
                 <h3 className="font-semibold text-gray-900">Categories</h3>
@@ -267,28 +322,9 @@ export default function PulsePage() {
                 ))}
               </div>
             </div>
-
-            {/* Trending Topics */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center gap-2 mb-4">
-                <Flame className="w-5 h-5 text-orange-500" />
-                <h3 className="font-semibold text-gray-900">Trending Topics</h3>
-              </div>
-              <div className="space-y-3">
-                {['AI in Hiring', 'Remote Work', 'Startups 2024', 'Campus Placements'].map((topic, index) => (
-                  <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-purple-50 transition-colors cursor-pointer group">
-                    <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg flex items-center justify-center text-white text-sm font-bold">
-                      {index + 1}
-                    </div>
-                    <span className="text-sm font-medium text-gray-700 group-hover:text-purple-700">{topic}</span>
-                    <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600 ml-auto" />
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
-          {/* Enhanced Center Column - News Feed */}
+          {/* Center Column - News Feed */}
           <div className="lg:col-span-6">
             {/* Search Bar */}
             <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
@@ -309,7 +345,7 @@ export default function PulsePage() {
               <span className="text-sm text-green-600">• {newsData?.articles?.length || 0} new articles</span>
             </div>
 
-            {/* Enhanced News Cards */}
+            {/* News Cards */}
             <div className="space-y-6">
               {newsLoading ? (
                 <div className="space-y-4">
@@ -326,6 +362,12 @@ export default function PulsePage() {
               ) : error ? (
                 <div className="bg-red-50 rounded-2xl p-6 border border-red-200">
                   <div className="text-red-600 text-center">{error}</div>
+                  <button
+                    onClick={() => fetchNews(activeCategory)}
+                    className="mt-4 mx-auto block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                  >
+                    Retry
+                  </button>
                 </div>
               ) : newsData && newsData.articles && newsData.articles.length > 0 ? (
                 newsData.articles.map((article, index) => (
@@ -432,80 +474,8 @@ export default function PulsePage() {
             </div>
           </div>
 
-          {/* Enhanced Right Column */}
+          {/* Right Sidebar - Only Top Companies, Pro Tip, Today's Activity */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Today's GD Booster */}
-            {gdLoading ? (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="animate-pulse space-y-4">
-                  <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-full"></div>
-                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                </div>
-              </div>
-            ) : gdInsights ? (
-              <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl p-6 shadow-lg text-white">
-                <div className="flex items-center gap-2 mb-4">
-                  <Lightbulb className="w-6 h-6 text-yellow-300" />
-                  <h3 className="font-bold text-lg">Today's GD Booster</h3>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <div className="text-sm text-purple-200 mb-2">Topic</div>
-                    <div className="font-bold text-lg">{gdInsights.gd_topic}</div>
-                  </div>
-                  
-                  <div>
-                    <div className="text-sm text-purple-200 mb-2">Key Points</div>
-                    <div className="space-y-2">
-                      <div className="flex items-start gap-2">
-                        <div className="w-2 h-2 bg-green-400 rounded-full mt-1.5 flex-shrink-0"></div>
-                        <span className="text-sm text-purple-100">{gdInsights.pros}</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="w-2 h-2 bg-red-400 rounded-full mt-1.5 flex-shrink-0"></div>
-                        <span className="text-sm text-purple-100">{gdInsights.cons}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="text-sm text-purple-200 mb-2">Power Phrase</div>
-                    <div className="p-3 bg-white/10 rounded-lg backdrop-blur-sm">
-                      <div className="text-sm font-medium italic">"{gdInsights.power_phrase}"</div>
-                    </div>
-                  </div>
-                  
-                  <button
-                    onClick={() => {
-                      toast.success('GD topic saved for practice!');
-                    }}
-                    disabled={gdPracticeLoading}
-                    className="w-full bg-white text-purple-700 py-3 rounded-xl font-bold hover:bg-purple-50 transition-all duration-300 disabled:opacity-50"
-                  >
-                    {gdPracticeLoading ? 'Saving...' : 'Practice This Topic'}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="text-gray-500 text-center">No GD insights available</div>
-              </div>
-            )}
-
-            {/* Interview Tip of the Day */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center gap-2 mb-4">
-                <Star className="w-5 h-5 text-yellow-500" />
-                <h3 className="font-semibold text-gray-900">Pro Tip</h3>
-              </div>
-              <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
-                <p className="text-sm text-gray-800 leading-relaxed">
-                  "Always research the company's recent achievements and challenges before your interview. This shows genuine interest and helps you ask insightful questions."
-                </p>
-              </div>
-            </div>
-
             {/* Top Companies */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center gap-2 mb-4">
@@ -540,7 +510,20 @@ export default function PulsePage() {
               </div>
             </div>
 
-            {/* Quick Stats */}
+            {/* Interview Tip of the Day */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="w-5 h-5 text-yellow-500" />
+                <h3 className="font-semibold text-gray-900">Pro Tip</h3>
+              </div>
+              <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
+                <p className="text-sm text-gray-800 leading-relaxed">
+                  "Always research the company's recent achievements and challenges before your interview. This shows genuine interest and helps you ask insightful questions."
+                </p>
+              </div>
+            </div>
+
+            {/* Today's Activity */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <h3 className="font-semibold text-gray-900 mb-4">Today's Activity</h3>
               <div className="space-y-3">
