@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, Upload, Briefcase, Target, TrendingUp, Users, RefreshCw, ExternalLink, Lock, CheckCircle, XCircle, AlertCircle, Star, MapPin, DollarSign, Clock, Building, Award, Brain, Send, FileText } from "lucide-react";
+import { ChevronLeft, Upload, Briefcase, Target, TrendingUp, Users, RefreshCw, ExternalLink, Lock, CheckCircle, XCircle, AlertCircle, Star, MapPin, DollarSign, Clock, Building, Award, Brain, Send, FileText, Search, Filter, Calendar } from "lucide-react";
+import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 
 export default function JobsPage() {
@@ -28,346 +29,222 @@ export default function JobsPage() {
         console.log('Profile loaded:', p.name);
         setProfile(p);
         setResumeUploaded(true);
-        // Auto fetch jobs if profile exists
-        fetchJobs(p);
-      } catch(e) {
-        console.error('Profile parse error:', e);
+      } catch (error) {
+        console.error('Error loading profile:', error);
       }
-    } else {
-      console.log('No profile in localStorage');
     }
   }, []);
 
-  const handleResumeUpload = async (file) => {
-    if (!file || file.type !== 'application/pdf') {
-      toast.error('Please upload a PDF resume');
-      return;
+  // Load jobs on mount
+  useEffect(() => {
+    if (resumeUploaded && profile) {
+      fetchJobs();
     }
+  }, [resumeUploaded, profile]);
 
+  const fetchJobs = async () => {
     setLoading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64 = e.target.result.split(',')[1];
-        
-        const response = await fetch('/api/jobs', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'extract_profile',
-            resume_base64: base64
-          })
-        });
-
-        const profileData = await response.json();
-        setProfile(profileData);
-        setResumeUploaded(true);
-        
-        // Save to localStorage
-        localStorage.setItem('bridge_profile', JSON.stringify(profileData));
-        
-        toast.success(`Hi ${profileData.name}! Profile extracted successfully`);
-        
-        // Auto fetch jobs
-        await fetchJobs(profileData);
-      };
-      reader.readAsDataURL(file);
+      const response = await fetch('/api/jobs');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch jobs');
+      }
+      
+      setJobs(data.jobs || []);
     } catch (error) {
-      toast.error('Failed to extract profile from resume');
+      console.error('Error fetching jobs:', error);
+      toast.error('Failed to load jobs');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchJobs = async (profileData = profile) => {
-    if (!profileData) return;
-    
-    setRefreshing(true);
-    try {
-      const response = await fetch('/api/jobs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'fetch_jobs',
-          profile: profileData
-        })
-      });
+  const handleResumeUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-      const jobsData = await response.json();
-      setJobs(jobsData.jobs || []);
-    } catch (error) {
-      toast.error('Failed to fetch jobs');
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  const handleSmartApply = async () => {
-  console.log('=== SMART APPLY CLICKED ===');
-  console.log('Profile:', profile);
-  console.log('Mode:', smartApplyMode);
-  console.log('JD:', smartApplyJD?.substring(0, 100));
-  console.log('URL:', smartApplyUrl);
-
-  if (!profile) {
-    alert('Please upload your resume first!');
-    setActiveTab('foryou');
-    return;
-  }
-
-  if (smartApplyMode === 'paste' && !smartApplyJD?.trim()) {
-    alert('Please paste the job description!');
-    return;
-  }
-
-  if (smartApplyMode === 'url' && !smartApplyUrl?.trim()) {
-    alert('Please enter a job URL!');
-    return;
-  }
-
-  setSmartApplyLoading(true);
-  setSmartApplyResult(null);
-
-  try {
-    const requestBody = {
-      action: 'smart_apply',
-      job_url: smartApplyMode === 'url' 
-        ? smartApplyUrl.trim() : null,
-      job_description: smartApplyMode === 'paste'
-        ? smartApplyJD.trim() : null,
-      profile: profile
-    };
-
-    console.log('Sending to API:', {
-      action: requestBody.action,
-      hasUrl: !!requestBody.job_url,
-      hasJD: !!requestBody.job_description,
-      jdLength: requestBody.job_description?.length,
-      hasProfile: !!requestBody.profile,
-      profileName: requestBody.profile?.name
-    });
-
-    const res = await fetch('/api/jobs', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json' 
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    console.log('Response status:', res.status);
-    const data = await res.json();
-    console.log('API response:', data);
-
-    if (data.error) {
-      alert('Error: ' + data.error);
+    // Check file type
+    const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Please upload a PDF, DOC, or DOCX file');
       return;
     }
 
-    setSmartApplyResult(data);
+    // Check file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
 
-  } catch (err) {
-    console.error('Smart apply error:', err);
-    alert('Failed: ' + err.message);
-  } finally {
-    setSmartApplyLoading(false);
-  }
-};
-
-  const getMatchColor = (percent) => {
-    if (percent >= 80) return 'text-green-400';
-    if (percent >= 60) return 'text-yellow-400';
-    if (percent >= 40) return 'text-orange-400';
-    return 'text-red-400';
-  };
-
-  const getMatchLabel = (percent) => {
-    if (percent >= 80) return 'Strong Match 💪';
-    if (percent >= 60) return 'Good Match 👍';
-    if (percent >= 40) return 'Partial Match';
-    return 'Weak Match';
-  };
-
-  const getMatchBg = (percent) => {
-    if (percent >= 80) return 'bg-green-500/20 border-green-500/30';
-    if (percent >= 60) return 'bg-yellow-500/20 border-yellow-500/30';
-    if (percent >= 40) return 'bg-orange-500/20 border-orange-500/30';
-    return 'bg-red-500/20 border-red-500/30';
-  };
-
-  const handleApply = (job) => {
-    if (job.apply_url && 
-        job.apply_url.startsWith('http')) {
-      window.open(job.apply_url, '_blank');
-    } else {
-      // Fallback to LinkedIn search
-      window.open(
-        `https://www.linkedin.com/jobs/search/?keywords=${
-          encodeURIComponent(job.title)
-        }&location=India`,
-        '_blank'
-      );
+    try {
+      const base64 = await fileToBase64(file);
+      
+      // Save to localStorage for demo
+      const newProfile = {
+        name: 'Demo User',
+        domains: ['Software'],
+        college: 'Demo College',
+        resume: base64,
+        bridgeScore: 742
+      };
+      
+      localStorage.setItem('bridge_profile', JSON.stringify(newProfile));
+      setProfile(newProfile);
+      setResumeUploaded(true);
+      
+      toast.success('Resume uploaded successfully!');
+      fetchJobs();
+    } catch (error) {
+      toast.error('Failed to upload resume');
+      console.error('Resume upload error:', error);
     }
   };
 
-  const handleJobAction = (job, action) => {
-    if (action === 'interview') {
-      // Store job data for smart interview
-      sessionStorage.setItem('job_data', JSON.stringify(job));
-      window.location.href = '/smart-interview';
-    } else if (action === 'apply') {
-      handleApply(job);
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+    });
+  };
+
+  const handleSmartApply = async () => {
+    const input = smartApplyMode === 'url' ? smartApplyUrl : smartApplyJD;
+    
+    if (!input.trim()) {
+      toast.error('Please provide job URL or description');
+      return;
+    }
+
+    setSmartApplyLoading(true);
+    
+    try {
+      const response = await fetch('/api/smart-apply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          [smartApplyMode]: input,
+          profile: profile
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to process smart apply');
+      }
+
+      setSmartApplyResult(data);
+      toast.success('Job analyzed successfully!');
+    } catch (error) {
+      toast.error(error.message || 'Failed to process smart apply');
+      console.error('Smart apply error:', error);
+    } finally {
+      setSmartApplyLoading(false);
     }
   };
 
-  const handleChangeResume = () => {
-    localStorage.removeItem('bridge_profile');
-    setProfile(null);
-    setResumeUploaded(false);
-    setJobs([]);
-    toast.success('You can now upload a new resume');
+  const handlePostJob = async (jobData) => {
+    try {
+      const response = await fetch('/api/post-job', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jobData),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to post job');
+      }
+
+      toast.success('Job posted successfully!');
+      setActiveTab('foryou');
+      fetchJobs();
+    } catch (error) {
+      toast.error(error.message || 'Failed to post job');
+      console.error('Post job error:', error);
+    }
   };
 
   if (!resumeUploaded) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] text-white">
-        <div className="max-w-md mx-auto px-6 py-6">
-          {/* Header */}
-          <header className="flex items-center gap-3 mb-8">
-            <button 
-              onClick={() => window.history.back()}
-              className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-3">
-              <Briefcase className="w-8 h-8 text-purple-400" />
-              <span className="text-xl font-bold">Jobs & Internships</span>
-            </div>
-          </header>
-
-          {/* Resume Upload Section */}
-          <div className="bg-gradient-to-br from-purple-600 to-blue-600 rounded-3xl p-8 mb-8 text-center">
-            <Upload className="w-16 h-16 mx-auto mb-4 text-white/80" />
-            <h2 className="text-2xl font-bold mb-4">Upload your resume once</h2>
-            <p className="text-white/80 mb-6">Get personalized jobs matched to your profile forever</p>
+      <AppShell>
+        <div className="max-w-3xl mx-auto">
+          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Upload Your Resume</h2>
             
-            <input
-              type="file"
-              accept=".pdf"
-              onChange={(e) => handleResumeUpload(e.target.files[0])}
-              className="hidden"
-              id="resume-upload"
-            />
-            <label
-              htmlFor="resume-upload"
-              className="inline-flex items-center gap-2 bg-white text-purple-600 px-6 py-3 rounded-xl font-semibold cursor-pointer hover:bg-white/90 transition-all"
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 animate-spin rounded-full border-2 border-purple-600/30 border-t-purple-600"></div>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  Upload Resume (PDF)
-                </>
-              )}
-            </label>
-          </div>
-
-          {/* Features */}
-          <div className="space-y-4">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-              <div className="flex items-center gap-3">
-                <Target className="w-6 h-6 text-green-400" />
-                <div>
-                  <h3 className="font-semibold">AI-Powered Matching</h3>
-                  <p className="text-sm text-gray-400">Get jobs that match your skills and experience</p>
-                </div>
-              </div>
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-400 transition-colors">
+              <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600 mb-2">Drop your resume here or click to browse</p>
+              <p className="text-sm text-gray-500">PDF, DOC, DOCX (Max 5MB)</p>
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={handleResumeUpload}
+                className="hidden"
+                id="resume-upload"
+              />
+              <label
+                htmlFor="resume-upload"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors cursor-pointer mt-4"
+              >
+                <FileText className="w-4 h-4" />
+                Choose File
+              </label>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-              <div className="flex items-center gap-3">
-                <Brain className="w-6 h-6 text-purple-400" />
-                <div>
-                  <h3 className="font-semibold">Smart Apply</h3>
-                  <p className="text-sm text-gray-400">Analyze any job URL and get preparation tips</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-              <div className="flex items-center gap-3">
-                <TrendingUp className="w-6 h-6 text-orange-400" />
-                <div>
-                  <h3 className="font-semibold">Interview Prep</h3>
-                  <p className="text-sm text-gray-400">Practice with AI for specific job roles</p>
-                </div>
-              </div>
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-900">
+                💡 Upload your resume to get personalized job recommendations and apply with one click using our Smart Apply feature.
+              </p>
             </div>
           </div>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-white">
-      <div className="max-w-md mx-auto px-6 py-6">
-        
+    <AppShell>
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <header className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => window.history.back()}
-              className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-3">
-              <Briefcase className="w-8 h-8 text-purple-400" />
-              <span className="text-xl font-bold">Jobs</span>
-            </div>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Jobs & Internships</h1>
+            <p className="text-gray-600 mt-1">Find opportunities that match your profile</p>
           </div>
-          
-          {/* Profile Summary */}
-          <div className="text-right">
-            <div className="text-sm text-purple-400">
-              Hi, {profile?.name?.split(' ')[0]}!
-            </div>
-            <div className="text-xs text-gray-400">
-              {profile?.domains?.[0]} | {profile?.location}
-            </div>
-            <div className="flex gap-2 mt-2 justify-end">
-              <button
-                onClick={handleChangeResume}
-                className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg flex items-center gap-1 transition-colors"
-                title="Change Resume"
-              >
-                <FileText className="w-3 h-3" />
-                Change Resume
-              </button>
-            </div>
-          </div>
-        </header>
+          <button
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+        </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 bg-white/5 rounded-xl p-1">
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mb-8 border-b border-gray-200">
           {[
             { id: 'foryou', label: 'For You', icon: Target },
             { id: 'smartapply', label: 'Smart Apply', icon: Brain },
-            { id: 'employer', label: 'For Employers', icon: Building }
+            { id: 'postjob', label: 'Post a Job', icon: Building }
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-1
-                ${activeTab === tab.id 
-                  ? 'bg-purple-500 text-white' 
-                  : 'text-gray-400 hover:text-white'}`}
+              className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
+                activeTab === tab.id
+                  ? 'border-purple-600 text-purple-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
@@ -375,579 +252,418 @@ export default function JobsPage() {
           ))}
         </div>
 
-        {/* FOR YOU TAB */}
+        {/* Tab Content */}
         {activeTab === 'foryou' && (
-          <div className="space-y-4">
-            {/* Profile Banner */}
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <h3 className="font-bold text-lg">{profile?.name}</h3>
-                  <p className="text-white/80 text-sm">{profile?.education?.degree} at {profile?.education?.college}</p>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Left Sidebar - Filters */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Filter className="w-4 h-4" />
+                  Filters
+                </h3>
+                
+                <div className="space-y-6">
+                  {/* Domain Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Domain</label>
+                    <div className="space-y-2">
+                      {['Software', 'Data Science', 'Marketing', 'Finance', 'HR'].map((domain) => (
+                        <label key={domain} className="flex items-center gap-2">
+                          <input type="checkbox" className="rounded border-gray-300 text-purple-600" />
+                          <span className="text-sm text-gray-700">{domain}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Job Type Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Job Type</label>
+                    <div className="space-y-2">
+                      {['Full Time', 'Internship', 'Part Time', 'Remote'].map((type) => (
+                        <label key={type} className="flex items-center gap-2">
+                          <input type="checkbox" className="rounded border-gray-300 text-purple-600" />
+                          <span className="text-sm text-gray-700">{type}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Location Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                    <select className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                      <option>All Locations</option>
+                      <option>Bengaluru</option>
+                      <option>Mumbai</option>
+                      <option>Pune</option>
+                      <option>Hyderabad</option>
+                      <option>Remote</option>
+                    </select>
+                  </div>
+
+                  <button className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                    Apply Filters
+                  </button>
                 </div>
-                <button
-                  onClick={() => fetchJobs()}
-                  disabled={refreshing}
-                  className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
-                >
-                  {refreshing ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-              
-              <div className="flex flex-wrap gap-2">
-                {profile?.domains?.map((domain, i) => (
-                  <span key={i} className="bg-white/20 px-2 py-1 rounded-full text-xs">
-                    {domain}
-                  </span>
-                ))}
-                {profile?.skills?.slice(0, 3).map((skill, i) => (
-                  <span key={i} className="bg-white/10 px-2 py-1 rounded-full text-xs">
-                    {skill}
-                  </span>
-                ))}
               </div>
             </div>
 
-            {/* Market Insight */}
-            {jobs.length > 0 && (
-              <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4">
-                <h4 className="font-semibold text-orange-400 mb-2">📊 Market Insights</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <div className="text-gray-400">Market Demand</div>
-                    <div className="font-semibold capitalize">{jobs[0]?.profile_insights?.market_demand || 'Medium'}</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-400">Avg Match Score</div>
-                    <div className="font-semibold">{jobs[0]?.profile_insights?.avg_match_score || 70}%</div>
+            {/* Main Content - Job Cards */}
+            <div className="lg:col-span-3">
+              {/* Profile Banner */}
+              {profile && (
+                <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 mb-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold mb-2">Your Profile Summary</h3>
+                      <div className="flex items-center gap-4 text-sm">
+                        <span>{profile.name}</span>
+                        <span>•</span>
+                        <span>{profile.domains?.[0] || 'Software'}</span>
+                        <span>•</span>
+                        <span>{profile.college || 'College'}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold">{profile.bridgeScore || 742}</div>
+                      <div className="text-xs text-purple-200">BRIDGE Score</div>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-2 text-xs text-orange-300">
-                  💡 {jobs[0]?.profile_insights?.improvement_tip || 'Keep your profile updated'}
+              )}
+
+              {/* Market Insights */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+                <h3 className="font-semibold text-gray-900 mb-4">Market Insights</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">2,847</div>
+                    <div className="text-sm text-gray-600">Active Jobs</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">89%</div>
+                    <div className="text-sm text-gray-600">Match Rate</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">156</div>
+                    <div className="text-sm text-gray-600">New This Week</div>
+                  </div>
                 </div>
               </div>
-            )}
 
-            {/* Jobs List */}
-            <div className="space-y-4">
-              {jobs.map((job, index) => (
-                <div key={job.id} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                  {/* Premium Lock for jobs after 5th */}
-                  {index >= 5 && (
-                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center">
-                      <Lock className="w-8 h-8 text-yellow-400 mb-2" />
-                      <div className="text-yellow-400 font-semibold">🔒 Upgrade to see more</div>
-                      <div className="text-sm text-gray-400 mb-4">Get Premium ₹199/month</div>
-                      <button className="bg-yellow-500 text-black px-4 py-2 rounded-lg font-semibold text-sm">
-                        Upgrade Now
+              {/* Job Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Sample Job Cards */}
+                {[
+                  {
+                    company: 'Google',
+                    logo: 'G',
+                    title: 'Software Engineer',
+                    location: 'Bengaluru',
+                    type: 'Full Time',
+                    salary: '₹20-40 LPA',
+                    match: 92,
+                    probability: 87,
+                    skills: ['Python', 'Java', 'SQL', 'Git'],
+                    posted: '2 days ago'
+                  },
+                  {
+                    company: 'Microsoft',
+                    logo: 'M',
+                    title: 'Data Scientist',
+                    location: 'Hyderabad',
+                    type: 'Full Time',
+                    salary: '₹15-30 LPA',
+                    match: 88,
+                    probability: 82,
+                    skills: ['Python', 'ML', 'Statistics', 'SQL'],
+                    posted: '3 days ago'
+                  },
+                  {
+                    company: 'Amazon',
+                    logo: 'A',
+                    title: 'Product Manager',
+                    location: 'Mumbai',
+                    type: 'Full Time',
+                    salary: '₹25-45 LPA',
+                    match: 85,
+                    probability: 79,
+                    skills: ['Product Strategy', 'Analytics', 'Communication'],
+                    posted: '1 week ago'
+                  },
+                  {
+                    company: 'Infosys',
+                    logo: 'I',
+                    title: 'System Engineer',
+                    location: 'Pune',
+                    type: 'Full Time',
+                    salary: '₹8-15 LPA',
+                    match: 78,
+                    probability: 85,
+                    skills: ['Java', 'Python', 'Cloud', 'DevOps'],
+                    posted: '4 days ago'
+                  }
+                ].map((job, index) => (
+                  <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-lg font-bold text-gray-700">
+                          {job.logo}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{job.company}</h3>
+                          <h4 className="text-lg font-medium text-gray-800">{job.title}</h4>
+                        </div>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        job.match >= 90 ? 'bg-green-100 text-green-700' :
+                        job.match >= 80 ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {job.match}% Match
+                      </div>
+                    </div>
+
+                    {/* Details */}
+                    <div className="space-y-3 mb-4">
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          {job.location}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Briefcase className="w-4 h-4" />
+                          {job.type}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="w-4 h-4" />
+                          {job.salary}
+                        </span>
+                      </div>
+
+                      {/* Skills */}
+                      <div className="flex flex-wrap gap-2">
+                        {job.skills.map((skill, i) => (
+                          <span key={i} className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-full">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Interview Probability */}
+                      <div>
+                        <div className="flex items-center justify-between text-sm mb-1">
+                          <span className="text-gray-600">Interview Probability</span>
+                          <span className="font-semibold text-gray-900">{job.probability}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-gradient-to-r from-purple-600 to-purple-700 h-2 rounded-full"
+                            style={{ width: `${job.probability}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-3">
+                      <button className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                        Apply Now
+                      </button>
+                      <button className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                        Prepare
                       </button>
                     </div>
-                  )}
-                  
-                  {/* Job Header */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-sm font-bold">
-                        {job.company.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-white">{job.company}</div>
-                        <div className="text-xs text-gray-400">{job.posted_days_ago} days ago</div>
-                      </div>
+
+                    {/* Posted Time */}
+                    <div className="flex items-center gap-1 text-xs text-gray-500 mt-3">
+                      <Clock className="w-3 h-3" />
+                      {job.posted}
                     </div>
                   </div>
-
-                  {/* Job Title */}
-                  <h3 className="text-lg font-bold text-purple-400 mb-2">{job.title}</h3>
-
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <span className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full text-xs">
-                      <MapPin className="w-3 h-3" />
-                      {job.location}
-                    </span>
-                    <span className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full text-xs">
-                      <Briefcase className="w-3 h-3" />
-                      {job.type}
-                    </span>
-                    <span className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full text-xs">
-                      <DollarSign className="w-3 h-3" />
-                      {job.salary}
-                    </span>
-                    <span className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full text-xs">
-                      <Building className="w-3 h-3" />
-                      {job.company_size}
-                    </span>
-                  </div>
-
-                  {/* Skills */}
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {job.skills_required?.slice(0, 4).map((skill, i) => (
-                      <span key={i} className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-xs">
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Match Section */}
-                  <div className={`rounded-xl p-3 mb-4 border ${getMatchBg(job.match_percent)}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className={`text-lg font-bold ${getMatchColor(job.match_percent)}`}>
-                        {job.match_percent}% Match
-                      </div>
-                      <div className={`text-sm font-semibold ${getMatchColor(job.match_percent)}`}>
-                        {getMatchLabel(job.match_percent)}
-                      </div>
-                    </div>
-                    
-                    {/* Interview Probability */}
-                    <div className="mb-3">
-                      <div className="text-xs text-gray-400 mb-1">Interview Chance: {job.interview_probability}%</div>
-                      <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-500"
-                          style={{ width: `${job.interview_probability}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Match Reasons */}
-                    {job.match_reasons?.length > 0 && (
-                      <div className="mb-2">
-                        <div className="text-xs text-green-400 font-semibold mb-1">✅ Why you match:</div>
-                        {job.match_reasons.slice(0, 2).map((reason, i) => (
-                          <div key={i} className="text-xs text-gray-300">• {reason}</div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Gap Reasons */}
-                    {job.gap_reasons?.length > 0 && (
-                      <div>
-                        <div className="text-xs text-red-400 font-semibold mb-1">❌ Gaps:</div>
-                        {job.gap_reasons.slice(0, 2).map((gap, i) => (
-                          <div key={i} className="text-xs text-gray-300">• {gap}</div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleJobAction(job, 'interview')}
-                      className="flex-1 bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg font-semibold text-sm transition-colors"
-                    >
-                      Prepare with AI
-                    </button>
-                    <button
-                      onClick={() => handleJobAction(job, 'apply')}
-                      className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-1"
-                    >
-                      Apply Now
-                      <ExternalLink className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {jobs.length === 0 && !refreshing && (
-              <div className="text-center py-8">
-                <Briefcase className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                <div className="text-gray-400">No jobs found for your profile</div>
-                <button
-                  onClick={() => fetchJobs()}
-                  className="mt-4 text-purple-400 hover:text-purple-300"
-                >
-                  Try again
-                </button>
+                ))}
               </div>
-            )}
+            </div>
           </div>
         )}
 
-        {/* SMART APPLY TAB */}
         {activeTab === 'smartapply' && (
-          <div className="space-y-4">
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold mb-2">Analyze Any Job</h2>
-              <p className="text-gray-400 text-sm">Get personalized insights and preparation tips</p>
-            </div>
-
-            {!profile && (
-              <div className="bg-red-500/20 border border-red-500/30 
-                rounded-2xl p-4 mb-4">
-                <p className="text-red-400 font-bold">
-                  ⚠️ No Resume Uploaded
-                </p>
-                <p className="text-gray-400 text-sm mt-1">
-                  Please upload your resume in the "For You" tab first
-                </p>
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Smart Apply</h2>
+              
+              {/* Mode Toggle */}
+              <div className="flex gap-2 mb-6 p-1 bg-gray-100 rounded-lg">
                 <button
-                  onClick={() => setActiveTab('foryou')}
-                  className="mt-2 bg-purple-600 px-4 py-2 
-                    rounded-xl text-white text-sm">
-                  Upload Resume →
+                  onClick={() => setSmartApplyMode('url')}
+                  className={`flex-1 py-2 px-4 rounded-md transition-colors ${
+                    smartApplyMode === 'url'
+                      ? 'bg-white text-purple-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Job URL
+                </button>
+                <button
+                  onClick={() => setSmartApplyMode('paste')}
+                  className={`flex-1 py-2 px-4 rounded-md transition-colors ${
+                    smartApplyMode === 'paste'
+                      ? 'bg-white text-purple-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Paste JD
                 </button>
               </div>
-            )}
 
-            {profile && (
-              <div className="bg-green-500/20 border border-green-500/30 
-                rounded-2xl p-3 mb-4">
-                <p className="text-green-400 text-sm">
-                  ✅ Using profile: {profile.name} | 
-                  {profile.domains?.[0]} | {profile.experience_level}
-                </p>
-              </div>
-            )}
-
-            {/* Mode Toggle */}
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={() => setSmartApplyMode('url')}
-                className={`flex-1 py-2 rounded-xl text-sm
-                  ${smartApplyMode === 'url'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-white/10 text-gray-400'}`}>
-                🔗 Paste URL
-              </button>
-              <button
-                onClick={() => setSmartApplyMode('paste')}
-                className={`flex-1 py-2 rounded-xl text-sm
-                  ${smartApplyMode === 'paste'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-white/10 text-gray-400'}`}>
-                📋 Paste JD
-              </button>
-            </div>
-
-            {/* URL Mode */}
-            {smartApplyMode === 'url' && (
-              <div>
-                <p className="text-gray-400 text-xs mb-2">
-                  Works best with: talent.com, indeed.com, company career pages
-                </p>
-                <input
-                  type="url"
-                  value={smartApplyUrl}
-                  onChange={(e) => setSmartApplyUrl(e.target.value)}
-                  placeholder="https://in.talent.com/view?id=..."
-                  className="w-full bg-white/10 border border-white/20 
-                    rounded-xl p-3 text-white text-sm mb-3"
-                />
-              </div>
-            )}
-
-            {/* Paste JD Mode */}
-            {smartApplyMode === 'paste' && (
-              <div>
-                <p className="text-gray-400 text-xs mb-2">
-                  Copy full job description from any website
-                </p>
-                <textarea
-                  value={smartApplyJD}
-                  onChange={(e) => setSmartApplyJD(e.target.value)}
-                  placeholder="Paste complete job description here..."
-                  rows={6}
-                  className="w-full bg-white/10 border border-white/20 
-                    rounded-xl p-3 text-white text-sm mb-3"
-                />
-              </div>
-            )}
-
-            {/* Analyze Button */}
-            <button
-              onClick={handleSmartApply}
-              disabled={smartApplyLoading || (!smartApplyUrl && !smartApplyJD)}
-              className="w-full bg-purple-600 py-3 rounded-xl
-                text-white font-bold disabled:opacity-50"
-            >
-              {smartApplyLoading 
-                ? '🤖 Analyzing...' 
-                : 'Analyze Job →'}
-            </button>
-
-            {/* Results */}
-            {smartApplyResult && (
-              <div className="mt-4 space-y-4">
-                
-                {/* Job Header */}
-                <div className="bg-white/10 rounded-2xl p-4">
-                  <h3 className="text-white font-bold text-lg">
-                    {smartApplyResult.job_title}
-                  </h3>
-                  <p className="text-purple-400">
-                    {smartApplyResult.company}
-                  </p>
-                  <p className="text-gray-400 text-sm">
-                    {smartApplyResult.location} • 
-                    {smartApplyResult.job_type}
-                  </p>
-                </div>
-
-                {/* Match Score */}
-                <div className={`rounded-2xl p-4 border
-                  ${smartApplyResult.match_percent >= 70
-                    ? 'bg-green-500/20 border-green-500/30'
-                    : smartApplyResult.match_percent >= 50
-                    ? 'bg-yellow-500/20 border-yellow-500/30'
-                    : 'bg-red-500/20 border-red-500/30'}`}>
-                  <div className="text-5xl font-bold text-white mb-1">
-                    {smartApplyResult.match_percent}%
-                  </div>
-                  <div className="text-sm text-gray-300">
-                    Profile Match
-                  </div>
-                  <div className="mt-2 text-sm font-medium
-                    text-white">
-                    {smartApplyResult.apply_recommendation}
-                  </div>
-                </div>
-
-                {/* Interview Probability */}
-                <div className="bg-white/10 rounded-2xl p-4">
-                  <p className="text-gray-400 text-sm mb-2">
-                    Interview Probability
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 bg-white/10 rounded-full h-3">
-                      <div 
-                        className="bg-purple-500 h-3 rounded-full"
-                        style={{width: `${smartApplyResult.interview_probability}%`}}
-                      />
-                    </div>
-                    <span className="text-white font-bold">
-                      {smartApplyResult.interview_probability}%
-                    </span>
-                  </div>
-                </div>
-
-                {/* Should Apply Banner */}
-                <div className={`rounded-2xl p-4 text-center
-                  ${smartApplyResult.should_apply
-                    ? 'bg-green-500/20 border border-green-500/30'
-                    : 'bg-red-500/20 border border-red-500/30'}`}>
-                  <p className="text-white font-bold text-lg">
-                    {smartApplyResult.should_apply
-                      ? '✅ Yes, Apply for This Job!'
-                      : '⚠️ Not the Best Match Right Now'}
-                  </p>
-                </div>
-
-                {/* Strengths */}
-                <div className="bg-white/10 rounded-2xl p-4">
-                  <p className="text-green-400 font-bold mb-2">
-                    ✅ Your Strengths
-                  </p>
-                  {smartApplyResult.your_strengths?.map((s, i) => (
-                    <p key={i} className="text-gray-300 text-sm mb-1">
-                      • {s}
-                    </p>
-                  ))}
-                </div>
-
-                {/* Gaps */}
-                <div className="bg-white/10 rounded-2xl p-4">
-                  <p className="text-red-400 font-bold mb-2">
-                    ❌ Gaps to Address
-                  </p>
-                  {smartApplyResult.your_gaps?.map((g, i) => (
-                    <p key={i} className="text-gray-300 text-sm mb-1">
-                      • {g}
-                    </p>
-                  ))}
-                </div>
-
-                {/* Interview Questions */}
-                <div className="bg-white/10 rounded-2xl p-4">
-                  <p className="text-purple-400 font-bold mb-2">
-                    ❓ Likely Interview Questions
-                  </p>
-                  {smartApplyResult.likely_interview_questions
-                    ?.map((q, i) => (
-                    <p key={i} className="text-gray-300 text-sm mb-2">
-                      {i+1}. {q}
-                    </p>
-                  ))}
-                </div>
-
-                {/* Preparation Plan */}
-                <div className="bg-white/10 rounded-2xl p-4">
-                  <p className="text-orange-400 font-bold mb-2">
-                    🎯 Preparation Plan
-                  </p>
-                  {smartApplyResult.preparation_plan?.map((s, i) => (
-                    <p key={i} className="text-gray-300 text-sm mb-2">
-                      {s}
-                    </p>
-                  ))}
-                </div>
-
-                {/* Resume Keywords */}
-                <div className="bg-white/10 rounded-2xl p-4">
-                  <p className="text-yellow-400 font-bold mb-2">
-                    📝 Add These to Resume
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {smartApplyResult.resume_keywords?.map((k, i) => (
-                      <span key={i} 
-                        className="bg-yellow-500/20 text-yellow-300 
-                          text-xs px-2 py-1 rounded-full">
-                        {k}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => window.open(
-                      smartApplyResult.apply_url || smartApplyUrl, 
-                      '_blank'
-                    )}
-                    className="flex-1 bg-green-600 py-3 
-                      rounded-xl text-white font-bold text-sm">
-                    Apply Now →
-                  </button>
-                  <button
-                    onClick={() => {
-                      sessionStorage.setItem('smart_interview_job',
-                        JSON.stringify(smartApplyResult));
-                      window.location.href = '/smart-interview';
-                    }}
-                    className="flex-1 bg-purple-600 py-3 
-                      rounded-xl text-white font-bold text-sm">
-                    Practice Interview
-                  </button>
-                </div>
-
-                {/* Clear button */}
-                <button
-                  onClick={() => {
-                    setSmartApplyResult(null);
-                    setSmartApplyUrl('');
-                    setSmartApplyJD('');
-                  }}
-                  className="w-full text-gray-400 text-sm py-2">
-                  ← Analyze Another Job
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* EMPLOYER TAB */}
-        {activeTab === 'employer' && (
-          <div className="space-y-4">
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold mb-2">Post a Job or Internship</h2>
-              <p className="text-gray-400 text-sm">Reach 25,000+ students directly</p>
-            </div>
-
-            <form className="space-y-4">
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Company Name</label>
-                <input
-                  type="text"
-                  className="w-full bg-white/5 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400"
-                  placeholder="Your Company"
-                />
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Contact Email</label>
-                <input
-                  type="email"
-                  className="w-full bg-white/5 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400"
-                  placeholder="hr@company.com"
-                />
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Job Title</label>
-                <input
-                  type="text"
-                  className="w-full bg-white/5 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400"
-                  placeholder="Marketing Executive"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Type</label>
-                  <select className="w-full bg-white/5 border border-white/20 rounded-lg px-3 py-2 text-white">
-                    <option>Full-time</option>
-                    <option>Internship</option>
-                    <option>Part-time</option>
-                  </select>
-                </div>
-
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Location</label>
+              {/* Input Area */}
+              {smartApplyMode === 'url' ? (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Job URL</label>
                   <input
-                    type="text"
-                    className="w-full bg-white/5 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400"
-                    placeholder="Mumbai, Remote"
+                    type="url"
+                    value={smartApplyUrl}
+                    onChange={(e) => setSmartApplyUrl(e.target.value)}
+                    placeholder="https://company.com/careers/job-id"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
-              </div>
+              ) : (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Job Description</label>
+                  <textarea
+                    value={smartApplyJD}
+                    onChange={(e) => setSmartApplyJD(e.target.value)}
+                    placeholder="Paste the complete job description here..."
+                    rows={8}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              )}
 
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Salary / Stipend</label>
-                <input
-                  type="text"
-                  className="w-full bg-white/5 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400"
-                  placeholder="3-5 LPA or ₹15,000/month"
-                />
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Job Description</label>
-                <textarea
-                  className="w-full bg-white/5 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400 h-24"
-                  placeholder="Describe the role, responsibilities, and what you're looking for..."
-                />
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Skills Required</label>
-                <input
-                  type="text"
-                  className="w-full bg-white/5 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400"
-                  placeholder="Excel, Communication, Marketing (comma separated)"
-                />
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Application Link</label>
-                <input
-                  type="url"
-                  className="w-full bg-white/5 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400"
-                  placeholder="https://company.com/careers/apply"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white py-3 rounded-xl font-semibold transition-all"
+              <button 
+                onClick={handleSmartApply}
+                disabled={smartApplyLoading}
+                className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
               >
-                Submit Job Posting
+                {smartApplyLoading ? 'Analyzing...' : 'Analyze & Apply'}
               </button>
-            </form>
 
-            <div className="text-center text-sm text-gray-400">
-              We'll review and publish within 24 hours
+              {smartApplyResult && (
+                <div className="mt-6 p-4 bg-green-50 rounded-lg">
+                  <h3 className="font-semibold text-green-900 mb-2">Analysis Complete!</h3>
+                  <p className="text-sm text-green-700">
+                    Match Score: {smartApplyResult.matchScore}% | 
+                    Interview Probability: {smartApplyResult.interviewProbability}%
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'postjob' && (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Post a Job</h2>
+              
+              <form className="space-y-6" onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const jobData = {
+                  company: formData.get('company'),
+                  title: formData.get('title'),
+                  description: formData.get('description'),
+                  location: formData.get('location'),
+                  type: formData.get('type'),
+                  salary: formData.get('salary')
+                };
+                handlePostJob(jobData);
+              }}>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                  <input
+                    name="company"
+                    type="text"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Your company name"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Job Title</label>
+                  <input
+                    name="title"
+                    type="text"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="e.g. Software Engineer"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Job Description</label>
+                  <textarea
+                    name="description"
+                    rows={6}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Describe the role, requirements, and responsibilities..."
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                    <input
+                      name="location"
+                      type="text"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="e.g. Bengaluru, Remote"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Job Type</label>
+                    <select 
+                      name="type"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      required
+                    >
+                      <option>Full Time</option>
+                      <option>Part Time</option>
+                      <option>Internship</option>
+                      <option>Contract</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Salary Range</label>
+                  <input
+                    name="salary"
+                    type="text"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="e.g. ₹10-20 LPA"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  Post Job
+                </button>
+              </form>
             </div>
           </div>
         )}
       </div>
-    </div>
+    </AppShell>
   );
 }
