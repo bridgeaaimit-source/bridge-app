@@ -92,7 +92,7 @@ Return ONLY valid JSON:
       // Handle PDF resume
       message = await retryClaudeCall(() => 
         client.messages.create({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 1000,
           messages: [{
             role: 'user',
@@ -117,7 +117,7 @@ Return ONLY valid JSON:
       // Handle text resume
       message = await retryClaudeCall(() =>
         client.messages.create({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 1000,
           messages: [{ role: 'user', content: prompt }]
         })
@@ -207,7 +207,7 @@ Return ONLY valid JSON:
 
     const message = await retryClaudeCall(() =>
       client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1000,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -314,7 +314,7 @@ Return ONLY valid JSON:
 
     const message = await retryClaudeCall(() =>
       client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }]
       })
