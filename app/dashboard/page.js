@@ -27,7 +27,7 @@ import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { doc, collection, query, orderBy, limit, getDocs, where } from "firebase/firestore";
+import { doc, collection, query, orderBy, limit, getDocs, getDoc, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function Dashboard() {
@@ -79,6 +79,10 @@ export default function Dashboard() {
           if (userSnap.exists()) {
             const userData = userSnap.data();
             console.log('📊 Dashboard - User data from Firestore:', userData);
+            
+            // Set user name from Firestore (more reliable than displayName)
+            setUserName(userData.name || user.displayName || 'User');
+            
             const userStats = {
               bridgeScore: userData.bridgeScore || 0,
               interviewsDone: userData.interviewsDone || 0,
@@ -91,6 +95,7 @@ export default function Dashboard() {
           } else {
             console.log('📊 Dashboard - No user data found, using defaults');
             // Use default stats for new users
+            setUserName(user.displayName || 'User');
             setStats(defaultStats);
             setBridgeScore(0);
           }
