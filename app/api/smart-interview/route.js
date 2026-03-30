@@ -323,11 +323,60 @@ Return ONLY valid JSON:
     const text = message.content[0].text
       .replace(/```json/g, '').replace(/```/g, '').trim();
     
+    console.log('Raw Claude response:', message.content[0].text);
+    console.log('Cleaned text:', text);
+    console.log('Text length:', text.length);
+    
+    if (!text || text.length === 0) {
+      console.error('Empty response from Claude');
+      return Response.json({
+        placement_chance: 50,
+        verdict: "Weak Maybe",
+        overall_score: 5,
+        scores: {
+          communication: 5,
+          technical_knowledge: 5,
+          resume_jd_fit: 5,
+          confidence: 5,
+          answer_quality: 5
+        },
+        best_answer: {
+          question: "No specific answer available",
+          why: "AI analysis temporarily unavailable"
+        },
+        worst_answer: {
+          question: "No specific answer available", 
+          why: "AI analysis temporarily unavailable"
+        },
+        filler_words_summary: "Analysis temporarily unavailable",
+        strengths: ["Answer provided"],
+        weaknesses: ["Needs more details"],
+        improvement_roadmap: ["Practice more interviews", "Improve technical knowledge", "Work on communication"],
+        interviewer_notes: "AI analysis temporarily unavailable - please try again",
+        should_hire: false,
+        hire_reasoning: "Unable to complete full analysis due to technical issues. Please retry."
+      });
+    }
+    
     try {
-      return Response.json(JSON.parse(text));
+      const parsed = JSON.parse(text);
+      console.log('Successfully parsed JSON:', parsed);
+      return Response.json(parsed);
     } catch (parseError) {
-      console.error('JSON parse error in smart-interview:', parseError);
-      console.error('Raw text:', text);
+      console.error('JSON parse error in smart-interview evaluate:', parseError);
+      console.error('Raw text that failed to parse:', text);
+      
+      // Try to extract JSON manually
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const manualParsed = JSON.parse(jsonMatch[0]);
+          console.log('Successfully parsed with manual extraction:', manualParsed);
+          return Response.json(manualParsed);
+        } catch (manualError) {
+          console.error('Manual parsing also failed:', manualError);
+        }
+      }
       
       // Fallback response
       return Response.json({
