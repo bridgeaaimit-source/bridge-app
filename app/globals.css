@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
+@import "tailwindcss";
 
 :root {
   --brand-primary: #6C3FE8;
@@ -16,7 +16,7 @@
   --card-shadow-hover: 0 12px 40px rgba(108, 63, 232, 0.18);
 }
 
-@theme inline {
+@theme {
   --color-background: var(--bg-white);
   --color-foreground: var(--text-body);
   --font-sans: 'DM Sans', sans-serif;
