@@ -8,6 +8,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAuthBypass } from "@/hooks/useAuthBypass";
 
 const domainOptions = ["IT", "Marketing", "Finance", "HR", "Analytics", "Consulting", "Operations"];
 const lookingForOptions = ["Full-time", "Internship", "Both"];
@@ -34,7 +35,32 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const { isBypassed, mockUserData } = useAuthBypass();
+
   useEffect(() => {
+    // Auth bypass for testing
+    if (isBypassed && mockUserData) {
+      console.log('🔓 Profile - Auth bypass enabled');
+      setUserData({
+        name: mockUserData.user.name,
+        email: mockUserData.user.email,
+        photo: mockUserData.user.photo,
+        college: mockUserData.user.college,
+        degree: 'B.Tech Computer Science',
+        domain: 'IT',
+        location: 'Bangalore, India',
+        lookingFor: 'Full-time',
+        bridgeScore: mockUserData.stats.bridgeScore,
+        interviewsDone: mockUserData.stats.interviewsDone,
+        avgScore: mockUserData.stats.avgScore,
+        streak: mockUserData.stats.currentStreak,
+        phone: '+91 9876543210',
+        bio: 'Passionate about AI and machine learning. Looking for opportunities in software development and data science.'
+      });
+      setCurrentUser({ uid: 'test-user-123' });
+      setLoading(false);
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setCurrentUser(user);
@@ -115,6 +141,13 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!currentUser) {
       toast.error('User not authenticated');
+      return;
+    }
+    
+    // In bypass mode, just update local state and show success
+    if (isBypassed) {
+      toast.success("Profile updated successfully! (Bypass mode - no Firebase write)");
+      setIsEditing(false);
       return;
     }
     

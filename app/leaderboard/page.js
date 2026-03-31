@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Home, Mic, Zap, Trophy, User, Crown, Flame, Star, Medal, Award } from "lucide-react";
+import { Home, Mic, Zap, Trophy, User, Crown, Flame, Star, Medal, Award, Users } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAuthBypass } from "@/hooks/useAuthBypass";
 
 export default function LeaderboardPage() {
   const [students, setStudents] = useState([]);
@@ -15,7 +16,30 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState("all");
 
+  const { isBypassed, mockUserData, mockLeaderboard } = useAuthBypass();
+
   useEffect(() => {
+    // Auth bypass for testing
+    if (isBypassed && mockUserData) {
+      console.log('🔓 Leaderboard - Auth bypass enabled');
+      setCurrentUser({ uid: 'test-user-123' });
+      
+      // Use mock leaderboard data with current user highlighted
+      const leaderboardWithRanks = mockLeaderboard.map((student, index) => ({
+        ...student,
+        uid: student.name.toLowerCase().replace(/\s+/g, '-'),
+        isCurrentUser: student.name === 'Test Student',
+        photo: null,
+        interviewsDone: Math.floor(student.score / 100),
+        avgScore: (student.score / 100).toFixed(1),
+        streak: Math.floor(student.score / 200)
+      }));
+      
+      setStudents(leaderboardWithRanks);
+      setLoading(false);
+      return;
+    }
+
     const fetchLeaderboard = async () => {
       try {
         setLoading(true);
