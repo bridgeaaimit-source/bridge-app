@@ -29,6 +29,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { doc, collection, query, orderBy, limit, getDocs, getDoc, where, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAuthBypass } from "@/hooks/useAuthBypass";
 
 export default function Dashboard() {
   const [bridgeScore, setBridgeScore] = useState(null);
@@ -44,7 +45,10 @@ export default function Dashboard() {
   const [recentActivity, setRecentActivity] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
 
+  const { isBypassed, mockUserData } = useAuthBypass();
+
   useEffect(() => {
+    // Set greeting regardless of auth mode
     const hour = new Date().getHours();
     if (hour < 12) {
       setGreeting("Good Morning");
@@ -57,6 +61,17 @@ export default function Dashboard() {
     const today = new Date();
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     setTodayDate(today.toLocaleDateString('en-US', options));
+
+    // Auth bypass for testing
+    if (isBypassed && mockUserData) {
+      console.log('🔓 Auth bypass enabled - using test user');
+      setUserName(mockUserData.user.name);
+      setStats(mockUserData.stats);
+      setBridgeScore(mockUserData.stats.bridgeScore);
+      setRecentActivity(mockUserData.recentActivity);
+      setLeaderboard(mockUserData.leaderboard);
+      return;
+    }
 
     // Load real user data from Firestore
     const unsubscribe = onAuthStateChanged(auth, async (user) => {

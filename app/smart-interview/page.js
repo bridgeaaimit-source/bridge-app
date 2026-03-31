@@ -5,6 +5,7 @@ import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, collection, addDoc, query, orderBy, limit, getDocs, getDoc, updateDoc } from "firebase/firestore";
+import { useAuthBypass } from "@/hooks/useAuthBypass";
 
 export default function SmartInterviewPage() {
   const [stage, setStage] = useState('setup'); // 'setup' | 'interviewing' | 'feedback' | 'history'
@@ -15,6 +16,8 @@ export default function SmartInterviewPage() {
   const [jobDescription, setJobDescription] = useState('');
   const [round, setRound] = useState('HR Round');
   const [mode, setMode] = useState('text'); // 'text' | 'voice'
+  
+  const { isBypassed, mockUserData } = useAuthBypass();
   
   // Interview state
   const [currentQuestion, setCurrentQuestion] = useState('');
@@ -388,7 +391,9 @@ export default function SmartInterviewPage() {
       
       // Save feedback to Firestore
       try {
-        const user = auth.currentUser;
+        // Use mock user if bypass is enabled
+        const user = isBypassed ? { uid: 'test-user-123' } : auth.currentUser;
+        
         if (user) {
           console.log('🔄 Starting feedback save process...');
           
@@ -404,45 +409,50 @@ export default function SmartInterviewPage() {
           console.log('✅ Feedback saved to history');
           
           // Update user stats (interviewsDone, avgScore, bridgeScore)
-          console.log('📈 Starting user stats update...');
-          const userRef = doc(db, 'users', user.uid);
-          const userSnap = await getDoc(userRef);
-          
-          if (userSnap.exists()) {
-            const userData = userSnap.data();
-            console.log('📈 Smart Interview - Current user data before update:', userData);
-            const newInterviewsDone = (userData.interviewsDone || 0) + 1;
-            const overallScore = data.overall_score || 5;
-            const newAvgScore = ((userData.avgScore || 0) * (userData.interviewsDone || 0) + overallScore) / newInterviewsDone;
-            const newBridgeScore = Math.min(1000, (userData.bridgeScore || 500) + (overallScore * 10));
+          if (!isBypassed) {
+            console.log('📈 Starting user stats update...');
+            const userRef = doc(db, 'users', user.uid);
+            const userSnap = await getDoc(userRef);
             
-            const updateData = {
-              interviewsDone: newInterviewsDone,
-              avgScore: Math.round(newAvgScore * 10) / 10, // Round to 1 decimal
-              bridgeScore: newBridgeScore,
-              streak: (userData.streak || 0) + 1,
-              updatedAt: new Date().toISOString()
-            };
-            
-            console.log('📈 Smart Interview - Updating user stats with:', updateData);
-            
-            await updateDoc(userRef, updateData);
-            
-            console.log('✅ User stats updated:', {
-              interviewsDone: newInterviewsDone,
-              avgScore: newAvgScore,
-              bridgeScore: newBridgeScore
-            });
+            if (userSnap.exists()) {
+              const userData = userSnap.data();
+              console.log('📈 Smart Interview - Current user data before update:', userData);
+              const newInterviewsDone = (userData.interviewsDone || 0) + 1;
+              const overallScore = data.overall_score || 5;
+              const newAvgScore = ((userData.avgScore || 0) * (userData.interviewsDone || 0) + overallScore) / newInterviewsDone;
+              const newBridgeScore = Math.min(1000, (userData.bridgeScore || 500) + (overallScore * 10));
+              
+              const updateData = {
+                interviewsDone: newInterviewsDone,
+                avgScore: Math.round(newAvgScore * 10) / 10, // Round to 1 decimal
+                bridgeScore: newBridgeScore,
+                streak: (userData.streak || 0) + 1,
+                updatedAt: new Date().toISOString()
+              };
+              
+              console.log('📈 Smart Interview - Updating user stats with:', updateData);
+              
+              await updateDoc(userRef, updateData);
+              
+              console.log('✅ User stats updated:', {
+                interviewsDone: newInterviewsDone,
+                avgScore: newAvgScore,
+                bridgeScore: newBridgeScore
+              });
+            } else {
+              console.log('❌ Smart Interview - No user document found, creating new one...');
+              // Create user document if it doesn't exist
+              await setDoc(userRef, {
+                interviewsDone: 1,
+                avgScore: data.overall_score || 5,
+                bridgeScore: 500 + (data.overall_score || 5) * 10,
+                streak: 1,
+                updatedAt: new Date().toISOString()
+              });
+              console.log('✅ Created new user document with stats');
+            }
           } else {
-            console.log('❌ Smart Interview - No user document found, creating new one...');
-            // Create user document if it doesn't exist
-            await setDoc(userRef, {
-              interviewsDone: 1,
-              avgScore: data.overall_score || 5,
-              bridgeScore: 500 + (data.overall_score || 5) * 10,
-              streak: 1,
-              updatedAt: new Date().toISOString()
-            });
+            console.log('🔓 Bypass mode - skipping Firestore stats update');
           }
         }
       } catch (saveError) {
@@ -473,7 +483,9 @@ export default function SmartInterviewPage() {
 
   const loadFeedbackHistory = async () => {
     try {
-      const user = auth.currentUser;
+      // Use mock user if bypass is enabled
+      const user = isBypassed ? { uid: 'test-user-123' } : auth.currentUser;
+      
       if (!user) {
         toast.error('Please login to view history');
         return;

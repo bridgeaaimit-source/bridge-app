@@ -24,6 +24,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAuthBypass } from '@/hooks/useAuthBypass';
 
 export default function AppShell({ children }) {
   const router = useRouter();
@@ -33,8 +34,16 @@ export default function AppShell({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState(3);
+  
+  const { isBypassed, mockUserData } = useAuthBypass();
 
   useEffect(() => {
+    // Use mock user if bypass is enabled
+    if (isBypassed && mockUserData) {
+      setUserProfile(mockUserData.user);
+      return;
+    }
+
     // Load real user data from Firebase
     return onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -232,13 +241,18 @@ export default function AppShell({ children }) {
           <div className="p-4 border-t border-gray-200">
             <button
               onClick={() => {
-                auth.signOut();
-                router.push('/login');
+                if (isBypassed) {
+                  // In bypass mode, just reload the page
+                  window.location.reload();
+                } else {
+                  auth.signOut();
+                  router.push('/login');
+                }
               }}
               className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
             >
               <LogOut className="w-5 h-5" />
-              <span className="font-medium">Sign Out</span>
+              <span className="font-medium">{isBypassed ? 'Reset Bypass' : 'Sign Out'}</span>
             </button>
           </div>
         </div>
