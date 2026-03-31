@@ -266,65 +266,65 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
-                <Trophy className="w-6 h-6 text-cyan-600" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
+          <div className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-3 lg:mb-4">
+              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-cyan-100 rounded-full flex items-center justify-center">
+                <Trophy className="w-5 h-5 lg:w-6 lg:h-6 text-cyan-600" />
               </div>
-              <div className="flex items-center text-green-600 text-sm">
-                <ArrowUp className="w-4 h-4 mr-1" />
+              <div className="flex items-center text-green-600 text-xs lg:text-sm hidden sm:flex">
+                <ArrowUp className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
                 <span>+12</span>
               </div>
             </div>
-            <div className="text-3xl font-bold gradient-text mb-1">
+            <div className="text-2xl lg:text-3xl font-bold gradient-text mb-1">
               {stats.bridgeScore === 0 ? "—" : stats.bridgeScore}
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-xs lg:text-sm text-gray-600">
               {stats.bridgeScore === 0 ? "Complete an interview to get your score" : "BRIDGE Score"}
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
-                <Mic className="w-6 h-6 text-cyan-600" />
+          <div className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-3 lg:mb-4">
+              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <Mic className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600" />
               </div>
-              <div className="flex items-center text-green-600 text-sm">
-                <ArrowUp className="w-4 h-4 mr-1" />
+              <div className="flex items-center text-green-600 text-xs lg:text-sm hidden sm:flex">
+                <ArrowUp className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
                 <span>+3</span>
               </div>
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.interviewsDone}</div>
-            <div className="text-sm text-gray-600">Interviews Done</div>
+            <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{stats.interviewsDone}</div>
+            <div className="text-xs lg:text-sm text-gray-600">Interviews Done</div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                <Flame className="w-6 h-6 text-orange-600" />
+          <div className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-3 lg:mb-4">
+              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                <Flame className="w-5 h-5 lg:w-6 lg:h-6 text-orange-600" />
               </div>
-              <div className="flex items-center text-red-600 text-sm">
-                <ArrowDown className="w-4 h-4 mr-1" />
+              <div className="flex items-center text-red-600 text-xs lg:text-sm hidden sm:flex">
+                <ArrowDown className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
                 <span>-1</span>
               </div>
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.currentStreak} <span className="text-lg">🔥</span></div>
-            <div className="text-sm text-gray-600">Current Streak</div>
+            <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{stats.currentStreak} <span className="text-lg lg:text-base">🔥</span></div>
+            <div className="text-xs lg:text-sm text-gray-600">Current Streak</div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <Star className="w-6 h-6 text-green-600" />
+          <div className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-3 lg:mb-4">
+              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <Star className="w-5 h-5 lg:w-6 lg:h-6 text-green-600" />
               </div>
-              <div className="flex items-center text-green-600 text-sm">
-                <ArrowUp className="w-4 h-4 mr-1" />
+              <div className="flex items-center text-green-600 text-xs lg:text-sm hidden sm:flex">
+                <ArrowUp className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
                 <span>+0.3</span>
               </div>
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.avgScore}/10</div>
-            <div className="text-sm text-gray-600">Avg Score</div>
+            <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{stats.avgScore}/10</div>
+            <div className="text-xs lg:text-sm text-gray-600">Avg Score</div>
           </div>
         </div>
 
