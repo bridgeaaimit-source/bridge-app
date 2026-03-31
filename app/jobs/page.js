@@ -43,6 +43,11 @@ export default function JobsPage() {
   }, [resumeUploaded, profile]);
 
   const fetchJobs = async () => {
+    if (!profile) return;
+    fetchJobsWithProfile(profile);
+  };
+
+  const fetchJobsWithProfile = async (profileData) => {
     setLoading(true);
     try {
       const response = await fetch('/api/jobs', {
@@ -52,19 +57,57 @@ export default function JobsPage() {
         },
         body: JSON.stringify({
           action: 'fetch_jobs',
-          profile: profile
+          profile: profileData
         }),
       });
+      
       const data = await response.json();
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch jobs');
       }
       
+      console.log('Jobs fetched:', data.jobs?.length);
       setJobs(data.jobs || []);
+      
+      if (data.jobs && data.jobs.length > 0) {
+        toast.success(`Found ${data.jobs.length} jobs matching your profile!`);
+      }
     } catch (error) {
       console.error('Error fetching jobs:', error);
-      toast.error('Failed to load jobs');
+      toast.error('Failed to load jobs. Showing sample jobs.');
+      
+      // Fallback to sample jobs if API fails
+      setJobs([
+        {
+          id: '1',
+          company: 'Google',
+          title: 'Software Engineer - Entry Level',
+          location: 'Bengaluru',
+          type: 'Full-time',
+          salary: '₹20-40 LPA',
+          match_percent: 92,
+          interview_probability: 87,
+          skills_required: ['Python', 'Java', 'SQL', 'Git'],
+          posted_days_ago: 2,
+          apply_url: 'https://www.google.com/careers',
+          description: 'Join Google as a Software Engineer and work on cutting-edge technology.'
+        },
+        {
+          id: '2',
+          company: 'Microsoft',
+          title: 'Data Scientist',
+          location: 'Hyderabad',
+          type: 'Full-time',
+          salary: '₹15-30 LPA',
+          match_percent: 88,
+          interview_probability: 82,
+          skills_required: ['Python', 'ML', 'Statistics', 'SQL'],
+          posted_days_ago: 3,
+          apply_url: 'https://careers.microsoft.com',
+          description: 'Work on data-driven solutions at Microsoft.'
+        }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -87,27 +130,48 @@ export default function JobsPage() {
       return;
     }
 
+    setLoading(true);
+    toast.loading('Analyzing your resume...');
+
     try {
       const base64 = await fileToBase64(file);
       
-      // Save to localStorage for demo
-      const newProfile = {
-        name: 'Demo User',
-        domains: ['Software'],
-        college: 'Demo College',
-        resume: base64,
-        bridgeScore: 742
-      };
+      // Extract profile from resume using API
+      const response = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'extract_profile',
+          resume_base64: base64.split(',')[1] // Remove data:application/pdf;base64, prefix
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to analyze resume');
+      }
+
+      const extractedProfile = await response.json();
+      console.log('Extracted profile:', extractedProfile);
       
-      localStorage.setItem('bridge_profile', JSON.stringify(newProfile));
-      setProfile(newProfile);
+      // Save to localStorage
+      localStorage.setItem('bridge_profile', JSON.stringify(extractedProfile));
+      setProfile(extractedProfile);
       setResumeUploaded(true);
       
-      toast.success('Resume uploaded successfully!');
-      fetchJobs();
+      toast.dismiss();
+      toast.success('Resume analyzed successfully! Finding jobs for you...');
+      
+      // Fetch jobs immediately
+      setTimeout(() => {
+        fetchJobsWithProfile(extractedProfile);
+      }, 500);
     } catch (error) {
-      toast.error('Failed to upload resume');
+      toast.dismiss();
+      toast.error('Failed to analyze resume. Please try again.');
       console.error('Resume upload error:', error);
+      setLoading(false);
     }
   };
 
@@ -128,16 +192,24 @@ export default function JobsPage() {
       return;
     }
 
+    if (!profile) {
+      toast.error('Please upload your resume first');
+      return;
+    }
+
     setSmartApplyLoading(true);
+    toast.loading('Analyzing job match...');
     
     try {
-      const response = await fetch('/api/smart-apply', {
+      const response = await fetch('/api/jobs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          [smartApplyMode]: input,
+          action: 'smart_apply',
+          job_url: smartApplyMode === 'url' ? input : undefined,
+          job_description: smartApplyMode === 'paste' ? input : undefined,
           profile: profile
         }),
       });
@@ -148,9 +220,11 @@ export default function JobsPage() {
         throw new Error(data.error || 'Failed to process smart apply');
       }
 
+      toast.dismiss();
       setSmartApplyResult(data);
       toast.success('Job analyzed successfully!');
     } catch (error) {
+      toast.dismiss();
       toast.error(error.message || 'Failed to process smart apply');
       console.error('Smart apply error:', error);
     } finally {
@@ -363,150 +437,136 @@ export default function JobsPage() {
               </div>
 
               {/* Job Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Sample Job Cards */}
-                {[
-                  {
-                    company: 'Google',
-                    logo: 'G',
-                    title: 'Software Engineer',
-                    location: 'Bengaluru',
-                    type: 'Full Time',
-                    salary: '₹20-40 LPA',
-                    match: 92,
-                    probability: 87,
-                    skills: ['Python', 'Java', 'SQL', 'Git'],
-                    posted: '2 days ago'
-                  },
-                  {
-                    company: 'Microsoft',
-                    logo: 'M',
-                    title: 'Data Scientist',
-                    location: 'Hyderabad',
-                    type: 'Full Time',
-                    salary: '₹15-30 LPA',
-                    match: 88,
-                    probability: 82,
-                    skills: ['Python', 'ML', 'Statistics', 'SQL'],
-                    posted: '3 days ago'
-                  },
-                  {
-                    company: 'Amazon',
-                    logo: 'A',
-                    title: 'Product Manager',
-                    location: 'Mumbai',
-                    type: 'Full Time',
-                    salary: '₹25-45 LPA',
-                    match: 85,
-                    probability: 79,
-                    skills: ['Product Strategy', 'Analytics', 'Communication'],
-                    posted: '1 week ago'
-                  },
-                  {
-                    company: 'Infosys',
-                    logo: 'I',
-                    title: 'System Engineer',
-                    location: 'Pune',
-                    type: 'Full Time',
-                    salary: '₹8-15 LPA',
-                    match: 78,
-                    probability: 85,
-                    skills: ['Java', 'Python', 'Cloud', 'DevOps'],
-                    posted: '4 days ago'
-                  }
-                ].map((job, index) => (
-                  <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-lg font-bold text-gray-700">
-                          {job.logo}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{job.company}</h3>
-                          <h4 className="text-lg font-medium text-gray-800">{job.title}</h4>
-                        </div>
-                      </div>
-                      <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        job.match >= 90 ? 'bg-green-100 text-green-700' :
-                        job.match >= 80 ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {job.match}% Match
-                      </div>
-                    </div>
-
-                    {/* Details */}
-                    <div className="space-y-3 mb-4">
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {job.location}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Briefcase className="w-4 h-4" />
-                          {job.type}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <DollarSign className="w-4 h-4" />
-                          {job.salary}
-                        </span>
-                      </div>
-
-                      {/* Skills */}
-                      <div className="flex flex-wrap gap-2">
-                        {job.skills.map((skill, i) => (
-                          <span key={i} className="px-2 py-1 bg-purple-50 text-purple-600 text-xs rounded-full">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Interview Probability */}
-                      <div>
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span className="text-gray-600">Interview Probability</span>
-                          <span className="font-semibold text-gray-900">{job.probability}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-gradient-to-r from-purple-600 to-purple-700 h-2 rounded-full"
-                            style={{ width: `${job.probability}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-3">
-                      <button 
-                        onClick={() => {
-                          // Handle apply now - would integrate with application system
-                          toast.success('Application process started!');
-                        }}
-                        className="flex-1 bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-500 transition-colors"
-                      >
-                        Apply Now
-                      </button>
-                      <button 
-                        onClick={() => {
-                          // Handle prepare - redirect to interview prep
-                          window.location.href = '/interview';
-                        }}
-                        className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition-colors"
-                      >
-                        Prepare
-                      </button>
-                    </div>
-
-                    {/* Posted Time */}
-                    <div className="flex items-center gap-1 text-xs text-gray-500 mt-3">
-                      <Clock className="w-3 h-3" />
-                      {job.posted}
-                    </div>
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent mx-auto mb-4"></div>
+                    <div className="text-gray-600">Finding jobs for you...</div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : jobs.length === 0 ? (
+                <div className="text-center py-12">
+                  <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
+                  <p className="text-gray-600">Try adjusting your filters or upload a different resume</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {jobs.map((job, index) => (
+                    <div key={job.id || index} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center text-lg font-bold text-purple-700">
+                            {job.company?.charAt(0)?.toUpperCase() || 'J'}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{job.company}</h3>
+                            <h4 className="text-lg font-medium text-gray-800">{job.title}</h4>
+                          </div>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                          job.match_percent >= 90 ? 'bg-green-100 text-green-700' :
+                          job.match_percent >= 80 ? 'bg-yellow-100 text-yellow-700' :
+                          job.match_percent >= 70 ? 'bg-blue-100 text-blue-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {job.match_percent}% Match
+                        </div>
+                      </div>
+
+                      {/* Details */}
+                      <div className="space-y-3 mb-4">
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-4 h-4" />
+                            {job.location}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Briefcase className="w-4 h-4" />
+                            {job.type}
+                          </span>
+                          {job.salary && (
+                            <span className="flex items-center gap-1">
+                              <DollarSign className="w-4 h-4" />
+                              {job.salary}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Description */}
+                        {job.description && (
+                          <p className="text-sm text-gray-600 line-clamp-2">{job.description}</p>
+                        )}
+
+                        {/* Skills */}
+                        {job.skills_required && job.skills_required.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {job.skills_required.slice(0, 4).map((skill, i) => (
+                              <span key={i} className="px-2 py-1 bg-purple-50 text-purple-600 text-xs rounded-full">
+                                {skill}
+                              </span>
+                            ))}
+                            {job.skills_required.length > 4 && (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                                +{job.skills_required.length - 4} more
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Interview Probability */}
+                        {job.interview_probability && (
+                          <div>
+                            <div className="flex items-center justify-between text-sm mb-1">
+                              <span className="text-gray-600">Interview Probability</span>
+                              <span className="font-semibold text-gray-900">{job.interview_probability}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-gradient-to-r from-purple-600 to-purple-700 h-2 rounded-full"
+                                style={{ width: `${job.interview_probability}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-3">
+                        <button 
+                          onClick={() => {
+                            if (job.apply_url && job.apply_url !== '#') {
+                              window.open(job.apply_url, '_blank');
+                              toast.success('Opening application page...');
+                            } else {
+                              toast.success('Application process started!');
+                            }
+                          }}
+                          className="flex-1 bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          Apply Now
+                        </button>
+                        <button 
+                          onClick={() => {
+                            window.location.href = '/interview';
+                          }}
+                          className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+                        >
+                          Prepare
+                        </button>
+                      </div>
+
+                      {/* Posted Time */}
+                      <div className="flex items-center gap-1 text-xs text-gray-500 mt-3">
+                        <Clock className="w-3 h-3" />
+                        {job.posted_days_ago ? `${job.posted_days_ago} days ago` : 'Recently posted'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -568,18 +628,162 @@ export default function JobsPage() {
               <button 
                 onClick={handleSmartApply}
                 disabled={smartApplyLoading}
-                className="w-full bg-purple-500 text-white py-3 rounded-lg hover:bg-purple-500 transition-colors disabled:opacity-50"
+                className="w-full bg-purple-500 text-white py-3 rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {smartApplyLoading ? 'Analyzing...' : 'Analyze & Apply'}
+                {smartApplyLoading ? (
+                  <>
+                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="w-4 h-4" />
+                    Analyze & Apply
+                  </>
+                )}
               </button>
 
               {smartApplyResult && (
-                <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                  <h3 className="font-semibold text-green-900 mb-2">Analysis Complete!</h3>
-                  <p className="text-sm text-green-700">
-                    Match Score: {smartApplyResult.matchScore}% | 
-                    Interview Probability: {smartApplyResult.interviewProbability}%
-                  </p>
+                <div className="mt-6 space-y-4">
+                  {/* Match Overview */}
+                  <div className={`p-6 rounded-lg ${
+                    smartApplyResult.should_apply 
+                      ? 'bg-green-50 border border-green-200' 
+                      : 'bg-yellow-50 border border-yellow-200'
+                  }`}>
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-lg mb-1">
+                          {smartApplyResult.job_title}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {smartApplyResult.company} • {smartApplyResult.location}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-3xl font-bold text-purple-600">
+                          {smartApplyResult.match_percent}%
+                        </div>
+                        <div className="text-xs text-gray-600">Match</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <div className="text-sm text-gray-600 mb-1">Interview Probability</div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-purple-600 h-2 rounded-full"
+                              style={{ width: `${smartApplyResult.interview_probability}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-sm font-semibold">{smartApplyResult.interview_probability}%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-600 mb-1">Recommendation</div>
+                        <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${
+                          smartApplyResult.should_apply 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {smartApplyResult.should_apply ? (
+                            <><CheckCircle className="w-4 h-4" /> Apply</>
+                          ) : (
+                            <><AlertCircle className="w-4 h-4" /> Prepare More</>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-gray-700 italic">
+                      "{smartApplyResult.apply_recommendation}"
+                    </p>
+                  </div>
+
+                  {/* Strengths & Gaps */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                      <h4 className="font-semibold text-green-700 mb-3 flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        Your Strengths
+                      </h4>
+                      <ul className="space-y-2">
+                        {smartApplyResult.your_strengths?.map((strength, i) => (
+                          <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                            <span className="text-green-500 mt-1">✓</span>
+                            <span>{strength}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                      <h4 className="font-semibold text-orange-700 mb-3 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4" />
+                        Areas to Improve
+                      </h4>
+                      <ul className="space-y-2">
+                        {smartApplyResult.your_gaps?.map((gap, i) => (
+                          <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                            <span className="text-orange-500 mt-1">!</span>
+                            <span>{gap}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Preparation Plan */}
+                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <Target className="w-4 h-4" />
+                      Preparation Plan ({smartApplyResult.preparation_time})
+                    </h4>
+                    <ol className="space-y-2">
+                      {smartApplyResult.preparation_plan?.map((step, i) => (
+                        <li key={i} className="text-sm text-gray-700 flex gap-3">
+                          <span className="font-semibold text-purple-600">{i + 1}.</span>
+                          <span>{step}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+
+                  {/* Interview Questions */}
+                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4" />
+                      Likely Interview Questions
+                    </h4>
+                    <ul className="space-y-2">
+                      {smartApplyResult.likely_interview_questions?.map((q, i) => (
+                        <li key={i} className="text-sm text-gray-700 pl-4 border-l-2 border-purple-200">
+                          {q}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3">
+                    {smartApplyResult.apply_url && smartApplyResult.apply_url !== '#' && (
+                      <button
+                        onClick={() => window.open(smartApplyResult.apply_url, '_blank')}
+                        className="flex-1 bg-purple-500 text-white py-3 rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Apply Now
+                      </button>
+                    )}
+                    <button
+                      onClick={() => window.location.href = '/interview'}
+                      className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Practice Interview
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
