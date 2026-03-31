@@ -61,11 +61,13 @@ export default function Dashboard() {
     // Load real user data from Firestore
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        console.log('🔑 Dashboard - User authenticated:', user.uid, user.email);
         try {
           // Set user name for greeting
           setUserName(user.displayName || 'User');
           
           const userRef = doc(db, 'users', user.uid);
+          console.log('📋 Dashboard - Checking user document...');
           const userSnap = await getDoc(userRef);
           
           // Always set default stats, then override with Firestore data if exists
@@ -77,6 +79,7 @@ export default function Dashboard() {
           };
           
           if (userSnap.exists()) {
+            console.log('✅ Dashboard - User document exists');
             const userData = userSnap.data();
             console.log('📊 Dashboard - User data from Firestore:', userData);
             
@@ -93,7 +96,14 @@ export default function Dashboard() {
             setStats(userStats);
             setBridgeScore(userStats.bridgeScore);
           } else {
-            console.log('📊 Dashboard - No user data found, creating new user...');
+            console.log('❌ Dashboard - No user data found, creating new user...');
+            console.log('👤 Creating user with data:', {
+              uid: user.uid,
+              name: user.displayName,
+              email: user.email,
+              photo: user.photoURL
+            });
+            
             // Create user document if it doesn't exist
             await setDoc(userRef, {
               uid: user.uid,
@@ -116,10 +126,10 @@ export default function Dashboard() {
               updatedAt: new Date().toISOString()
             });
             
+            console.log('✅ Dashboard - Successfully created new user document');
             setUserName(user.displayName || 'User');
             setStats(defaultStats);
             setBridgeScore(0);
-            console.log('✅ Dashboard - Created new user document');
           }
 
           // Fetch recent interview sessions
@@ -228,7 +238,7 @@ export default function Dashboard() {
 
   const getActivityColor = (type) => {
     switch(type) {
-      case 'interview': return 'text-blue-600 bg-blue-50';
+      case 'interview': return 'text-cyan-600 bg-blue-50';
       case 'gd': return 'text-green-600 bg-green-50';
       case 'pulse': return 'text-yellow-600 bg-yellow-50';
       case 'coach': return 'text-cyan-600 bg-cyan-50';
@@ -277,8 +287,8 @@ export default function Dashboard() {
 
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Mic className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
+                <Mic className="w-6 h-6 text-cyan-600" />
               </div>
               <div className="flex items-center text-green-600 text-sm">
                 <ArrowUp className="w-4 h-4 mr-1" />
@@ -323,22 +333,22 @@ export default function Dashboard() {
           {/* Left Column - Continue Preparing */}
           <div className="lg:col-span-2 space-y-6">
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Continue Preparing</h2>
-              <div className="space-y-4">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Continue Preparing</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {features.map((feature, index) => {
                   const Icon = feature.icon;
                   return (
                     <Link
                       key={index}
                       href={feature.href}
-                      className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow group"
+                      className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-purple-50 transition-all duration-200 group"
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-4">
-                          <div className={`w-14 h-14 rounded-full flex items-center justify-center ${
-                            feature.color === 'cyan' ? 'bg-cyan-100' :
-                            feature.color === 'teal' ? 'bg-teal-100' :
-                            'bg-sky-100'
+                          <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+                            feature.color === 'cyan' ? 'bg-gradient-to-br from-cyan-50 to-cyan-100' :
+                            feature.color === 'teal' ? 'bg-gradient-to-br from-teal-50 to-teal-100' :
+                            'bg-gradient-to-br from-sky-50 to-sky-100'
                           }`}>
                             <Icon className={`w-7 h-7 ${
                               feature.color === 'cyan' ? 'text-cyan-600' :
@@ -347,11 +357,13 @@ export default function Dashboard() {
                             }`} />
                           </div>
                           <div>
-                            <h3 className="font-semibold text-gray-900 mb-1">{feature.title}</h3>
+                            <h3 className="font-semibold text-gray-900 group-hover:text-purple-400 transition-colors">
+                              {feature.title}
+                            </h3>
                             <p className="text-sm text-gray-600">{feature.description}</p>
                           </div>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-purple-400 transition-colors" />
                       </div>
                     </Link>
                   );

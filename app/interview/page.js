@@ -406,23 +406,23 @@ export default function InterviewPage() {
         <div className="mb-8">
           <div className="flex items-center justify-center text-sm font-semibold mb-4">
             <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
-              step >= 1 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'
+              step >= 1 ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-500'
             }`}>
-              <span className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs">1</span>
+              <span className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs">1</span>
               <span>Choose Domain</span>
             </div>
-            <div className={`w-12 h-0.5 ${step >= 2 ? 'bg-purple-600' : 'bg-gray-300'}`}></div>
+            <div className={`w-12 h-0.5 ${step >= 2 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
             <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
-              step >= 2 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'
+              step >= 2 ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-500'
             }`}>
-              <span className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs">2</span>
+              <span className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs">2</span>
               <span>Answer Questions</span>
             </div>
-            <div className={`w-12 h-0.5 ${step >= 3 ? 'bg-purple-600' : 'bg-gray-300'}`}></div>
+            <div className={`w-12 h-0.5 ${step >= 3 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
             <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
-              step >= 3 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'
+              step >= 3 ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-500'
             }`}>
-              <span className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs">3</span>
+              <span className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs">3</span>
               <span>Get Feedback</span>
             </div>
           </div>
@@ -447,7 +447,7 @@ export default function InterviewPage() {
                           onClick={() => setSelectedDomain(domain.label)}
                           className={`p-6 rounded-2xl border-2 transition-all ${
                             active 
-                              ? 'border-purple-600 bg-purple-50 shadow-md' 
+                              ? 'border-purple-500 bg-purple-50 shadow-md' 
                               : 'border-gray-200 bg-white hover:border-gray-300'
                           }`}
                         >
@@ -466,7 +466,7 @@ export default function InterviewPage() {
                         onClick={() => setInterviewMode("text")}
                         className={`flex-1 py-2 px-4 rounded-md transition-colors ${
                           interviewMode === "text"
-                            ? "bg-white text-purple-600 shadow-sm"
+                            ? "bg-white text-purple-500 shadow-sm"
                             : "text-gray-600 hover:text-gray-900"
                         }`}
                       >
@@ -476,7 +476,7 @@ export default function InterviewPage() {
                         onClick={() => setInterviewMode("voice")}
                         className={`flex-1 py-2 px-4 rounded-md transition-colors ${
                           interviewMode === "voice"
-                            ? "bg-white text-purple-600 shadow-sm"
+                            ? "bg-white text-purple-500 shadow-sm"
                             : "text-gray-600 hover:text-gray-900"
                         }`}
                       >
@@ -502,8 +502,8 @@ export default function InterviewPage() {
                 <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                        <Mic className="w-4 h-4 text-purple-600" />
+                      <div className="w-8 h-8 bg-purple-50 rounded-full flex items-center justify-center">
+                        <Mic className="w-4 h-4 text-purple-500" />
                       </div>
                       <div>
                         <div className="text-sm text-gray-600">Question {currentQuestionIndex + 1} of 5</div>
@@ -512,7 +512,7 @@ export default function InterviewPage() {
                     </div>
                     <button
                       onClick={() => speakText(questions[currentQuestionIndex])}
-                      className="p-2 text-gray-600 hover:text-purple-600 transition-colors"
+                      className="p-2 text-gray-600 hover:text-purple-400 transition-colors"
                       title="Speak Question"
                     >
                       <Volume2 className="w-5 h-5" />
@@ -576,8 +576,8 @@ export default function InterviewPage() {
                           </div>
                         ) : (
                           <div className="space-y-4">
-                            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
-                              <Mic className="w-8 h-8 text-purple-600" />
+                            <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto">
+                              <Mic className="w-8 h-8 text-purple-500" />
                             </div>
                             <div className="text-gray-600">Click to start recording</div>
                             <button
@@ -592,7 +592,7 @@ export default function InterviewPage() {
                       </div>
                       {transcript && (
                         <div className="mt-4 p-4 bg-blue-50 rounded-xl">
-                          <div className="text-sm text-blue-600 font-medium mb-2">Transcript:</div>
+                          <div className="text-sm text-cyan-600 font-medium mb-2">Transcript:</div>
                           <div className="text-gray-900">{transcript}</div>
                         </div>
                       )}
@@ -626,7 +626,7 @@ export default function InterviewPage() {
                   <div className="flex justify-center gap-4 mb-8">
                     <button
                       onClick={shareResult}
-                      className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
                     >
                       <Share2 className="w-4 h-4" />
                       Share Result
@@ -653,7 +653,7 @@ export default function InterviewPage() {
                           <div className="flex items-center gap-2">
                             <div className="w-24 bg-gray-200 rounded-full h-2">
                               <div 
-                                className="bg-purple-600 h-2 rounded-full"
+                                className="bg-purple-500 h-2 rounded-full"
                                 style={{ width: `${(value / 10) * 100}%` }}
                               ></div>
                             </div>
@@ -717,8 +717,8 @@ export default function InterviewPage() {
 
                 {/* Model Answer */}
                 {feedback.model_answer && (
-                  <div className="bg-purple-50 rounded-2xl p-6 shadow-sm border border-purple-200">
-                    <h3 className="font-semibold text-purple-900 mb-4">Model Answer</h3>
+                  <div className="bg-purple-50 rounded-2xl p-6 shadow-sm border border-purple-100">
+                    <h3 className="font-semibold text-purple-800 mb-4">Model Answer</h3>
                     <p className="text-gray-700">{feedback.model_answer}</p>
                   </div>
                 )}
@@ -737,8 +737,8 @@ export default function InterviewPage() {
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-purple-600">1</span>
+                    <div className="w-6 h-6 bg-purple-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-purple-500">1</span>
                     </div>
                     <div>
                       <div className="font-medium text-gray-900">Structure your answer</div>
@@ -746,8 +746,8 @@ export default function InterviewPage() {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-purple-600">2</span>
+                    <div className="w-6 h-6 bg-purple-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-purple-500">2</span>
                     </div>
                     <div>
                       <div className="font-medium text-gray-900">Use STAR method</div>
@@ -755,8 +755,8 @@ export default function InterviewPage() {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-purple-600">3</span>
+                    <div className="w-6 h-6 bg-purple-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-purple-500">3</span>
                     </div>
                     <div>
                       <div className="font-medium text-gray-900">Avoid filler words</div>
@@ -794,8 +794,8 @@ export default function InterviewPage() {
                 <h3 className="font-semibold text-gray-900 mb-4">About {selectedDomain}</h3>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                      <Trophy className="w-4 h-4 text-purple-600" />
+                    <div className="w-8 h-8 bg-purple-50 rounded-full flex items-center justify-center">
+                      <Trophy className="w-4 h-4 text-purple-500" />
                     </div>
                     <div>
                       <div className="font-medium text-gray-900">High Demand</div>

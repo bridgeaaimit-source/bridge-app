@@ -74,7 +74,7 @@ export default function CoachPage() {
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-3">
-            <Wand2 className="w-8 h-8 text-purple-400" />
+            <Wand2 className="w-8 h-8 text-purple-300" />
             <h1 className="text-2xl font-bold">AI Coach</h1>
           </div>
         </header>
@@ -89,15 +89,15 @@ export default function CoachPage() {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="text-center">
-              <div className="text-xs text-purple-200">Clarity</div>
+              <div className="text-xs text-purple-100">Clarity</div>
               <div className="text-sm font-bold">---/10</div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-purple-200">Fluency</div>
+              <div className="text-xs text-purple-100">Fluency</div>
               <div className="text-sm font-bold">---/10</div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-purple-200">Structure</div>
+              <div className="text-xs text-purple-100">Structure</div>
               <div className="text-sm font-bold">---/10</div>
             </div>
           </div>
@@ -108,7 +108,7 @@ export default function CoachPage() {
           {/* Answer Rewriter */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-purple-400 rounded-lg flex items-center justify-center">
                 <Edit className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -122,7 +122,7 @@ export default function CoachPage() {
                 value={rawAnswer}
                 onChange={(e) => setRawAnswer(e.target.value)}
                 placeholder="Paste your interview answer here..."
-                className="w-full min-h-[120px] bg-white/5 border border-white/10 rounded-xl p-3 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
+                className="w-full min-h-[120px] bg-white/5 border border-white/10 rounded-xl p-3 text-white placeholder-gray-400 focus:border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
               />
               
               <button
@@ -170,7 +170,7 @@ export default function CoachPage() {
                 value={hinglishText}
                 onChange={(e) => setHinglishText(e.target.value)}
                 placeholder="Type Hinglish text here..."
-                className="w-full min-h-[120px] bg-white/5 border border-white/10 rounded-xl p-3 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
+                className="w-full min-h-[120px] bg-white/5 border border-white/10 rounded-xl p-3 text-white placeholder-gray-400 focus:border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
               />
               
               <button
@@ -193,8 +193,8 @@ export default function CoachPage() {
               </button>
               
               {englishText && (
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
-                  <div className="text-xs font-semibold text-blue-400 mb-2">Professional English</div>
+                <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-3">
+                  <div className="text-xs font-semibold text-cyan-400 mb-2">Professional English</div>
                   <div className="text-sm text-gray-300">{englishText}</div>
                 </div>
               )}

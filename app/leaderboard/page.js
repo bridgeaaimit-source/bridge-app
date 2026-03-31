@@ -121,8 +121,8 @@ export default function LeaderboardPage() {
   };
 
   const getScoreColor = (score) => {
-    if (score >= 900) return "text-purple-600";
-    if (score >= 800) return "text-blue-600";
+    if (score >= 900) return "text-purple-500";
+    if (score >= 800) return "text-cyan-600";
     if (score >= 700) return "text-cyan-600";
     if (score >= 600) return "text-green-600";
     if (score >= 500) return "text-yellow-600";

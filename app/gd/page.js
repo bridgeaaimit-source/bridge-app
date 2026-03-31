@@ -306,8 +306,8 @@ export default function GDPage() {
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
                   </div>
                   <div>
                     <div className="text-sm font-medium text-gray-900">Listen Actively</div>
@@ -316,8 +316,8 @@ export default function GDPage() {
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <div className="w-6 h-6 bg-purple-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
                   </div>
                   <div>
                     <div className="text-sm font-medium text-gray-900">Add Value</div>
@@ -330,7 +330,7 @@ export default function GDPage() {
             {/* Performance */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Award className="w-5 h-5 text-purple-600" />
+                <Award className="w-5 h-5 text-purple-500" />
                 Your Performance
               </h3>
               
@@ -359,7 +359,7 @@ export default function GDPage() {
                   <span className="text-sm text-gray-600">Content</span>
                   <div className="flex items-center gap-2">
                     <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div className="bg-purple-600 h-2 rounded-full" style={{ width: "70%" }}></div>
+                      <div className="bg-purple-500 h-2 rounded-full" style={{ width: "70%" }}></div>
                     </div>
                     <span className="text-sm font-medium">70%</span>
                   </div>

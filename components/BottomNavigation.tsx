@@ -28,7 +28,7 @@ export default function BottomNavigation() {
                 href={item.href}
                 className={`flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all ${
                   isActive
-                    ? "text-purple-400"
+                    ? "text-purple-300"
                     : "text-gray-400 hover:text-white"
                 }`}
               >

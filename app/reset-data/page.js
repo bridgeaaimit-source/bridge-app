@@ -112,15 +112,15 @@ export default function ResetDataPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Current Data Status</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Users className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Users className="w-6 h-6 text-cyan-600" />
               </div>
               <div className="text-2xl font-bold text-gray-900">{stats.users}</div>
               <div className="text-sm text-gray-600">Users</div>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Database className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Database className="w-6 h-6 text-purple-500" />
               </div>
               <div className="text-2xl font-bold text-gray-900">{stats.interviews}</div>
               <div className="text-sm text-gray-600">Interview Collections</div>
@@ -175,7 +175,7 @@ export default function ResetDataPage() {
               <div className={`p-4 rounded-lg ${
                 status.includes('✅') ? 'bg-green-50 text-green-700' :
                 status.includes('❌') ? 'bg-red-50 text-red-700' :
-                'bg-blue-50 text-blue-700'
+                'bg-blue-50 text-cyan-700'
               }`}>
                 {status}
               </div>
@@ -206,9 +206,9 @@ export default function ResetDataPage() {
         </div>
 
         {/* Instructions */}
-        <div className="mt-8 bg-blue-50 rounded-xl border border-blue-200 p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-3">After Reset:</h3>
-          <ol className="list-decimal list-inside text-blue-800 space-y-2">
+        <div className="mt-8 bg-blue-50 rounded-xl border border-cyan-200 p-6">
+          <h3 className="text-lg font-semibold text-cyan-900 mb-3">After Reset:</h3>
+          <ol className="list-decimal list-inside text-cyan-800 space-y-2">
             <li>All users will need to sign in again</li>
             <li>New users will start with 500 BRIDGE score</li>
             <li>All interview history will be cleared</li>

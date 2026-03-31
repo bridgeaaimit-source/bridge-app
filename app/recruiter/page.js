@@ -131,16 +131,16 @@ export default function RecruiterPage() {
   };
 
   const getScoreColor = (score) => {
-    if (score >= 900) return 'text-purple-600';
-    if (score >= 800) return 'text-blue-600';
+    if (score >= 900) return 'text-purple-500';
+    if (score >= 800) return 'text-cyan-600';
     if (score >= 700) return 'text-cyan-600';
     if (score >= 600) return 'text-green-600';
     return 'text-gray-600';
   };
 
   const getScoreBadge = (score) => {
-    if (score >= 900) return { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Exceptional' };
-    if (score >= 800) return { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Excellent' };
+    if (score >= 900) return { bg: 'bg-purple-50', text: 'text-purple-600', label: 'Exceptional' };
+    if (score >= 800) return { bg: 'bg-cyan-100', text: 'text-cyan-700', label: 'Excellent' };
     if (score >= 700) return { bg: 'bg-cyan-100', text: 'text-cyan-700', label: 'Good' };
     if (score >= 600) return { bg: 'bg-green-100', text: 'text-green-700', label: 'Average' };
     return { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Beginner' };
@@ -183,8 +183,8 @@ export default function RecruiterPage() {
 
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Star className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center">
+                <Star className="w-6 h-6 text-purple-500" />
               </div>
               <div className="text-sm text-green-600 font-medium">+8%</div>
             </div>
@@ -207,8 +207,8 @@ export default function RecruiterPage() {
 
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-cyan-600" />
               </div>
               <div className="text-sm text-green-600 font-medium">+25%</div>
             </div>

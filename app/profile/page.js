@@ -234,7 +234,7 @@ export default function ProfilePage() {
               <div className="text-sm text-gray-600">BRIDGE Score</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600 mb-1">{userData.interviewsDone}</div>
+              <div className="text-3xl font-bold text-cyan-600 mb-1">{userData.interviewsDone}</div>
               <div className="text-sm text-gray-600">Interviews</div>
             </div>
             <div className="text-center">

@@ -190,7 +190,7 @@ export default function JobsPage() {
           <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Upload Your Resume</h2>
             
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-400 transition-colors">
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-200 transition-colors">
               <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600 mb-2">Drop your resume here or click to browse</p>
               <p className="text-sm text-gray-500">PDF, DOC, DOCX (Max 5MB)</p>
@@ -203,7 +203,7 @@ export default function JobsPage() {
               />
               <label
                 htmlFor="resume-upload"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors cursor-pointer mt-4"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors cursor-pointer mt-4"
               >
                 <FileText className="w-4 h-4" />
                 Choose File
@@ -211,7 +211,7 @@ export default function JobsPage() {
             </div>
             
             <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-900">
+              <p className="text-sm text-cyan-900">
                 💡 Upload your resume to get personalized job recommendations and apply with one click using our Smart Apply feature.
               </p>
             </div>
@@ -232,7 +232,7 @@ export default function JobsPage() {
           </div>
           <button
             onClick={() => window.location.reload()}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Refresh
@@ -251,7 +251,7 @@ export default function JobsPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? 'border-purple-600 text-purple-600'
+                  ? 'border-purple-500 text-purple-500'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -279,7 +279,7 @@ export default function JobsPage() {
                     <div className="space-y-2">
                       {['Software', 'Data Science', 'Marketing', 'Finance', 'HR'].map((domain) => (
                         <label key={domain} className="flex items-center gap-2">
-                          <input type="checkbox" className="rounded border-gray-300 text-purple-600" />
+                          <input type="checkbox" className="rounded border-gray-300 text-purple-500" />
                           <span className="text-sm text-gray-700">{domain}</span>
                         </label>
                       ))}
@@ -292,7 +292,7 @@ export default function JobsPage() {
                     <div className="space-y-2">
                       {['Full Time', 'Internship', 'Part Time', 'Remote'].map((type) => (
                         <label key={type} className="flex items-center gap-2">
-                          <input type="checkbox" className="rounded border-gray-300 text-purple-600" />
+                          <input type="checkbox" className="rounded border-gray-300 text-purple-500" />
                           <span className="text-sm text-gray-700">{type}</span>
                         </label>
                       ))}
@@ -312,7 +312,7 @@ export default function JobsPage() {
                     </select>
                   </div>
 
-                  <button className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                  <button className="w-full bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-500 transition-colors">
                     Apply Filters
                   </button>
                 </div>
@@ -337,7 +337,7 @@ export default function JobsPage() {
                     </div>
                     <div className="text-right">
                       <div className="text-2xl font-bold">{profile.bridgeScore || 742}</div>
-                      <div className="text-xs text-purple-200">BRIDGE Score</div>
+                      <div className="text-xs text-purple-100">BRIDGE Score</div>
                     </div>
                   </div>
                 </div>
@@ -348,7 +348,7 @@ export default function JobsPage() {
                 <h3 className="font-semibold text-gray-900 mb-4">Market Insights</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">2,847</div>
+                    <div className="text-2xl font-bold text-purple-500">2,847</div>
                     <div className="text-sm text-gray-600">Active Jobs</div>
                   </div>
                   <div className="text-center">
@@ -356,7 +356,7 @@ export default function JobsPage() {
                     <div className="text-sm text-gray-600">Match Rate</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">156</div>
+                    <div className="text-2xl font-bold text-cyan-600">156</div>
                     <div className="text-sm text-gray-600">New This Week</div>
                   </div>
                 </div>
@@ -456,7 +456,7 @@ export default function JobsPage() {
                       {/* Skills */}
                       <div className="flex flex-wrap gap-2">
                         {job.skills.map((skill, i) => (
-                          <span key={i} className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-full">
+                          <span key={i} className="px-2 py-1 bg-purple-50 text-purple-600 text-xs rounded-full">
                             {skill}
                           </span>
                         ))}
@@ -484,7 +484,7 @@ export default function JobsPage() {
                           // Handle apply now - would integrate with application system
                           toast.success('Application process started!');
                         }}
-                        className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                        className="flex-1 bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-500 transition-colors"
                       >
                         Apply Now
                       </button>
@@ -522,7 +522,7 @@ export default function JobsPage() {
                   onClick={() => setSmartApplyMode('url')}
                   className={`flex-1 py-2 px-4 rounded-md transition-colors ${
                     smartApplyMode === 'url'
-                      ? 'bg-white text-purple-600 shadow-sm'
+                      ? 'bg-white text-purple-500 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -532,7 +532,7 @@ export default function JobsPage() {
                   onClick={() => setSmartApplyMode('paste')}
                   className={`flex-1 py-2 px-4 rounded-md transition-colors ${
                     smartApplyMode === 'paste'
-                      ? 'bg-white text-purple-600 shadow-sm'
+                      ? 'bg-white text-purple-500 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -568,7 +568,7 @@ export default function JobsPage() {
               <button 
                 onClick={handleSmartApply}
                 disabled={smartApplyLoading}
-                className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                className="w-full bg-purple-500 text-white py-3 rounded-lg hover:bg-purple-500 transition-colors disabled:opacity-50"
               >
                 {smartApplyLoading ? 'Analyzing...' : 'Analyze & Apply'}
               </button>
@@ -676,7 +676,7 @@ export default function JobsPage() {
 
                 <button
                   type="submit"
-                  className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors"
+                  className="w-full bg-purple-500 text-white py-3 rounded-lg hover:bg-purple-500 transition-colors"
                 >
                   Post Job
                 </button>

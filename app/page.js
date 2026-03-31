@@ -369,7 +369,7 @@ export default function Home() {
                 <div className="font-display text-5xl font-bold mb-2">
                   {stat.value}{stat.suffix}
                 </div>
-                <div className="text-purple-100">{stat.label}</div>
+                <div className="text-purple-50">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -380,7 +380,7 @@ export default function Home() {
       <section ref={featuresRef} id="features" className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16 scroll-reveal">
-            <p className="text-sm font-semibold text-purple-600 tracking-wider uppercase mb-4">WHAT WE OFFER</p>
+            <p className="text-sm font-semibold text-purple-500 tracking-wider uppercase mb-4">WHAT WE OFFER</p>
             <h2 className="font-display text-4xl lg:text-5xl font-bold mb-6">
               Three tools that get you <span className="gradient-text">placed</span>
             </h2>
@@ -389,14 +389,14 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Feature 1 */}
             <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '0ms' }}>
-              <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mb-6">
-                <Target className="w-7 h-7 text-purple-600" />
+              <div className="w-14 h-14 bg-purple-50 rounded-full flex items-center justify-center mb-6">
+                <Target className="w-7 h-7 text-purple-500" />
               </div>
               <h3 className="font-display text-2xl font-bold mb-4">AI Mock Interviews</h3>
               <p className="text-gray-600 mb-6 leading-relaxed">
                 Practice with real questions from Amazon, Infosys, TCS and more. Get instant AI feedback on your answers, body language score, and areas to improve.
               </p>
-              <div className="inline-flex items-center px-3 py-1 bg-purple-50 text-purple-700 text-sm font-semibold rounded-full">
+              <div className="inline-flex items-center px-3 py-1 bg-purple-50 text-purple-600 text-sm font-semibold rounded-full">
                 Most Popular
               </div>
             </div>
@@ -445,8 +445,8 @@ export default function Home() {
             {/* Step 1 */}
             <div className="text-center scroll-reveal" style={{ animationDelay: '0ms' }}>
               <div className="font-display text-3xl font-black gradient-text mb-4">01</div>
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Users className="w-8 h-8 text-purple-600" />
+              <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Users className="w-8 h-8 text-purple-500" />
               </div>
               <h3 className="font-display text-2xl font-bold mb-4">Create Your Profile</h3>
               <p className="text-gray-600 leading-relaxed">
@@ -457,8 +457,8 @@ export default function Home() {
             {/* Step 2 */}
             <div className="text-center scroll-reveal" style={{ animationDelay: '80ms' }}>
               <div className="font-display text-3xl font-black gradient-text mb-4">02</div>
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Target className="w-8 h-8 text-purple-600" />
+              <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Target className="w-8 h-8 text-purple-500" />
               </div>
               <h3 className="font-display text-2xl font-bold mb-4">Practice Every Day</h3>
               <p className="text-gray-600 leading-relaxed">
@@ -469,8 +469,8 @@ export default function Home() {
             {/* Step 3 */}
             <div className="text-center scroll-reveal" style={{ animationDelay: '160ms' }}>
               <div className="font-display text-3xl font-black gradient-text mb-4">03</div>
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Award className="w-8 h-8 text-purple-600" />
+              <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Award className="w-8 h-8 text-purple-500" />
               </div>
               <h3 className="font-display text-2xl font-bold mb-4">Walk In Confident</h3>
               <p className="text-gray-600 leading-relaxed">
@@ -498,7 +498,7 @@ export default function Home() {
                   <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
                 ))}
               </div>
-              <Quote className="w-12 h-12 text-purple-200 mb-4" />
+              <Quote className="w-12 h-12 text-purple-100 mb-4" />
               <p className="text-gray-700 italic text-lg leading-relaxed mb-6">
                 "BRIDGE completely changed how I prepare. The AI feedback after every mock interview told me exactly what I was doing wrong. I went from freezing up to confidently answering every question."
               </p>
@@ -512,7 +512,7 @@ export default function Home() {
                     <div className="text-sm text-gray-500">VIT Vellore</div>
                   </div>
                 </div>
-                <div className="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-lg">
+                <div className="px-3 py-1 bg-purple-50 text-purple-600 text-xs font-semibold rounded-lg">
                   Amazon
                 </div>
               </div>
@@ -525,7 +525,7 @@ export default function Home() {
                   <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
                 ))}
               </div>
-              <Quote className="w-12 h-12 text-purple-200 mb-4" />
+              <Quote className="w-12 h-12 text-purple-100 mb-4" />
               <p className="text-gray-700 italic text-lg leading-relaxed mb-6">
                 "I used to go completely silent in group discussions. After 10 GD Battles on BRIDGE, I was the one leading the conversation. That confidence got me through 3 rounds at Infosys."
               </p>
@@ -539,7 +539,7 @@ export default function Home() {
                     <div className="text-sm text-gray-500">PSG College of Technology</div>
                   </div>
                 </div>
-                <div className="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-lg">
+                <div className="px-3 py-1 bg-purple-50 text-purple-600 text-xs font-semibold rounded-lg">
                   Infosys
                 </div>
               </div>
@@ -552,7 +552,7 @@ export default function Home() {
                   <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
                 ))}
               </div>
-              <Quote className="w-12 h-12 text-purple-200 mb-4" />
+              <Quote className="w-12 h-12 text-purple-100 mb-4" />
               <p className="text-gray-700 italic text-lg leading-relaxed mb-6">
                 "My BRIDGE Score went from 480 to 790 in 6 weeks. I could literally see myself getting better. That kind of feedback doesn't exist anywhere else."
               </p>
@@ -566,7 +566,7 @@ export default function Home() {
                     <div className="text-sm text-gray-500">SRMIST</div>
                   </div>
                 </div>
-                <div className="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-lg">
+                <div className="px-3 py-1 bg-purple-50 text-purple-600 text-xs font-semibold rounded-lg">
                   Wipro
                 </div>
               </div>
@@ -579,7 +579,7 @@ export default function Home() {
                   <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
                 ))}
               </div>
-              <Quote className="w-12 h-12 text-purple-200 mb-4" />
+              <Quote className="w-12 h-12 text-purple-100 mb-4" />
               <p className="text-gray-700 italic text-lg leading-relaxed mb-6">
                 "The questions in the AI mock interviews were EXACTLY what they asked me in the real interview. It felt like I had already been there before."
               </p>
@@ -593,7 +593,7 @@ export default function Home() {
                     <div className="text-sm text-gray-500">Manipal University</div>
                   </div>
                 </div>
-                <div className="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-lg">
+                <div className="px-3 py-1 bg-purple-50 text-purple-600 text-xs font-semibold rounded-lg">
                   TCS
                 </div>
               </div>
@@ -608,10 +608,10 @@ export default function Home() {
           <h2 className="font-display text-4xl lg:text-5xl font-bold text-white mb-6">
             Your placement starts today
           </h2>
-          <p className="text-lg text-purple-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-lg text-purple-50 mb-8 max-w-2xl mx-auto">
             Join 1,200+ students already on BRIDGE. Free forever for students.
           </p>
-          <Link href="/login" className="inline-flex items-center px-8 py-4 bg-white text-purple-600 font-bold rounded-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <Link href="/login" className="inline-flex items-center px-8 py-4 bg-white text-purple-500 font-bold rounded-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             Create Your Free Account <ArrowRight className="ml-2 w-5 h-5" />
           </Link>
         </div>
@@ -683,7 +683,7 @@ export default function Home() {
 
       {/* Recruiter Link */}
       <div className="fixed bottom-8 right-8 z-40">
-        <Link href="/recruiter" className="bg-purple-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-purple-700 transition-colors text-sm font-medium">
+        <Link href="/recruiter" className="bg-purple-500 text-white px-4 py-2 rounded-full shadow-lg hover:bg-purple-500 transition-colors text-sm font-medium">
           For Recruiters 
         </Link>
       </div>

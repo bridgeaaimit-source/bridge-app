@@ -81,8 +81,8 @@ export default function AdminPage() {
   };
 
   const getScoreColor = (score) => {
-    if (score >= 900) return 'text-purple-600';
-    if (score >= 800) return 'text-blue-600';
+    if (score >= 900) return 'text-purple-500';
+    if (score >= 800) return 'text-cyan-600';
     if (score >= 700) return 'text-cyan-600';
     if (score >= 600) return 'text-green-600';
     return 'text-gray-600';
@@ -138,8 +138,8 @@ export default function AdminPage() {
 
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Trophy className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center">
+                <Trophy className="w-6 h-6 text-purple-500" />
               </div>
             </div>
             <div className="text-3xl font-bold text-gray-900">{stats.totalInterviews}</div>

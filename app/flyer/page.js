@@ -225,7 +225,7 @@ export default function FlyerPage() {
                 onClick={() => setSelectedTemplate(template)}
                 className={`w-full p-4 rounded-xl border transition-all ${
                   selectedTemplate.id === template.id
-                    ? 'bg-purple-500/20 border-purple-400'
+                    ? 'bg-purple-400/20 border-purple-300'
                     : 'bg-white/10 border-white/20 hover:bg-white/20'
                 }`}
               >
@@ -247,7 +247,7 @@ export default function FlyerPage() {
                 type="text"
                 value={score}
                 onChange={(e) => setScore(e.target.value)}
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
+                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                 placeholder="Your score"
               />
             </div>
@@ -260,7 +260,7 @@ export default function FlyerPage() {
                 type="text"
                 value={bridgeScore}
                 onChange={(e) => setBridgeScore(e.target.value)}
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
+                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                 placeholder="Your BRIDGE Score"
               />
             </div>
@@ -273,7 +273,7 @@ export default function FlyerPage() {
                 type="text"
                 value={streak}
                 onChange={(e) => setStreak(e.target.value)}
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
+                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                 placeholder="5"
               />
             </div>

@@ -181,7 +181,7 @@ export default function TestFeedbackPage() {
           <div className="flex gap-4">
             <button
               onClick={testStatsUpdate}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="px-6 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700"
             >
               Test Stats Update
             </button>
@@ -205,7 +205,7 @@ export default function TestFeedbackPage() {
                 <div key={index} className={`border rounded p-4 ${
                   result.type.startsWith('✅') ? 'border-green-200 bg-green-50' : 
                   result.type.startsWith('❌') ? 'border-red-200 bg-red-50' : 
-                  'border-blue-200 bg-blue-50'
+                  'border-cyan-200 bg-blue-50'
                 }`}>
                   <h3 className="font-semibold text-lg mb-2">{result.type}</h3>
                   <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto">
