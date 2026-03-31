@@ -12,8 +12,39 @@ import {
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
+import { useAuthBypass } from "@/hooks/useAuthBypass";
 
 const categories = ["All", "Marketing", "Finance", "HR", "Analytics", "Tech", "MBA"];
+
+// Mock news data for bypass mode
+const mockNewsData = {
+  articles: [
+    {
+      title: "AI Revolution in Tech Industry: What Students Need to Know",
+      description: "Major tech companies are investing heavily in AI, creating new opportunities for graduates with machine learning skills.",
+      url: "https://example.com/ai-revolution",
+      urlToImage: null,
+      publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      source: { name: "Tech News" }
+    },
+    {
+      title: "Top 10 Skills Employers Are Looking For in 2024",
+      description: "Communication, problem-solving, and adaptability top the list of most sought-after skills by recruiters.",
+      url: "https://example.com/top-skills",
+      urlToImage: null,
+      publishedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      source: { name: "Career Insights" }
+    },
+    {
+      title: "Startup Funding Reaches New Heights in Q1 2024",
+      description: "Indian startups raised $4.2B in Q1, with fintech and edtech leading the way.",
+      url: "https://example.com/startup-funding",
+      urlToImage: null,
+      publishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      source: { name: "Business Today" }
+    }
+  ]
+};
 
 export default function PulsePage() {
   const [loading, setLoading] = useState(true);
@@ -29,10 +60,28 @@ export default function PulsePage() {
   const [savedArticles, setSavedArticles] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const { isBypassed } = useAuthBypass();
+
   useEffect(() => {
+    // Auth bypass for testing
+    if (isBypassed) {
+      console.log('🔓 Pulse - Auth bypass enabled');
+      setNewsData(mockNewsData);
+      setGdInsights({
+        gd_topic: "The Impact of Artificial Intelligence on Job Markets",
+        pros: "Creates new opportunities in AI/ML fields, increases productivity, enables innovation in various sectors",
+        cons: "Potential job displacement in routine tasks, requires continuous upskilling, widens skill gap",
+        power_phrase: "AI is not replacing humans, it's augmenting human capabilities and creating new opportunities for those who adapt"
+      });
+      setLoading(false);
+      setNewsLoading(false);
+      setGdLoading(false);
+      return;
+    }
+
     fetchNews("All");
     fetchGDInsights("All");
-  }, []);
+  }, [isBypassed]);
 
   const fetchGDInsights = async (category) => {
     setGdLoading(true);
