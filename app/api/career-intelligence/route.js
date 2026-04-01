@@ -1,24 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
-import formidable from 'formidable';
-import fs from 'fs';
-import pdf from 'pdf-parse';
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-async function parseForm(req) {
-  const form = formidable({ multiples: false });
-  
-  return new Promise((resolve, reject) => {
-    form.parse(req, (err, fields, files) => {
-      if (err) reject(err);
-      resolve({ fields, files });
-    });
-  });
-}
+// Force Node.js runtime for file processing
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {
@@ -45,13 +29,15 @@ export async function POST(request) {
     
     let resumeText = '';
     try {
+      // Dynamic import of pdf-parse to avoid edge runtime issues
+      const pdf = (await import('pdf-parse')).default;
       const pdfData = await pdf(buffer);
       resumeText = pdfData.text;
       console.log('Extracted resume text length:', resumeText.length);
     } catch (error) {
       console.error('PDF parsing error:', error);
       return Response.json(
-        { error: 'Failed to parse PDF resume' },
+        { error: 'Failed to parse PDF resume. Please ensure it is a valid PDF file.' },
         { status: 400 }
       );
     }
