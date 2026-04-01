@@ -14,6 +14,8 @@ import toast from "react-hot-toast";
 export default function CareerIntelligencePage() {
   const [phase, setPhase] = useState('input'); // input | loading | results
   const [resumeFile, setResumeFile] = useState(null);
+  const [resumeText, setResumeText] = useState('');
+  const [inputMode, setInputMode] = useState('file'); // 'file' or 'text'
   const [jobRole, setJobRole] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [isDragging, setIsDragging] = useState(false);
@@ -72,7 +74,7 @@ export default function CareerIntelligencePage() {
     }
   };
 
-  const canAnalyze = resumeFile && jobRole.trim() && jobDescription.trim();
+  const canAnalyze = (inputMode === 'file' ? resumeFile : resumeText.trim()) && jobRole.trim() && jobDescription.trim();
 
   const handleAnalyze = async () => {
     if (!canAnalyze) return;
@@ -98,7 +100,13 @@ export default function CareerIntelligencePage() {
 
     try {
       const formData = new FormData();
-      formData.append('resume', resumeFile);
+      
+      if (inputMode === 'file') {
+        formData.append('resume', resumeFile);
+      } else {
+        formData.append('resumeText', resumeText);
+      }
+      
       formData.append('jobRole', jobRole);
       formData.append('jobDescription', jobDescription);
 
@@ -208,55 +216,89 @@ export default function CareerIntelligencePage() {
               </motion.div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {/* Card 1: Resume Upload */}
+                {/* Card 1: Resume Upload/Text */}
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.2 }}
                   className="bg-white rounded-2xl border-2 border-gray-200 p-6"
                 >
-                  <div className="flex items-center gap-2 mb-4">
-                    <FileText className="w-5 h-5 text-purple-600" />
-                    <h3 className="font-semibold text-gray-900">Resume</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-purple-600" />
+                      <h3 className="font-semibold text-gray-900">Resume</h3>
+                    </div>
+                    <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                      <button
+                        onClick={() => setInputMode('file')}
+                        className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                          inputMode === 'file' 
+                            ? 'bg-white text-purple-600 shadow-sm' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        PDF
+                      </button>
+                      <button
+                        onClick={() => setInputMode('text')}
+                        className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                          inputMode === 'text' 
+                            ? 'bg-white text-purple-600 shadow-sm' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Text
+                      </button>
+                    </div>
                   </div>
                   
-                  <div
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer ${
-                      isDragging 
-                        ? 'border-purple-500 bg-purple-50' 
-                        : resumeFile 
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-gray-300 hover:border-purple-400 hover:bg-gray-50'
-                    }`}
-                  >
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={handleFileSelect}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  {inputMode === 'file' ? (
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer ${
+                        isDragging 
+                          ? 'border-purple-500 bg-purple-50' 
+                          : resumeFile 
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-gray-300 hover:border-purple-400 hover:bg-gray-50'
+                      }`}
+                    >
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={handleFileSelect}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      
+                      {resumeFile ? (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="flex flex-col items-center gap-2"
+                        >
+                          <CheckCircle className="w-12 h-12 text-green-600" />
+                          <p className="text-sm font-medium text-gray-900">{resumeFile.name}</p>
+                          <p className="text-xs text-gray-500">PDF uploaded</p>
+                        </motion.div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2">
+                          <Upload className="w-12 h-12 text-gray-400" />
+                          <p className="text-sm font-medium text-gray-700">Drop PDF here</p>
+                          <p className="text-xs text-gray-500">or click to browse</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <textarea
+                      value={resumeText}
+                      onChange={(e) => setResumeText(e.target.value)}
+                      placeholder="Paste your resume text here..."
+                      rows={6}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors resize-none text-sm text-gray-900 placeholder-gray-400"
                     />
-                    
-                    {resumeFile ? (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="flex flex-col items-center gap-2"
-                      >
-                        <CheckCircle className="w-12 h-12 text-green-600" />
-                        <p className="text-sm font-medium text-gray-900">{resumeFile.name}</p>
-                        <p className="text-xs text-gray-500">PDF uploaded</p>
-                      </motion.div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-2">
-                        <Upload className="w-12 h-12 text-gray-400" />
-                        <p className="text-sm font-medium text-gray-700">Drop PDF here</p>
-                        <p className="text-xs text-gray-500">or click to browse</p>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </motion.div>
 
                 {/* Card 2: Job Role */}

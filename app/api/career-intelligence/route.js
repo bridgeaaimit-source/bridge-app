@@ -9,35 +9,62 @@ export async function POST(request) {
     // Parse multipart form data
     const formData = await request.formData();
     const resumeFile = formData.get('resume');
+    const resumeTextInput = formData.get('resumeText');
     const jobRole = formData.get('jobRole');
     const jobDescription = formData.get('jobDescription');
 
-    if (!resumeFile || !jobRole || !jobDescription) {
+    if ((!resumeFile && !resumeTextInput) || !jobRole || !jobDescription) {
       return Response.json(
-        { error: 'Resume, job role, and job description are required' },
+        { error: 'Resume (file or text), job role, and job description are required' },
         { status: 400 }
       );
     }
 
     console.log('Processing career intelligence request...');
     console.log('Job Role:', jobRole);
-    console.log('Resume file:', resumeFile.name);
-
-    // Convert resume file to buffer and extract text
-    const bytes = await resumeFile.arrayBuffer();
-    const buffer = Buffer.from(bytes);
     
     let resumeText = '';
-    try {
-      // Dynamic import of pdf-parse to avoid edge runtime issues
-      const pdf = (await import('pdf-parse')).default;
-      const pdfData = await pdf(buffer);
-      resumeText = pdfData.text;
-      console.log('Extracted resume text length:', resumeText.length);
-    } catch (error) {
-      console.error('PDF parsing error:', error);
+    
+    // If text input provided, use it directly
+    if (resumeTextInput) {
+      resumeText = resumeTextInput;
+      console.log('Using provided resume text, length:', resumeText.length);
+    } 
+    // Otherwise, parse PDF file
+    else if (resumeFile) {
+      console.log('Resume file:', resumeFile.name);
+      
+      try {
+        // Convert resume file to buffer and extract text
+        const bytes = await resumeFile.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        
+        // Use pdf-parse with proper error handling
+        const pdfParse = require('pdf-parse');
+        const pdfData = await pdfParse(buffer);
+        resumeText = pdfData.text;
+        console.log('Extracted resume text length:', resumeText.length);
+        
+        if (!resumeText || resumeText.trim().length < 50) {
+          throw new Error('PDF appears to be empty or contains very little text');
+        }
+      } catch (error) {
+        console.error('PDF parsing error:', error);
+        
+        return Response.json(
+          { 
+            error: 'Failed to parse PDF resume. The PDF might be image-based or encrypted. Please try using the "Text" option to paste your resume directly.',
+            details: error.message 
+          },
+          { status: 400 }
+        );
+      }
+    }
+    
+    // Validate we have resume text
+    if (!resumeText || resumeText.trim().length < 50) {
       return Response.json(
-        { error: 'Failed to parse PDF resume. Please ensure it is a valid PDF file.' },
+        { error: 'Resume text is too short. Please provide a complete resume.' },
         { status: 400 }
       );
     }
