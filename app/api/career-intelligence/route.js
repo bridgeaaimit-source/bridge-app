@@ -4,6 +4,49 @@ import Anthropic from '@anthropic-ai/sdk';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// PDF parsing function using pdfjs-dist (more reliable for serverless)
+async function extractPDFText(buffer) {
+  try {
+    // Try pdfjs-dist first (more reliable in serverless)
+    const pdfjsLib = await import('pdfjs-dist').catch(() => null);
+    
+    if (pdfjsLib) {
+      console.log('Using pdfjs-dist for PDF parsing');
+      
+      // Load the PDF document
+      const loadingTask = pdfjsLib.getDocument({ data: buffer });
+      const pdf = await loadingTask.promise;
+      
+      let fullText = '';
+      
+      // Extract text from each page
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+      
+      return fullText.trim();
+    }
+    
+    // Fallback to pdf-parse
+    console.log('Falling back to pdf-parse');
+    const pdfParse = await import('pdf-parse').catch(() => null);
+    
+    if (!pdfParse) {
+      throw new Error('No PDF parsing library available');
+    }
+    
+    const pdfData = await pdfParse.default(buffer);
+    return pdfData.text;
+    
+  } catch (error) {
+    console.error('PDF parsing failed:', error);
+    throw new Error(`PDF parsing failed: ${error.message}`);
+  }
+}
+
 export async function POST(request) {
   try {
     // Parse multipart form data
@@ -39,22 +82,32 @@ export async function POST(request) {
         const bytes = await resumeFile.arrayBuffer();
         const buffer = Buffer.from(bytes);
         
-        // Use pdf-parse with proper error handling
-        const pdfParse = require('pdf-parse');
-        const pdfData = await pdfParse(buffer);
-        resumeText = pdfData.text;
-        console.log('Extracted resume text length:', resumeText.length);
+        console.log('Attempting to parse PDF, file size:', bytes.byteLength, 'bytes');
+        
+        // Use the dedicated PDF parsing function
+        resumeText = await extractPDFText(buffer);
+        console.log('Successfully extracted resume text, length:', resumeText.length);
         
         if (!resumeText || resumeText.trim().length < 50) {
           throw new Error('PDF appears to be empty or contains very little text');
         }
+        
+        // Log first 200 characters to verify content
+        console.log('PDF content preview:', resumeText.substring(0, 200) + '...');
+        
       } catch (error) {
         console.error('PDF parsing error:', error);
         
         return Response.json(
           { 
-            error: 'Failed to parse PDF resume. The PDF might be image-based or encrypted. Please try using the "Text" option to paste your resume directly.',
-            details: error.message 
+            error: 'Failed to parse PDF resume. The PDF might be image-based, encrypted, or corrupted.',
+            suggestion: 'Try converting your PDF to a text-based version or use the "Text" option to paste your resume directly.',
+            details: error.message,
+            troubleshooting: [
+              'Ensure your PDF is not scanned/photographed',
+              'Try saving your resume as a new PDF from Word/Google Docs',
+              'Copy text from your PDF and paste in Text mode'
+            ]
           },
           { status: 400 }
         );

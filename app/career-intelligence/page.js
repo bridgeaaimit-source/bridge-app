@@ -68,7 +68,7 @@ export default function CareerIntelligencePage() {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
       setResumeFile(file);
-      toast.success('Resume uploaded!');
+      toast.success('PDF uploaded! Ready for analysis.');
     } else {
       toast.error('Please upload a PDF file');
     }
