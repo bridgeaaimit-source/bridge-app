@@ -17,7 +17,6 @@ export default function CareerIntelligencePage() {
   const [resumeText, setResumeText] = useState('');
   const [inputMode, setInputMode] = useState('file'); // 'file' or 'text'
   const [jobRole, setJobRole] = useState('');
-  const [jobDescription, setJobDescription] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -58,7 +57,7 @@ export default function CareerIntelligencePage() {
     const file = e.dataTransfer.files[0];
     if (file && file.type === 'application/pdf') {
       setResumeFile(file);
-      toast.success('Resume uploaded!');
+      toast.success('PDF uploaded! Ready for analysis.');
     } else {
       toast.error('Please upload a PDF file');
     }
@@ -237,7 +236,7 @@ export default function CareerIntelligencePage() {
                             : 'text-gray-600 hover:text-gray-900'
                         }`}
                       >
-                        PDF
+                        PDF 📄
                       </button>
                       <button
                         onClick={() => setInputMode('text')}
@@ -291,13 +290,18 @@ export default function CareerIntelligencePage() {
                       )}
                     </div>
                   ) : (
-                    <textarea
-                      value={resumeText}
-                      onChange={(e) => setResumeText(e.target.value)}
-                      placeholder="Paste your resume text here..."
-                      rows={6}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors resize-none text-sm text-gray-900 placeholder-gray-400"
-                    />
+                    <div>
+                      <textarea
+                        value={resumeText}
+                        onChange={(e) => setResumeText(e.target.value)}
+                        placeholder="Paste your complete resume text here...&#10;&#10;Include:&#10;• Your work experience&#10;• Education details&#10;• Skills and technologies&#10;• Projects and achievements&#10;&#10;Tip: Copy text from your PDF or Word document"
+                        rows={8}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors resize-none text-sm text-gray-900 placeholder-gray-400"
+                      />
+                      <div className="mt-2 text-xs text-gray-500">
+                        💡 Text mode is 100% reliable and works with any resume format
+                      </div>
+                    </div>
                   )}
                 </motion.div>
 

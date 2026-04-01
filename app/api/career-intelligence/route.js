@@ -4,46 +4,107 @@ import Anthropic from '@anthropic-ai/sdk';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// PDF parsing function using pdfjs-dist (more reliable for serverless)
+// Robust PDF parsing function that works in serverless environments
 async function extractPDFText(buffer) {
   try {
-    // Try pdfjs-dist first (more reliable in serverless)
-    const pdfjsLib = await import('pdfjs-dist').catch(() => null);
+    console.log('Starting robust PDF extraction...');
     
-    if (pdfjsLib) {
-      console.log('Using pdfjs-dist for PDF parsing');
+    // Method 1: Try pdf-parse with proper error handling
+    try {
+      console.log('Attempting pdf-parse...');
+      const pdfParse = await import('pdf-parse');
       
-      // Load the PDF document
-      const loadingTask = pdfjsLib.getDocument({ data: buffer });
-      const pdf = await loadingTask.promise;
+      // Configure pdf-parse options for better extraction
+      const options = {
+        // Maximum number of pages to parse (to prevent timeouts)
+        max: 20,
+        // Normalize whitespace
+        normalizeWhitespace: false,
+        // Disable hyphenation
+        disableCombineTextItems: false
+      };
       
-      let fullText = '';
+      const pdfData = await pdfParse.default(buffer, options);
+      const text = pdfData.text;
       
-      // Extract text from each page
-      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        const page = await pdf.getPage(pageNum);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(' ');
-        fullText += pageText + '\n';
+      if (text && text.trim().length > 50) {
+        console.log('pdf-parse succeeded, extracted:', text.length, 'characters');
+        console.log('PDF info:', pdfData.numpages, 'pages');
+        return text;
       }
       
-      return fullText.trim();
+      console.log('pdf-parse returned empty text');
+      
+    } catch (pdfParseError) {
+      console.log('pdf-parse failed:', pdfParseError.message);
     }
     
-    // Fallback to pdf-parse
-    console.log('Falling back to pdf-parse');
-    const pdfParse = await import('pdf-parse').catch(() => null);
-    
-    if (!pdfParse) {
-      throw new Error('No PDF parsing library available');
+    // Method 2: Try pdfjs-dist as fallback
+    try {
+      console.log('Attempting pdfjs-dist fallback...');
+      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.js');
+      const pdfjsWorker = await import('pdfjs-dist/legacy/build/pdf.worker.js');
+      
+      // Set worker source
+      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+      
+      // Load the PDF with proper options
+      const loadingTask = pdfjsLib.getDocument({
+        data: buffer,
+        // Disable font loading for faster processing
+        disableFontFaceLookup: false,
+        // Enable text extraction
+        standardFontDataUrl: true
+      });
+      
+      const pdf = await loadingTask.promise;
+      console.log('PDF loaded successfully, pages:', pdf.numPages);
+      
+      let fullText = '';
+      const maxPages = Math.min(pdf.numPages, 20); // Limit pages to prevent timeouts
+      
+      // Extract text from each page
+      for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+        try {
+          const page = await pdf.getPage(pageNum);
+          const textContent = await page.getTextContent({
+            // Include marked content for better extraction
+            includeMarkedContent: true,
+            // Normalize text
+            normalizeWhitespace: true
+          });
+          
+          const pageText = textContent.items
+            .map(item => item.str)
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+          
+          if (pageText) {
+            fullText += pageText + '\n';
+          }
+        } catch (pageError) {
+          console.log(`Failed to extract page ${pageNum}:`, pageError.message);
+          continue;
+        }
+      }
+      
+      if (fullText && fullText.trim().length > 50) {
+        console.log('pdfjs-dist succeeded, extracted:', fullText.length, 'characters');
+        return fullText.trim();
+      }
+      
+      console.log('pdfjs-dist returned empty text');
+      
+    } catch (pdfjsError) {
+      console.log('pdfjs-dist failed:', pdfjsError.message);
     }
     
-    const pdfData = await pdfParse.default(buffer);
-    return pdfData.text;
+    throw new Error('Both PDF parsing methods failed. The PDF might be image-based, encrypted, or corrupted.');
     
   } catch (error) {
-    console.error('PDF parsing failed:', error);
-    throw new Error(`PDF parsing failed: ${error.message}`);
+    console.error('All PDF extraction methods failed:', error);
+    throw new Error(`PDF extraction failed: ${error.message}`);
   }
 }
 
@@ -82,42 +143,33 @@ export async function POST(request) {
         const bytes = await resumeFile.arrayBuffer();
         const buffer = Buffer.from(bytes);
         
-        console.log('Attempting to parse PDF, file size:', bytes.byteLength, 'bytes');
+        console.log('Extracting text from PDF, file size:', bytes.byteLength, 'bytes');
         
-        // Use the dedicated PDF parsing function
+        // Use the PDF extraction function
         resumeText = await extractPDFText(buffer);
         console.log('Successfully extracted resume text, length:', resumeText.length);
-        
-        if (!resumeText || resumeText.trim().length < 50) {
-          throw new Error('PDF appears to be empty or contains very little text');
-        }
         
         // Log first 200 characters to verify content
         console.log('PDF content preview:', resumeText.substring(0, 200) + '...');
         
       } catch (error) {
-        console.error('PDF parsing error:', error);
+        console.error('PDF extraction error:', error);
         
         return Response.json(
           { 
-            error: 'Failed to parse PDF resume. The PDF might be image-based, encrypted, or corrupted.',
-            suggestion: 'Try converting your PDF to a text-based version or use the "Text" option to paste your resume directly.',
-            details: error.message,
-            troubleshooting: [
-              'Ensure your PDF is not scanned/photographed',
-              'Try saving your resume as a new PDF from Word/Google Docs',
-              'Copy text from your PDF and paste in Text mode'
-            ]
+            error: 'Failed to extract text from PDF. The PDF might be image-based or encrypted.',
+            suggestion: 'Try copying text from your PDF and using the Text option instead.',
+            details: error.message
           },
           { status: 400 }
         );
       }
     }
     
-    // Validate we have resume text
+    // Validate we have enough resume text
     if (!resumeText || resumeText.trim().length < 50) {
       return Response.json(
-        { error: 'Resume text is too short. Please provide a complete resume.' },
+        { error: 'Resume text is too short. Please provide a complete resume with work experience, education, and skills.' },
         { status: 400 }
       );
     }
