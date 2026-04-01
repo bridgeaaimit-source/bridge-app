@@ -18,7 +18,8 @@ import {
   Search, 
   TrendingUp,
   ChevronRight,
-  LogOut
+  LogOut,
+  Sparkles
 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -30,7 +31,6 @@ export default function AppShell({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const [userProfile, setUserProfile] = useState(null);
-  const [isMobile, setIsMobile] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState(3);
@@ -83,6 +83,7 @@ export default function AppShell({ children }) {
 
   const navigation = [
     { href: '/dashboard', icon: Home, label: 'Dashboard' },
+    { href: '/career-intelligence', icon: Sparkles, label: 'Career Intelligence' },
     { href: '/interview', icon: Mic, label: 'Mock Interview' },
     { href: '/smart-interview', icon: FileText, label: 'Smart Interview' },
     { href: '/pulse', icon: Zap, label: 'PULSE' },
@@ -99,7 +100,7 @@ export default function AppShell({ children }) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Menu Overlay */}
-      {isMobile && isSidebarOpen && (
+      {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
@@ -112,19 +113,17 @@ export default function AppShell({ children }) {
           <div className="flex justify-between items-center h-16">
             {/* Left Side - Logo and Mobile Menu */}
             <div className="flex items-center gap-4">
-              {/* Mobile Menu Button */}
-              {isMobile && (
-                <button
-                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                  className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-                >
-                  <div className="w-6 h-6 flex flex-col justify-center gap-1">
-                    <div className={`h-0.5 bg-gray-600 transition-all ${isSidebarOpen ? 'rotate-45 translate-y-1.5' : ''}`}></div>
-                    <div className={`h-0.5 bg-gray-600 transition-all ${isSidebarOpen ? 'opacity-0' : ''}`}></div>
-                    <div className={`h-0.5 bg-gray-600 transition-all ${isSidebarOpen ? '-rotate-45 -translate-y-1.5' : ''}`}></div>
-                  </div>
-                </button>
-              )}
+              {/* Mobile Menu Button - Show on screens < 1024px */}
+              <button
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                <div className="w-6 h-6 flex flex-col justify-center gap-1">
+                  <div className={`h-0.5 w-full bg-gray-600 transition-all ${isSidebarOpen ? 'rotate-45 translate-y-1.5' : ''}`}></div>
+                  <div className={`h-0.5 w-full bg-gray-600 transition-all ${isSidebarOpen ? 'opacity-0' : ''}`}></div>
+                  <div className={`h-0.5 w-full bg-gray-600 transition-all ${isSidebarOpen ? '-rotate-45 -translate-y-1.5' : ''}`}></div>
+                </div>
+              </button>
               
               {/* Logo */}
               <div className="flex items-center">
@@ -137,45 +136,39 @@ export default function AppShell({ children }) {
             </div>
 
             {/* Center - Search (Hidden on Mobile) */}
-            {!isMobile && (
-              <div className="flex-1 max-w-xl mx-8">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Search features, topics, or help..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  />
-                </div>
+            <div className="hidden lg:flex flex-1 max-w-xl mx-8">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search features, topics, or help..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                />
               </div>
-            )}
+            </div>
 
             {/* Right Side */}
             <div className="flex items-center gap-2 sm:gap-4">
-              {/* Notifications (Hidden on Small Mobile) */}
-              {!isMobile && (
-                <button className="relative p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                  <Bell className="w-5 h-5" />
-                  {notifications > 0 && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                  )}
-                </button>
-              )}
+              {/* Notifications (Hidden on Mobile) */}
+              <button className="hidden lg:block relative p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                <Bell className="w-5 h-5" />
+                {notifications > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                )}
+              </button>
 
               {/* User Avatar */}
               <div className="flex items-center gap-2 sm:gap-3">
-                {!isMobile && (
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-gray-900">
-                      {userProfile?.name || 'User'}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {userProfile?.college || 'Student'}
-                    </div>
+                <div className="hidden lg:block text-right">
+                  <div className="text-sm font-medium text-gray-900">
+                    {userProfile?.name || 'User'}
                   </div>
-                )}
+                  <div className="text-xs text-gray-500">
+                    {userProfile?.college || 'Student'}
+                  </div>
+                </div>
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-cyan-600 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base">
                   {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
@@ -187,7 +180,7 @@ export default function AppShell({ children }) {
 
       {/* Sidebar */}
       <aside className={`fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-200 z-30 transform transition-transform duration-300 ease-in-out ${
-        isMobile ? (isSidebarOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } lg:translate-x-0`}>
         <div className="flex flex-col h-full">
           {/* User Profile Mini Card */}
@@ -223,7 +216,7 @@ export default function AppShell({ children }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={() => isMobile && setIsSidebarOpen(false)}
+                  onClick={() => setIsSidebarOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                     isActive(item.href)
                       ? 'bg-cyan-50 text-cyan-600 border-l-4 border-cyan-600'
@@ -259,9 +252,7 @@ export default function AppShell({ children }) {
       </aside>
 
       {/* Main Content */}
-      <main className={`mt-16 transition-all duration-300 ${
-        isMobile ? 'ml-0' : 'ml-64'
-      } p-4 sm:p-6 lg:p-8`}>
+      <main className="lg:ml-64 p-4 sm:p-6 lg:p-8">
         {children}
       </main>
     </div>

@@ -23,6 +23,20 @@ export default function RecruiterPage() {
   const [typeFilter, setTypeFilter] = useState('All');
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
+  
+  // Smart Match state
+  const [matchRequirements, setMatchRequirements] = useState({
+    role: '',
+    skills: '',
+    experience: '',
+    location: '',
+    minScore: '',
+    jobType: '',
+    domain: '',
+    additional: ''
+  });
+  const [matchResults, setMatchResults] = useState(null);
+  const [matchLoading, setMatchLoading] = useState(false);
 
   // Fetch real students from Firestore
   useEffect(() => {
@@ -146,6 +160,44 @@ export default function RecruiterPage() {
     return { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Beginner' };
   };
 
+  const handleSmartMatch = async () => {
+    if (!matchRequirements.role && !matchRequirements.skills) {
+      toast.error('Please provide at least role or skills');
+      return;
+    }
+
+    setMatchLoading(true);
+    toast.loading('Finding best matches...');
+
+    try {
+      const response = await fetch('/api/recruiter-match', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requirements: matchRequirements
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to match candidates');
+      }
+
+      toast.dismiss();
+      setMatchResults(data);
+      toast.success(`Found ${data.matches.length} matching candidates!`);
+    } catch (error) {
+      toast.dismiss();
+      toast.error(error.message || 'Failed to match candidates');
+      console.error('Smart match error:', error);
+    } finally {
+      setMatchLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <AppShell>
@@ -221,9 +273,10 @@ export default function RecruiterPage() {
 
         {/* Navigation Tabs */}
         <div className="bg-white rounded-xl border border-gray-200 p-1 mb-6">
-          <div className="flex space-x-1">
+          <div className="flex space-x-1 overflow-x-auto">
             {[
               { id: 'browse', label: 'Browse Students', icon: Users },
+              { id: 'smartmatch', label: 'Smart Match', icon: TrendingUp },
               { id: 'shortlist', label: 'Shortlisted', icon: Star },
               { id: 'post', label: 'Post Job', icon: Briefcase },
             ].map((tab) => {
@@ -232,7 +285,7 @@ export default function RecruiterPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'bg-cyan-600 text-white'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -456,6 +509,331 @@ export default function RecruiterPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'smartmatch' && (
+          <div>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">AI-Powered Candidate Matching</h2>
+              <p className="text-gray-600 mb-6">Enter your requirements and get the best matching candidates instantly</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Job Role *</label>
+                  <input
+                    type="text"
+                    value={matchRequirements.role}
+                    onChange={(e) => setMatchRequirements({...matchRequirements, role: e.target.value})}
+                    placeholder="e.g. Software Engineer, Marketing Manager"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Required Skills *</label>
+                  <input
+                    type="text"
+                    value={matchRequirements.skills}
+                    onChange={(e) => setMatchRequirements({...matchRequirements, skills: e.target.value})}
+                    placeholder="e.g. Python, React, SQL"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Experience Level</label>
+                  <select
+                    value={matchRequirements.experience}
+                    onChange={(e) => setMatchRequirements({...matchRequirements, experience: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="">Any</option>
+                    <option value="Fresher">Fresher</option>
+                    <option value="0-1 years">0-1 years</option>
+                    <option value="1-3 years">1-3 years</option>
+                    <option value="3+ years">3+ years</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                  <input
+                    type="text"
+                    value={matchRequirements.location}
+                    onChange={(e) => setMatchRequirements({...matchRequirements, location: e.target.value})}
+                    placeholder="e.g. Bangalore, Remote"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Min BRIDGE Score</label>
+                  <input
+                    type="number"
+                    value={matchRequirements.minScore}
+                    onChange={(e) => setMatchRequirements({...matchRequirements, minScore: e.target.value})}
+                    placeholder="e.g. 700"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Job Type</label>
+                  <select
+                    value={matchRequirements.jobType}
+                    onChange={(e) => setMatchRequirements({...matchRequirements, jobType: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="">Any</option>
+                    <option value="Full-time">Full-time</option>
+                    <option value="Internship">Internship</option>
+                    <option value="Both">Both</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Domain</label>
+                  <select
+                    value={matchRequirements.domain}
+                    onChange={(e) => setMatchRequirements({...matchRequirements, domain: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="">Any</option>
+                    <option value="Tech">Tech</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Finance">Finance</option>
+                    <option value="HR">HR</option>
+                    <option value="Operations">Operations</option>
+                    <option value="MBA">MBA</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Additional Requirements</label>
+                <textarea
+                  value={matchRequirements.additional}
+                  onChange={(e) => setMatchRequirements({...matchRequirements, additional: e.target.value})}
+                  placeholder="Any other specific requirements, certifications, or preferences..."
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none"
+                />
+              </div>
+
+              <button
+                onClick={handleSmartMatch}
+                disabled={matchLoading}
+                className="w-full bg-cyan-600 text-white py-3 rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+              >
+                {matchLoading ? (
+                  <>
+                    <div className="w-5 h-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    Finding Best Matches...
+                  </>
+                ) : (
+                  <>
+                    <TrendingUp className="w-5 h-5" />
+                    Find Matching Candidates
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Match Results */}
+            {matchResults && (
+              <div>
+                {/* Insights Card */}
+                <div className="bg-gradient-to-r from-cyan-50 to-teal-50 rounded-xl border border-cyan-200 p-6 mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Matching Insights</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <div className="text-2xl font-bold text-cyan-600">{matchResults.insights.total_candidates}</div>
+                      <div className="text-sm text-gray-600">Total Candidates</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-green-600">{matchResults.insights.matched_candidates}</div>
+                      <div className="text-sm text-gray-600">Good Matches</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-purple-600">{matchResults.insights.avg_match_score}%</div>
+                      <div className="text-sm text-gray-600">Avg Match Score</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-cyan-600">{matchResults.matches.length}</div>
+                      <div className="text-sm text-gray-600">Top Matches</div>
+                    </div>
+                  </div>
+                  {matchResults.insights.recommendation && (
+                    <div className="mt-4 p-3 bg-white rounded-lg border border-cyan-200">
+                      <p className="text-sm text-gray-700">
+                        <span className="font-semibold">💡 Recommendation: </span>
+                        {matchResults.insights.recommendation}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Matched Candidates */}
+                <div className="space-y-4">
+                  {matchResults.matches.map((match, index) => {
+                    const candidate = match.candidate_data;
+                    if (!candidate) return null;
+
+                    return (
+                      <div key={candidate.uid} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-4">
+                            <div className="relative">
+                              {candidate.photo ? (
+                                <img src={candidate.photo} alt={candidate.name} className="w-16 h-16 rounded-full object-cover" />
+                              ) : (
+                                <div className="w-16 h-16 bg-gradient-to-r from-cyan-600 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                                  {candidate.name?.charAt(0)?.toUpperCase() || 'A'}
+                                </div>
+                              )}
+                              <div className="absolute -top-1 -right-1 bg-cyan-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                                #{index + 1}
+                              </div>
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900">{candidate.name}</h3>
+                              <p className="text-sm text-gray-600">{candidate.college}</p>
+                              <div className="flex items-center gap-3 mt-1">
+                                <span className="text-xs text-gray-500">{candidate.degree}</span>
+                                <span className="text-xs text-gray-400">•</span>
+                                <span className="text-xs text-gray-500">{candidate.location}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className={`text-3xl font-bold ${
+                              match.match_score >= 90 ? 'text-green-600' :
+                              match.match_score >= 80 ? 'text-cyan-600' :
+                              match.match_score >= 70 ? 'text-blue-600' :
+                              'text-gray-600'
+                            }`}>
+                              {match.match_score}%
+                            </div>
+                            <div className={`text-xs px-3 py-1 rounded-full font-semibold mt-1 ${
+                              match.recommendation === 'Strong Match' ? 'bg-green-100 text-green-700' :
+                              match.recommendation === 'Good Match' ? 'bg-cyan-100 text-cyan-700' :
+                              match.recommendation === 'Potential Match' ? 'bg-blue-100 text-blue-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {match.recommendation}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-xs text-gray-600 mb-1">BRIDGE Score</div>
+                            <div className="text-xl font-bold text-cyan-600">{candidate.bridgeScore}</div>
+                          </div>
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-xs text-gray-600 mb-1">Interview Readiness</div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className="bg-green-600 h-2 rounded-full"
+                                  style={{ width: `${match.interview_readiness}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm font-semibold">{match.interview_readiness}%</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3 mb-4">
+                          <div>
+                            <h4 className="text-sm font-semibold text-green-700 mb-2">✓ Key Strengths</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {match.key_strengths?.map((strength, i) => (
+                                <span key={i} className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full">
+                                  {strength}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4 className="text-sm font-semibold text-cyan-700 mb-2">🎯 Why This Match</h4>
+                            <ul className="space-y-1">
+                              {match.match_reasons?.map((reason, i) => (
+                                <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                                  <span className="text-cyan-600 mt-0.5">•</span>
+                                  <span>{reason}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          {match.gaps && match.gaps.length > 0 && (
+                            <div>
+                              <h4 className="text-sm font-semibold text-orange-700 mb-2">⚠ Areas to Assess</h4>
+                              <ul className="space-y-1">
+                                {match.gaps.map((gap, i) => (
+                                  <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                                    <span className="text-orange-600 mt-0.5">•</span>
+                                    <span>{gap}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {match.salary_fit && (
+                            <div className="bg-blue-50 p-3 rounded-lg">
+                              <div className="text-xs text-blue-700 font-semibold mb-1">💰 Salary Expectation</div>
+                              <div className="text-sm text-blue-900">{match.salary_fit}</div>
+                            </div>
+                          )}
+
+                          {match.interview_questions && match.interview_questions.length > 0 && (
+                            <div>
+                              <h4 className="text-sm font-semibold text-purple-700 mb-2">❓ Suggested Interview Questions</h4>
+                              <ul className="space-y-1">
+                                {match.interview_questions.map((q, i) => (
+                                  <li key={i} className="text-sm text-gray-700 pl-4 border-l-2 border-purple-200">
+                                    {q}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => {
+                              setSelectedStudent(candidate);
+                              setShowProfile(true);
+                            }}
+                            className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                          >
+                            View Full Profile
+                          </button>
+                          <button
+                            onClick={() => toggleShortlist(candidate)}
+                            className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                              shortlisted.find(s => s.uid === candidate.uid)
+                                ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                : 'bg-cyan-600 text-white hover:bg-cyan-700'
+                            }`}
+                          >
+                            {shortlisted.find(s => s.uid === candidate.uid) ? '⭐ Shortlisted' : '☆ Shortlist'}
+                          </button>
+                          <button className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium">
+                            Contact
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
