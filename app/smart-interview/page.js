@@ -531,7 +531,7 @@ export default function SmartInterviewPage() {
             </div>
             <button
               onClick={loadFeedbackHistory}
-              className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
               <History className="w-5 h-5" />
               View History
@@ -736,8 +736,8 @@ export default function SmartInterviewPage() {
                       💡 Be specific in your job description for better question matching
                     </p>
                   </div>
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-cyan-900">
+                  <div className="p-3 bg-purple-50 rounded-lg">
+                    <p className="text-sm text-purple-200">
                       🎯 Choose the right interview round for relevant questions
                     </p>
                   </div>
@@ -892,13 +892,13 @@ export default function SmartInterviewPage() {
                   Interview Tips
                 </h3>
                 <div className="space-y-3">
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-cyan-900">
+                  <div className="p-3 bg-purple-50 rounded-lg">
+                    <p className="text-sm text-purple-200">
                       💡 Be specific and provide examples from your experience
                     </p>
                   </div>
-                  <div className="p-3 bg-green-50 rounded-lg">
-                    <p className="text-sm text-green-900">
+                  <div className="p-3 bg-purple-50 rounded-lg">
+                    <p className="text-sm text-purple-200">
                       🎯 Relate your answers to the job requirements
                     </p>
                   </div>
@@ -986,7 +986,7 @@ export default function SmartInterviewPage() {
               {feedback.interviewer_notes && (
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                   <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-cyan-600" />
+                    <MessageSquare className="w-5 h-5 text-purple-600" />
                     Interviewer Notes
                   </h3>
                   <p className="text-gray-700">{feedback.interviewer_notes}</p>
@@ -1034,15 +1034,15 @@ export default function SmartInterviewPage() {
 
               {/* Improvement Roadmap */}
               {feedback.improvement_roadmap && feedback.improvement_roadmap.length > 0 && (
-                <div className="bg-gradient-to-br from-cyan-50 to-teal-50 rounded-2xl p-6 border border-cyan-100">
+                <div className="bg-gradient-to-br from-purple-50 to-purple-50 rounded-2xl p-6 border border-purple-100">
                   <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Lightbulb className="w-5 h-5 text-cyan-600" />
+                    <Lightbulb className="w-5 h-5 text-purple-600" />
                     Your Improvement Roadmap
                   </h3>
                   <div className="space-y-3">
                     {feedback.improvement_roadmap.map((item, index) => (
                       <div key={index} className="flex items-start gap-3 bg-white rounded-lg p-4">
-                        <div className="flex-shrink-0 w-6 h-6 bg-cyan-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                        <div className="flex-shrink-0 w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
                           {index + 1}
                         </div>
                         <p className="text-gray-700 text-sm flex-1">{item}</p>
@@ -1120,7 +1120,7 @@ export default function SmartInterviewPage() {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
-                <div className="w-8 h-8 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent mx-auto mb-4"></div>
+                <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent mx-auto mb-4"></div>
                 <div className="text-gray-600">Loading history...</div>
               </div>
             </div>
@@ -1131,7 +1131,7 @@ export default function SmartInterviewPage() {
               <p className="text-gray-600 mb-6">Complete your first interview to see feedback here</p>
               <button
                 onClick={() => setStage('setup')}
-                className="px-6 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
+                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
                 Start Interview
               </button>
@@ -1176,7 +1176,7 @@ export default function SmartInterviewPage() {
                     }`}>
                       {item.feedback?.verdict}
                     </span>
-                    <span className="text-sm text-cyan-600 font-medium">Click to view details →</span>
+                    <span className="text-sm text-purple-600 font-medium">Click to view details →</span>
                   </div>
                 </div>
               ))}

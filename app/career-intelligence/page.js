@@ -205,7 +205,7 @@ export default function CareerIntelligencePage() {
               >
                 <div className="flex items-center justify-center gap-3 mb-4">
                   <Sparkles className="w-8 h-8 text-purple-500" />
-                  <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 via-cyan-600 to-teal-600 bg-clip-text text-transparent">
+                  <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 via-purple-500 to-purple-700 bg-clip-text text-transparent">
                     How ready are you?
                   </h1>
                 </div>
@@ -313,7 +313,7 @@ export default function CareerIntelligencePage() {
                   className="bg-white rounded-2xl border-2 border-gray-200 p-6"
                 >
                   <div className="flex items-center gap-2 mb-4">
-                    <Briefcase className="w-5 h-5 text-cyan-600" />
+                    <Briefcase className="w-5 h-5 text-purple-600" />
                     <h3 className="font-semibold text-gray-900">Target Role</h3>
                   </div>
                   
@@ -322,20 +322,20 @@ export default function CareerIntelligencePage() {
                     value={jobRole}
                     onChange={(e) => setJobRole(e.target.value)}
                     placeholder="e.g. SDE-2 at Amazon"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-cyan-500 focus:outline-none transition-colors text-gray-900 placeholder-gray-400"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors text-gray-900 placeholder-gray-400"
                   />
                   
                   <div className="mt-3 space-y-1">
                     <p className="text-xs text-gray-500">Examples:</p>
                     <button
                       onClick={() => setJobRole('Product Manager at Flipkart')}
-                      className="text-xs text-cyan-600 hover:underline block"
+                      className="text-xs text-purple-600 hover:underline block"
                     >
                       Product Manager at Flipkart
                     </button>
                     <button
                       onClick={() => setJobRole('Data Scientist at Google')}
-                      className="text-xs text-cyan-600 hover:underline block"
+                      className="text-xs text-purple-600 hover:underline block"
                     >
                       Data Scientist at Google
                     </button>
@@ -350,7 +350,7 @@ export default function CareerIntelligencePage() {
                   className="bg-white rounded-2xl border-2 border-gray-200 p-6"
                 >
                   <div className="flex items-center gap-2 mb-4">
-                    <FileText className="w-5 h-5 text-teal-600" />
+                    <FileText className="w-5 h-5 text-purple-600" />
                     <h3 className="font-semibold text-gray-900">Job Description</h3>
                   </div>
                   
@@ -359,7 +359,7 @@ export default function CareerIntelligencePage() {
                     onChange={(e) => setJobDescription(e.target.value)}
                     placeholder="Paste the complete job description here..."
                     rows={6}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:outline-none transition-colors resize-none text-gray-900 placeholder-gray-400 text-sm"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors resize-none text-gray-900 placeholder-gray-400 text-sm"
                   />
                   
                   <div className="flex justify-between items-center mt-2">
@@ -395,7 +395,7 @@ export default function CareerIntelligencePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="min-h-[calc(100vh-200px)] flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-cyan-900"
+            className="min-h-[calc(100vh-200px)] flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-purple-800"
           >
             <div className="text-center">
               <motion.div
@@ -577,7 +577,7 @@ export default function CareerIntelligencePage() {
                 >
                   <h2 className="text-2xl font-bold text-gray-900 mb-4">Overview</h2>
                   
-                  <div className="bg-gradient-to-r from-purple-50 to-cyan-50 rounded-lg p-6 mb-6">
+                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-6 mb-6">
                     <p className="text-gray-800 leading-relaxed">{results.summary}</p>
                   </div>
 
@@ -606,10 +606,10 @@ export default function CareerIntelligencePage() {
 
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <Clock className="w-5 h-5 text-cyan-600" />
+                        <Clock className="w-5 h-5 text-purple-600" />
                         <h4 className="font-semibold text-gray-900">Prep Time</h4>
                       </div>
-                      <p className="text-2xl font-bold text-cyan-600">
+                      <p className="text-2xl font-bold text-purple-600">
                         {results.estimatedPrepTime}
                       </p>
                       <p className="text-xs text-gray-600">estimated timeline</p>
@@ -646,7 +646,7 @@ export default function CareerIntelligencePage() {
                         onClick={() => setSkillTab(category)}
                         className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
                           skillTab === category
-                            ? 'bg-cyan-600 text-white'
+                            ? 'bg-purple-600 text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
@@ -689,7 +689,7 @@ export default function CareerIntelligencePage() {
                                 initial={{ width: 0 }}
                                 animate={{ width: `${skill.requiredLevel}%` }}
                                 transition={{ duration: 1, delay: index * 0.1 + 0.3 }}
-                                className="absolute left-0 top-0 h-full bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full opacity-50"
+                                className="absolute left-0 top-0 h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full opacity-50"
                               />
                               <div className="absolute inset-0 flex items-center justify-between px-3 text-xs font-medium">
                                 <span className="text-gray-700">Current: {skill.currentLevel}%</span>
@@ -885,7 +885,7 @@ export default function CareerIntelligencePage() {
                             </div>
 
                             <div className="flex items-center gap-2 mb-4">
-                              <span className="text-xs bg-cyan-100 text-cyan-700 px-2 py-1 rounded">
+                              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
                                 {course.skillTaught}
                               </span>
                               <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
@@ -897,7 +897,7 @@ export default function CareerIntelligencePage() {
                               href={course.directUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="w-full bg-cyan-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-cyan-700 transition-colors flex items-center justify-center gap-2"
+                              className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
                             >
                               Start Learning <ChevronRight className="w-4 h-4" />
                             </a>
@@ -922,7 +922,7 @@ export default function CareerIntelligencePage() {
                     <div className="flex items-center gap-3">
                       <div className="flex-1 bg-gray-200 rounded-full h-3">
                         <div 
-                          className="bg-gradient-to-r from-green-500 to-teal-500 h-3 rounded-full transition-all"
+                          className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all"
                           style={{ width: `${getRoadmapCompletion()}%` }}
                         />
                       </div>
@@ -936,7 +936,7 @@ export default function CareerIntelligencePage() {
                     {results.roadmap.map((week, weekIndex) => (
                       <div key={weekIndex} className="flex gap-4">
                         <div className="flex-shrink-0 w-16 text-center">
-                          <div className="bg-cyan-100 text-cyan-700 font-bold text-sm px-3 py-2 rounded-lg">
+                          <div className="bg-purple-100 text-purple-700 font-bold text-sm px-3 py-2 rounded-lg">
                             Week {week.week}
                           </div>
                         </div>
@@ -964,7 +964,7 @@ export default function CareerIntelligencePage() {
                                     type="checkbox"
                                     checked={isCompleted}
                                     onChange={() => toggleRoadmapTask(weekIndex, taskIndex)}
-                                    className="mt-1 w-5 h-5 text-cyan-600 rounded focus:ring-2 focus:ring-cyan-500"
+                                    className="mt-1 w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
                                   />
                                   <div className="flex-1">
                                     <h4 className={`font-semibold text-gray-900 mb-1 ${
@@ -991,7 +991,7 @@ export default function CareerIntelligencePage() {
                                         href={task.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-sm text-cyan-600 hover:underline mt-2 inline-flex items-center gap-1"
+                                        className="text-sm text-purple-600 hover:underline mt-2 inline-flex items-center gap-1"
                                       >
                                         View Resource <ExternalLink className="w-3 h-3" />
                                       </a>
@@ -1047,7 +1047,7 @@ export default function CareerIntelligencePage() {
                             navigator.clipboard.writeText(tip.improved);
                             toast.success('Copied to clipboard!');
                           }}
-                          className="mt-3 text-sm text-cyan-600 hover:text-cyan-700 font-medium flex items-center gap-1"
+                          className="mt-3 text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
                         >
                           📋 Copy Improved Bullet
                         </button>
