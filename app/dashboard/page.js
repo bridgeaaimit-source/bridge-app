@@ -30,6 +30,7 @@ import { auth } from "@/lib/firebase";
 import { doc, collection, query, orderBy, limit, getDocs, getDoc, where, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
+import { motion } from "framer-motion";
 
 export default function Dashboard() {
   const [bridgeScore, setBridgeScore] = useState(null);
