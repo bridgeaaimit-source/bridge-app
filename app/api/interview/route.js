@@ -211,12 +211,17 @@ Return ONLY valid JSON, no markdown, no extra text:
           
           if (userSnap.exists()) {
             const userData = userSnap.data();
-            const newBridgeScore = Math.min(1000, (userData.bridgeScore || 500) + (analysis.score * 10));
+            const scoreIncrease = analysis.score * 10;
+            const newBridgeScore = Math.min(1000, 
+              Math.max(0, 
+                (userData.bridgeScore || 500) + scoreIncrease
+              )
+            );
             const newInterviewsDone = (userData.interviewsDone || 0) + 1;
             const newAvgScore = ((userData.avgScore || 0) * (userData.interviewsDone || 0) + analysis.score) / newInterviewsDone;
             
             await updateDoc(userRef, {
-              bridgeScore: newBridgeScore,
+              bridgeScore: Math.round(newBridgeScore),
               interviewsDone: newInterviewsDone,
               avgScore: newAvgScore,
               streak: (userData.streak || 0) + 1

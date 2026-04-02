@@ -101,8 +101,9 @@ export default function Dashboard() {
             // Set user name from Firestore (more reliable than displayName)
             setUserName(userData.name || user.displayName || 'User');
             
+            const score = userData.bridgeScore;
             const userStats = {
-              bridgeScore: userData.bridgeScore || 0,
+              bridgeScore: typeof score === 'number' ? score : parseInt(score) || 500,
               interviewsDone: userData.interviewsDone || 0,
               currentStreak: userData.streak || 0,
               avgScore: userData.avgScore || 0
@@ -223,14 +224,14 @@ export default function Dashboard() {
       title: 'AI Mock Interview',
       description: 'Practice with real questions from top companies',
       href: '/interview',
-      color: 'cyan'
+      color: 'purple'
     },
     {
       icon: Zap,
       title: 'PULSE Feed',
       description: 'Stay updated with latest company insights',
       href: '/pulse',
-      color: 'teal'
+      color: 'purple'
     },
     {
       icon: Brain,
@@ -253,23 +254,25 @@ export default function Dashboard() {
 
   const getActivityColor = (type) => {
     switch(type) {
-      case 'interview': return 'text-cyan-600 bg-blue-50';
+      case 'interview': return 'text-purple-600 bg-purple-50';
       case 'gd': return 'text-green-600 bg-green-50';
       case 'pulse': return 'text-yellow-600 bg-yellow-50';
-      case 'coach': return 'text-cyan-600 bg-cyan-50';
+      case 'coach': return 'text-purple-600 bg-purple-50';
       default: return 'text-gray-600 bg-gray-50';
     }
   };
 
+  const firstName = userName?.split(' ')[0] || 'there';
+
   return (
     <AppShell>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 md:px-8">
         {/* Greeting Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {greeting}, {userName} 👋
+                {greeting}, {firstName} 👋
               </h1>
               <p className="text-gray-600">Here's your placement prep summary for today</p>
             </div>
@@ -281,11 +284,11 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 lg:mb-8">
           <div className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-cyan-100 rounded-full flex items-center justify-center">
-                <Trophy className="w-5 h-5 lg:w-6 lg:h-6 text-cyan-600" />
+              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                <Trophy className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600" />
               </div>
               <div className="flex items-center text-green-600 text-xs lg:text-sm hidden sm:flex">
                 <ArrowUp className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
@@ -361,13 +364,11 @@ export default function Dashboard() {
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-4">
                           <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
-                            feature.color === 'cyan' ? 'bg-gradient-to-br from-cyan-50 to-cyan-100' :
-                            feature.color === 'teal' ? 'bg-gradient-to-br from-teal-50 to-teal-100' :
+                            feature.color === 'purple' ? 'bg-gradient-to-br from-purple-50 to-purple-100' :
                             'bg-gradient-to-br from-sky-50 to-sky-100'
                           }`}>
                             <Icon className={`w-7 h-7 ${
-                              feature.color === 'cyan' ? 'text-cyan-600' :
-                              feature.color === 'teal' ? 'text-teal-600' :
+                              feature.color === 'purple' ? 'text-purple-600' :
                               'text-sky-600'
                             }`} />
                           </div>
@@ -387,18 +388,18 @@ export default function Dashboard() {
             </div>
 
             {/* Today's Challenge */}
-            <div className="bg-gradient-to-r from-[#0891B2] to-[#0D9488] rounded-2xl p-6 text-white">
+            <div className="bg-gradient-to-r from-[#6C3FE8] to-[#9B6DFF] rounded-2xl p-6 text-white">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Today's Challenge</h2>
-                <div className="flex items-center gap-2 text-cyan-200">
+                <div className="flex items-center gap-2 text-purple-200">
                   <Clock className="w-4 h-4" />
                   <span className="text-sm">15 min</span>
                 </div>
               </div>
-              <p className="text-cyan-100 mb-6">
+              <p className="text-purple-100 mb-6">
                 Complete a full Amazon SDE technical interview with AI feedback
               </p>
-              <button className="bg-white text-cyan-600 px-6 py-3 rounded-lg font-semibold hover:bg-cyan-50 transition-colors">
+              <button className="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-colors">
                 Start Challenge
               </button>
             </div>
@@ -488,7 +489,7 @@ export default function Dashboard() {
                       <Target className="w-6 h-6 text-gray-400" />
                     </div>
                     <div className="text-gray-500 text-sm mb-2">No activity yet</div>
-                    <Link href="/interview" className="text-cyan-600 text-sm hover:text-cyan-700 font-medium inline-flex items-center gap-1">
+                    <Link href="/interview" className="text-purple-600 text-sm hover:text-purple-700 font-medium inline-flex items-center gap-1">
                       Start your first interview! →
                     </Link>
                   </div>
@@ -500,7 +501,7 @@ export default function Dashboard() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-900">Leaderboard</h3>
-                <Link href="/leaderboard" className="text-cyan-600 text-sm hover:text-cyan-700">
+                <Link href="/leaderboard" className="text-purple-600 text-sm hover:text-purple-700">
                   View All
                 </Link>
               </div>

@@ -19,7 +19,8 @@ import {
   TrendingUp,
   ChevronRight,
   LogOut,
-  Sparkles
+  Sparkles,
+  Menu
 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -31,7 +32,7 @@ export default function AppShell({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const [userProfile, setUserProfile] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState(3);
   
@@ -100,43 +101,38 @@ export default function AppShell({ children }) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Menu Overlay */}
-      {isSidebarOpen && (
+      {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-20">
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-14 md:h-16">
             {/* Left Side - Logo and Mobile Menu */}
-            <div className="flex items-center gap-4">
-              {/* Mobile Menu Button - Show on screens < 1024px */}
+            <div className="flex items-center gap-2 md:gap-4">
+              {/* Mobile Menu Button - Show on screens < 768px */}
               <button
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="md:hidden p-2"
               >
-                <div className="w-6 h-6 flex flex-col justify-center gap-1">
-                  <div className={`h-0.5 w-full bg-gray-600 transition-all ${isSidebarOpen ? 'rotate-45 translate-y-1.5' : ''}`}></div>
-                  <div className={`h-0.5 w-full bg-gray-600 transition-all ${isSidebarOpen ? 'opacity-0' : ''}`}></div>
-                  <div className={`h-0.5 w-full bg-gray-600 transition-all ${isSidebarOpen ? '-rotate-45 -translate-y-1.5' : ''}`}></div>
-                </div>
+                <Menu className="w-6 h-6 text-gray-600" />
               </button>
               
               {/* Logo */}
               <div className="flex items-center">
                 <Link href="/dashboard" className="flex items-center gap-2">
                   <img src="/logo.svg" alt="BRIDGE" className="w-8 h-8" />
-                  <span className="font-display text-2xl font-bold gradient-text hidden sm:block">BRIDGE</span>
-                  <span className="font-display text-xl font-bold gradient-text sm:hidden">B</span>
+                  <span className="font-display text-2xl font-bold gradient-text">BRIDGE</span>
                 </Link>
               </div>
             </div>
 
             {/* Center - Search (Hidden on Mobile) */}
-            <div className="hidden lg:flex flex-1 max-w-xl mx-8">
+            <div className="hidden md:flex flex-1 max-w-xl mx-8">
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
@@ -144,15 +140,15 @@ export default function AppShell({ children }) {
                   placeholder="Search features, topics, or help..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
             </div>
 
             {/* Right Side */}
-            <div className="flex items-center gap-2 sm:gap-4">
-              {/* Notifications (Hidden on Mobile) */}
-              <button className="hidden lg:block relative p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+            <div className="flex items-center gap-2 md:gap-4">
+              {/* Notifications */}
+              <button className="relative p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
                 <Bell className="w-5 h-5" />
                 {notifications > 0 && (
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -160,8 +156,8 @@ export default function AppShell({ children }) {
               </button>
 
               {/* User Avatar */}
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="hidden lg:block text-right">
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="hidden md:block text-right">
                   <div className="text-sm font-medium text-gray-900">
                     {userProfile?.name || 'User'}
                   </div>
@@ -169,7 +165,7 @@ export default function AppShell({ children }) {
                     {userProfile?.college || 'Student'}
                   </div>
                 </div>
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-cyan-600 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base">
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-purple-600 to-purple-700 rounded-full flex items-center justify-center text-white font-bold text-sm md:text-base">
                   {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
               </div>
@@ -179,9 +175,9 @@ export default function AppShell({ children }) {
       </nav>
 
       {/* Sidebar */}
-      <aside className={`fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-200 z-30 transform transition-transform duration-300 ease-in-out ${
-        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0`}>
+      <aside className={`fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 z-50 transition-transform duration-300 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } md:translate-x-0`}>
         <div className="flex flex-col h-full">
           {/* User Profile Mini Card */}
           <div className="p-4 border-b border-gray-200">
@@ -193,7 +189,7 @@ export default function AppShell({ children }) {
                   className="w-12 h-12 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-12 h-12 bg-gradient-to-r from-cyan-600 to-teal-600 rounded-full flex items-center justify-center text-white font-bold">
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-purple-700 rounded-full flex items-center justify-center text-white font-bold">
                   {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
               )}
@@ -216,10 +212,10 @@ export default function AppShell({ children }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={() => setIsSidebarOpen(false)}
+                  onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                     isActive(item.href)
-                      ? 'bg-cyan-50 text-cyan-600 border-l-4 border-cyan-600'
+                      ? 'bg-purple-50 text-purple-600 border-l-4 border-purple-600'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
@@ -252,7 +248,7 @@ export default function AppShell({ children }) {
       </aside>
 
       {/* Main Content */}
-      <main className="lg:ml-64 p-4 sm:p-6 lg:p-8">
+      <main className="md:ml-64 pt-14 md:pt-16 min-h-screen bg-gray-50">
         {children}
       </main>
     </div>

@@ -146,16 +146,16 @@ export default function RecruiterPage() {
 
   const getScoreColor = (score) => {
     if (score >= 900) return 'text-purple-500';
-    if (score >= 800) return 'text-cyan-600';
-    if (score >= 700) return 'text-cyan-600';
+    if (score >= 800) return 'text-purple-600';
+    if (score >= 700) return 'text-purple-600';
     if (score >= 600) return 'text-green-600';
     return 'text-gray-600';
   };
 
   const getScoreBadge = (score) => {
     if (score >= 900) return { bg: 'bg-purple-50', text: 'text-purple-600', label: 'Exceptional' };
-    if (score >= 800) return { bg: 'bg-cyan-100', text: 'text-cyan-700', label: 'Excellent' };
-    if (score >= 700) return { bg: 'bg-cyan-100', text: 'text-cyan-700', label: 'Good' };
+    if (score >= 800) return { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Excellent' };
+    if (score >= 700) return { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Good' };
     if (score >= 600) return { bg: 'bg-green-100', text: 'text-green-700', label: 'Average' };
     return { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Beginner' };
   };
@@ -203,7 +203,7 @@ export default function RecruiterPage() {
       <AppShell>
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
-            <div className="w-8 h-8 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent mx-auto mb-4"></div>
+            <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent mx-auto mb-4"></div>
             <div className="text-gray-600">Loading students...</div>
           </div>
         </div>
@@ -224,8 +224,8 @@ export default function RecruiterPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
-                <Users className="w-6 h-6 text-cyan-600" />
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                <Users className="w-6 h-6 text-purple-600" />
               </div>
               <div className="text-sm text-green-600 font-medium">+12%</div>
             </div>
@@ -259,8 +259,8 @@ export default function RecruiterPage() {
 
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-cyan-600" />
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-purple-600" />
               </div>
               <div className="text-sm text-green-600 font-medium">+25%</div>
             </div>
@@ -287,7 +287,7 @@ export default function RecruiterPage() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
                     activeTab === tab.id
-                      ? 'bg-cyan-600 text-white'
+                      ? 'bg-purple-600 text-white'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
@@ -313,7 +313,7 @@ export default function RecruiterPage() {
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
                       placeholder="Search by name, college, skills..."
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -321,7 +321,7 @@ export default function RecruiterPage() {
                 <select
                   value={domainFilter}
                   onChange={e => setDomainFilter(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="All">All Domains</option>
                   {['Tech', 'Marketing', 'Finance', 'HR', 'Operations', 'MBA'].map(d => (
@@ -332,7 +332,7 @@ export default function RecruiterPage() {
                 <select
                   value={scoreFilter}
                   onChange={e => setScoreFilter(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="All">All Scores</option>
                   <option value="900">900+</option>
@@ -344,7 +344,7 @@ export default function RecruiterPage() {
                 <select
                   value={typeFilter}
                   onChange={e => setTypeFilter(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="All">All Types</option>
                   <option value="Full-time">Full-time</option>
@@ -422,7 +422,7 @@ export default function RecruiterPage() {
                             <span className="text-sm text-gray-600">Skills</span>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {student.skills.slice(0, 3).map((skill, index) => (
-                                <span key={index} className="text-xs bg-cyan-100 text-cyan-700 px-2 py-1 rounded">
+                                <span key={index} className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
                                   {skill}
                                 </span>
                               ))}
@@ -446,7 +446,7 @@ export default function RecruiterPage() {
                         >
                           View Profile
                         </button>
-                        <button className="flex-1 bg-cyan-600 text-white px-3 py-2 rounded-lg hover:bg-cyan-700 transition-colors text-sm font-medium">
+                        <button className="flex-1 bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium">
                           Contact
                         </button>
                       </div>
@@ -468,7 +468,7 @@ export default function RecruiterPage() {
                   <p className="text-gray-500">No students shortlisted yet</p>
                   <button
                     onClick={() => setActiveTab('browse')}
-                    className="mt-4 text-cyan-600 hover:text-cyan-700 font-medium"
+                    className="mt-4 text-purple-600 hover:text-purple-700 font-medium"
                   >
                     Browse Students →
                   </button>
@@ -526,7 +526,7 @@ export default function RecruiterPage() {
                     value={matchRequirements.role}
                     onChange={(e) => setMatchRequirements({...matchRequirements, role: e.target.value})}
                     placeholder="e.g. Software Engineer, Marketing Manager"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
 
@@ -537,7 +537,7 @@ export default function RecruiterPage() {
                     value={matchRequirements.skills}
                     onChange={(e) => setMatchRequirements({...matchRequirements, skills: e.target.value})}
                     placeholder="e.g. Python, React, SQL"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
 
@@ -546,7 +546,7 @@ export default function RecruiterPage() {
                   <select
                     value={matchRequirements.experience}
                     onChange={(e) => setMatchRequirements({...matchRequirements, experience: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
                     <option value="">Any</option>
                     <option value="Fresher">Fresher</option>
@@ -563,7 +563,7 @@ export default function RecruiterPage() {
                     value={matchRequirements.location}
                     onChange={(e) => setMatchRequirements({...matchRequirements, location: e.target.value})}
                     placeholder="e.g. Bangalore, Remote"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
 
@@ -574,7 +574,7 @@ export default function RecruiterPage() {
                     value={matchRequirements.minScore}
                     onChange={(e) => setMatchRequirements({...matchRequirements, minScore: e.target.value})}
                     placeholder="e.g. 700"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
 
@@ -583,7 +583,7 @@ export default function RecruiterPage() {
                   <select
                     value={matchRequirements.jobType}
                     onChange={(e) => setMatchRequirements({...matchRequirements, jobType: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
                     <option value="">Any</option>
                     <option value="Full-time">Full-time</option>
@@ -597,7 +597,7 @@ export default function RecruiterPage() {
                   <select
                     value={matchRequirements.domain}
                     onChange={(e) => setMatchRequirements({...matchRequirements, domain: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
                     <option value="">Any</option>
                     <option value="Tech">Tech</option>
@@ -617,14 +617,14 @@ export default function RecruiterPage() {
                   onChange={(e) => setMatchRequirements({...matchRequirements, additional: e.target.value})}
                   placeholder="Any other specific requirements, certifications, or preferences..."
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                 />
               </div>
 
               <button
                 onClick={handleSmartMatch}
                 disabled={matchLoading}
-                className="w-full bg-cyan-600 text-white py-3 rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+                className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
               >
                 {matchLoading ? (
                   <>
@@ -644,11 +644,11 @@ export default function RecruiterPage() {
             {matchResults && (
               <div>
                 {/* Insights Card */}
-                <div className="bg-gradient-to-r from-cyan-50 to-teal-50 rounded-xl border border-cyan-200 p-6 mb-6">
+                <div className="bg-gradient-to-r from-purple-50 to-purple-50 rounded-xl border border-purple-200 p-6 mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Matching Insights</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
-                      <div className="text-2xl font-bold text-cyan-600">{matchResults.insights.total_candidates}</div>
+                      <div className="text-2xl font-bold text-purple-600">{matchResults.insights.total_candidates}</div>
                       <div className="text-sm text-gray-600">Total Candidates</div>
                     </div>
                     <div>
@@ -660,12 +660,12 @@ export default function RecruiterPage() {
                       <div className="text-sm text-gray-600">Avg Match Score</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-cyan-600">{matchResults.matches.length}</div>
+                      <div className="text-2xl font-bold text-purple-600">{matchResults.matches.length}</div>
                       <div className="text-sm text-gray-600">Top Matches</div>
                     </div>
                   </div>
                   {matchResults.insights.recommendation && (
-                    <div className="mt-4 p-3 bg-white rounded-lg border border-cyan-200">
+                    <div className="mt-4 p-3 bg-white rounded-lg border border-purple-200">
                       <p className="text-sm text-gray-700">
                         <span className="font-semibold">💡 Recommendation: </span>
                         {matchResults.insights.recommendation}
@@ -688,11 +688,11 @@ export default function RecruiterPage() {
                               {candidate.photo ? (
                                 <img src={candidate.photo} alt={candidate.name} className="w-16 h-16 rounded-full object-cover" />
                               ) : (
-                                <div className="w-16 h-16 bg-gradient-to-r from-cyan-600 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                                <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-purple-700 rounded-full flex items-center justify-center text-white font-bold text-xl">
                                   {candidate.name?.charAt(0)?.toUpperCase() || 'A'}
                                 </div>
                               )}
-                              <div className="absolute -top-1 -right-1 bg-cyan-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                              <div className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
                                 #{index + 1}
                               </div>
                             </div>
@@ -709,7 +709,7 @@ export default function RecruiterPage() {
                           <div className="text-right">
                             <div className={`text-3xl font-bold ${
                               match.match_score >= 90 ? 'text-green-600' :
-                              match.match_score >= 80 ? 'text-cyan-600' :
+                              match.match_score >= 80 ? 'text-purple-600' :
                               match.match_score >= 70 ? 'text-blue-600' :
                               'text-gray-600'
                             }`}>
@@ -717,7 +717,7 @@ export default function RecruiterPage() {
                             </div>
                             <div className={`text-xs px-3 py-1 rounded-full font-semibold mt-1 ${
                               match.recommendation === 'Strong Match' ? 'bg-green-100 text-green-700' :
-                              match.recommendation === 'Good Match' ? 'bg-cyan-100 text-cyan-700' :
+                              match.recommendation === 'Good Match' ? 'bg-purple-100 text-purple-700' :
                               match.recommendation === 'Potential Match' ? 'bg-blue-100 text-blue-700' :
                               'bg-gray-100 text-gray-700'
                             }`}>
@@ -729,7 +729,7 @@ export default function RecruiterPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           <div className="bg-gray-50 p-3 rounded-lg">
                             <div className="text-xs text-gray-600 mb-1">BRIDGE Score</div>
-                            <div className="text-xl font-bold text-cyan-600">{candidate.bridgeScore}</div>
+                            <div className="text-xl font-bold text-purple-600">{candidate.bridgeScore}</div>
                           </div>
                           <div className="bg-gray-50 p-3 rounded-lg">
                             <div className="text-xs text-gray-600 mb-1">Interview Readiness</div>
@@ -758,11 +758,11 @@ export default function RecruiterPage() {
                           </div>
 
                           <div>
-                            <h4 className="text-sm font-semibold text-cyan-700 mb-2">🎯 Why This Match</h4>
+                            <h4 className="text-sm font-semibold text-purple-700 mb-2">🎯 Why This Match</h4>
                             <ul className="space-y-1">
                               {match.match_reasons?.map((reason, i) => (
                                 <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
-                                  <span className="text-cyan-600 mt-0.5">•</span>
+                                  <span className="text-purple-600 mt-0.5">•</span>
                                   <span>{reason}</span>
                                 </li>
                               ))}
@@ -819,7 +819,7 @@ export default function RecruiterPage() {
                             className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
                               shortlisted.find(s => s.uid === candidate.uid)
                                 ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                                : 'bg-cyan-600 text-white hover:bg-cyan-700'
+                                : 'bg-purple-600 text-white hover:bg-purple-700'
                             }`}
                           >
                             {shortlisted.find(s => s.uid === candidate.uid) ? '⭐ Shortlisted' : '☆ Shortlist'}
@@ -891,7 +891,7 @@ export default function RecruiterPage() {
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-cyan-600">{selectedStudent.bridgeScore}</div>
+                    <div className="text-2xl font-bold text-purple-600">{selectedStudent.bridgeScore}</div>
                     <div className="text-sm text-gray-600">BRIDGE Score</div>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg">
@@ -926,7 +926,7 @@ export default function RecruiterPage() {
                       <h4 className="font-medium text-gray-900 mb-2">Skills</h4>
                       <div className="flex flex-wrap gap-2">
                         {selectedStudent.skills.map((skill, index) => (
-                          <span key={index} className="bg-cyan-100 text-cyan-700 px-3 py-1 rounded-full text-sm">
+                          <span key={index} className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">
                             {skill}
                           </span>
                         ))}
@@ -941,7 +941,7 @@ export default function RecruiterPage() {
                     className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
                       shortlisted.find(s => s.uid === selectedStudent.uid)
                         ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                        : 'bg-cyan-600 text-white hover:bg-cyan-700'
+                        : 'bg-purple-600 text-white hover:bg-purple-700'
                     }`}
                   >
                     {shortlisted.find(s => s.uid === selectedStudent.uid) ? '⭐ Shortlisted' : '☆ Shortlist'}
