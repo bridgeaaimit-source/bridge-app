@@ -286,7 +286,12 @@ export default function Dashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 lg:mb-8">
-          <div className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0 }}
+            className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100"
+          >
             <div className="flex items-center justify-between mb-3 lg:mb-4">
               <div className="w-10 h-10 lg:w-12 lg:h-12 bg-purple-100 rounded-full flex items-center justify-center">
                 <Trophy className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600" />
@@ -302,9 +307,14 @@ export default function Dashboard() {
             <div className="text-xs lg:text-sm text-gray-600">
               {stats.bridgeScore === 0 ? "Complete an interview to get your score" : "BRIDGE Score"}
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100"
+          >
             <div className="flex items-center justify-between mb-3 lg:mb-4">
               <div className="w-10 h-10 lg:w-12 lg:h-12 bg-blue-100 rounded-full flex items-center justify-center">
                 <Mic className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600" />
@@ -316,9 +326,14 @@ export default function Dashboard() {
             </div>
             <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{stats.interviewsDone}</div>
             <div className="text-xs lg:text-sm text-gray-600">Interviews Done</div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100"
+          >
             <div className="flex items-center justify-between mb-3 lg:mb-4">
               <div className="w-10 h-10 lg:w-12 lg:h-12 bg-orange-100 rounded-full flex items-center justify-center">
                 <Flame className="w-5 h-5 lg:w-6 lg:h-6 text-orange-600" />
@@ -330,9 +345,14 @@ export default function Dashboard() {
             </div>
             <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{stats.currentStreak} <span className="text-lg lg:text-base">🔥</span></div>
             <div className="text-xs lg:text-sm text-gray-600">Current Streak</div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100"
+          >
             <div className="flex items-center justify-between mb-3 lg:mb-4">
               <div className="w-10 h-10 lg:w-12 lg:h-12 bg-green-100 rounded-full flex items-center justify-center">
                 <Star className="w-5 h-5 lg:w-6 lg:h-6 text-green-600" />
@@ -342,9 +362,9 @@ export default function Dashboard() {
                 <span>+0.3</span>
               </div>
             </div>
-            <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{stats.avgScore}/10</div>
+            <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{stats.avgScore.toFixed(1)}</div>
             <div className="text-xs lg:text-sm text-gray-600">Avg Score</div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Main Content Grid */}
