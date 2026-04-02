@@ -17,6 +17,7 @@ export default function CareerIntelligencePage() {
   const [resumeText, setResumeText] = useState('');
   const [inputMode, setInputMode] = useState('file'); // 'file' or 'text'
   const [jobRole, setJobRole] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [progress, setProgress] = useState(0);
