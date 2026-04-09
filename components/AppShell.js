@@ -129,8 +129,7 @@ export default function AppShell({ children }) {
               {/* Logo */}
               <div className="flex items-center">
                 <Link href="/dashboard" className="flex items-center gap-2 dark:text-white">
-                  <img src="/bridgeai-logo.png" alt="BRIDGE" className="w-8 h-8" />
-                  <span className="font-display text-2xl font-bold gradient-text">BRIDGE</span>
+                  <img src="/bridgeai-logo.png" alt="BRIDGE" className="h-8 w-auto" />
                 </Link>
               </div>
             </div>
