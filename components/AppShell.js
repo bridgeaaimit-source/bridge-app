@@ -22,7 +22,8 @@ import {
   Sparkles,
   Menu,
   Moon,
-  Sun
+  Sun,
+  BarChart3
 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -98,6 +99,7 @@ export default function AppShell({ children }) {
     { href: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { href: '/recruiter', icon: Users, label: 'Recruiter' },
     { href: '/profile', icon: User, label: 'Profile' },
+    { href: '/admin/token-dashboard', icon: BarChart3, label: 'Token Analytics' },
   ];
 
   const isActive = (href) => pathname === href;
