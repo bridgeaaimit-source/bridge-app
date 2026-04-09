@@ -1,4 +1,43 @@
 import Anthropic from '@anthropic-ai/sdk';
+import * as admin from 'firebase-admin';
+
+// Initialize Firebase Admin for token tracking
+let adminDb = null;
+try {
+  if (!admin.apps.length && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+      })
+    });
+  }
+  adminDb = admin.firestore();
+} catch (error) {
+  console.warn('Firebase Admin init failed:', error.message);
+}
+
+// Track token usage
+async function trackTokens(userId, feature, inputTokens, outputTokens) {
+  if (!adminDb || !userId) return;
+  const total = (inputTokens || 0) + (outputTokens || 0);
+  const today = new Date().toISOString().split('T')[0];
+  
+  try {
+    // Daily user tracking
+    await adminDb.collection('tokenUsage').doc('daily').collection(today).doc(userId).set({
+      userId,
+      [feature]: admin.firestore.FieldValue.increment(total),
+      total: admin.firestore.FieldValue.increment(total),
+      lastUsed: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    
+    console.log(`📊 ${userId} | ${feature}: ${total} tokens`);
+  } catch (e) {
+    console.error('Token tracking failed:', e);
+  }
+}
 
 // Retry helper function
 async function retryClaudeCall(callFunction, maxRetries = 3, delay = 1000) {
@@ -25,7 +64,9 @@ async function retryClaudeCall(callFunction, maxRetries = 3, delay = 1000) {
 export async function POST(request) {
   const body = await request.json();
   const { action, resume_text, resume_base64, job_role, jd, 
-    round, conversation_history, last_answer } = body;
+    round, conversation_history, last_answer, user_id } = body;
+  
+  console.log('👤 User ID:', user_id || 'unknown');
 
   const client = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY
@@ -91,20 +132,17 @@ Return ONLY valid JSON:
           max_tokens: 1000,
           messages: [{
             role: 'user',
-            content: [
-              {
-                type: 'document',
-                source: {
-                  type: 'base64',
-                  media_type: 'application/pdf',
-                  data: resume_base64
-                }
-              },
-              {
-                type: 'text',
-                text: prompt
+            content: [{
+              type: 'text',
+              text: prompt
+            }, {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: resume_base64
               }
-            ]
+            }]
           }]
         })
       );
@@ -118,6 +156,9 @@ Return ONLY valid JSON:
         })
       );
     }
+
+    // Track token usage
+    await trackTokens(user_id, 'smart-interview-init', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const text = message.content[0].text
       .replace(/```json/g, '').replace(/```/g, '').trim();
@@ -263,6 +304,9 @@ Return ONLY valid JSON:
       })
     );
 
+    // Track token usage
+    await trackTokens(user_id, 'smart-interview-continue', message.usage?.input_tokens, message.usage?.output_tokens);
+
     const text = message.content[0].text
       .replace(/```json/g, '').replace(/```/g, '').trim();
     
@@ -341,6 +385,9 @@ Return ONLY the JSON, no other text.`;
         messages: [{ role: 'user', content: prompt }]
       })
     );
+
+    // Track token usage
+    await trackTokens(user_id, 'smart-interview-evaluate', message.usage?.input_tokens, message.usage?.output_tokens);
 
     console.log('✅ Claude API call successful');
     console.log('Raw Claude response:', message.content[0].text);
