@@ -1,4 +1,42 @@
 import Anthropic from '@anthropic-ai/sdk';
+import * as admin from 'firebase-admin';
+
+// Initialize Firebase Admin
+let db = null;
+try {
+  if (!admin.apps.length && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+      })
+    });
+  }
+  db = admin.firestore();
+} catch (error) {
+  console.warn('Firebase Admin init failed:', error.message);
+}
+
+// Track token usage
+async function trackTokens(userId, feature, inputTokens, outputTokens) {
+  if (!db) return;
+  const total = (inputTokens || 0) + (outputTokens || 0);
+  const today = new Date().toISOString().split('T')[0];
+  
+  try {
+    await db.collection('tokenUsage').doc('daily').collection(today).doc(userId || 'anonymous').set({
+      userId: userId || 'anonymous',
+      [feature]: admin.firestore.FieldValue.increment(total),
+      total: admin.firestore.FieldValue.increment(total),
+      lastUsed: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    
+    console.log(`📊 ${userId || 'anonymous'} | ${feature}: ${total} tokens`);
+  } catch (e) {
+    console.error('Token tracking failed:', e);
+  }
+}
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -134,6 +172,9 @@ Return ONLY valid JSON, no markdown:
     max_tokens: 1000,
     messages: [{ role: 'user', content: prompt }]
   });
+
+  // Track token usage
+  await trackTokens('system', 'news-curation', message.usage?.input_tokens, message.usage?.output_tokens);
 
   const text = message.content[0].text
     .replace(/```json/g, '')

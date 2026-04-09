@@ -22,10 +22,32 @@ try {
   console.warn('Firebase Admin initialization failed:', error.message);
 }
 
+// Track token usage
+async function trackTokens(userId, feature, inputTokens, outputTokens) {
+  if (!db) return;
+  const total = (inputTokens || 0) + (outputTokens || 0);
+  const today = new Date().toISOString().split('T')[0];
+  
+  try {
+    await db.collection('tokenUsage').doc('daily').collection(today).doc(userId || 'anonymous').set({
+      userId: userId || 'anonymous',
+      [feature]: admin.firestore.FieldValue.increment(total),
+      total: admin.firestore.FieldValue.increment(total),
+      lastUsed: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    
+    console.log(`📊 ${userId || 'anonymous'} | ${feature}: ${total} tokens`);
+  } catch (e) {
+    console.error('Token tracking failed:', e);
+  }
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { requirements } = body;
+    const { requirements, user_id } = body;
+    
+    console.log('👤 User ID:', user_id || 'anonymous');
 
     if (!requirements) {
       return Response.json(
@@ -154,6 +176,9 @@ IMPORTANT:
       max_tokens: 4000,
       messages: [{ role: 'user', content: prompt }]
     });
+
+    // Track token usage
+    await trackTokens(user_id, 'recruiter-match', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const text = message.content[0].text
       .replace(/```json/g, '')
