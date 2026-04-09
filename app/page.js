@@ -171,7 +171,7 @@ export default function Home() {
             {/* Logo */}
             <div className="flex items-center">
               <Link href="/" className="flex items-center gap-2">
-                <img src="/logo.svg" alt="BRIDGE" className="w-8 h-8" />
+                <img src="/bridgeai-logo.png" alt="BRIDGE" className="w-8 h-8" />
                 <span className="font-display text-2xl font-bold gradient-text">BRIDGE</span>
               </Link>
             </div>
@@ -624,7 +624,7 @@ export default function Home() {
             {/* Column 1 */}
             <div className="lg:col-span-1">
               <div className="flex items-center gap-2 mb-4">
-                <img src="/logo.svg" alt="BRIDGE" className="w-8 h-8" />
+                <img src="/bridgeai-logo.png" alt="BRIDGE" className="w-8 h-8" />
                 <span className="font-display text-2xl font-bold text-white">BRIDGE</span>
               </div>
               <p className="text-sm mb-4">India's AI-powered placement prep platform</p>

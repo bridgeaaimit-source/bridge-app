@@ -272,14 +272,14 @@ export default function Dashboard() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                 {greeting}, {firstName} 👋
               </h1>
-              <p className="text-gray-600">Here's your placement prep summary for today</p>
+              <p className="text-gray-600 dark:text-gray-400">Here's your placement prep summary for today</p>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200">
-              <Calendar className="w-4 h-4 text-gray-500" />
-              <span className="text-sm text-gray-600">{todayDate}</span>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <span className="text-sm text-gray-600 dark:text-gray-300">{todayDate}</span>
             </div>
           </div>
         </div>
@@ -324,7 +324,7 @@ export default function Dashboard() {
                 <span>+3</span>
               </div>
             </div>
-            <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{stats.interviewsDone}</div>
+            <div className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.interviewsDone}</div>
             <div className="text-xs lg:text-sm text-gray-600">Interviews Done</div>
           </motion.div>
 
@@ -343,7 +343,7 @@ export default function Dashboard() {
                 <span>-1</span>
               </div>
             </div>
-            <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{stats.currentStreak} <span className="text-lg lg:text-base">🔥</span></div>
+            <div className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.currentStreak} <span className="text-lg lg:text-base">🔥</span></div>
             <div className="text-xs lg:text-sm text-gray-600">Current Streak</div>
           </motion.div>
 
@@ -362,7 +362,7 @@ export default function Dashboard() {
                 <span>+0.3</span>
               </div>
             </div>
-            <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{stats.avgScore.toFixed(1)}</div>
+            <div className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.avgScore.toFixed(1)}</div>
             <div className="text-xs lg:text-sm text-gray-600">Avg Score</div>
           </motion.div>
         </div>

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import AppShell from "@/components/AppShell";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,8 +68,10 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className="min-h-full flex flex-col">
-        {children}
+      <body className="min-h-full flex flex-col bg-white dark:bg-gray-900 transition-colors">
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
         <Toaster
           position="top-center"
           toastOptions={{

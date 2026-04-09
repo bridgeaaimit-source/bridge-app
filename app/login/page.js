@@ -94,7 +94,7 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <img src="/logo.svg" alt="BRIDGE" className="w-12 h-12" />
+              <img src="/bridgeai-logo.png" alt="BRIDGE" className="w-12 h-12" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
             <p className="text-gray-600">Sign in to continue your BRIDGE journey</p>

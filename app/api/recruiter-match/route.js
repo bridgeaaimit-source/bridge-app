@@ -1,6 +1,26 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { db } from '@/lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import * as admin from 'firebase-admin';
+
+// Initialize Firebase Admin only if credentials are available
+let db = null;
+try {
+  if (!admin.apps.length && 
+      process.env.FIREBASE_CLIENT_EMAIL && 
+      process.env.FIREBASE_PRIVATE_KEY && 
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY
+          ?.replace(/\\n/g, '\n')
+      })
+    });
+  }
+  db = admin.firestore();
+} catch (error) {
+  console.warn('Firebase Admin initialization failed:', error.message);
+}
 
 export async function POST(request) {
   try {
@@ -14,11 +34,18 @@ export async function POST(request) {
       );
     }
 
+    if (!db) {
+      return Response.json(
+        { error: 'Database not available' },
+        { status: 503 }
+      );
+    }
+
     console.log('Matching candidates for requirements:', requirements);
 
-    // Fetch all students from Firestore
-    const usersRef = collection(db, 'users');
-    const snapshot = await getDocs(usersRef);
+    // Fetch all students from Firestore using Admin SDK
+    const usersRef = db.collection('users');
+    const snapshot = await usersRef.get();
     const candidates = [];
 
     snapshot.forEach(doc => {

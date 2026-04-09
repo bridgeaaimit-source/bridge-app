@@ -20,13 +20,16 @@ import {
   ChevronRight,
   LogOut,
   Sparkles,
-  Menu
+  Menu,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthBypass } from '@/hooks/useAuthBypass';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function AppShell({ children }) {
   const router = useRouter();
@@ -37,6 +40,7 @@ export default function AppShell({ children }) {
   const [notifications, setNotifications] = useState(3);
   
   const { isBypassed, mockUserData } = useAuthBypass();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     // Use mock user if bypass is enabled
@@ -99,7 +103,7 @@ export default function AppShell({ children }) {
   const isActive = (href) => pathname === href;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Mobile Menu Overlay */}
       {sidebarOpen && (
         <div 
@@ -109,7 +113,7 @@ export default function AppShell({ children }) {
       )}
 
       {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <nav className="fixed top-0 left-0 right-0 h-14 md:h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-40 transition-colors">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 md:h-16">
             {/* Left Side - Logo and Mobile Menu */}
@@ -124,8 +128,8 @@ export default function AppShell({ children }) {
               
               {/* Logo */}
               <div className="flex items-center">
-                <Link href="/dashboard" className="flex items-center gap-2">
-                  <img src="/logo.svg" alt="BRIDGE" className="w-8 h-8" />
+                <Link href="/dashboard" className="flex items-center gap-2 dark:text-white">
+                  <img src="/bridgeai-logo.png" alt="BRIDGE" className="w-8 h-8" />
                   <span className="font-display text-2xl font-bold gradient-text">BRIDGE</span>
                 </Link>
               </div>
@@ -140,15 +144,28 @@ export default function AppShell({ children }) {
                   placeholder="Search features, topics, or help..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                 />
               </div>
             </div>
 
             {/* Right Side */}
             <div className="flex items-center gap-2 md:gap-4">
+              {/* Theme Toggle */}
+              <button 
+                onClick={toggleTheme}
+                className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-5 h-5" />
+                ) : (
+                  <Moon className="w-5 h-5" />
+                )}
+              </button>
+
               {/* Notifications */}
-              <button className="relative p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+              <button className="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
                 <Bell className="w-5 h-5" />
                 {notifications > 0 && (
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -158,10 +175,10 @@ export default function AppShell({ children }) {
               {/* User Avatar */}
               <div className="flex items-center gap-2 md:gap-3">
                 <div className="hidden md:block text-right">
-                  <div className="text-sm font-medium text-gray-900">
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {userProfile?.name || 'User'}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
                     {userProfile?.college || 'Student'}
                   </div>
                 </div>
@@ -175,12 +192,12 @@ export default function AppShell({ children }) {
       </nav>
 
       {/* Sidebar */}
-      <aside className={`fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 z-50 transition-transform duration-300 ${
+      <aside className={`fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transition-all duration-300 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } md:translate-x-0`}>
         <div className="flex flex-col h-full">
           {/* User Profile Mini Card */}
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3">
               {userProfile?.photo ? (
                 <img 
@@ -194,10 +211,10 @@ export default function AppShell({ children }) {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-900 truncate">
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                   {userProfile?.name || 'User'}
                 </div>
-                <div className="text-xs text-gray-500 truncate">
+                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                   {userProfile?.college || 'Add College'}
                 </div>
               </div>
@@ -215,8 +232,8 @@ export default function AppShell({ children }) {
                   onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                     isActive(item.href)
-                      ? 'bg-purple-50 text-purple-600 border-l-4 border-purple-600'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border-l-4 border-purple-600 dark:border-purple-400'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
@@ -227,7 +244,7 @@ export default function AppShell({ children }) {
           </nav>
 
           {/* Bottom Actions */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => {
                 if (isBypassed) {
@@ -238,7 +255,7 @@ export default function AppShell({ children }) {
                   router.push('/login');
                 }
               }}
-              className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-colors"
             >
               <LogOut className="w-5 h-5" />
               <span className="font-medium">{isBypassed ? 'Reset Bypass' : 'Sign Out'}</span>
@@ -248,7 +265,7 @@ export default function AppShell({ children }) {
       </aside>
 
       {/* Main Content */}
-      <main className="md:ml-64 pt-14 md:pt-16 min-h-screen bg-gray-50">
+      <main className="md:ml-64 pt-14 md:pt-16 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
         {children}
       </main>
     </div>
