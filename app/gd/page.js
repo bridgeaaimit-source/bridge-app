@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, Users, MessageSquare, Clock, Target, Zap, Award, TrendingUp, Mic, Square, Play, Timer, Lightbulb } from "lucide-react";
+import { ChevronLeft, Users, MessageSquare, Clock, Target, Zap, Award, TrendingUp, Mic, Square, Play, Timer, Lightbulb, Plus, X } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from "firebase/firestore";
+import { auth } from "@/lib/firebase";
 
-const topics = [
+const defaultTopics = [
   { id: 1, title: "AI in Education: Boon or Risk?", participants: 18, category: "Technology" },
   { id: 2, title: "Remote Work vs Office Culture", participants: 14, category: "Work Culture" },
   { id: 3, title: "Should Coding Be Mandatory for MBAs?", participants: 11, category: "Education" },
@@ -30,6 +33,14 @@ export default function GDPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [selectedTimer, setSelectedTimer] = useState(5);
+  
+  // Custom Room States
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [customTopic, setCustomTopic] = useState('');
+  const [customDifficulty, setCustomDifficulty] = useState('Medium');
+  const [customDuration, setCustomDuration] = useState(10);
+  const [customRooms, setCustomRooms] = useState([]);
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     // Load topic data from sessionStorage if available
@@ -57,6 +68,102 @@ export default function GDPage() {
     }
     return () => clearInterval(interval);
   }, [isRecording]);
+
+  // Load custom rooms from Firestore
+  useEffect(() => {
+    const q = query(
+      collection(db, 'gd_rooms'),
+      where('isCustom', '==', true),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const rooms = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setCustomRooms(rooms);
+    }, (error) => {
+      console.error('Error loading custom rooms:', error);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const createCustomRoom = async () => {
+    if (!customTopic.trim()) {
+      toast.error('Please enter a topic');
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const user = auth.currentUser;
+      const roomData = {
+        topic: customTopic,
+        difficulty: customDifficulty,
+        duration: customDuration,
+        createdBy: user?.uid || 'anonymous',
+        createdByName: user?.displayName || 'Anonymous',
+        createdAt: serverTimestamp(),
+        participants: 0,
+        isCustom: true,
+        isActive: true
+      };
+
+      const docRef = await addDoc(collection(db, 'gd_rooms'), roomData);
+      
+      // Generate AI content for this topic
+      const response = await fetch('/api/gd-from-article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: customTopic,
+          category: 'Custom'
+        })
+      });
+
+      let aiContent = null;
+      if (response.ok) {
+        aiContent = await response.json();
+      }
+
+      toast.success('Custom room created!');
+      setShowCreateModal(false);
+      setCustomTopic('');
+      
+      // Open the custom room immediately
+      const newRoom = {
+        id: docRef.id,
+        ...roomData,
+        title: customTopic,
+        aiContent
+      };
+      handleJoinCustomRoom(newRoom);
+    } catch (error) {
+      console.error('Error creating room:', error);
+      toast.error('Failed to create room');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleJoinCustomRoom = (room) => {
+    setSelectedTopic({
+      id: room.id,
+      title: room.topic,
+      participants: room.participants || 0,
+      category: 'Custom',
+      difficulty: room.difficulty,
+      duration: room.duration,
+      isCustom: true
+    });
+    setActiveView('discussion');
+    setMessages([
+      { id: 1, user: "Moderator", text: `Welcome to custom GD: ${room.topic}`, time: "Now" },
+      { id: 2, user: "You", text: "I'm ready to discuss!", time: "Now" },
+    ]);
+  };
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -123,7 +230,7 @@ export default function GDPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {topics.map((topic) => (
+            {defaultTopics.map((topic) => (
               <div key={topic.id} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
@@ -147,7 +254,7 @@ export default function GDPage() {
                   </div>
                   <button
                     onClick={() => handleJoinDiscussion(topic)}
-                    className="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 transition-colors text-sm font-medium"
+                    className="bg-[#6C3FE8] text-white px-4 py-2 rounded-lg hover:bg-[#5535C5] transition-colors text-sm font-medium"
                   >
                     Join Discussion
                   </button>

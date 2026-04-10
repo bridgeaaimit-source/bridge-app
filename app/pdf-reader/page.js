@@ -13,7 +13,7 @@ import {
   BookOpen,
   List,
   HelpCircle,
-  Quiz
+  Lightbulb
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -31,7 +31,7 @@ export default function PDFReaderPage() {
     { icon: BookOpen, text: "Summarize this PDF" },
     { icon: List, text: "List key points" },
     { icon: HelpCircle, text: "What are the main topics?" },
-    { icon: Quiz, text: "Create quiz questions" }
+    { icon: Lightbulb, text: "Create quiz questions" }
   ];
 
   const handleFileUpload = useCallback(async (event) => {
