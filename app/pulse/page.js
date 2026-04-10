@@ -220,11 +220,11 @@ export default function PulsePage() {
   if (loading) {
     return (
       <AppShell>
-        <div className="min-h-screen bg-[#F5FAFA]">
+        <div className="min-h-screen bg-[#F8F7FF]">
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
-              <div className="w-12 h-12 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-600 mx-auto mb-4"></div>
-              <div className="text-lg font-semibold text-gray-700">Loading PULSE Feed...</div>
+              <div className="w-12 h-12 animate-spin rounded-full border-4 border-[#EDE9FF] border-t-[#6C3FE8] mx-auto mb-4"></div>
+              <div className="text-lg font-semibold text-[#44445A]">Loading PULSE Feed...</div>
             </div>
           </div>
         </div>
@@ -234,31 +234,31 @@ export default function PulsePage() {
 
   return (
     <AppShell>
-      <div className="min-h-screen bg-[#F5FAFA]">
+      <div className="min-h-screen bg-[#F8F7FF]">
         {/* Header */}
-        <div className="bg-white border-b border-cyan-100">
+        <div className="bg-white border-b border-[#E8E8F0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
-                    <Newspaper className="w-5 h-5 text-cyan-600" />
+                  <div className="w-10 h-10 bg-[#F8F7FF] rounded-lg flex items-center justify-center">
+                    <Newspaper className="w-5 h-5 text-[#6C3FE8]" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">PULSE Feed</h1>
-                    <p className="text-sm text-gray-500">Real-time placement insights</p>
+                    <h1 className="text-2xl font-bold text-[#0D0D1A]">PULSE Feed</h1>
+                    <p className="text-sm text-[#8888A0]">Real-time placement insights</p>
                   </div>
                 </div>
               </div>
               
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-[#6C3FE8] rounded-full"></div>
                   <span>Live</span>
                 </div>
                 <button
                   onClick={refreshNews}
-                  className="p-2 text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
+                  className="p-2 text-gray-500 hover:text-[#6C3FE8] hover:bg-[#F8F7FF] rounded-lg transition-colors"
                 >
                   <RefreshCw className="w-5 h-5" />
                 </button>
@@ -269,12 +269,12 @@ export default function PulsePage() {
 
         {/* GD Booster Banner */}
         {!gdLoading && gdInsights && (
-          <div className="bg-gradient-to-r from-[#0891B2] to-[#0D9488]">
+          <div className="bg-gradient-to-r from-[#6C3FE8] to-[#9B6DFF]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-center">
                 {/* Topic */}
                 <div className="lg:col-span-1">
-                  <div className="text-cyan-100 text-xs font-semibold uppercase tracking-wider mb-2">
+                  <div className="text-white/80 text-xs font-semibold uppercase tracking-wider mb-2">
                     Today's GD Topic
                   </div>
                   <div className="text-white text-xl font-bold leading-tight">
@@ -298,7 +298,7 @@ export default function PulsePage() {
 
                 {/* Quote */}
                 <div className="lg:col-span-1">
-                  <div className="text-cyan-100 text-sm italic border-l-2 border-cyan-300 pl-4">
+                  <div className="text-[#9B6DFF]/60 text-sm italic border-l-2 border-[#9B6DFF] pl-4">
                     "{gdInsights.power_phrase}"
                   </div>
                 </div>
@@ -308,11 +308,11 @@ export default function PulsePage() {
                   <button
                     onClick={handleGDPractice}
                     disabled={gdPracticeLoading}
-                    className="w-full bg-white text-cyan-600 px-6 py-3 rounded-lg font-semibold hover:bg-cyan-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full bg-white text-[#6C3FE8] px-6 py-3 rounded-lg font-semibold hover:bg-[#F8F7FF] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {gdPracticeLoading ? (
                       <>
-                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-cyan-600 border-t-transparent"></div>
+                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-[#6C3FE8] border-t-transparent"></div>
                         Loading...
                       </>
                     ) : (
@@ -328,45 +328,59 @@ export default function PulsePage() {
           </div>
         )}
 
+        {/* Category Pills - Horizontal at top */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => handleCategoryChange(category)}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  activeCategory === category
+                    ? 'bg-[#6C3FE8] text-white shadow-md'
+                    : 'bg-white text-[#44445A] border border-[#E8E8F0] hover:border-[#6C3FE8] hover:text-[#6C3FE8]'
+                }`}>
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left Sidebar */}
-            <div className="lg:col-span-3">
-              {/* Categories */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Categories</h3>
-                <div className="space-y-2">
-                  {categories.map((category) => (
-                    <button
-                      key={category}
-                      onClick={() => handleCategoryChange(category)}
-                      className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-                        activeCategory === category
-                          ? 'bg-cyan-100 text-cyan-700 font-medium'
-                          : 'text-gray-700 hover:bg-cyan-50'
-                      }`}
-                    >
-                      {category}
-                    </button>
-                  ))}
+            {/* Left Sidebar - Removed Categories */}
+            <div className="lg:col-span-3 hidden lg:block">
+              {/* Saved Articles / Stats can go here */}
+              <div className="bg-white rounded-xl border border-[#E8E8F0] p-6 mb-6">
+                <h3 className="font-semibold text-[#0D0D1A] mb-4">Quick Stats</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#F8F7FF] flex items-center justify-center">
+                      <Newspaper className="w-5 h-5 text-[#6C3FE8]" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[#0D0D1A]">{filteredArticles.length}</p>
+                      <p className="text-xs text-[#8888A0]">Articles</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Stats */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Today's Stats</h3>
+              <div className="bg-white rounded-xl border border-[#E8E8F0] p-6">
+                <h3 className="font-semibold text-[#0D0D1A] mb-4">Today's Stats</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Articles</span>
-                    <span className="font-semibold text-gray-900">{newsData?.articles?.length || 0}</span>
+                    <span className="text-[#8888A0]">Articles</span>
+                    <span className="font-semibold text-[#0D0D1A]">{newsData?.articles?.length || 0}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">GD Topics</span>
-                    <span className="font-semibold text-gray-900">1</span>
+                    <span className="text-[#8888A0]">GD Topics</span>
+                    <span className="font-semibold text-[#0D0D1A]">1</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Updated</span>
+                    <span className="text-[#8888A0]">Updated</span>
                     <span className="font-semibold text-gray-900">{new Date().toLocaleTimeString()}</span>
                   </div>
                 </div>
@@ -420,7 +434,7 @@ export default function PulsePage() {
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="text-xs font-medium text-cyan-600 bg-cyan-50 px-2 py-1 rounded">
+                              <span className="text-xs font-medium text-[#6C3FE8] bg-[#F8F7FF] px-2 py-1 rounded">
                                 {article.source || 'Unknown'}
                               </span>
                               <span className="text-xs text-gray-500">
@@ -459,7 +473,7 @@ export default function PulsePage() {
                               href={article.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-cyan-600 hover:text-cyan-700 font-medium text-sm flex items-center gap-1"
+                              className="text-[#6C3FE8] hover:text-[#5535C5] font-medium text-sm flex items-center gap-1"
                             >
                               Read More
                               <ArrowUpRight className="w-3 h-3" />
