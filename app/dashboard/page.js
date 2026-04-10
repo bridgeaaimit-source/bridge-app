@@ -464,7 +464,7 @@ export default function Dashboard() {
                       {stats.bridgeScore === 0 ? "—" : stats.bridgeScore}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {stats.bridgeScore === 0 ? "Complete an interview to get your score" : "Interview Ready"}
+                      {stats.bridgeScore === 0 ? "Complete an interview to get your score" : "BRIDGE Score"}
                     </div>
                   </div>
                 </div>

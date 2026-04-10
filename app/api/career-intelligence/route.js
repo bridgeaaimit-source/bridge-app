@@ -39,68 +39,25 @@ async function extractPDFText(buffer) {
       console.log('pdf-parse failed:', pdfParseError.message);
     }
     
-    // Method 2: Try pdfjs-dist as fallback
+    // Method 2: Simple text extraction as fallback
     try {
-      console.log('Attempting pdfjs-dist fallback...');
-      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.js');
-      const pdfjsWorker = await import('pdfjs-dist/legacy/build/pdf.worker.js');
+      console.log('Attempting text extraction fallback...');
+      // Try to extract readable text from PDF buffer
+      const text = buffer.toString('utf8');
+      const cleanText = text.replace(/[^\x20-\x7E\n\r]/g, ' ').replace(/\s+/g, ' ').trim();
       
-      // Set worker source
-      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
-      
-      // Load the PDF with proper options
-      const loadingTask = pdfjsLib.getDocument({
-        data: buffer,
-        // Disable font loading for faster processing
-        disableFontFaceLookup: false,
-        // Enable text extraction
-        standardFontDataUrl: true
-      });
-      
-      const pdf = await loadingTask.promise;
-      console.log('PDF loaded successfully, pages:', pdf.numPages);
-      
-      let fullText = '';
-      const maxPages = Math.min(pdf.numPages, 20); // Limit pages to prevent timeouts
-      
-      // Extract text from each page
-      for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
-        try {
-          const page = await pdf.getPage(pageNum);
-          const textContent = await page.getTextContent({
-            // Include marked content for better extraction
-            includeMarkedContent: true,
-            // Normalize text
-            normalizeWhitespace: true
-          });
-          
-          const pageText = textContent.items
-            .map(item => item.str)
-            .join(' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-          
-          if (pageText) {
-            fullText += pageText + '\n';
-          }
-        } catch (pageError) {
-          console.log(`Failed to extract page ${pageNum}:`, pageError.message);
-          continue;
-        }
+      if (cleanText.length > 100) {
+        console.log('Text extraction succeeded, length:', cleanText.length);
+        return cleanText.substring(0, 10000); // Limit to 10k chars
       }
       
-      if (fullText && fullText.trim().length > 50) {
-        console.log('pdfjs-dist succeeded, extracted:', fullText.length, 'characters');
-        return fullText.trim();
-      }
+      console.log('Text extraction returned insufficient text');
       
-      console.log('pdfjs-dist returned empty text');
-      
-    } catch (pdfjsError) {
-      console.log('pdfjs-dist failed:', pdfjsError.message);
+    } catch (textError) {
+      console.log('Text extraction failed:', textError.message);
     }
     
-    throw new Error('Both PDF parsing methods failed. The PDF might be image-based, encrypted, or corrupted.');
+    throw new Error('PDF parsing methods failed. The PDF might be image-based, encrypted, or corrupted.');
     
   } catch (error) {
     console.error('All PDF extraction methods failed:', error);

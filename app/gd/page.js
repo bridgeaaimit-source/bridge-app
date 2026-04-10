@@ -224,13 +224,25 @@ export default function GDPage() {
     return (
       <AppShell>
         <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Group Discussion Practice</h1>
-            <p className="text-gray-600">Join live GD sessions and improve your communication skills</p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Group Discussion Practice</h1>
+              <p className="text-gray-600">Join live GD sessions and improve your communication skills</p>
+            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 bg-[#6C3FE8] text-white px-4 py-3 rounded-xl hover:bg-[#5535C5] transition-colors font-medium"
+            >
+              <Plus className="w-5 h-5" />
+              Create Custom GD
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {defaultTopics.map((topic) => (
+          {/* Default Topics */}
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Popular Topics</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {defaultTopics.map((topic) => (
               <div key={topic.id} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
@@ -240,7 +252,7 @@ export default function GDPage() {
                         <Users className="w-4 h-4" />
                         {topic.participants} participants
                       </span>
-                      <span className="bg-cyan-100 text-cyan-700 px-2 py-1 rounded text-xs">
+                      <span className="bg-[#F8F7FF] text-[#6C3FE8] px-2 py-1 rounded text-xs">
                         {topic.category}
                       </span>
                     </div>
@@ -262,7 +274,120 @@ export default function GDPage() {
               </div>
             ))}
           </div>
+          
+          {/* Custom Rooms Section */}
+          {customRooms.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Custom Rooms</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {customRooms.map((room) => (
+                  <div key={room.id} className="bg-white rounded-xl border border-[#E8E8F0] p-6 hover:shadow-lg transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 mb-2">{room.topic}</h3>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <Users className="w-4 h-4" />
+                            {room.participants || 0} participants
+                          </span>
+                          <span className="bg-[#F8F7FF] text-[#6C3FE8] px-2 py-1 rounded text-xs">
+                            {room.difficulty}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Clock className="w-4 h-4" />
+                        <span>{room.duration} mins</span>
+                      </div>
+                      <button
+                        onClick={() => handleJoinCustomRoom(room)}
+                        className="bg-[#6C3FE8] text-white px-4 py-2 rounded-lg hover:bg-[#5535C5] transition-colors text-sm font-medium"
+                      >
+                        Join Discussion
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+        
+        {/* Create Room Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Create Custom GD Room</h2>
+                <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Topic</label>
+                  <input
+                    type="text"
+                    value={customTopic}
+                    onChange={(e) => setCustomTopic(e.target.value)}
+                    placeholder="Enter your GD topic..."
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6C3FE8]"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+                  <div className="flex gap-2">
+                    {['Easy', 'Medium', 'Hard'].map((level) => (
+                      <button
+                        key={level}
+                        onClick={() => setCustomDifficulty(level)}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          customDifficulty === level
+                            ? 'bg-[#6C3FE8] text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {level}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Duration</label>
+                  <div className="flex gap-2">
+                    {[5, 10, 15, 20].map((time) => (
+                      <button
+                        key={time}
+                        onClick={() => setCustomDuration(time)}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          customDuration === time
+                            ? 'bg-[#6C3FE8] text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {time}m
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <button
+                  onClick={createCustomRoom}
+                  disabled={isCreating || !customTopic.trim()}
+                  className="w-full bg-[#6C3FE8] text-white py-3 rounded-xl font-medium hover:bg-[#5535C5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCreating ? 'Creating...' : 'Create Room'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </AppShell>
     );
   }
@@ -354,21 +479,21 @@ export default function GDPage() {
             {/* Recording Controls */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Mic className="w-5 h-5 text-cyan-600" />
+                <Mic className="w-5 h-5 text-[#6C3FE8]" />
                 Voice Recording
               </h3>
               
               <div className="space-y-4">
                 <div className="text-center">
                   <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center ${
-                    isRecording ? "bg-red-100" : "bg-cyan-100"
+                    isRecording ? "bg-red-100" : "bg-[#F8F7FF]"
                   }`}>
                     <button
                       onClick={toggleRecording}
                       className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors ${
                         isRecording
                           ? "bg-red-500 hover:bg-red-600 text-white"
-                          : "bg-cyan-600 hover:bg-cyan-700 text-white"
+                          : "bg-[#6C3FE8] hover:bg-[#5535C5] text-white"
                       }`}
                     >
                       {isRecording ? <Square className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
@@ -413,8 +538,8 @@ export default function GDPage() {
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
+                  <div className="w-6 h-6 bg-[#F8F7FF] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-2 h-2 bg-[#6C3FE8] rounded-full"></div>
                   </div>
                   <div>
                     <div className="text-sm font-medium text-gray-900">Listen Actively</div>
@@ -423,8 +548,8 @@ export default function GDPage() {
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-purple-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                  <div className="w-6 h-6 bg-[#F8F7FF] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-2 h-2 bg-[#9B6DFF] rounded-full"></div>
                   </div>
                   <div>
                     <div className="text-sm font-medium text-gray-900">Add Value</div>
