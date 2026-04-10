@@ -255,10 +255,10 @@ export default function Dashboard() {
 
   const getActivityColor = (type) => {
     switch(type) {
-      case 'interview': return 'text-purple-600 bg-purple-50';
+      case 'interview': return 'text-[#0D9488] bg-[#F0FDFA]';
       case 'gd': return 'text-green-600 bg-green-50';
       case 'pulse': return 'text-yellow-600 bg-yellow-50';
-      case 'coach': return 'text-purple-600 bg-purple-50';
+      case 'coach': return 'text-[#0D9488] bg-[#F0FDFA]';
       default: return 'text-gray-600 bg-gray-50';
     }
   };
@@ -272,14 +272,14 @@ export default function Dashboard() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {greeting}, {firstName} 👋
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">Here's your placement prep summary for today</p>
+              <p className="text-gray-600">Here's your placement prep summary for today</p>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <span className="text-sm text-gray-600 dark:text-gray-300">{todayDate}</span>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200">
+              <Calendar className="w-4 h-4 text-gray-500" />
+              <span className="text-sm text-gray-600">{todayDate}</span>
             </div>
           </div>
         </div>
@@ -293,8 +293,8 @@ export default function Dashboard() {
             className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100"
           >
             <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Trophy className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600" />
+              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-[#CCFBF1] rounded-full flex items-center justify-center">
+                <Trophy className="w-5 h-5 lg:w-6 lg:h-6 text-[#0D9488]" />
               </div>
               <div className="flex items-center text-green-600 text-xs lg:text-sm hidden sm:flex">
                 <ArrowUp className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
@@ -324,7 +324,7 @@ export default function Dashboard() {
                 <span>+3</span>
               </div>
             </div>
-            <div className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.interviewsDone}</div>
+            <div className="text-2xl lg:text-3xl font-bold text-gray-900  mb-1">{stats.interviewsDone}</div>
             <div className="text-xs lg:text-sm text-gray-600">Interviews Done</div>
           </motion.div>
 
@@ -343,7 +343,7 @@ export default function Dashboard() {
                 <span>-1</span>
               </div>
             </div>
-            <div className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.currentStreak} <span className="text-lg lg:text-base">🔥</span></div>
+            <div className="text-2xl lg:text-3xl font-bold text-gray-900  mb-1">{stats.currentStreak} <span className="text-lg lg:text-base">🔥</span></div>
             <div className="text-xs lg:text-sm text-gray-600">Current Streak</div>
           </motion.div>
 
@@ -362,7 +362,7 @@ export default function Dashboard() {
                 <span>+0.3</span>
               </div>
             </div>
-            <div className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stats.avgScore.toFixed(1)}</div>
+            <div className="text-2xl lg:text-3xl font-bold text-gray-900  mb-1">{stats.avgScore.toFixed(1)}</div>
             <div className="text-xs lg:text-sm text-gray-600">Avg Score</div>
           </motion.div>
         </div>
@@ -380,27 +380,27 @@ export default function Dashboard() {
                     <Link
                       key={index}
                       href={feature.href}
-                      className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-purple-50 transition-all duration-200 group"
+                      className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-[#CCFBF1] transition-all duration-200 group"
                     >
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-4">
                           <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
-                            feature.color === 'purple' ? 'bg-gradient-to-br from-purple-50 to-purple-100' :
+                            feature.color === 'purple' ? 'bg-gradient-to-br from-[#F0FDFA] to-[#CCFBF1]' :
                             'bg-gradient-to-br from-sky-50 to-sky-100'
                           }`}>
                             <Icon className={`w-7 h-7 ${
-                              feature.color === 'purple' ? 'text-purple-600' :
+                              feature.color === 'purple' ? 'text-[#0D9488]' :
                               'text-sky-600'
                             }`} />
                           </div>
                           <div>
-                            <h3 className="font-semibold text-gray-900 group-hover:text-purple-400 transition-colors">
+                            <h3 className="font-semibold text-gray-900 group-hover:text-[#0D9488] transition-colors">
                               {feature.title}
                             </h3>
                             <p className="text-sm text-gray-600">{feature.description}</p>
                           </div>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-purple-400 transition-colors" />
+                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#0D9488] transition-colors" />
                       </div>
                     </Link>
                   );
@@ -409,18 +409,18 @@ export default function Dashboard() {
             </div>
 
             {/* Today's Challenge */}
-            <div className="bg-gradient-to-r from-[#6C3FE8] to-[#9B6DFF] rounded-2xl p-6 text-white">
+            <div className="bg-gradient-to-r from-[#0D9488] to-[#14B8A6] rounded-2xl p-6 text-white">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Today's Challenge</h2>
-                <div className="flex items-center gap-2 text-purple-200">
+                <div className="flex items-center gap-2 text-[#CCFBF1]">
                   <Clock className="w-4 h-4" />
                   <span className="text-sm">15 min</span>
                 </div>
               </div>
-              <p className="text-purple-100 mb-6">
+              <p className="text-[#CCFBF1] mb-6">
                 Complete a full Amazon SDE technical interview with AI feedback
               </p>
-              <button className="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-colors">
+              <button className="bg-white text-[#0D9488] px-6 py-3 rounded-lg font-semibold hover:bg-[#F0FDFA] transition-colors">
                 Start Challenge
               </button>
             </div>
@@ -454,8 +454,8 @@ export default function Dashboard() {
                     />
                     <defs>
                       <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#6C3FE8" />
-                        <stop offset="100%" stopColor="#9B6DFF" />
+                        <stop offset="0%" stopColor="#0D9488" />
+                        <stop offset="100%" stopColor="#14B8A6" />
                       </linearGradient>
                     </defs>
                   </svg>
@@ -510,7 +510,7 @@ export default function Dashboard() {
                       <Target className="w-6 h-6 text-gray-400" />
                     </div>
                     <div className="text-gray-500 text-sm mb-2">No activity yet</div>
-                    <Link href="/interview" className="text-purple-600 text-sm hover:text-purple-700 font-medium inline-flex items-center gap-1">
+                    <Link href="/interview" className="text-[#0D9488] text-sm hover:text-[#0F766E] font-medium inline-flex items-center gap-1">
                       Start your first interview! →
                     </Link>
                   </div>
@@ -522,7 +522,7 @@ export default function Dashboard() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-900">Leaderboard</h3>
-                <Link href="/leaderboard" className="text-purple-600 text-sm hover:text-purple-700">
+                <Link href="/leaderboard" className="text-[#0D9488] text-sm hover:text-[#0F766E]">
                   View All
                 </Link>
               </div>

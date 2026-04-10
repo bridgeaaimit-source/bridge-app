@@ -531,7 +531,7 @@ export default function SmartInterviewPage() {
             </div>
             <button
               onClick={loadFeedbackHistory}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[#0D9488] text-white rounded-lg hover:bg-[#0F766E] transition-colors"
             >
               <History className="w-5 h-5" />
               View History
@@ -540,8 +540,8 @@ export default function SmartInterviewPage() {
 
           {/* Step Indicators */}
           <div className="flex items-center justify-center mb-8">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 text-purple-600">
-              <span className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs">1</span>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#F0FDFA] text-[#0D9488]">
+              <span className="w-6 h-6 bg-[#0D9488] text-white rounded-full flex items-center justify-center text-xs">1</span>
               <span>Upload</span>
             </div>
             <div className="w-12 h-0.5 bg-gray-300"></div>
@@ -569,7 +569,7 @@ export default function SmartInterviewPage() {
                 {/* Resume Upload */}
                 <div className="mb-8">
                   <h2 className="text-xl font-semibold text-gray-900 mb-4">Upload Resume</h2>
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-200 transition-colors">
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-[#CCFBF1] transition-colors">
                     <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600 mb-2">Drop your resume here or click to browse</p>
                     <p className="text-sm text-gray-500">PDF, DOC, DOCX (Max 5MB)</p>
@@ -583,7 +583,7 @@ export default function SmartInterviewPage() {
                     />
                     <label
                       htmlFor="resume-upload"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors cursor-pointer mt-4"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#F0FDFA] text-[#0D9488] rounded-lg hover:bg-[#F0FDFA] transition-colors cursor-pointer mt-4"
                     >
                       <FileText className="w-4 h-4" />
                       Choose File
@@ -608,7 +608,7 @@ export default function SmartInterviewPage() {
                         value={jobRole}
                         onChange={(e) => setJobRole(e.target.value)}
                         placeholder="e.g. Software Engineer, Product Manager"
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -618,7 +618,7 @@ export default function SmartInterviewPage() {
                         onChange={(e) => setJobDescription(e.target.value)}
                         placeholder="Paste the job description here..."
                         rows={6}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -637,7 +637,7 @@ export default function SmartInterviewPage() {
                             onClick={() => setRound(r)}
                             className={`px-4 py-2 rounded-lg transition-colors ${
                               round === r
-                                ? 'bg-purple-50 text-purple-600 font-semibold'
+                                ? 'bg-[#F0FDFA] text-[#0D9488] font-semibold'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                           >
@@ -653,7 +653,7 @@ export default function SmartInterviewPage() {
                           onClick={() => setMode('text')}
                           className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${
                             mode === 'text'
-                              ? 'bg-purple-50 text-purple-600 font-semibold'
+                              ? 'bg-[#F0FDFA] text-[#0D9488] font-semibold'
                               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           }`}
                         >
@@ -664,7 +664,7 @@ export default function SmartInterviewPage() {
                           onClick={() => setMode('voice')}
                           className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${
                             mode === 'voice'
-                              ? 'bg-purple-50 text-purple-600 font-semibold'
+                              ? 'bg-[#F0FDFA] text-[#0D9488] font-semibold'
                               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           }`}
                         >
@@ -680,7 +680,7 @@ export default function SmartInterviewPage() {
                 <button
                   onClick={startInterview}
                   disabled={!resumeBase64 || !jobRole || loading}
-                  className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-4 rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-to-r from-[#0D9488] to-[#0F766E] text-white py-4 rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Preparing Interview...' : 'Start Interview'}
                 </button>
@@ -696,8 +696,8 @@ export default function SmartInterviewPage() {
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-purple-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-purple-500">1</span>
+                    <div className="w-6 h-6 bg-[#F0FDFA] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-[#0D9488]">1</span>
                     </div>
                     <div>
                       <div className="font-medium text-gray-900">Upload Resume</div>
@@ -705,8 +705,8 @@ export default function SmartInterviewPage() {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-purple-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-purple-500">2</span>
+                    <div className="w-6 h-6 bg-[#F0FDFA] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-[#0D9488]">2</span>
                     </div>
                     <div>
                       <div className="font-medium text-gray-900">Provide Job Details</div>
@@ -714,8 +714,8 @@ export default function SmartInterviewPage() {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-purple-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-purple-500">3</span>
+                    <div className="w-6 h-6 bg-[#F0FDFA] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-[#0D9488]">3</span>
                     </div>
                     <div>
                       <div className="font-medium text-gray-900">AI Interview</div>
@@ -727,17 +727,17 @@ export default function SmartInterviewPage() {
 
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Star className="w-5 h-5 text-purple-400" />
+                  <Star className="w-5 h-5 text-[#14B8A6]" />
                   Pro Tips
                 </h3>
                 <div className="space-y-3">
-                  <div className="p-3 bg-purple-50 rounded-lg">
-                    <p className="text-sm text-purple-800">
+                  <div className="p-3 bg-[#F0FDFA] rounded-lg">
+                    <p className="text-sm text-[#0F766E]">
                       💡 Be specific in your job description for better question matching
                     </p>
                   </div>
-                  <div className="p-3 bg-purple-50 rounded-lg">
-                    <p className="text-sm text-purple-200">
+                  <div className="p-3 bg-[#F0FDFA] rounded-lg">
+                    <p className="text-sm text-[#14B8A6]">
                       🎯 Choose the right interview round for relevant questions
                     </p>
                   </div>
@@ -782,8 +782,8 @@ export default function SmartInterviewPage() {
               <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
                 {/* AI Interviewer Card */}
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center">
-                    <Brain className="w-6 h-6 text-purple-500" />
+                  <div className="w-12 h-12 bg-[#F0FDFA] rounded-full flex items-center justify-center">
+                    <Brain className="w-6 h-6 text-[#0D9488]" />
                   </div>
                   <div>
                     <div className="text-sm text-gray-600">AI Interviewer</div>
@@ -791,7 +791,7 @@ export default function SmartInterviewPage() {
                   </div>
                   <button
                     onClick={() => speakText(currentQuestion)}
-                    className="ml-auto p-2 text-gray-600 hover:text-purple-400 transition-colors"
+                    className="ml-auto p-2 text-gray-600 hover:text-[#14B8A6] transition-colors"
                   >
                     <Volume2 className="w-5 h-5" />
                   </button>
@@ -807,7 +807,7 @@ export default function SmartInterviewPage() {
                       <div
                         className={`max-w-lg px-4 py-3 rounded-2xl ${
                           msg.role === 'user'
-                            ? 'bg-purple-500 text-white'
+                            ? 'bg-[#0D9488] text-white'
                             : 'bg-gray-100 text-gray-900'
                         }`}
                       >
@@ -838,12 +838,12 @@ export default function SmartInterviewPage() {
                         onChange={(e) => setCurrentAnswer(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && submitAnswer()}
                         placeholder="Type your answer..."
-                        className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent"
                       />
                       <button
                         onClick={submitAnswer}
                         disabled={!currentAnswer.trim() || isTyping}
-                        className="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-500 transition-colors disabled:opacity-50"
+                        className="px-6 py-3 bg-[#0D9488] text-white rounded-lg hover:bg-[#0D9488] transition-colors disabled:opacity-50"
                       >
                         <Send className="w-5 h-5" />
                       </button>
@@ -866,13 +866,13 @@ export default function SmartInterviewPage() {
                         </div>
                       ) : (
                         <div className="space-y-4">
-                          <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto">
-                            <Mic className="w-8 h-8 text-purple-500" />
+                          <div className="w-16 h-16 bg-[#F0FDFA] rounded-full flex items-center justify-center mx-auto">
+                            <Mic className="w-8 h-8 text-[#0D9488]" />
                           </div>
                           <div className="text-gray-600">Click to start recording</div>
                           <button
                             onClick={startRecording}
-                            className="bg-purple-500 text-white px-6 py-3 rounded-lg hover:bg-purple-500 transition-colors"
+                            className="bg-[#0D9488] text-white px-6 py-3 rounded-lg hover:bg-[#0D9488] transition-colors"
                           >
                             Start Recording
                           </button>
@@ -892,18 +892,18 @@ export default function SmartInterviewPage() {
                   Interview Tips
                 </h3>
                 <div className="space-y-3">
-                  <div className="p-3 bg-purple-50 rounded-lg">
-                    <p className="text-sm text-purple-200">
+                  <div className="p-3 bg-[#F0FDFA] rounded-lg">
+                    <p className="text-sm text-[#14B8A6]">
                       💡 Be specific and provide examples from your experience
                     </p>
                   </div>
-                  <div className="p-3 bg-purple-50 rounded-lg">
-                    <p className="text-sm text-purple-200">
+                  <div className="p-3 bg-[#F0FDFA] rounded-lg">
+                    <p className="text-sm text-[#14B8A6]">
                       🎯 Relate your answers to the job requirements
                     </p>
                   </div>
-                  <div className="p-3 bg-purple-50 rounded-lg">
-                    <p className="text-sm text-purple-800">
+                  <div className="p-3 bg-[#F0FDFA] rounded-lg">
+                    <p className="text-sm text-[#0F766E]">
                       📈 Use the STAR method for behavioral questions
                     </p>
                   </div>
@@ -948,7 +948,7 @@ export default function SmartInterviewPage() {
           {isEvaluating ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-400/30 border-t-purple-500 mx-auto mb-4"></div>
+                <div className="w-8 h-8 animate-spin rounded-full border-2 border-[#0D9488]/30 border-t-[#0D9488] mx-auto mb-4"></div>
                 <div className="text-gray-600">Analyzing your interview...</div>
               </div>
             </div>
@@ -986,7 +986,7 @@ export default function SmartInterviewPage() {
               {feedback.interviewer_notes && (
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                   <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-purple-600" />
+                    <MessageSquare className="w-5 h-5 text-[#0D9488]" />
                     Interviewer Notes
                   </h3>
                   <p className="text-gray-700">{feedback.interviewer_notes}</p>
@@ -1034,15 +1034,15 @@ export default function SmartInterviewPage() {
 
               {/* Improvement Roadmap */}
               {feedback.improvement_roadmap && feedback.improvement_roadmap.length > 0 && (
-                <div className="bg-gradient-to-br from-purple-50 to-purple-50 rounded-2xl p-6 border border-purple-100">
+                <div className="bg-gradient-to-br from-[#CCFBF1] to-[#CCFBF1] rounded-2xl p-6 border border-[#CCFBF1]">
                   <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Lightbulb className="w-5 h-5 text-purple-600" />
+                    <Lightbulb className="w-5 h-5 text-[#0D9488]" />
                     Your Improvement Roadmap
                   </h3>
                   <div className="space-y-3">
                     {feedback.improvement_roadmap.map((item, index) => (
                       <div key={index} className="flex items-start gap-3 bg-white rounded-lg p-4">
-                        <div className="flex-shrink-0 w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                        <div className="flex-shrink-0 w-6 h-6 bg-[#0D9488] text-white rounded-full flex items-center justify-center text-sm font-semibold">
                           {index + 1}
                         </div>
                         <p className="text-gray-700 text-sm flex-1">{item}</p>
@@ -1086,7 +1086,7 @@ export default function SmartInterviewPage() {
                 >
                   Try Another Interview
                 </button>
-                <button className="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-500 transition-colors">
+                <button className="px-6 py-3 bg-[#0D9488] text-white rounded-lg hover:bg-[#0D9488] transition-colors">
                   Share Results
                 </button>
               </div>
@@ -1120,7 +1120,7 @@ export default function SmartInterviewPage() {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
-                <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent mx-auto mb-4"></div>
+                <div className="w-8 h-8 animate-spin rounded-full border-2 border-[#0D9488] border-t-transparent mx-auto mb-4"></div>
                 <div className="text-gray-600">Loading history...</div>
               </div>
             </div>
@@ -1131,7 +1131,7 @@ export default function SmartInterviewPage() {
               <p className="text-gray-600 mb-6">Complete your first interview to see feedback here</p>
               <button
                 onClick={() => setStage('setup')}
-                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                className="px-6 py-3 bg-[#0D9488] text-white rounded-lg hover:bg-[#0F766E] transition-colors"
               >
                 Start Interview
               </button>
@@ -1176,7 +1176,7 @@ export default function SmartInterviewPage() {
                     }`}>
                       {item.feedback?.verdict}
                     </span>
-                    <span className="text-sm text-purple-600 font-medium">Click to view details →</span>
+                    <span className="text-sm text-[#0D9488] font-medium">Click to view details →</span>
                   </div>
                 </div>
               ))}

@@ -2,18 +2,18 @@
 @import "tailwindcss";
 
 :root {
-  --brand-primary: #6C3FE8;
+  --brand-primary: #0D9488;
   --brand-secondary: #FF6B35;
-  --brand-gradient: linear-gradient(135deg, #6C3FE8 0%, #9B6DFF 100%);
+  --brand-gradient: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
   --bg-white: #FFFFFF;
-  --bg-soft: #F8F7FF;
-  --bg-gray: #F4F4F6;
+  --bg-soft: #F0FDFA;
+  --bg-gray: #F8FAFC;
   --text-heading: #0D0D1A;
   --text-body: #44445A;
   --text-muted: #8888A0;
-  --border: #E8E8F0;
-  --card-shadow: 0 4px 24px rgba(108, 63, 232, 0.08);
-  --card-shadow-hover: 0 12px 40px rgba(108, 63, 232, 0.18);
+  --border: #E2E8F0;
+  --card-shadow: 0 4px 24px rgba(13, 148, 136, 0.08);
+  --card-shadow-hover: 0 12px 40px rgba(13, 148, 136, 0.18);
 }
 
 body {
@@ -68,7 +68,7 @@ h1, h2, h3, h4 {
 
 /* Button Components */
 .btn-primary {
-  background: linear-gradient(135deg, #6C3FE8, #9B6DFF);
+  background: linear-gradient(135deg, #0D9488, #14B8A6);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -79,22 +79,22 @@ h1, h2, h3, h4 {
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #5535C5, #6C3FE8);
+  background: linear-gradient(135deg, #0F766E, #0D9488);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(108, 63, 232, 0.4);
+  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.4);
 }
 
 /* Card Component */
 .card {
   background: white;
   border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(108, 63, 232, 0.08);
-  border: 1px solid #E8E8F0;
+  box-shadow: 0 4px 24px rgba(13, 148, 136, 0.08);
+  border: 1px solid #E2E8F0;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card:hover {
-  box-shadow: 0 12px 40px rgba(108, 63, 232, 0.18);
+  box-shadow: 0 12px 40px rgba(13, 148, 136, 0.18);
   transform: translateY(-4px);
 }
 

@@ -10,12 +10,20 @@ module.exports = {
     extend: {
       colors: {
         brand: {
-          primary: '#6C3FE8',
+          primary: '#0D9488',
           secondary: '#FF6B35',
-          light: '#F8F7FF',
-          soft: '#EDE9FF',
-          dark: '#5535C5',
+          light: '#F0FDFA',
+          soft: '#CCFBF1',
+          dark: '#0F766E',
         }
+      },
+      fontFamily: {
+        display: ['Syne', 'sans-serif'],
+        body: ['DM Sans', 'sans-serif'],
+      },
+      boxShadow: {
+        brand: '0 4px 24px rgba(13,148,136,0.08)',
+        'brand-hover': '0 12px 40px rgba(13,148,136,0.18)',
       }
     },
   },

@@ -220,10 +220,10 @@ export default function PulsePage() {
   if (loading) {
     return (
       <AppShell>
-        <div className="min-h-screen bg-[#F8F7FF]">
+        <div className="min-h-screen bg-[#F0FDFA]">
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
-              <div className="w-12 h-12 animate-spin rounded-full border-4 border-[#EDE9FF] border-t-[#6C3FE8] mx-auto mb-4"></div>
+              <div className="w-12 h-12 animate-spin rounded-full border-4 border-[#CCFBF1] border-t-[#0D9488] mx-auto mb-4"></div>
               <div className="text-lg font-semibold text-[#44445A]">Loading PULSE Feed...</div>
             </div>
           </div>
@@ -234,15 +234,15 @@ export default function PulsePage() {
 
   return (
     <AppShell>
-      <div className="min-h-screen bg-[#F8F7FF]">
+      <div className="min-h-screen bg-[#F0FDFA]">
         {/* Header */}
         <div className="bg-white border-b border-[#E8E8F0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#F8F7FF] rounded-lg flex items-center justify-center">
-                    <Newspaper className="w-5 h-5 text-[#6C3FE8]" />
+                  <div className="w-10 h-10 bg-[#F0FDFA] rounded-lg flex items-center justify-center">
+                    <Newspaper className="w-5 h-5 text-[#0D9488]" />
                   </div>
                   <div>
                     <h1 className="text-2xl font-bold text-[#0D0D1A]">PULSE Feed</h1>
@@ -253,12 +253,12 @@ export default function PulsePage() {
               
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <div className="w-2 h-2 bg-[#6C3FE8] rounded-full"></div>
+                  <div className="w-2 h-2 bg-[#0D9488] rounded-full"></div>
                   <span>Live</span>
                 </div>
                 <button
                   onClick={refreshNews}
-                  className="p-2 text-gray-500 hover:text-[#6C3FE8] hover:bg-[#F8F7FF] rounded-lg transition-colors"
+                  className="p-2 text-gray-500 hover:text-[#0D9488] hover:bg-[#F0FDFA] rounded-lg transition-colors"
                 >
                   <RefreshCw className="w-5 h-5" />
                 </button>
@@ -269,7 +269,7 @@ export default function PulsePage() {
 
         {/* GD Booster Banner */}
         {!gdLoading && gdInsights && (
-          <div className="bg-gradient-to-r from-[#6C3FE8] to-[#9B6DFF]">
+          <div className="bg-gradient-to-r from-[#0D9488] to-[#14B8A6]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-center">
                 {/* Topic */}
@@ -298,7 +298,7 @@ export default function PulsePage() {
 
                 {/* Quote */}
                 <div className="lg:col-span-1">
-                  <div className="text-[#9B6DFF]/60 text-sm italic border-l-2 border-[#9B6DFF] pl-4">
+                  <div className="text-[#14B8A6]/60 text-sm italic border-l-2 border-[#14B8A6] pl-4">
                     "{gdInsights.power_phrase}"
                   </div>
                 </div>
@@ -308,11 +308,11 @@ export default function PulsePage() {
                   <button
                     onClick={handleGDPractice}
                     disabled={gdPracticeLoading}
-                    className="w-full bg-white text-[#6C3FE8] px-6 py-3 rounded-lg font-semibold hover:bg-[#F8F7FF] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full bg-white text-[#0D9488] px-6 py-3 rounded-lg font-semibold hover:bg-[#F0FDFA] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {gdPracticeLoading ? (
                       <>
-                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-[#6C3FE8] border-t-transparent"></div>
+                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-[#0D9488] border-t-transparent"></div>
                         Loading...
                       </>
                     ) : (
@@ -337,8 +337,8 @@ export default function PulsePage() {
                 onClick={() => handleCategoryChange(category)}
                 className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
                   activeCategory === category
-                    ? 'bg-[#6C3FE8] text-white shadow-md'
-                    : 'bg-white text-[#44445A] border border-[#E8E8F0] hover:border-[#6C3FE8] hover:text-[#6C3FE8]'
+                    ? 'bg-[#0D9488] text-white shadow-md'
+                    : 'bg-white text-[#44445A] border border-[#E8E8F0] hover:border-[#0D9488] hover:text-[#0D9488]'
                 }`}>
                 {category}
               </button>
@@ -356,8 +356,8 @@ export default function PulsePage() {
                 <h3 className="font-semibold text-[#0D0D1A] mb-4">Quick Stats</h3>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#F8F7FF] flex items-center justify-center">
-                      <Newspaper className="w-5 h-5 text-[#6C3FE8]" />
+                    <div className="w-10 h-10 rounded-lg bg-[#F0FDFA] flex items-center justify-center">
+                      <Newspaper className="w-5 h-5 text-[#0D9488]" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-[#0D0D1A]">{filteredArticles.length}</p>
@@ -434,7 +434,7 @@ export default function PulsePage() {
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="text-xs font-medium text-[#6C3FE8] bg-[#F8F7FF] px-2 py-1 rounded">
+                              <span className="text-xs font-medium text-[#0D9488] bg-[#F0FDFA] px-2 py-1 rounded">
                                 {article.source || 'Unknown'}
                               </span>
                               <span className="text-xs text-gray-500">
@@ -473,7 +473,7 @@ export default function PulsePage() {
                               href={article.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[#6C3FE8] hover:text-[#5535C5] font-medium text-sm flex items-center gap-1"
+                              className="text-[#0D9488] hover:text-[#0F766E] font-medium text-sm flex items-center gap-1"
                             >
                               Read More
                               <ArrowUpRight className="w-3 h-3" />

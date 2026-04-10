@@ -99,7 +99,7 @@ export default function AppShell({ children }) {
   const isActive = (href) => pathname === href;
 
   return (
-    <div className="min-h-screen bg-[#F8F7FF]">
+    <div className="min-h-screen bg-[#F0FDFA]">
       {/* Mobile Menu Overlay */}
       {sidebarOpen && (
         <div 
@@ -125,17 +125,7 @@ export default function AppShell({ children }) {
               {/* Logo */}
               <div className="flex items-center">
                 <Link href="/dashboard" className="flex items-center gap-2">
-                  <span style={{
-                    fontFamily: 'Syne, sans-serif',
-                    fontWeight: 800,
-                    fontSize: '24px',
-                    background: 'linear-gradient(135deg, #6C3FE8, #9B6DFF)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text'
-                  }}>
-                    BRIDGE
-                  </span>
+                  <img src="/bridgeai-logo.png" alt="BridgeAI" className="h-8 w-auto" />
                 </Link>
               </div>
             </div>
@@ -149,7 +139,7 @@ export default function AppShell({ children }) {
                   placeholder="Search features, topics, or help..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6C3FE8] focus:border-transparent text-gray-900 placeholder-gray-500"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent text-gray-900 placeholder-gray-500"
                 />
               </div>
             </div>
@@ -183,7 +173,7 @@ export default function AppShell({ children }) {
                   className="w-12 h-12 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold" style={{background: 'linear-gradient(135deg, #6C3FE8, #9B6DFF)'}}>
+                <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold" style={{background: 'linear-gradient(135deg, #0D9488, #14B8A6)'}}>
                   {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
               )}
@@ -200,14 +190,14 @@ export default function AppShell({ children }) {
           
           {/* BRIDGE Score Card */}
           <div className="px-3 py-2">
-            <div className="text-center p-3 bg-[#F8F7FF] rounded-xl">
+            <div className="text-center p-3 bg-[#F0FDFA] rounded-xl">
               <p className="text-xs text-[#8888A0] mb-1">BRIDGE Score</p>
               {userProfile?.bridgeScore > 0 ? (
                 <p style={{
                   fontFamily: 'Syne, sans-serif',
                   fontWeight: 800,
                   fontSize: '28px',
-                  background: 'linear-gradient(135deg, #6C3FE8, #9B6DFF)',
+                  background: 'linear-gradient(135deg, #0D9488, #14B8A6)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text'
@@ -215,7 +205,7 @@ export default function AppShell({ children }) {
                   {userProfile.bridgeScore}
                 </p>
               ) : (
-                <a href="/interview" className="text-xs text-[#6C3FE8] font-medium hover:underline">
+                <a href="/interview" className="text-xs text-[#0D9488] font-medium hover:underline">
                   Start Interview →
                 </a>
               )}
@@ -233,8 +223,8 @@ export default function AppShell({ children }) {
                   onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                     isActive(item.href)
-                      ? 'bg-[#F8F7FF] text-[#6C3FE8] border-l-4 border-[#6C3FE8]'
-                      : 'text-gray-700 hover:bg-[#F8F7FF] hover:text-[#6C3FE8]'
+                      ? 'bg-[#F0FDFA] text-[#0D9488] border-l-4 border-[#0D9488]'
+                      : 'text-gray-700 hover:bg-[#F0FDFA] hover:text-[#0D9488]'
                   }`}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
@@ -245,7 +235,7 @@ export default function AppShell({ children }) {
           </nav>
 
           {/* Bottom Actions */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-t border-gray-200">
             <button
               onClick={() => {
                 if (isBypassed) {
@@ -266,7 +256,7 @@ export default function AppShell({ children }) {
       </aside>
 
       {/* Main Content */}
-      <main className="md:ml-64 pt-14 md:pt-16 min-h-screen bg-[#F8F7FF]">
+      <main className="md:ml-64 pt-14 md:pt-16 min-h-screen bg-[#F0FDFA]">
         {children}
       </main>
     </div>

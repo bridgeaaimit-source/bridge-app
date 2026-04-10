@@ -231,7 +231,7 @@ export default function GDPage() {
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 bg-[#6C3FE8] text-white px-4 py-3 rounded-xl hover:bg-[#5535C5] transition-colors font-medium"
+              className="flex items-center gap-2 bg-[#0D9488] text-white px-4 py-3 rounded-xl hover:bg-[#0F766E] transition-colors font-medium"
             >
               <Plus className="w-5 h-5" />
               Create Custom GD
@@ -252,7 +252,7 @@ export default function GDPage() {
                         <Users className="w-4 h-4" />
                         {topic.participants} participants
                       </span>
-                      <span className="bg-[#F8F7FF] text-[#6C3FE8] px-2 py-1 rounded text-xs">
+                      <span className="bg-[#F0FDFA] text-[#0D9488] px-2 py-1 rounded text-xs">
                         {topic.category}
                       </span>
                     </div>
@@ -266,7 +266,7 @@ export default function GDPage() {
                   </div>
                   <button
                     onClick={() => handleJoinDiscussion(topic)}
-                    className="bg-[#6C3FE8] text-white px-4 py-2 rounded-lg hover:bg-[#5535C5] transition-colors text-sm font-medium"
+                    className="bg-[#0D9488] text-white px-4 py-2 rounded-lg hover:bg-[#0F766E] transition-colors text-sm font-medium"
                   >
                     Join Discussion
                   </button>
@@ -290,7 +290,7 @@ export default function GDPage() {
                             <Users className="w-4 h-4" />
                             {room.participants || 0} participants
                           </span>
-                          <span className="bg-[#F8F7FF] text-[#6C3FE8] px-2 py-1 rounded text-xs">
+                          <span className="bg-[#F0FDFA] text-[#0D9488] px-2 py-1 rounded text-xs">
                             {room.difficulty}
                           </span>
                         </div>
@@ -304,7 +304,7 @@ export default function GDPage() {
                       </div>
                       <button
                         onClick={() => handleJoinCustomRoom(room)}
-                        className="bg-[#6C3FE8] text-white px-4 py-2 rounded-lg hover:bg-[#5535C5] transition-colors text-sm font-medium"
+                        className="bg-[#0D9488] text-white px-4 py-2 rounded-lg hover:bg-[#0F766E] transition-colors text-sm font-medium"
                       >
                         Join Discussion
                       </button>
@@ -335,7 +335,7 @@ export default function GDPage() {
                     value={customTopic}
                     onChange={(e) => setCustomTopic(e.target.value)}
                     placeholder="Enter your GD topic..."
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6C3FE8]"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0D9488]"
                   />
                 </div>
                 
@@ -348,7 +348,7 @@ export default function GDPage() {
                         onClick={() => setCustomDifficulty(level)}
                         className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
                           customDifficulty === level
-                            ? 'bg-[#6C3FE8] text-white'
+                            ? 'bg-[#0D9488] text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
@@ -367,7 +367,7 @@ export default function GDPage() {
                         onClick={() => setCustomDuration(time)}
                         className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
                           customDuration === time
-                            ? 'bg-[#6C3FE8] text-white'
+                            ? 'bg-[#0D9488] text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
@@ -380,7 +380,7 @@ export default function GDPage() {
                 <button
                   onClick={createCustomRoom}
                   disabled={isCreating || !customTopic.trim()}
-                  className="w-full bg-[#6C3FE8] text-white py-3 rounded-xl font-medium hover:bg-[#5535C5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-[#0D9488] text-white py-3 rounded-xl font-medium hover:bg-[#0F766E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isCreating ? 'Creating...' : 'Create Room'}
                 </button>
@@ -406,7 +406,7 @@ export default function GDPage() {
                     <h2 className="text-xl font-bold mb-1">
                       {selectedTopic?.title || "Group Discussion"}
                     </h2>
-                    <div className="flex items-center gap-4 text-cyan-100 text-sm">
+                    <div className="flex items-center gap-4 text-[#CCFBF1] text-sm">
                       <span className="flex items-center gap-1">
                         <Users className="w-4 h-4" />
                         {selectedTopic?.participants || 0} participants
@@ -436,14 +436,14 @@ export default function GDPage() {
                     <div
                       className={`max-w-xs lg:max-w-md ${
                         message.user === "You"
-                          ? "bg-cyan-600 text-white"
+                          ? "bg-[#0D9488] text-white"
                           : "bg-gray-100 text-gray-900"
                       } rounded-lg p-3`}
                     >
                       <div className="font-medium text-sm mb-1">{message.user}</div>
                       <div className="text-sm">{message.text}</div>
                       <div className={`text-xs mt-1 ${
-                        message.user === "You" ? "text-cyan-100" : "text-gray-500"
+                        message.user === "You" ? "text-[#CCFBF1]" : "text-gray-500"
                       }`}>
                         {message.time}
                       </div>
@@ -461,11 +461,11 @@ export default function GDPage() {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     placeholder="Type your message..."
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D9488] focus:border-transparent"
                   />
                   <button
                     onClick={handleSendMessage}
-                    className="bg-cyan-600 text-white px-6 py-2 rounded-lg hover:bg-cyan-700 transition-colors"
+                    className="bg-[#0D9488] text-white px-6 py-2 rounded-lg hover:bg-[#0F766E] transition-colors"
                   >
                     Send
                   </button>
@@ -479,21 +479,21 @@ export default function GDPage() {
             {/* Recording Controls */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Mic className="w-5 h-5 text-[#6C3FE8]" />
+                <Mic className="w-5 h-5 text-[#0D9488]" />
                 Voice Recording
               </h3>
               
               <div className="space-y-4">
                 <div className="text-center">
                   <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center ${
-                    isRecording ? "bg-red-100" : "bg-[#F8F7FF]"
+                    isRecording ? "bg-red-100" : "bg-[#F0FDFA]"
                   }`}>
                     <button
                       onClick={toggleRecording}
                       className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors ${
                         isRecording
                           ? "bg-red-500 hover:bg-red-600 text-white"
-                          : "bg-[#6C3FE8] hover:bg-[#5535C5] text-white"
+                          : "bg-[#0D9488] hover:bg-[#0F766E] text-white"
                       }`}
                     >
                       {isRecording ? <Square className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
@@ -509,7 +509,7 @@ export default function GDPage() {
                   <select
                     value={selectedTimer}
                     onChange={(e) => setSelectedTimer(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D9488] focus:border-transparent"
                   >
                     <option value={3}>3 minutes</option>
                     <option value={5}>5 minutes</option>
@@ -538,8 +538,8 @@ export default function GDPage() {
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-[#F8F7FF] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <div className="w-2 h-2 bg-[#6C3FE8] rounded-full"></div>
+                  <div className="w-6 h-6 bg-[#F0FDFA] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-2 h-2 bg-[#0D9488] rounded-full"></div>
                   </div>
                   <div>
                     <div className="text-sm font-medium text-gray-900">Listen Actively</div>
@@ -548,8 +548,8 @@ export default function GDPage() {
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-[#F8F7FF] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <div className="w-2 h-2 bg-[#9B6DFF] rounded-full"></div>
+                  <div className="w-6 h-6 bg-[#F0FDFA] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-2 h-2 text-[#14B8A6] rounded-full"></div>
                   </div>
                   <div>
                     <div className="text-sm font-medium text-gray-900">Add Value</div>
@@ -562,7 +562,7 @@ export default function GDPage() {
             {/* Performance */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Award className="w-5 h-5 text-purple-500" />
+                <Award className="w-5 h-5 text-[#0D9488]" />
                 Your Performance
               </h3>
               
@@ -571,7 +571,7 @@ export default function GDPage() {
                   <span className="text-sm text-gray-600">Participation</span>
                   <div className="flex items-center gap-2">
                     <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div className="bg-cyan-600 h-2 rounded-full" style={{ width: "75%" }}></div>
+                      <div className="bg-[#0D9488] h-2 rounded-full" style={{ width: "75%" }}></div>
                     </div>
                     <span className="text-sm font-medium">75%</span>
                   </div>
@@ -591,7 +591,7 @@ export default function GDPage() {
                   <span className="text-sm text-gray-600">Content</span>
                   <div className="flex items-center gap-2">
                     <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div className="bg-purple-500 h-2 rounded-full" style={{ width: "70%" }}></div>
+                      <div className="bg-[#0D9488] h-2 rounded-full" style={{ width: "70%" }}></div>
                     </div>
                     <span className="text-sm font-medium">70%</span>
                   </div>
