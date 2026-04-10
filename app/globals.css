@@ -2,18 +2,18 @@
 @import "tailwindcss";
 
 :root {
-  --brand-primary: #0891B2;
-  --brand-secondary: #0D9488;
-  --brand-gradient: linear-gradient(135deg, #0891B2 0%, #0D9488 100%);
+  --brand-primary: #6C3FE8;
+  --brand-secondary: #FF6B35;
+  --brand-gradient: linear-gradient(135deg, #6C3FE8 0%, #9B6DFF 100%);
   --bg-white: #FFFFFF;
-  --bg-soft: #F0FDFA;
+  --bg-soft: #F8F7FF;
   --bg-gray: #F4F4F6;
   --text-heading: #0D0D1A;
   --text-body: #44445A;
   --text-muted: #8888A0;
   --border: #E8E8F0;
-  --card-shadow: 0 4px 24px rgba(8, 145, 178, 0.08);
-  --card-shadow-hover: 0 12px 40px rgba(8, 145, 178, 0.18);
+  --card-shadow: 0 4px 24px rgba(108, 63, 232, 0.08);
+  --card-shadow-hover: 0 12px 40px rgba(108, 63, 232, 0.18);
 }
 
 body {
@@ -64,4 +64,46 @@ h1, h2, h3, h4 {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* Button Components */
+.btn-primary {
+  background: linear-gradient(135deg, #6C3FE8, #9B6DFF);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #5535C5, #6C3FE8);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(108, 63, 232, 0.4);
+}
+
+/* Card Component */
+.card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(108, 63, 232, 0.08);
+  border: 1px solid #E8E8F0;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+  box-shadow: 0 12px 40px rgba(108, 63, 232, 0.18);
+  transform: translateY(-4px);
+}
+
+/* Force light mode only */
+html, body {
+  background-color: #FFFFFF !important;
+  color: #44445A !important;
+}
+
+* {
+  color-scheme: light !important;
 }
