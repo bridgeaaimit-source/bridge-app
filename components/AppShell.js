@@ -169,7 +169,7 @@ export default function AppShell({ children }) {
               <img 
                 src="/images/bridgeai-logo.png" 
                 alt="BridgeAI"
-                className="h-10 w-auto"
+                className="h-14 w-auto"
               />
               {/* Name on right */}
               <div className="flex-1 min-w-0">

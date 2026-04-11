@@ -174,7 +174,7 @@ export default function Home() {
                 <img 
                   src="/images/bridgeai-logo.png" 
                   alt="BridgeAI"
-                  className="h-12 w-auto"
+                  className="h-16 w-auto"
                 />
               </Link>
             </div>
@@ -630,7 +630,7 @@ export default function Home() {
                 <img 
                   src="/images/bridgeai-logo.png" 
                   alt="BridgeAI"
-                  className="h-10 w-auto"
+                  className="h-14 w-auto"
                 />
               </div>
               <p className="text-sm mb-4">India's AI-powered placement prep platform</p>
