@@ -94,17 +94,7 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <span style={{
-                fontFamily: 'Syne, sans-serif',
-                fontWeight: 800,
-                fontSize: '32px',
-                background: 'linear-gradient(135deg, #6C3FE8, #9B6DFF)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>
-                BRIDGE
-              </span>
+              <img src="/images/bridgeai-logo.png" alt="BridgeAI" className="h-10 w-auto" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
             <p className="text-gray-600">Sign in to continue your BRIDGE journey</p>

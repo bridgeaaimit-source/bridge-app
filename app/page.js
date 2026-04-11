@@ -171,17 +171,7 @@ export default function Home() {
             {/* Logo */}
             <div className="flex items-center">
               <Link href="/" className="flex items-center gap-2">
-                <span style={{
-                  fontFamily: 'Syne, sans-serif',
-                  fontWeight: 800,
-                  fontSize: '24px',
-                  background: 'linear-gradient(135deg, #6C3FE8, #9B6DFF)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
-                }}>
-                  BRIDGE
-                </span>
+                <img src="/images/bridgeai-logo.png" alt="BridgeAI" className="h-8 w-auto" />
               </Link>
             </div>
 
@@ -701,7 +691,7 @@ export default function Home() {
 
       {/* Recruiter Link */}
       <div className="fixed bottom-8 right-8 z-40">
-        <Link href="/recruiter" className="bg-purple-500 text-white px-4 py-2 rounded-full shadow-lg hover:bg-purple-500 transition-colors text-sm font-medium">
+        <Link href="/recruiter" className="bg-[#0D9488] hover:bg-[#0F766E] text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg">
           For Recruiters 
         </Link>
       </div>

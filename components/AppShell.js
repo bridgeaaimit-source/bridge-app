@@ -122,10 +122,10 @@ export default function AppShell({ children }) {
                 <Menu className="w-6 h-6 text-gray-600" />
               </button>
               
-              {/* Logo */}
-              <div className="flex items-center">
+              {/* Logo - mobile only */}
+              <div className="flex items-center md:hidden">
                 <Link href="/dashboard" className="flex items-center gap-2">
-                  <img src="/bridgeai-logo.png" alt="BridgeAI" className="h-8 w-auto" />
+                  <img src="/images/bridgeai-logo.png" alt="BridgeAI" className="h-7 w-auto" />
                 </Link>
               </div>
             </div>
@@ -144,13 +144,12 @@ export default function AppShell({ children }) {
               </div>
             </div>
 
-            {/* Right Side */}
-            <div className="flex items-center gap-2 md:gap-4">
-              {/* Notifications */}
+            {/* Right Side - Bell only */}
+            <div className="flex items-center">
               <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                 <Bell className="w-5 h-5" />
                 {notifications > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                 )}
               </button>
             </div>
@@ -163,52 +162,24 @@ export default function AppShell({ children }) {
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } md:translate-x-0`}>
         <div className="flex flex-col h-full">
-          {/* User Profile Mini Card */}
-          <div className="p-4 border-b border-gray-200">
+          {/* User Profile Mini Card - Logo left, name right */}
+          <div className="p-4 border-b border-gray-100">
             <div className="flex items-center gap-3">
-              {userProfile?.photo ? (
-                <img 
-                  src={userProfile.photo} 
-                  alt={userProfile.name}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold" style={{background: 'linear-gradient(135deg, #0D9488, #14B8A6)'}}>
-                  {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
-                </div>
-              )}
+              {/* Logo on left */}
+              <img 
+                src="/images/bridgeai-logo.png" 
+                alt="BridgeAI"
+                className="h-8 w-auto flex-shrink-0"
+              />
+              {/* Name on right */}
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-semibold text-[#0D0D1A] truncate">
                   {userProfile?.name || 'User'}
-                </div>
-                <div className="text-xs text-gray-500 truncate">
-                  {userProfile?.college || 'Add College'}
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* BRIDGE Score Card */}
-          <div className="px-3 py-2">
-            <div className="text-center p-3 bg-[#F0FDFA] rounded-xl">
-              <p className="text-xs text-[#8888A0] mb-1">BRIDGE Score</p>
-              {userProfile?.bridgeScore > 0 ? (
-                <p style={{
-                  fontFamily: 'Syne, sans-serif',
-                  fontWeight: 800,
-                  fontSize: '28px',
-                  background: 'linear-gradient(135deg, #0D9488, #14B8A6)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
-                }}>
-                  {userProfile.bridgeScore}
                 </p>
-              ) : (
-                <a href="/interview" className="text-xs text-[#0D9488] font-medium hover:underline">
-                  Start Interview →
-                </a>
-              )}
+                <p className="text-xs text-[#8888A0] truncate">
+                  {userProfile?.college || 'Add College'}
+                </p>
+              </div>
             </div>
           </div>
 
