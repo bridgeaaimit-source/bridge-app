@@ -171,7 +171,11 @@ export default function Home() {
             {/* Logo */}
             <div className="flex items-center">
               <Link href="/" className="flex items-center gap-2">
-                <img src="/images/bridgeai-logo.png" alt="BridgeAI" className="h-8 w-auto" />
+                <img 
+                  src="/images/bridgeai-logo.png" 
+                  alt="BridgeAI"
+                  className="h-12 w-auto"
+                />
               </Link>
             </div>
 
@@ -623,17 +627,11 @@ export default function Home() {
             {/* Column 1 */}
             <div className="lg:col-span-1">
               <div className="flex items-center gap-2 mb-4">
-                <span style={{
-                  fontFamily: 'Syne, sans-serif',
-                  fontWeight: 800,
-                  fontSize: '24px',
-                  background: 'linear-gradient(135deg, #6C3FE8, #9B6DFF)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
-                }}>
-                  BRIDGE
-                </span>
+                <img 
+                  src="/images/bridgeai-logo.png" 
+                  alt="BridgeAI"
+                  className="h-10 w-auto"
+                />
               </div>
               <p className="text-sm mb-4">India's AI-powered placement prep platform</p>
               <div className="flex space-x-4">
@@ -684,7 +682,7 @@ export default function Home() {
           </div>
 
           <div className="border-t border-gray-800 pt-8 text-center text-sm">
-            <p> 2025 BRIDGE. Made with in India</p>
+            <p> 2026 BRIDGE. Made with in India</p>
           </div>
         </div>
       </footer>

@@ -125,7 +125,7 @@ export default function AppShell({ children }) {
               {/* Logo - mobile only */}
               <div className="flex items-center md:hidden">
                 <Link href="/dashboard" className="flex items-center gap-2">
-                  <img src="/images/bridgeai-logo.png" alt="BridgeAI" className="h-7 w-auto" />
+                  <img src="/images/bridgeai-logo.png" alt="BridgeAI" className="h-9 w-auto" />
                 </Link>
               </div>
             </div>
@@ -169,7 +169,7 @@ export default function AppShell({ children }) {
               <img 
                 src="/images/bridgeai-logo.png" 
                 alt="BridgeAI"
-                className="h-8 w-auto flex-shrink-0"
+                className="h-10 w-auto"
               />
               {/* Name on right */}
               <div className="flex-1 min-w-0">
