@@ -20,6 +20,17 @@ export default function JobsPage() {
   const [expandedJob, setExpandedJob] = useState(null);
   const [expandedSection, setExpandedSection] = useState(null);
 
+  // MBA Internship Hub state
+  const [mbaProfile, setMbaProfile] = useState(null);
+  const [internships, setInternships] = useState([]);
+  const [internshipLoading, setInternshipLoading] = useState(false);
+  const [extraDomains, setExtraDomains] = useState([]);
+  const [tracker, setTracker] = useState([]);
+  const [coverLetter, setCoverLetter] = useState('');
+  const [coverLetterLoading, setCoverLetterLoading] = useState(false);
+  const [selectedInternship, setSelectedInternship] = useState(null);
+  const [showCoverLetter, setShowCoverLetter] = useState(false);
+
   // Load saved profile on mount
   useEffect(() => {
     const saved = localStorage.getItem('bridge_profile');
@@ -31,6 +42,26 @@ export default function JobsPage() {
         setResumeUploaded(true);
       } catch (error) {
         console.error('Error loading profile:', error);
+      }
+    }
+  }, []);
+
+  // Load saved MBA profile on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('bridge_mba_profile');
+    if (saved) {
+      try {
+        setMbaProfile(JSON.parse(saved));
+      } catch(e) {
+        console.error(e);
+      }
+    }
+    const savedTracker = localStorage.getItem('bridge_internship_tracker');
+    if (savedTracker) {
+      try {
+        setTracker(JSON.parse(savedTracker));
+      } catch(e) {
+        console.error(e);
       }
     }
   }, []);
@@ -317,6 +348,7 @@ export default function JobsPage() {
         <div className="flex gap-2 mb-8 border-b border-gray-200">
           {[
             { id: 'foryou', label: 'For You', icon: Target },
+            { id: 'mba', label: 'MBA Internships', icon: Award },
             { id: 'smartapply', label: 'Smart Apply', icon: Brain },
             { id: 'postjob', label: 'Post a Job', icon: Building }
           ].map((tab) => (
@@ -886,6 +918,362 @@ export default function JobsPage() {
                 </button>
               </form>
             </div>
+          </div>
+        )}
+
+        {/* MBA Internships Tab */}
+        {activeTab === 'mba' && (
+          <div className="max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-[#0D0D1A]">
+                MBA Internship Hub
+              </h2>
+              <p className="text-[#8888A0] mt-1">
+                Upload your resume → Get matched internships instantly
+              </p>
+            </div>
+
+            {/* Resume Upload (if no profile) */}
+            {!mbaProfile && (
+              <div className="bg-white border-2 border-dashed border-[#0D9488] rounded-2xl p-8 text-center mb-6">
+                <div className="text-4xl mb-3">📄</div>
+                <h3 className="font-bold text-[#0D0D1A] mb-2">
+                  Upload Your MBA Resume
+                </h3>
+                <p className="text-[#8888A0] text-sm mb-4">
+                  AI reads your resume and finds matching internships automatically
+                </p>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    setInternshipLoading(true);
+                    const reader = new FileReader();
+                    reader.onload = async (ev) => {
+                      const base64 = ev.target.result.split(',')[1];
+                      try {
+                        const res = await fetch('/api/internships', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            action: 'extract_mba_profile',
+                            resume_base64: base64
+                          })
+                        });
+                        const data = await res.json();
+                        setMbaProfile(data);
+                        localStorage.setItem('bridge_mba_profile', JSON.stringify(data));
+                      } catch(err) {
+                        console.error(err);
+                      } finally {
+                        setInternshipLoading(false);
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="hidden"
+                  id="mba-resume-upload"
+                />
+                <label htmlFor="mba-resume-upload"
+                  className="cursor-pointer inline-block bg-[#0D9488] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#0F766E] transition-all">
+                  {internshipLoading ? 'Reading Resume...' : 'Upload Resume PDF →'}
+                </label>
+              </div>
+            )}
+
+            {/* Profile Summary Card (after upload) */}
+            {mbaProfile && (
+              <div className="bg-[#F0FDFA] border border-[#0D9488]/20 rounded-2xl p-4 mb-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold text-[#0D0D1A]">{mbaProfile.name}</h3>
+                    <p className="text-[#8888A0] text-sm">
+                      {mbaProfile.mba_specialization?.join(' + ')} · {mbaProfile.mba_college}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {mbaProfile.skills?.slice(0,5).map(s => (
+                        <span key={s} className="bg-white text-[#0D9488] text-xs px-2 py-1 rounded-full border border-[#0D9488]/20">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setMbaProfile(null);
+                      setInternships([]);
+                      localStorage.removeItem('bridge_mba_profile');
+                    }}
+                    className="text-[#8888A0] text-sm hover:text-red-500">
+                    Change →
+                  </button>
+                </div>
+
+                {/* Domain Add-On Selector */}
+                <div className="mt-4 pt-4 border-t border-[#0D9488]/20">
+                  <p className="text-sm font-medium text-[#0D0D1A] mb-2">
+                    Also show internships from:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {['Marketing', 'Finance', 'HR', 'Operations', 'Consulting', 'Sales', 'Strategy', 'Analytics', 'Supply Chain', 'General Management'].filter(d => !mbaProfile.open_to_domains?.includes(d)).map(domain => (
+                      <button
+                        key={domain}
+                        onClick={() => {
+                          setExtraDomains(prev => prev.includes(domain) ? prev.filter(d => d !== domain) : [...prev, domain]);
+                        }}
+                        className={`text-xs px-3 py-1.5 rounded-full border transition-all ${extraDomains.includes(domain) ? 'bg-[#0D9488] text-white border-[#0D9488]' : 'bg-white text-[#44445A] border-[#E2E8F0] hover:border-[#0D9488]'}`}>
+                        + {domain}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Find Button */}
+                <button
+                  onClick={async () => {
+                    setInternshipLoading(true);
+                    try {
+                      const res = await fetch('/api/internships', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          action: 'find_internships',
+                          profile: mbaProfile,
+                          extra_domains: extraDomains
+                        })
+                      });
+                      const data = await res.json();
+                      setInternships(data.internships || []);
+                    } catch(err) {
+                      console.error(err);
+                    } finally {
+                      setInternshipLoading(false);
+                    }
+                  }}
+                  disabled={internshipLoading}
+                  className="mt-4 w-full bg-[#0D9488] text-white py-3 rounded-xl font-bold hover:bg-[#0F766E] transition-all disabled:opacity-50">
+                  {internshipLoading ? '🔍 Finding internships...' : '🔍 Find My Internships →'}
+                </button>
+              </div>
+            )}
+
+            {/* Search Insights */}
+            {internships.length > 0 && (
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="bg-white rounded-xl p-4 border border-[#E2E8F0] text-center">
+                  <div className="text-2xl font-bold text-[#0D9488]">{internships.length}</div>
+                  <div className="text-xs text-[#8888A0]">Matches Found</div>
+                </div>
+                <div className="bg-white rounded-xl p-4 border border-[#E2E8F0] text-center">
+                  <div className="text-2xl font-bold text-[#0D9488]">
+                    {Math.round(internships.reduce((a,b) => a + b.match_percent, 0) / internships.length)}%
+                  </div>
+                  <div className="text-xs text-[#8888A0]">Avg Match</div>
+                </div>
+                <div className="bg-white rounded-xl p-4 border border-[#E2E8F0] text-center">
+                  <div className="text-2xl font-bold text-[#0D9488]">
+                    {internships.filter(i => i.ppo_available).length}
+                  </div>
+                  <div className="text-xs text-[#8888A0]">PPO Available</div>
+                </div>
+              </div>
+            )}
+
+            {/* Internship Cards */}
+            {internshipLoading && (
+              <div className="space-y-4">
+                {[1,2,3].map(i => (
+                  <div key={i} className="h-48 bg-gray-100 rounded-2xl animate-pulse"/>
+                ))}
+              </div>
+            )}
+
+            {!internshipLoading && internships.length > 0 && (
+              <div className="space-y-4">
+                {internships.sort((a,b) => b.match_percent - a.match_percent).map((internship, i) => (
+                  <div key={internship.id || i}
+                    className="bg-white border border-[#E2E8F0] rounded-2xl p-5 hover:border-[#0D9488]/30 hover:shadow-lg transition-all">
+                    
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-[#F0FDFA] flex items-center justify-center text-lg font-bold text-[#0D9488]">
+                          {internship.company?.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-[#0D0D1A]">{internship.title}</h3>
+                          <p className="text-[#8888A0] text-sm">{internship.company}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Match % */}
+                      <div className={`text-center px-3 py-1 rounded-xl font-bold ${internship.match_percent >= 80 ? 'bg-green-50 text-green-600' : internship.match_percent >= 65 ? 'bg-yellow-50 text-yellow-600' : 'bg-gray-50 text-gray-600'}`}>
+                        <div className="text-xl">{internship.match_percent}%</div>
+                        <div className="text-xs font-normal">Match</div>
+                      </div>
+                    </div>
+
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <span className="bg-[#F0FDFA] text-[#0D9488] text-xs px-2 py-1 rounded-full">📍 {internship.location}</span>
+                      <span className="bg-[#F0FDFA] text-[#0D9488] text-xs px-2 py-1 rounded-full">💰 {internship.stipend}</span>
+                      <span className="bg-[#F0FDFA] text-[#0D9488] text-xs px-2 py-1 rounded-full">⏱ {internship.duration}</span>
+                      {internship.ppo_available && (
+                        <span className="bg-green-50 text-green-600 text-xs px-2 py-1 rounded-full font-medium">⭐ PPO Available</span>
+                      )}
+                      <span className="bg-gray-50 text-gray-600 text-xs px-2 py-1 rounded-full">🏢 {internship.company_type}</span>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-[#44445A] text-sm mb-3 line-clamp-2">{internship.description}</p>
+
+                    {/* Match reasons */}
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      <div className="bg-green-50 rounded-xl p-2">
+                        <p className="text-green-600 text-xs font-medium mb-1">✅ Why you match</p>
+                        {internship.match_reasons?.slice(0,2).map((r,i) => (
+                          <p key={i} className="text-green-700 text-xs">• {r}</p>
+                        ))}
+                      </div>
+                      {internship.skill_gaps?.length > 0 && (
+                        <div className="bg-orange-50 rounded-xl p-2">
+                          <p className="text-orange-600 text-xs font-medium mb-1">⚡ Skill gaps</p>
+                          {internship.skill_gaps?.slice(0,2).map((g,i) => (
+                            <p key={i} className="text-orange-700 text-xs">• {g}</p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Interview probability */}
+                    <div className="mb-4">
+                      <div className="flex justify-between text-xs text-[#8888A0] mb-1">
+                        <span>Interview Probability</span>
+                        <span className="font-medium text-[#0D0D1A]">{internship.interview_probability}%</span>
+                      </div>
+                      <div className="bg-gray-100 rounded-full h-2">
+                        <div className="bg-[#0D9488] h-2 rounded-full transition-all" style={{ width: `${internship.interview_probability}%` }}/>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={async () => {
+                          setSelectedInternship(internship);
+                          setCoverLetterLoading(true);
+                          setShowCoverLetter(true);
+                          try {
+                            const res = await fetch('/api/internships', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                action: 'cover_letter',
+                                internship,
+                                profile: mbaProfile
+                              })
+                            });
+                            const data = await res.json();
+                            setCoverLetter(data.cover_letter || '');
+                          } catch(err) {
+                            console.error(err);
+                          } finally {
+                            setCoverLetterLoading(false);
+                          }
+                        }}
+                        className="flex-1 bg-[#F0FDFA] text-[#0D9488] border border-[#0D9488]/30 py-2.5 rounded-xl text-sm font-medium hover:bg-[#0D9488] hover:text-white transition-all">
+                        ✍️ AI Cover Letter
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          const newTracker = [...tracker, { ...internship, status: 'Applied', appliedDate: new Date().toISOString() }];
+                          setTracker(newTracker);
+                          localStorage.setItem('bridge_internship_tracker', JSON.stringify(newTracker));
+                          window.open(internship.apply_url, '_blank');
+                        }}
+                        className="flex-1 bg-[#0D9488] text-white py-2.5 rounded-xl text-sm font-medium hover:bg-[#0F766E] transition-all">
+                        Apply Now →
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          const newTracker = [...tracker, { ...internship, status: 'Saved', savedDate: new Date().toISOString() }];
+                          setTracker(newTracker);
+                          localStorage.setItem('bridge_internship_tracker', JSON.stringify(newTracker));
+                        }}
+                        className="px-3 py-2.5 border border-[#E2E8F0] rounded-xl text-[#8888A0] hover:border-[#0D9488] hover:text-[#0D9488] transition-all text-sm">
+                        🔖
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Application Tracker */}
+            {tracker.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-lg font-bold text-[#0D0D1A] mb-4">📊 Application Tracker</h3>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  {['Saved', 'Applied', 'Shortlisted', 'Interview', 'Offer'].map(status => (
+                    <div key={status} className="bg-gray-50 rounded-xl p-3">
+                      <p className="text-xs font-semibold text-[#8888A0] mb-2 uppercase">{status} ({tracker.filter(t => t.status === status).length})</p>
+                      {tracker.filter(t => t.status === status).map((item, i) => (
+                        <div key={i} className="bg-white rounded-lg p-2 mb-2 border border-[#E2E8F0]">
+                          <p className="text-xs font-medium text-[#0D0D1A] line-clamp-1">{item.title}</p>
+                          <p className="text-xs text-[#8888A0]">{item.company}</p>
+                          <select
+                            value={item.status}
+                            onChange={(e) => {
+                              const idx = tracker.findIndex(t => t === item);
+                              const updated = tracker.map((t, i) => i === idx ? {...t, status: e.target.value} : t);
+                              setTracker(updated);
+                              localStorage.setItem('bridge_internship_tracker', JSON.stringify(updated));
+                            }}
+                            className="mt-1 w-full text-xs border border-[#E2E8F0] rounded px-1 py-0.5 text-[#44445A]">
+                            {['Saved','Applied','Shortlisted','Interview','Offer'].map(s => <option key={s}>{s}</option>)}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Cover Letter Modal */}
+            {showCoverLetter && (
+              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-[#0D0D1A]">AI Cover Letter</h3>
+                    <button onClick={() => setShowCoverLetter(false)} className="text-[#8888A0] hover:text-[#0D0D1A]">✕</button>
+                  </div>
+                  <p className="text-sm text-[#8888A0] mb-3">For: {selectedInternship?.title} at {selectedInternship?.company}</p>
+                  {coverLetterLoading ? (
+                    <div className="text-center py-8">
+                      <div className="text-[#0D9488] animate-spin text-2xl mb-2">⟳</div>
+                      <p className="text-[#8888A0]">Writing your cover letter...</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="bg-gray-50 rounded-xl p-4 mb-4 text-sm text-[#44445A] leading-relaxed whitespace-pre-wrap">{coverLetter}</div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(coverLetter); alert('Copied to clipboard!'); }}
+                          className="flex-1 bg-[#0D9488] text-white py-2.5 rounded-xl text-sm font-medium">📋 Copy Letter</button>
+                        <button onClick={() => setShowCoverLetter(false)} className="flex-1 border border-[#E2E8F0] text-[#44445A] py-2.5 rounded-xl text-sm">Close</button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
