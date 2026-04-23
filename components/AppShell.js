@@ -112,9 +112,9 @@ export default function AppShell({ children }) {
       <nav className="fixed top-0 left-0 right-0 h-14 md:h-16 bg-white border-b border-gray-200 z-40">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 md:h-16">
-            {/* Left Side - Logo and Mobile Menu */}
-            <div className="flex items-center gap-2 md:gap-4">
-              {/* Mobile Menu Button - Show on screens < 768px */}
+            {/* Left Side - Logo */}
+            <div className="flex items-center gap-3">
+              {/* Mobile Menu Button */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="md:hidden p-2"
@@ -122,12 +122,10 @@ export default function AppShell({ children }) {
                 <Menu className="w-6 h-6 text-gray-600" />
               </button>
               
-              {/* Logo - mobile only */}
-              <div className="flex items-center md:hidden">
-                <Link href="/dashboard" className="flex items-center gap-2">
-                  <img src="/images/bridgeai-logo.png" alt="BridgeAI" className="h-9 w-auto" />
-                </Link>
-              </div>
+              {/* Logo */}
+              <Link href="/dashboard" className="flex items-center">
+                <img src="/images/bridgeai-logo.png" alt="BridgeAI" className="h-10 w-auto" />
+              </Link>
             </div>
 
             {/* Center - Search (Hidden on Mobile) */}
@@ -144,9 +142,30 @@ export default function AppShell({ children }) {
               </div>
             </div>
 
-            {/* Right Side - Bell only */}
-            <div className="flex items-center">
-              <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+            {/* Right Side - Profile + Name + Bell */}
+            <div className="flex items-center gap-3">
+              {/* Profile Pic */}
+              {userProfile?.photo ? (
+                <img 
+                  src={userProfile.photo} 
+                  alt={userProfile.name}
+                  className="w-9 h-9 rounded-full object-cover border-2 border-[#0D9488]"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-br from-[#0D9488] to-[#14B8A6]">
+                  {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+              )}
+              
+              {/* Name - hidden on small screens */}
+              <div className="hidden sm:block text-right">
+                <p className="text-sm font-semibold text-[#0D0D1A] truncate max-w-[120px]">
+                  {userProfile?.name || 'User'}
+                </p>
+              </div>
+
+              {/* Bell */}
+              <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors ml-2">
                 <Bell className="w-5 h-5" />
                 {notifications > 0 && (
                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -169,33 +188,6 @@ export default function AppShell({ children }) {
               alt="BridgeAI"
               className="h-20 w-auto"
             />
-          </div>
-
-          {/* User Profile - Pic left, Name right */}
-          <div className="p-4 border-b border-gray-100">
-            <div className="flex items-center gap-3">
-              {/* Profile Pic on left */}
-              {userProfile?.photo ? (
-                <img 
-                  src={userProfile.photo} 
-                  alt={userProfile.name}
-                  className="w-12 h-12 rounded-full object-cover border-2 border-[#0D9488]"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-br from-[#0D9488] to-[#14B8A6]">
-                  {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
-                </div>
-              )}
-              {/* Name on right */}
-              <div className="flex-1 min-w-0 text-right">
-                <p className="text-sm font-semibold text-[#0D0D1A] truncate">
-                  {userProfile?.name || 'User'}
-                </p>
-                <p className="text-xs text-[#8888A0] truncate">
-                  {userProfile?.college || 'Add College'}
-                </p>
-              </div>
-            </div>
           </div>
 
           {/* Navigation */}
