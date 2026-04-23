@@ -177,16 +177,16 @@ export default function AppShell({ children }) {
       </nav>
 
       {/* Sidebar */}
-      <aside className={`fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
+      <aside className={`fixed left-0 top-14 md:top-16 h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } md:translate-x-0`}>
         <div className="flex flex-col h-full">
-          {/* Logo - Full Width Fit */}
-          <div className="border-b border-gray-100">
+          {/* Logo - Same height as top navbar */}
+          <div className="h-14 md:h-16 border-b border-gray-100 flex items-center justify-center px-4">
             <img 
               src="/images/bridgeai-logo.png" 
               alt="BridgeAI"
-              className="w-full h-auto object-contain"
+              className="max-h-full max-w-full object-contain"
             />
           </div>
 
