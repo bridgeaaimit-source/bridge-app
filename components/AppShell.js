@@ -123,8 +123,13 @@ export default function AppShell({ children }) {
               </button>
               
               {/* Logo */}
-              <Link href="/dashboard" className="flex items-center">
-                <img src="/bridgeai-logo.png" alt="BridgeAI" className="h-12 w-auto object-contain" />
+              <Link href="/dashboard" className="flex items-center bg-white rounded-lg px-2 py-1">
+                <img 
+                  src="/bridgeai-logo.png" 
+                  alt="BridgeAI" 
+                  className="h-10 w-auto object-contain block"
+                  style={{ minWidth: '40px' }}
+                />
               </Link>
             </div>
 
