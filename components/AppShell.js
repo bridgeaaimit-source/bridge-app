@@ -124,7 +124,7 @@ export default function AppShell({ children }) {
               
               {/* Logo */}
               <Link href="/dashboard" className="flex items-center">
-                <img src="/images/bridgeai-logo.png" alt="BridgeAI" className="h-12 w-auto object-contain" />
+                <img src="/bridgeai-logo.png" alt="BridgeAI" className="h-12 w-auto object-contain" />
               </Link>
             </div>
 
@@ -181,15 +181,6 @@ export default function AppShell({ children }) {
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } md:translate-x-0`}>
         <div className="flex flex-col h-full">
-          {/* Logo - Same height as top navbar */}
-          <div className="h-14 md:h-16 border-b border-gray-100 flex items-center justify-center px-4">
-            <img 
-              src="/images/bridgeai-logo.png" 
-              alt="BridgeAI"
-              className="max-h-full max-w-full object-contain"
-            />
-          </div>
-
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => {

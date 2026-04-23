@@ -172,7 +172,7 @@ export default function Home() {
             <div className="flex items-center">
               <Link href="/" className="flex items-center gap-2">
                 <img 
-                  src="/images/bridgeai-logo.png" 
+                  src="/bridgeai-logo.png" 
                   alt="BridgeAI"
                   className="h-16 w-auto"
                 />
@@ -628,7 +628,7 @@ export default function Home() {
             <div className="lg:col-span-1">
               <div className="flex items-center gap-2 mb-4">
                 <img 
-                  src="/images/bridgeai-logo.png" 
+                  src="/bridgeai-logo.png" 
                   alt="BridgeAI"
                   className="h-14 w-auto"
                 />
