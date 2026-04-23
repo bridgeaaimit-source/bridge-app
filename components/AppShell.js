@@ -113,7 +113,7 @@ export default function AppShell({ children }) {
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 md:h-16">
             {/* Left Side - Logo */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 h-full">
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -122,13 +122,12 @@ export default function AppShell({ children }) {
                 <Menu className="w-6 h-6 text-gray-600" />
               </button>
               
-              {/* Logo */}
-              <Link href="/dashboard" className="flex items-center bg-white rounded-lg px-2 py-1">
+              {/* Logo - Full height of navbar */}
+              <Link href="/dashboard" className="flex items-center h-full py-1">
                 <img 
                   src="/images/bridgeai-logo.png" 
                   alt="BridgeAI" 
-                  className="h-10 w-auto object-contain block"
-                  style={{ minWidth: '40px' }}
+                  className="h-full w-auto object-contain"
                 />
               </Link>
             </div>
