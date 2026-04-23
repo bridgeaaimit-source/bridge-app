@@ -162,17 +162,32 @@ export default function AppShell({ children }) {
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } md:translate-x-0`}>
         <div className="flex flex-col h-full">
-          {/* User Profile Mini Card - Logo left, name right */}
+          {/* Big Logo - Centered */}
+          <div className="p-6 border-b border-gray-100 flex justify-center">
+            <img 
+              src="/images/bridgeai-logo.png" 
+              alt="BridgeAI"
+              className="h-20 w-auto"
+            />
+          </div>
+
+          {/* User Profile - Pic left, Name right */}
           <div className="p-4 border-b border-gray-100">
             <div className="flex items-center gap-3">
-              {/* Logo on left */}
-              <img 
-                src="/images/bridgeai-logo.png" 
-                alt="BridgeAI"
-                className="h-14 w-auto"
-              />
+              {/* Profile Pic on left */}
+              {userProfile?.photo ? (
+                <img 
+                  src={userProfile.photo} 
+                  alt={userProfile.name}
+                  className="w-12 h-12 rounded-full object-cover border-2 border-[#0D9488]"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-br from-[#0D9488] to-[#14B8A6]">
+                  {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+              )}
               {/* Name on right */}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 text-right">
                 <p className="text-sm font-semibold text-[#0D0D1A] truncate">
                   {userProfile?.name || 'User'}
                 </p>
