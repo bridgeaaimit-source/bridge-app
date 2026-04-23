@@ -124,7 +124,7 @@ export default function AppShell({ children }) {
               
               {/* Logo */}
               <Link href="/dashboard" className="flex items-center">
-                <img src="/images/bridgeai-logo.png" alt="BridgeAI" className="h-10 w-auto" />
+                <img src="/images/bridgeai-logo.png" alt="BridgeAI" className="h-12 w-auto object-contain" />
               </Link>
             </div>
 
@@ -181,12 +181,12 @@ export default function AppShell({ children }) {
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } md:translate-x-0`}>
         <div className="flex flex-col h-full">
-          {/* Big Logo - Centered */}
-          <div className="p-6 border-b border-gray-100 flex justify-center">
+          {/* Logo - Full Width Fit */}
+          <div className="border-b border-gray-100">
             <img 
               src="/images/bridgeai-logo.png" 
               alt="BridgeAI"
-              className="h-20 w-auto"
+              className="w-full h-auto object-contain"
             />
           </div>
 
