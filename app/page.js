@@ -232,32 +232,24 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left Column */}
           <div className="space-y-8">
-            {/* Eyebrow badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-50 border border-cyan-100 animate-fade-up" style={{ animationDelay: '0ms' }}>
-              <span className="text-lg">🇮🇳</span>
-              <span className="text-sm font-semibold text-cyan-700">Built for Bharat</span>
-            </div>
-
             {/* Headline */}
             <h1 className="font-display text-5xl lg:text-6xl font-bold leading-tight animate-fade-up" style={{ animationDelay: '100ms' }}>
-              Land Your <span className="gradient-text">Dream Job</span>
-              <br />
-              from Any College
+              Crack your<br/><span className="gradient-text">dream job.</span>
             </h1>
 
             {/* Subheadline */}
             <p className="text-lg text-gray-600 leading-relaxed max-w-lg animate-fade-up" style={{ animationDelay: '200ms' }}>
+              Real questions. Live AI feedback. Daily GD battles. One score that proves you're ready.
               India's AI-powered placement prep platform. Practice real interview questions, win GD battles, and track your BRIDGE Score — built for students from Tier 2 colleges.
             </p>
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 animate-fade-up" style={{ animationDelay: '300ms' }}>
               <Link href="/login" className="px-8 py-4 bg-gradient-to-r from-cyan-600 to-cyan-700 text-white font-semibold rounded-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 inline-flex items-center justify-center">
-                Start for Free <ArrowRight className="ml-2 w-5 h-5" />
+                Start free mock <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
               <button className="px-7 py-4 bg-white text-cyan-600 font-semibold rounded-lg border-2 border-cyan-600 hover:bg-cyan-50 transition-colors inline-flex items-center justify-center">
-                <Play className="mr-2 w-5 h-5" />
-                Watch Demo
+                90-sec demo
               </button>
             </div>
 
@@ -383,53 +375,77 @@ export default function Home() {
       <section ref={featuresRef} id="features" className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16 scroll-reveal">
-            <p className="text-sm font-semibold text-[#0D9488] tracking-wider uppercase mb-4">WHAT WE OFFER</p>
-            <h2 className="font-display text-4xl lg:text-5xl font-bold mb-6">
-              Three tools that get you <span className="gradient-text">placed</span>
+            <h2 className="font-display text-4xl lg:text-5xl font-bold mb-4">
+              Six weapons.<br/>One <span className="gradient-text">unfair advantage.</span>
             </h2>
+            <p className="text-gray-600 text-lg">Every block is built to push your BRIDGE Score closer to 1000.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
+            {/* Feature 1 - AI Interview */}
             <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '0ms' }}>
               <div className="w-14 h-14 bg-[#F0FDFA] rounded-full flex items-center justify-center mb-6">
                 <Target className="w-7 h-7 text-[#0D9488]" />
               </div>
-              <h3 className="font-display text-2xl font-bold mb-4">AI Mock Interviews</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Practice with real questions from Amazon, Infosys, TCS and more. Get instant AI feedback on your answers, body language score, and areas to improve.
+              <h3 className="font-display text-xl font-bold mb-3">Your camera on. Our AI watches everything.</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Eye contact, posture, voice tremor, filler words. Real-time confidence detection on every answer.
               </p>
-              <div className="inline-flex items-center px-3 py-1 bg-[#F0FDFA] text-[#0D9488] text-sm font-semibold rounded-full">
-                Most Popular
-              </div>
             </div>
 
-            {/* Feature 2 */}
+            {/* Feature 2 - BRIDGE Score */}
             <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '80ms' }}>
-              <div className="w-14 h-14 bg-orange-50 rounded-full flex items-center justify-center mb-6">
-                <Users className="w-7 h-7 text-orange-600" />
-              </div>
-              <h3 className="font-display text-2xl font-bold mb-4">GD Battles</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Join live group discussions with students across India. Learn to lead, make your point, and win — scored by AI in real time.
-              </p>
-              <div className="inline-flex items-center px-3 py-1 bg-orange-50 text-orange-700 text-sm font-semibold rounded-full">
-                Unique Feature
-              </div>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '160ms' }}>
               <div className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mb-6">
                 <Trophy className="w-7 h-7 text-green-600" />
               </div>
-              <h3 className="font-display text-2xl font-bold mb-4">BRIDGE Score</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Your personal placement readiness score updated after every session. Know exactly where you stand and what to improve next.
+              <h3 className="font-display text-xl font-bold mb-3">BRIDGE Score</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Your placement readiness · /1000
               </p>
-              <div className="inline-flex items-center px-3 py-1 bg-green-50 text-green-700 text-sm font-semibold rounded-full">
-                Track Progress
+            </div>
+
+            {/* Feature 3 - GD Battles */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '160ms' }}>
+              <div className="w-14 h-14 bg-orange-50 rounded-full flex items-center justify-center mb-6">
+                <Users className="w-7 h-7 text-orange-600" />
               </div>
+              <h3 className="font-display text-xl font-bold mb-3">GD Battles</h3>
+              <p className="text-gray-600 leading-relaxed">
+                4 students. 5 minutes. AI judge.
+              </p>
+            </div>
+
+            {/* Feature 4 - 500+ Questions */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '240ms' }}>
+              <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+                <MessageSquare className="w-7 h-7 text-blue-600" />
+              </div>
+              <h3 className="font-display text-xl font-bold mb-3">500+ real questions</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Asked at Amazon, Google, TCS, Infosys.
+              </p>
+            </div>
+
+            {/* Feature 5 - AI Resume Builder */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '320ms' }}>
+              <div className="w-14 h-14 bg-purple-50 rounded-full flex items-center justify-center mb-6">
+                <Briefcase className="w-7 h-7 text-purple-600" />
+              </div>
+              <h3 className="font-display text-xl font-bold mb-3">AI Resume Builder</h3>
+              <p className="text-gray-600 leading-relaxed">
+                ATS-optimized. Recruiter-approved.
+              </p>
+            </div>
+
+            {/* Feature 6 - Personal Roadmap */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '400ms' }}>
+              <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-6">
+                <MapPin className="w-7 h-7 text-red-600" />
+              </div>
+              <h3 className="font-display text-xl font-bold mb-3">Personal roadmap</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Your next 7 days, planned by AI.
+              </p>
             </div>
           </div>
         </div>
@@ -440,45 +456,37 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16 scroll-reveal">
             <h2 className="font-display text-4xl lg:text-5xl font-bold mb-6">
-              Get placed in <span className="gradient-text">3 steps</span>
+              From signup to offer letter.
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Step 1 */}
             <div className="text-center scroll-reveal" style={{ animationDelay: '0ms' }}>
               <div className="font-display text-3xl font-black gradient-text mb-4">01</div>
-              <div className="w-16 h-16 bg-[#F0FDFA] rounded-full flex items-center justify-center mx-auto mb-6">
-                <Users className="w-8 h-8 text-[#0D9488]" />
-              </div>
-              <h3 className="font-display text-2xl font-bold mb-4">Create Your Profile</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Sign up free in 60 seconds. Tell us your college, target companies, and placement timeline.
-              </p>
+              <h3 className="font-display text-xl font-bold mb-2">Sign up</h3>
+              <p className="text-gray-600">90 seconds. No card.</p>
             </div>
 
             {/* Step 2 */}
             <div className="text-center scroll-reveal" style={{ animationDelay: '80ms' }}>
               <div className="font-display text-3xl font-black gradient-text mb-4">02</div>
-              <div className="w-16 h-16 bg-[#F0FDFA] rounded-full flex items-center justify-center mx-auto mb-6">
-                <Target className="w-8 h-8 text-[#0D9488]" />
-              </div>
-              <h3 className="font-display text-2xl font-bold mb-4">Practice Every Day</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Take AI mock interviews and join GD battles daily. Your BRIDGE Score updates after every session.
-              </p>
+              <h3 className="font-display text-xl font-bold mb-2">Take a mock</h3>
+              <p className="text-gray-600">Real questions, AI feedback.</p>
             </div>
 
             {/* Step 3 */}
             <div className="text-center scroll-reveal" style={{ animationDelay: '160ms' }}>
               <div className="font-display text-3xl font-black gradient-text mb-4">03</div>
-              <div className="w-16 h-16 bg-[#F0FDFA] rounded-full flex items-center justify-center mx-auto mb-6">
-                <Award className="w-8 h-8 text-[#0D9488]" />
-              </div>
-              <h3 className="font-display text-2xl font-bold mb-4">Walk In Confident</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Enter your placement interviews knowing exactly what to say, how to say it, and how to win.
-              </p>
+              <h3 className="font-display text-xl font-bold mb-2">Track score</h3>
+              <p className="text-gray-600">Watch it climb daily.</p>
+            </div>
+
+            {/* Step 4 */}
+            <div className="text-center scroll-reveal" style={{ animationDelay: '240ms' }}>
+              <div className="font-display text-3xl font-black gradient-text mb-4">04</div>
+              <h3 className="font-display text-xl font-bold mb-2">Walk in confident</h3>
+              <p className="text-gray-600">You've practiced this.</p>
             </div>
           </div>
         </div>
@@ -489,7 +497,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16 scroll-reveal">
             <h2 className="font-display text-4xl lg:text-5xl font-bold mb-6">
-              Students who made it
+              They walked in. They got the offer.
             </h2>
           </div>
 
@@ -503,7 +511,7 @@ export default function Home() {
               </div>
               <Quote className="w-12 h-12 text-[#CCFBF1] mb-4" />
               <p className="text-gray-700 italic text-lg leading-relaxed mb-6">
-                "BRIDGE completely changed how I prepare. The AI feedback after every mock interview told me exactly what I was doing wrong. I went from freezing up to confidently answering every question."
+                "Walked into Amazon already knowing the questions."
               </p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -530,7 +538,7 @@ export default function Home() {
               </div>
               <Quote className="w-12 h-12 text-[#CCFBF1] mb-4" />
               <p className="text-gray-700 italic text-lg leading-relaxed mb-6">
-                "I used to go completely silent in group discussions. After 10 GD Battles on BRIDGE, I was the one leading the conversation. That confidence got me through 3 rounds at Infosys."
+                "GD battles flipped my fear into leadership."
               </p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -557,7 +565,7 @@ export default function Home() {
               </div>
               <Quote className="w-12 h-12 text-[#CCFBF1] mb-4" />
               <p className="text-gray-700 italic text-lg leading-relaxed mb-6">
-                "My BRIDGE Score went from 480 to 790 in 6 weeks. I could literally see myself getting better. That kind of feedback doesn't exist anywhere else."
+                "480 → 790 in 6 weeks. Insane clarity."
               </p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -584,16 +592,16 @@ export default function Home() {
               </div>
               <Quote className="w-12 h-12 text-[#CCFBF1] mb-4" />
               <p className="text-gray-700 italic text-lg leading-relaxed mb-6">
-                "The questions in the AI mock interviews were EXACTLY what they asked me in the real interview. It felt like I had already been there before."
+                "80% question match. Got the offer day one."
               </p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-gradient-to-r from-[#0D9488] to-[#0F766E] rounded-full flex items-center justify-center text-white font-bold">
-                    SP
+                    MV
                   </div>
                   <div>
-                    <div className="font-semibold">Sneha Patel</div>
-                    <div className="text-sm text-gray-500">Manipal University</div>
+                    <div className="font-semibold">Meera Verma</div>
+                    <div className="text-sm text-gray-500">Thapar University</div>
                   </div>
                 </div>
                 <div className="px-3 py-1 bg-[#F0FDFA] text-[#0D9488] text-xs font-semibold rounded-lg">
@@ -609,13 +617,13 @@ export default function Home() {
       <section ref={ctaRef} className="py-24 px-6 lg:px-8">
         <div className="max-w-4xl mx-auto bg-gradient-to-r from-[#0D9488] to-[#0F766E] rounded-3xl p-12 lg:p-16 text-center shadow-2xl scroll-reveal">
           <h2 className="font-display text-4xl lg:text-5xl font-bold text-white mb-6">
-            Your placement starts today
+            Your competition already started.
           </h2>
           <p className="text-lg text-[#CCFBF1] mb-8 max-w-2xl mx-auto">
-            Join 1,200+ students already on BRIDGE. Free forever for students.
+            Free forever. No card. 60-second signup.
           </p>
           <Link href="/login" className="inline-flex items-center px-8 py-4 bg-white text-[#0D9488] font-bold rounded-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            Create Your Free Account <ArrowRight className="ml-2 w-5 h-5" />
+            Take your free mock now <ArrowRight className="ml-2 w-5 h-5" />
           </Link>
         </div>
       </section>
