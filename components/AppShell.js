@@ -127,7 +127,7 @@ export default function AppShell({ children }) {
                 <img 
                   src="/images/bridgeai-logo.png" 
                   alt="BridgeAI" 
-                  className="h-10 md:h-12 w-auto max-w-[180px] object-contain"
+                  style={{height:'36px',width:'auto'}}
                 />
               </Link>
             </div>

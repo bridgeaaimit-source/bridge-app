@@ -106,7 +106,7 @@ export default function Home() {
       <nav className={`fixed top-0 z-50 w-full transition-all duration-300 ${scrolled ? "border-b border-gray-100 bg-white/95 backdrop-blur-lg shadow-sm" : "bg-white"}`}>
         <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8 py-3">
           <Link href="/" className="flex items-center">
-            <img src="/images/bridgeai-logo.png" alt="BridgeAI" className="h-10 w-auto object-contain" />
+            <img src="/images/bridgeai-logo.png" alt="BridgeAI" style={{height:'40px',width:'auto'}} />
           </Link>
           <div className="hidden items-center gap-8 md:flex">
             {[["#features","Features"],["#how-it-works","How it Works"],["#pricing","Pricing"],["#stories","Stories"]].map(([h,l])=>(
@@ -610,7 +610,7 @@ export default function Home() {
         <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-10 md:grid-cols-4">
           <div>
             <div className="inline-flex items-center rounded-xl bg-white px-3 py-2">
-              <img src="/images/bridgeai-logo.png" alt="BridgeAI" className="h-9 w-auto object-contain"/>
+              <img src="/images/bridgeai-logo.png" alt="BridgeAI" style={{height:'40px',width:'auto'}} />
             </div>
             <p className="mt-3 text-sm">AI placement prep for ambitious Indian students.</p>
           </div>
@@ -631,7 +631,7 @@ export default function Home() {
           <div>
             <p className="text-sm font-bold text-white">Contact</p>
             <ul className="mt-3 space-y-2 text-sm">
-              <li>hello@bridgeai.in</li>
+              <li>info@appbridgeai.in</li>
               <li>Pune, India</li>
               <li>For Recruiters</li>
             </ul>

@@ -16,11 +16,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BRIDGE - AI Placement Prep",
-  description: "India's smartest placement prep platform with AI-powered interviews, GD practice, and real-time feedback",
+  title: "BridgeAI — Crack Placements From Any College",
+  description: "Real questions. Live AI feedback. Daily GD battles. One score that proves you're ready.",
   openGraph: {
-    title: "BRIDGE - AI Placement Prep",
-    description: "India's smartest placement prep platform",
+    title: "BridgeAI — Crack Placements From Any College",
+    description: "Real questions. Live AI feedback. Daily GD battles. One score that proves you're ready.",
     type: "website",
     url: "https://bridge-app.vercel.app",
     images: [
@@ -39,8 +39,8 @@ export const metadata: Metadata = {
     images: ["https://bridge-app.vercel.app/og-image.png"],
   },
   icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    icon: "/images/logo_favicon_512.png",
+    apple: "/images/logo_favicon_512.png",
   },
   manifest: "/manifest.json",
   viewport: {
@@ -63,10 +63,9 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/images/logo_favicon_512.png" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/images/logo_favicon_512.png" />
+        <link rel="icon" href="/images/logo_favicon_512.png" />
       </head>
       <body className="min-h-full flex flex-col bg-white dark:bg-gray-900 transition-colors">
         <ThemeProvider>

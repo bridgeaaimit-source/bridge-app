@@ -97,7 +97,7 @@ export default function LoginPage() {
               <img 
                 src="/images/bridgeai-logo.png" 
                 alt="BridgeAI"
-                className="h-14 md:h-16 w-auto max-w-[220px] object-contain mx-auto"
+                style={{height:'56px',width:'auto',display:'block',margin:'0 auto'}}
               />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
