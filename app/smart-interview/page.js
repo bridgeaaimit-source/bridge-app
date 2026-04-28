@@ -1,11 +1,12 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause, Volume2, Lightbulb, Star, History } from "lucide-react";
+import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause, Volume2, Lightbulb, Star, History, Download, DownloadCloud } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, collection, addDoc, query, orderBy, limit, getDocs, getDoc, updateDoc } from "firebase/firestore";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
+import { useDeepgramTranscription } from "@/hooks/useDeepgramTranscription";
 
 export default function SmartInterviewPage() {
   const [stage, setStage] = useState('setup'); // 'setup' | 'interviewing' | 'feedback' | 'history'
@@ -24,9 +25,6 @@ export default function SmartInterviewPage() {
   const [conversationHistory, setConversationHistory] = useState([]);
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const [recognition, setRecognition] = useState(null);
   const [isVideoSupported, setIsVideoSupported] = useState(true);
   const [videoStream, setVideoStream] = useState(null);
   const [recordedVideoUrl, setRecordedVideoUrl] = useState('');
@@ -35,7 +33,6 @@ export default function SmartInterviewPage() {
   const mediaRecorderRef = useRef(null);
   const videoChunksRef = useRef([]);
   const recordingTimerRef = useRef(null);
-  const latestTranscriptRef = useRef('');
   const [questionNumber, setQuestionNumber] = useState(1);
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -46,13 +43,28 @@ export default function SmartInterviewPage() {
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [feedbackHistory, setFeedbackHistory] = useState([]);
   
+  // Use Deepgram transcription hook
+  const {
+    isRecording,
+    isConnecting,
+    transcript,
+    interimTranscript,
+    fullTranscript,
+    wordCount,
+    fillerWords,
+    fillerWordCounts,
+    recordingStatus,
+    error: transcriptionError,
+    startRecording: startDeepgramRecording,
+    stopRecording: stopDeepgramRecording,
+    clearTranscript,
+    exportTranscript,
+  } = useDeepgramTranscription();
+  
   const fileInputRef = useRef(null);
 
   // Check browser support for speech recognition
   useEffect(() => {
-    if (typeof window !== 'undefined' && !('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-      console.log('Speech recognition not supported');
-    }
     if (typeof window !== 'undefined' && !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
       setIsVideoSupported(false);
     }
@@ -65,10 +77,6 @@ export default function SmartInterviewPage() {
       };
     }
   }, []);
-
-  useEffect(() => {
-    latestTranscriptRef.current = transcript;
-  }, [transcript]);
 
   useEffect(() => {
     return () => {
@@ -150,65 +158,13 @@ export default function SmartInterviewPage() {
     });
   };
 
-  const startSpeechRecognition = () => {
-    if (typeof window === 'undefined') return;
-    
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast.error('Speech recognition is not supported in your browser');
-      return;
-    }
-
-    const recognitionInstance = new SpeechRecognition();
-    recognitionInstance.continuous = false;
-    recognitionInstance.interimResults = true;
-    recognitionInstance.lang = 'en-US';
-
-    recognitionInstance.onstart = () => {};
-
-    recognitionInstance.onresult = (event) => {
-      let finalTranscript = '';
-      for (let i = 0; i < event.results.length; i += 1) {
-        finalTranscript += `${event.results[i][0].transcript} `;
-      }
-      const normalized = finalTranscript.trim();
-      setTranscript(normalized);
-      latestTranscriptRef.current = normalized;
-    };
-
-    recognitionInstance.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
-      if (mode === 'voice') {
-        setIsRecording(false);
-        toast.error('Speech recognition failed. Please try again.');
-      }
-    };
-
-    recognitionInstance.onend = () => {
-      if (mode === 'voice') {
-        setIsRecording(false);
-        const spokenText = latestTranscriptRef.current;
-        if (spokenText.trim()) {
-          setCurrentAnswer(spokenText);
-        }
-      }
-    };
-
-    recognitionInstance.start();
-    setRecognition(recognitionInstance);
-    return recognitionInstance;
-  };
-
   const startRecording = () => {
-    setTranscript("");
-    setIsRecording(true);
-    startSpeechRecognition();
+    clearTranscript();
+    startDeepgramRecording();
   };
 
   const stopRecording = () => {
-    if (recognition) {
-      recognition.stop();
-    }
+    stopDeepgramRecording();
   };
 
   const stopVideoStream = () => {
@@ -383,7 +339,7 @@ export default function SmartInterviewPage() {
       typeof overrideAnswer === "string"
         ? overrideAnswer
         : mode === 'voice'
-          ? (latestTranscriptRef.current || transcript)
+          ? fullTranscript
           : currentAnswer;
     
     if (!answer.trim()) {
@@ -410,7 +366,7 @@ export default function SmartInterviewPage() {
     if (questionNumber >= 10) {
       setIsTyping(false);
       setCurrentAnswer('');
-      setTranscript('');
+      clearTranscript();
       toast.success('Interview completed! Generating feedback...');
       await getFeedback(newHistory);
       return;
@@ -479,8 +435,7 @@ export default function SmartInterviewPage() {
     } finally {
       setIsTyping(false);
       setCurrentAnswer('');
-      setTranscript('');
-      latestTranscriptRef.current = '';
+      clearTranscript();
       if (mode === 'video') {
         setRecordedVideoUrl('');
         setRecordingState('idle');
@@ -627,7 +582,7 @@ export default function SmartInterviewPage() {
     setCurrentQuestion('');
     setConversationHistory([]);
     setCurrentAnswer('');
-    setTranscript('');
+    clearTranscript();
     setQuestionNumber(1);
     setFeedback(null);
     setShowEndModal(false);
@@ -1014,13 +969,64 @@ export default function SmartInterviewPage() {
                     </div>
                   ) : mode === 'voice' ? (
                     <div className="text-center">
-                      {isRecording ? (
+                      {isConnecting ? (
                         <div className="space-y-4">
-                          <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                          <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto animate-pulse">
                             <Mic className="w-8 h-8 text-white" />
                           </div>
-                          <div className="text-gray-900">Recording... Speak now</div>
-                          <div className="text-sm text-gray-600">{transcript}</div>
+                          <div className="text-gray-900">Connecting to transcription service...</div>
+                        </div>
+                      ) : isRecording ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                            <div className="text-gray-900 font-semibold capitalize">{recordingStatus}</div>
+                          </div>
+                          
+                          {/* Analytics */}
+                          <div className="flex justify-center gap-6 text-sm">
+                            <div className="text-center">
+                              <div className="font-bold text-[#0D9488]">{wordCount}</div>
+                              <div className="text-gray-600">Words</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-bold text-orange-600">{fillerWords.length}</div>
+                              <div className="text-gray-600">Fillers</div>
+                            </div>
+                          </div>
+
+                          {/* Transcript */}
+                          <div className="bg-gray-50 rounded-lg p-4 text-left max-h-48 overflow-y-auto">
+                            <div className="text-sm text-gray-700">
+                              {fullTranscript || interimTranscript || 'Listening...'}
+                            </div>
+                          </div>
+
+                          {/* Filler word highlights */}
+                          {Object.keys(fillerWordCounts).length > 0 && (
+                            <div className="mt-2">
+                              <div className="text-xs text-gray-500 mb-2">Filler words detected:</div>
+                              <div className="flex flex-wrap gap-2 justify-center">
+                                {Object.entries(fillerWordCounts).map(([word, count]) => (
+                                  <span key={word} className="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold">
+                                    {word} ({count})
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Export button */}
+                          {fullTranscript && (
+                            <button
+                              onClick={exportTranscript}
+                              className="text-sm text-[#0D9488] hover:underline flex items-center justify-center gap-1"
+                            >
+                              <Download className="w-4 h-4" />
+                              Export Transcript
+                            </button>
+                          )}
+
                           <button
                             onClick={stopRecording}
                             className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors"
@@ -1034,11 +1040,15 @@ export default function SmartInterviewPage() {
                             <Mic className="w-8 h-8 text-[#0D9488]" />
                           </div>
                           <div className="text-gray-600">Click to start recording</div>
+                          {transcriptionError && (
+                            <div className="text-sm text-red-600">{transcriptionError}</div>
+                          )}
                           <button
                             onClick={startRecording}
-                            className="bg-[#0D9488] text-white px-6 py-3 rounded-lg hover:bg-[#0D9488] transition-colors"
+                            disabled={isConnecting}
+                            className="bg-[#0D9488] text-white px-6 py-3 rounded-lg hover:bg-[#0F766E] transition-colors disabled:opacity-50"
                           >
-                            Start Recording
+                            {isConnecting ? 'Connecting...' : 'Start Recording'}
                           </button>
                         </div>
                       )}
@@ -1076,10 +1086,22 @@ export default function SmartInterviewPage() {
                         <span className="font-bold text-[#0D9488]">{formatTime(recordingTimeLeft)}</span>
                       </div>
 
-                      {transcript && (
+                      {fullTranscript && (
                         <div className="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-700">
                           <span className="font-semibold text-gray-900">Transcript: </span>
-                          {transcript}
+                          {fullTranscript}
+                          {Object.keys(fillerWordCounts).length > 0 && (
+                            <div className="mt-2">
+                              <div className="text-xs text-gray-500 mb-1">Filler words:</div>
+                              <div className="flex flex-wrap gap-1">
+                                {Object.entries(fillerWordCounts).map(([word, count]) => (
+                                  <span key={word} className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                                    {word} ({count})
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -1104,9 +1126,10 @@ export default function SmartInterviewPage() {
                           <>
                             <button
                               onClick={() => {
+                                stopVideoStream();
                                 setRecordedVideoUrl('');
                                 setRecordingState('idle');
-                                setTranscript('');
+                                clearTranscript();
                                 setRecordingTimeLeft(120);
                               }}
                               className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
@@ -1115,9 +1138,9 @@ export default function SmartInterviewPage() {
                             </button>
                             <button
                               onClick={() => {
-                                submitAnswer(latestTranscriptRef.current || transcript);
+                                submitAnswer(fullTranscript);
                               }}
-                              disabled={!transcript.trim() || isTyping}
+                              disabled={!fullTranscript.trim() || isTyping}
                               className="rounded-lg bg-[#0D9488] px-4 py-2 text-white hover:bg-[#0F766E] transition-colors disabled:opacity-50"
                             >
                               Submit Video Answer
