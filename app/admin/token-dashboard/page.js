@@ -65,18 +65,20 @@ export default function TokenDashboard() {
             userMap.set(doc.id, {
               userId: doc.id,
               total: 0,
-              smartInterviewInit: 0,
-              smartInterviewContinue: 0,
-              smartInterviewEvaluate: 0,
+              features: {},
               lastUpdated: data.lastUsed?.toDate?.() || new Date()
             });
           }
           
           const user = userMap.get(doc.id);
           user.total += data.total || 0;
-          user.smartInterviewInit += data['smart-interview-init'] || 0;
-          user.smartInterviewContinue += data['smart-interview-continue'] || 0;
-          user.smartInterviewEvaluate += data['smart-interview-evaluate'] || 0;
+          
+          // Aggregate all features dynamically
+          Object.entries(data).forEach(([key, value]) => {
+            if (key !== 'userId' && key !== 'date' && key !== 'total' && key !== 'lastUsed') {
+              user.features[key] = (user.features[key] || 0) + (value || 0);
+            }
+          });
           
           // Update last used if newer
           if (data.lastUsed?.toDate?.() > user.lastUpdated) {
@@ -126,14 +128,19 @@ export default function TokenDashboard() {
   };
 
   const exportData = () => {
+    // Get all unique features
+    const allFeatures = new Set();
+    userStats.forEach(u => Object.keys(u.features).forEach(f => allFeatures.add(f)));
+    const featureList = Array.from(allFeatures);
+    
+    const headers = ['User ID', 'Total Tokens', ...featureList, 'Last Updated'];
+    
     const csvContent = [
-      ['User ID', 'Total Tokens', 'Smart Interview Init', 'Smart Interview Continue', 'Smart Interview Evaluate', 'Last Updated'].join(','),
+      headers.join(','),
       ...userStats.map(u => [
         u.userId,
         u.total,
-        u.smartInterviewInit,
-        u.smartInterviewContinue,
-        u.smartInterviewEvaluate,
+        ...featureList.map(f => u.features[f] || 0),
         u.lastUpdated.toISOString()
       ].join(','))
     ].join('\n');
@@ -319,69 +326,76 @@ export default function TokenDashboard() {
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">User ID</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">Total Tokens</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">Interview Init</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">Continue</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">Evaluate</th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">Features Used</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Last Active</th>
                     <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {userStats.map((user) => (
-                    <motion.tr 
-                      key={user.userId}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-                            <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <>
+                      <motion.tr 
+                        key={user.userId}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                              <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                            </div>
+                            <span className="text-sm font-mono text-gray-900 dark:text-gray-100">
+                              {user.userId.substring(0, 12)}...
+                            </span>
                           </div>
-                          <span className="text-sm font-mono text-gray-900 dark:text-gray-100">
-                            {user.userId.substring(0, 12)}...
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="text-sm font-bold text-purple-600 dark:text-purple-400">
+                            {user.total.toLocaleString()}
                           </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-sm font-bold text-purple-600 dark:text-purple-400">
-                          {user.total.toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {user.smartInterviewInit.toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {user.smartInterviewContinue.toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {user.smartInterviewEvaluate.toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {user.lastUpdated.toLocaleDateString()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <button 
-                          onClick={() => setExpandedUser(expandedUser === user.userId ? null : user.userId)}
-                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                        >
-                          {expandedUser === user.userId ? (
-                            <ChevronUp className="w-4 h-4 text-gray-500" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4 text-gray-500" />
-                          )}
-                        </button>
-                      </td>
-                    </motion.tr>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {Object.keys(user.features).length} features
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {user.lastUpdated.toLocaleDateString()}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <button 
+                            onClick={() => setExpandedUser(expandedUser === user.userId ? null : user.userId)}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          >
+                            {expandedUser === user.userId ? (
+                              <ChevronUp className="w-4 h-4 text-gray-500" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 text-gray-500" />
+                            )}
+                          </button>
+                        </td>
+                      </motion.tr>
+                      {expandedUser === user.userId && (
+                        <tr className="bg-gray-50 dark:bg-gray-700/30">
+                          <td colSpan="5" className="px-6 py-4">
+                            <div className="text-sm">
+                              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Feature Breakdown:</h4>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                {Object.entries(user.features).map(([feature, tokens]) => (
+                                  <div key={feature} className="flex justify-between bg-white dark:bg-gray-800 rounded px-3 py-2">
+                                    <span className="text-gray-600 dark:text-gray-400 capitalize">{feature.replace(/-/g, ' ')}</span>
+                                    <span className="font-medium text-purple-600">{tokens.toLocaleString()}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   ))}
                 </tbody>
               </table>
