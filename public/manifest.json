@@ -1,0 +1,9 @@
+{
+  "name": "BRIDGE AI",
+  "short_name": "BRIDGE",
+  "description": "AI-powered interview preparation platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0D9488"
+}
