@@ -161,7 +161,10 @@ export function useDeepgramTranscription() {
         setRecordingStatus('listening');
       };
 
-      ws.onmessage = handleWebSocketMessage;
+      ws.onmessage = (event) => {
+          console.log('Deepgram message received:', event.data.substring(0, 200));
+          handleWebSocketMessage(event);
+        };
 
       ws.onerror = (error) => {
         console.error('Deepgram WebSocket error:', error);
@@ -259,6 +262,7 @@ export function useDeepgramTranscription() {
 
         mediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0 && websocketRef.current?.readyState === WebSocket.OPEN) {
+            console.log('Sending audio chunk:', event.data.size, 'bytes');
             websocketRef.current.send(event.data);
           }
         };

@@ -41,6 +41,7 @@ export default function TokenDashboard() {
     try {
       // Get today's date
       const today = new Date().toISOString().split('T')[0];
+      console.log('📊 Fetching token data starting from:', today);
       
       // Fetch daily token usage for the last N days
       const days = selectedPeriod === '7days' ? 7 : selectedPeriod === '30days' ? 30 : 90;
@@ -55,9 +56,12 @@ export default function TokenDashboard() {
         const dailyRef = collection(db, 'tokenUsage', 'daily', dateStr);
         const snapshot = await getDocs(dailyRef);
         
+        console.log(`📅 ${dateStr}: ${snapshot.size} documents`);
+        
         let dayTotal = 0;
         snapshot.forEach(doc => {
           const data = doc.data();
+          console.log(`  👤 ${doc.id}:`, data);
           dayTotal += data.total || 0;
           
           // Aggregate user data
@@ -104,13 +108,19 @@ export default function TokenDashboard() {
       // Calculate grand total
       const grandTotal = users.reduce((sum, u) => sum + u.total, 0);
       
+      console.log('📊 Summary:', {
+        totalUsers: users.length,
+        totalTokens: grandTotal,
+        users: users.map(u => ({ id: u.userId.substring(0, 8), total: u.total }))
+      });
+      
       setUserStats(users);
       setTotalTokens(grandTotal);
       setTotalUsers(users.length);
       setTopConsumer(users[0] || null);
       
     } catch (error) {
-      console.error('Error fetching token data:', error);
+      console.error('❌ Error fetching token data:', error);
     } finally {
       setLoading(false);
     }
