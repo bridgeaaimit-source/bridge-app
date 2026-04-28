@@ -1046,7 +1046,7 @@ export default function SmartInterviewPage() {
                             <div className="text-sm text-red-600">{transcriptionError}</div>
                           )}
                           <button
-                            onClick={() => { clearTranscript(); startDeepgramRecording(); }}
+                            onClick={startRecording}
                             disabled={isConnecting}
                             className="bg-[#0D9488] text-white px-6 py-3 rounded-lg hover:bg-[#0F766E] transition-colors disabled:opacity-50"
                           >
