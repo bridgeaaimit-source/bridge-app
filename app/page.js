@@ -110,7 +110,7 @@ export default function Home() {
             <img
               src="/images/bridgeai-logo.png"
               alt="BridgeAI"
-              className="h-full w-auto object-contain"
+              className="h-12 w-auto object-contain"
             />
           </Link>
 
@@ -372,7 +372,7 @@ export default function Home() {
               <img
                 src="/images/bridgeai-logo.png"
                 alt="BridgeAI"
-                className="h-9 w-auto max-w-[170px] object-contain"
+                className="h-12 w-auto max-w-[200px] object-contain"
               />
             </div>
             <p className="mt-3 text-sm">AI placement prep for ambitious Indian students.</p>
