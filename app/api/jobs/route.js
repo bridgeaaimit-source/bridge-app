@@ -93,6 +93,20 @@ Return ONLY valid JSON:
     const { profile } = await request.json()
       .catch(() => ({}));
 
+    console.log('=== FETCH JOBS API ===');
+    console.log('Profile received:', !!profile);
+    console.log('Profile name:', profile?.name);
+    console.log('Profile has job titles:', !!profile?.job_titles_suitable);
+    console.log('Profile has domains:', !!profile?.domains);
+    console.log('Profile has skills:', !!profile?.skills);
+
+    if (!profile) {
+      return Response.json(
+        { error: 'No profile provided. Please upload resume first.' },
+        { status: 400 }
+      );
+    }
+
     console.log('Fetching real jobs for:',
       profile?.job_titles_suitable?.[0]);
 
