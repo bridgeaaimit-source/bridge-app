@@ -122,12 +122,12 @@ export default function AppShell({ children }) {
                 <Menu className="w-6 h-6 text-gray-600" />
               </button>
               
-              {/* Logo - Full height of navbar */}
-              <Link href="/dashboard" className="flex items-center h-full py-1">
+              {/* Logo - larger and always visible */}
+              <Link href="/dashboard" className="flex items-center h-full">
                 <img 
                   src="/images/bridgeai-logo.png" 
                   alt="BridgeAI" 
-                  className="h-full w-auto object-contain"
+                  className="h-10 md:h-12 w-auto max-w-[180px] object-contain"
                 />
               </Link>
             </div>

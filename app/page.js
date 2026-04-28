@@ -1,24 +1,37 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Trophy, Zap, Target, Flame, Star, Users, Briefcase, TrendingUp, Menu, X, CheckCircle, Play, Quote, GraduationCap, Building, Award, MessageSquare, BarChart3, Mail, Phone, MapPin } from 'lucide-react';
+import { useState, useEffect } from "react";
+import {
+  ArrowRight,
+  Trophy,
+  Zap,
+  Flame,
+  Star,
+  Users,
+  Briefcase,
+  TrendingUp,
+  Menu,
+  X,
+  CheckCircle,
+  Play,
+  Quote,
+  Video,
+  MessageSquare,
+  FileText,
+  MapPin,
+} from "lucide-react";
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [counters, setCounters] = useState({ students: 0, interviews: 0, companies: 0, confidence: 0 });
-  
-  // Intersection Observer refs
-  const statsRef = useRef(null);
-  const featuresRef = useRef(null);
-  const howItWorksRef = useRef(null);
-  const testimonialsRef = useRef(null);
-  const ctaRef = useRef(null);
+  const [counters, setCounters] = useState({
+    students: 1200,
+    interviews: 340,
+    confidence: 89,
+    companies: 50,
+  });
 
-  // Navbar scroll effect
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
@@ -27,29 +40,11 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Count-up animation for stats
   useEffect(() => {
-    if (statsRef.current) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              startCountUp();
-              observer.unobserve(entry.target);
-            }
-          });
-        },
-        { threshold: 0.3 }
-      );
-      observer.observe(statsRef.current);
-      return () => observer.disconnect();
-    }
-  }, []);
-
-  const startCountUp = () => {
-    const duration = 2000;
+    const start = { students: 960, interviews: 260, confidence: 78, companies: 32 };
+    const target = { students: 1200, interviews: 340, confidence: 89, companies: 50 };
+    const duration = 1600;
     const startTime = Date.now();
-    const targets = { students: 25000, interviews: 500, companies: 98, confidence: 98 };
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
@@ -57,650 +52,362 @@ export default function Home() {
       const easeOutCubic = 1 - Math.pow(1 - progress, 3);
 
       setCounters({
-        students: Math.floor(targets.students * easeOutCubic),
-        interviews: Math.floor(targets.interviews * easeOutCubic),
-        companies: Math.floor(targets.companies * easeOutCubic),
-        confidence: Math.floor(targets.confidence * easeOutCubic)
+        students: Math.floor(start.students + (target.students - start.students) * easeOutCubic),
+        interviews: Math.floor(start.interviews + (target.interviews - start.interviews) * easeOutCubic),
+        confidence: Math.floor(start.confidence + (target.confidence - start.confidence) * easeOutCubic),
+        companies: Math.floor(start.companies + (target.companies - start.companies) * easeOutCubic),
       });
 
       if (progress < 1) {
         requestAnimationFrame(animate);
       }
     };
-
     animate();
-  };
-
-  // Scroll reveal animations
-  useEffect(() => {
-    const observerOptions = { threshold: 0.15 };
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('animate-reveal');
-        }
-      });
-    }, observerOptions);
-
-    const elements = document.querySelectorAll('.scroll-reveal');
-    elements.forEach(el => observer.observe(el));
-    return () => observer.disconnect();
   }, []);
 
+  const liveFeed = [
+    "Aarav from VIT just scored 812 on Amazon mock",
+    "Live GD Battle starting · 3 seats left",
+    "Priya cleared Infosys round 2 today",
+    "New questions added: Google SDE-1",
+    "Karan's BRIDGE Score: 612 → 748 in 4 weeks",
+    "Top of leaderboard this hour: Meera (PSG)",
+    "Sneha just finished 50th mock interview",
+  ];
+
   return (
-    <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
-      {/* Custom styles */}
+    <div className="min-h-screen overflow-x-hidden bg-[#F7FAFF] text-[#0D0D1A]">
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
-
-        :root {
-          --brand-primary: #0891B2;
-          --brand-secondary: #0D9488;
-          --brand-gradient: linear-gradient(135deg, #0891B2 0%, #0D9488 100%);
-          --bg-white: #FFFFFF;
-          --bg-soft: #F0FDFA;
-          --bg-gray: #F4F4F6;
-          --text-heading: #0D0D1A;
-          --text-body: #44445A;
-          --text-muted: #8888A0;
-          --border: #E8E8F0;
-          --card-shadow: 0 4px 24px rgba(8, 145, 178, 0.08);
-          --card-shadow-hover: 0 12px 40px rgba(8, 145, 178, 0.18);
-        }
-
-        * {
-          font-family: 'DM Sans', sans-serif;
-        }
-
-        .font-display {
-          font-family: 'Syne', sans-serif;
-        }
-
-        .animate-fade-up {
-          animation: fadeUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .scroll-reveal {
-          opacity: 0;
-          transform: translateY(24px);
-          transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .scroll-reveal.animate-reveal {
-          opacity: 1;
-          transform: translateY(0);
-        }
-
-        .float-animation {
-          animation: float 4s ease-in-out infinite;
-        }
-
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-12px); }
-        }
-
+        @import url("https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap");
+        * { font-family: "DM Sans", sans-serif; }
+        .font-display { font-family: "Syne", sans-serif; }
         .gradient-text {
-          background: var(--brand-gradient);
+          background: linear-gradient(135deg, #0891b2 0%, #0d9488 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
         }
-
-        .card-hover {
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        .ticker { animation: ticker 28s linear infinite; }
+        @keyframes ticker {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
         }
-
-        .card-hover:hover {
-          transform: translateY(-6px);
-          box-shadow: var(--card-shadow-hover);
+        .fade-up { animation: fadeUp 600ms ease both; }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(18px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
 
-      {/* NAVBAR */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        scrolled ? 'bg-white/92 backdrop-blur-lg border-b border-gray-100' : 'bg-white border-b border-gray-100'
+      <nav className={`fixed top-0 z-50 w-full transition-all duration-300 ${
+        scrolled ? "border-b border-gray-100 bg-white/90 backdrop-blur-md" : "bg-white"
       }`}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center gap-2">
-                <img 
-                  src="/images/bridgeai-logo.png" 
-                  alt="BridgeAI"
-                  className="h-16 w-auto"
-                />
-              </Link>
-            </div>
+        <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Link
+            href="/"
+            className="flex items-center rounded-xl bg-white px-2 py-1 shadow-sm ring-1 ring-black/5"
+          >
+            <img
+              src="/images/bridgeai-logo.png"
+              alt="BridgeAI"
+              className="h-9 w-auto max-w-[170px] object-contain sm:h-10"
+            />
+          </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-9">
-              <Link href="#features" className="text-gray-600 hover:text-cyan-600 text-sm font-medium transition-colors">Features</Link>
-              <Link href="#how-it-works" className="text-gray-600 hover:text-cyan-600 text-sm font-medium transition-colors">How it Works</Link>
-              <Link href="#testimonials" className="text-gray-600 hover:text-cyan-600 text-sm font-medium transition-colors">Success Stories</Link>
-              <Link href="#pricing" className="text-gray-600 hover:text-cyan-600 text-sm font-medium transition-colors">Pricing</Link>
-            </div>
-
-            {/* Desktop CTA */}
-            <div className="hidden md:flex items-center space-x-4">
-              <Link href="/login" className="px-5 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                Login
-              </Link>
-              <Link href="/login" className="px-6 py-2 text-sm font-semibold text-white bg-gradient-to-r from-cyan-600 to-cyan-700 rounded-lg hover:opacity-90 transition-opacity shadow-lg">
-                Start Free
-              </Link>
-            </div>
-
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+          <div className="hidden items-center gap-8 md:flex">
+            <a href="#features" className="text-sm font-medium text-gray-600 hover:text-cyan-700">Features</a>
+            <a href="#how-it-works" className="text-sm font-medium text-gray-600 hover:text-cyan-700">How it Works</a>
+            <a href="#stories" className="text-sm font-medium text-gray-600 hover:text-cyan-700">Success Stories</a>
+            <a href="#pricing" className="text-sm font-medium text-gray-600 hover:text-cyan-700">Pricing</a>
           </div>
+
+          <div className="hidden items-center gap-3 md:flex">
+            <Link href="/login" className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700">Login</Link>
+            <Link href="/login" className="rounded-lg bg-gradient-to-r from-cyan-600 to-teal-600 px-5 py-2 text-sm font-semibold text-white shadow-lg">
+              Start Free
+            </Link>
+          </div>
+
+          <button
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 md:hidden"
+          >
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
 
-        {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-t border-gray-100">
-            <div className="px-6 py-4 space-y-3">
-              <Link href="#features" className="block py-2 text-gray-600 hover:text-cyan-600 font-medium">Features</Link>
-              <Link href="#how-it-works" className="block py-2 text-gray-600 hover:text-cyan-600 font-medium">How it Works</Link>
-              <Link href="#testimonials" className="block py-2 text-gray-600 hover:text-cyan-600 font-medium">Success Stories</Link>
-              <Link href="#pricing" className="block py-2 text-gray-600 hover:text-cyan-600 font-medium">Pricing</Link>
-              <div className="pt-4 border-t border-gray-100 space-y-3">
-                <Link href="/login" className="block py-2 text-center text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium">Login</Link>
-                <Link href="/login" className="block py-2 text-center text-white bg-gradient-to-r from-cyan-600 to-cyan-700 rounded-lg font-semibold">Start Free</Link>
-              </div>
+          <div className="border-t border-gray-100 bg-white md:hidden">
+            <div className="space-y-2 px-4 py-4">
+              <a href="#features" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">Features</a>
+              <a href="#how-it-works" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">How it Works</a>
+              <a href="#stories" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">Success Stories</a>
+              <a href="#pricing" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">Pricing</a>
+              <Link href="/login" className="mt-2 block rounded-lg bg-gradient-to-r from-cyan-600 to-teal-600 px-4 py-2 text-center text-sm font-semibold text-white">
+                Start Free
+              </Link>
             </div>
           </div>
         )}
       </nav>
 
-      {/* HERO SECTION */}
-      <section className="min-h-screen flex items-center pt-16 relative">
-        {/* Background gradient blob */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-100 rounded-full filter blur-3xl opacity-30"></div>
-        
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Left Column */}
-          <div className="space-y-8">
-            {/* Headline */}
-            <h1 className="font-display text-5xl lg:text-6xl font-bold leading-tight animate-fade-up" style={{ animationDelay: '100ms' }}>
-              Crack your<br/><span className="gradient-text">dream job.</span>
-            </h1>
+      <section className="relative overflow-hidden bg-[#0f1221] pt-24 text-white">
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(#ffffff 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
+        <div className="absolute -top-24 -right-28 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl" />
+        <div className="absolute -bottom-24 -left-28 h-72 w-72 rounded-full bg-teal-400/20 blur-3xl" />
 
-            {/* Subheadline */}
-            <p className="text-lg text-gray-600 leading-relaxed max-w-lg animate-fade-up" style={{ animationDelay: '200ms' }}>
-              Real questions. Live AI feedback. Daily GD battles. One score that proves you're ready.
-              India's AI-powered placement prep platform. Practice real interview questions, win GD battles, and track your BRIDGE Score — built for students from Tier 2 colleges.
+        <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-10 px-4 pb-14 sm:px-6 lg:grid-cols-2 lg:px-8">
+          <div className="fade-up">
+            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1 text-xs font-semibold">
+              Live <span className="h-2 w-2 rounded-full bg-emerald-400" /> 1,247 students practicing now
             </p>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 animate-fade-up" style={{ animationDelay: '300ms' }}>
-              <Link href="/login" className="px-8 py-4 bg-gradient-to-r from-cyan-600 to-cyan-700 text-white font-semibold rounded-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 inline-flex items-center justify-center">
-                Start free mock <ArrowRight className="ml-2 w-5 h-5" />
+            <h1 className="font-display text-5xl font-black leading-tight sm:text-6xl">
+              Crack your <br /> dream job.
+            </h1>
+            <p className="mt-4 max-w-xl text-base text-cyan-100 sm:text-lg">
+              Real questions. Live AI feedback. Daily GD battles. One score that proves you're ready.
+            </p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <Link href="/login" className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 px-6 py-3 text-sm font-bold text-white shadow-lg">
+                Start free mock <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
-              <button className="px-7 py-4 bg-white text-cyan-600 font-semibold rounded-lg border-2 border-cyan-600 hover:bg-cyan-50 transition-colors inline-flex items-center justify-center">
-                90-sec demo
+              <button className="inline-flex items-center justify-center rounded-xl border border-white/30 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10">
+                <Play className="mr-2 h-4 w-4" /> 90-sec demo
               </button>
             </div>
-
-            {/* Trust line */}
-            <div className="flex flex-wrap gap-6 text-sm text-gray-500 animate-fade-up" style={{ animationDelay: '400ms' }}>
-              <span className="flex items-center"><CheckCircle className="w-4 h-4 mr-1 text-green-500" /> Free to join</span>
-              <span className="flex items-center"><CheckCircle className="w-4 h-4 mr-1 text-green-500" /> No credit card</span>
-              <span className="flex items-center"><CheckCircle className="w-4 h-4 mr-1 text-green-500" /> 1,200+ students</span>
-            </div>
-
-            {/* College logos */}
-            <div className="animate-fade-up" style={{ animationDelay: '500ms' }}>
-              <p className="text-xs text-gray-500 mb-3">Trusted by students from</p>
-              <div className="flex flex-wrap gap-2">
-                {['VIT', 'PSG', 'SRMIST', 'Manipal', 'LPU', 'Amity'].map((college) => (
-                  <span key={college} className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-lg">
-                    {college}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <p className="mt-4 text-sm text-cyan-100"><strong>2,500+</strong> students · ⭐ 4.9 rating</p>
           </div>
 
-          {/* Right Column - Dashboard Mockup */}
-          <div className="relative">
-            {/* Main Dashboard Card */}
-            <div className="bg-white rounded-3xl p-8 shadow-2xl float-animation">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-display text-xl font-bold">Your BRIDGE Score</h3>
-                <span className="px-3 py-1 bg-cyan-100 text-cyan-700 text-xs font-semibold rounded-full">Today</span>
+          <div className="fade-up" style={{ animationDelay: "120ms" }}>
+            <div className="rounded-3xl border border-white/20 bg-white/10 p-5 backdrop-blur">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="font-display text-lg font-bold">BRIDGE Score</h3>
+                <span className="rounded-full bg-cyan-400/20 px-3 py-1 text-xs font-semibold text-cyan-200">Live mock</span>
               </div>
-　　 　 　 　
-              <div className="text-center mb-6">
-                <div className="font-display text-6xl font-black gradient-text mb-2">742</div>
-                <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">Placement Ready</span>
+              <div className="mb-4 text-center">
+                <p className="font-display text-6xl font-black text-cyan-300">520</p>
+                <p className="text-sm text-cyan-100">/ 1000 · Beginner</p>
               </div>
-
-              <div className="mb-6">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-600">Progress</span>
-                  <span className="text-gray-900 font-semibold">74%</span>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between rounded-xl bg-white/10 px-3 py-2">
+                  <span className="text-sm">Amazon SDE-1</span>
+                  <span className="text-xs text-emerald-300">🔥 14 days</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-[#0891B2] to-[#0D9488] h-2 rounded-full" style={{ width: '74%' }}></div>
+                <div className="flex items-center justify-between rounded-xl bg-white/10 px-3 py-2">
+                  <span className="text-sm">Rank #42 / 1,200</span>
+                  <span className="text-xs text-cyan-200">Confidence 8.4/10</span>
                 </div>
-              </div>
-
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Target className="w-5 h-5 text-cyan-600" />
-                    <span className="text-sm font-medium">Mock Interviews</span>
-                  </div>
-                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">12 done</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <MessageSquare className="w-5 h-5 text-cyan-600" />
-                    <span className="text-sm font-medium">GD Battles</span>
-                  </div>
-                  <span className="px-2 py-1 bg-cyan-100 text-cyan-700 text-xs font-semibold rounded">5 won</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <TrendingUp className="w-5 h-5 text-cyan-600" />
-                    <span className="text-sm font-medium">Improvement</span>
-                  </div>
-                  <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded">+23%</span>
-                </div>
-              </div>
-
-              <div className="p-4 bg-cyan-50 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-cyan-900">Next Challenge:</span>
-                  <span className="text-xs text-cyan-600">Amazon SDE Mock</span>
-                </div>
-                <button className="w-full px-4 py-2 bg-cyan-600 text-white text-sm font-semibold rounded-lg hover:bg-cyan-700 transition-colors">
-                  Start Now →
-                </button>
-              </div>
-            </div>
-
-            {/* Floating Cards */}
-            <div className="absolute top-8 -left-8 bg-white rounded-2xl p-4 shadow-lg float-animation" style={{ animationDelay: '1s' }}>
-              <div className="flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-500" />
-                <span className="text-sm font-bold">Ranked #4 in your college</span>
-              </div>
-            </div>
-            <div className="absolute bottom-8 -right-8 bg-white rounded-2xl p-4 shadow-lg float-animation" style={{ animationDelay: '2s' }}>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-500" />
-                <span className="text-sm font-bold">Interview score: 91%</span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* STATS BAR */}
-      <section ref={statsRef} className="bg-gradient-to-r from-[#0D9488] to-[#0F766E] py-16">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+      <section className="overflow-hidden border-y border-cyan-100 bg-cyan-50 py-3">
+        <div className="ticker whitespace-nowrap">
+          {[...liveFeed, ...liveFeed].map((item, idx) => (
+            <span key={`${item}-${idx}`} className="mx-6 inline-flex items-center gap-2 text-sm font-medium text-cyan-800">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" /> {item}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      <section className="bg-white py-12">
+        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <article className="rounded-2xl border border-gray-100 bg-white p-5 text-center shadow-sm">
+              <p className="font-display text-3xl font-black text-cyan-700">{counters.students.toLocaleString()}+</p>
+              <p className="mt-1 text-sm text-gray-600">Students</p>
+            </article>
+            <article className="rounded-2xl border border-gray-100 bg-white p-5 text-center shadow-sm">
+              <p className="font-display text-3xl font-black text-cyan-700">{counters.interviews.toLocaleString()}+</p>
+              <p className="mt-1 text-sm text-gray-600">Interviews Practiced</p>
+            </article>
+            <article className="rounded-2xl border border-gray-100 bg-white p-5 text-center shadow-sm">
+              <p className="font-display text-3xl font-black text-cyan-700">{counters.confidence}%</p>
+              <p className="mt-1 text-sm text-gray-600">Confidence Boost</p>
+            </article>
+            <article className="rounded-2xl border border-gray-100 bg-white p-5 text-center shadow-sm">
+              <p className="font-display text-3xl font-black text-cyan-700">{counters.companies}+</p>
+              <p className="mt-1 text-sm text-gray-600">Companies Cracked</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="features" className="bg-[#f4f8ff] py-20">
+        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+          <div className="mb-12 text-center">
+            <p className="text-xs font-bold uppercase tracking-widest text-cyan-700">The Stack</p>
+            <h2 className="font-display mt-3 text-4xl font-black text-[#0d0d1a] sm:text-5xl">
+              Six weapons. One unfair advantage.
+            </h2>
+            <p className="mt-3 text-lg text-gray-600">Every block is built to push your BRIDGE Score closer to 1000.</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[
-              { icon: <GraduationCap className="w-8 h-8" />, value: counters.students, suffix: '+', label: 'Students Trained' },
-              { icon: <MessageSquare className="w-8 h-8" />, value: counters.interviews, suffix: '+', label: 'Mock Interviews Done' },
-              { icon: <Building className="w-8 h-8" />, value: counters.companies, suffix: '+', label: 'Companies Cracked' },
-              { icon: <BarChart3 className="w-8 h-8" />, value: counters.confidence, suffix: '%', label: 'Confidence Boost' }
-            ].map((stat, index) => (
-              <div key={index} className="text-center text-white">
-                <div className="flex justify-center mb-4">{stat.icon}</div>
-                <div className="font-display text-5xl font-bold mb-2">
-                  {stat.value}{stat.suffix}
-                </div>
-                <div className="text-[#CCFBF1]">{stat.label}</div>
-              </div>
+              { icon: <Video className="h-6 w-6 text-cyan-700" />, title: "AI Video Interview", text: "Eye contact, posture, voice tremor, filler words. Real-time confidence detection." },
+              { icon: <Trophy className="h-6 w-6 text-cyan-700" />, title: "BRIDGE Score", text: "Your placement readiness score out of 1000 across interviews and GDs." },
+              { icon: <Users className="h-6 w-6 text-cyan-700" />, title: "GD Battles", text: "4 students. 5 minutes. AI judge. Practice like a real selection round." },
+              { icon: <MessageSquare className="h-6 w-6 text-cyan-700" />, title: "500+ Real Questions", text: "Asked at Amazon, Google, TCS, Infosys and more." },
+              { icon: <FileText className="h-6 w-6 text-cyan-700" />, title: "AI Resume Builder", text: "ATS-optimized and recruiter-approved, with instant suggestions." },
+              { icon: <MapPin className="h-6 w-6 text-cyan-700" />, title: "Personal Roadmap", text: "A practical 7-day plan generated from your weak spots." },
+            ].map((card) => (
+              <article key={card.title} className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                <div className="mb-4 inline-flex rounded-xl bg-cyan-50 p-3">{card.icon}</div>
+                <h3 className="font-display text-xl font-bold text-[#0d0d1a]">{card.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600">{card.text}</p>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FEATURES SECTION */}
-      <section ref={featuresRef} id="features" className="py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-16 scroll-reveal">
-            <h2 className="font-display text-4xl lg:text-5xl font-bold mb-4">
-              Six weapons.<br/>One <span className="gradient-text">unfair advantage.</span>
-            </h2>
-            <p className="text-gray-600 text-lg">Every block is built to push your BRIDGE Score closer to 1000.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 - AI Interview */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '0ms' }}>
-              <div className="w-14 h-14 bg-[#F0FDFA] rounded-full flex items-center justify-center mb-6">
-                <Target className="w-7 h-7 text-[#0D9488]" />
-              </div>
-              <h3 className="font-display text-xl font-bold mb-3">Your camera on. Our AI watches everything.</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Eye contact, posture, voice tremor, filler words. Real-time confidence detection on every answer.
-              </p>
-            </div>
-
-            {/* Feature 2 - BRIDGE Score */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '80ms' }}>
-              <div className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mb-6">
-                <Trophy className="w-7 h-7 text-green-600" />
-              </div>
-              <h3 className="font-display text-xl font-bold mb-3">BRIDGE Score</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Your placement readiness · /1000
-              </p>
-            </div>
-
-            {/* Feature 3 - GD Battles */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '160ms' }}>
-              <div className="w-14 h-14 bg-orange-50 rounded-full flex items-center justify-center mb-6">
-                <Users className="w-7 h-7 text-orange-600" />
-              </div>
-              <h3 className="font-display text-xl font-bold mb-3">GD Battles</h3>
-              <p className="text-gray-600 leading-relaxed">
-                4 students. 5 minutes. AI judge.
-              </p>
-            </div>
-
-            {/* Feature 4 - 500+ Questions */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '240ms' }}>
-              <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mb-6">
-                <MessageSquare className="w-7 h-7 text-blue-600" />
-              </div>
-              <h3 className="font-display text-xl font-bold mb-3">500+ real questions</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Asked at Amazon, Google, TCS, Infosys.
-              </p>
-            </div>
-
-            {/* Feature 5 - AI Resume Builder */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '320ms' }}>
-              <div className="w-14 h-14 bg-purple-50 rounded-full flex items-center justify-center mb-6">
-                <Briefcase className="w-7 h-7 text-purple-600" />
-              </div>
-              <h3 className="font-display text-xl font-bold mb-3">AI Resume Builder</h3>
-              <p className="text-gray-600 leading-relaxed">
-                ATS-optimized. Recruiter-approved.
-              </p>
-            </div>
-
-            {/* Feature 6 - Personal Roadmap */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '400ms' }}>
-              <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-6">
-                <MapPin className="w-7 h-7 text-red-600" />
-              </div>
-              <h3 className="font-display text-xl font-bold mb-3">Personal roadmap</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Your next 7 days, planned by AI.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section ref={howItWorksRef} id="how-it-works" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-16 scroll-reveal">
-            <h2 className="font-display text-4xl lg:text-5xl font-bold mb-6">
-              From signup to offer letter.
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Step 1 */}
-            <div className="text-center scroll-reveal" style={{ animationDelay: '0ms' }}>
-              <div className="font-display text-3xl font-black gradient-text mb-4">01</div>
-              <h3 className="font-display text-xl font-bold mb-2">Sign up</h3>
-              <p className="text-gray-600">90 seconds. No card.</p>
-            </div>
-
-            {/* Step 2 */}
-            <div className="text-center scroll-reveal" style={{ animationDelay: '80ms' }}>
-              <div className="font-display text-3xl font-black gradient-text mb-4">02</div>
-              <h3 className="font-display text-xl font-bold mb-2">Take a mock</h3>
-              <p className="text-gray-600">Real questions, AI feedback.</p>
-            </div>
-
-            {/* Step 3 */}
-            <div className="text-center scroll-reveal" style={{ animationDelay: '160ms' }}>
-              <div className="font-display text-3xl font-black gradient-text mb-4">03</div>
-              <h3 className="font-display text-xl font-bold mb-2">Track score</h3>
-              <p className="text-gray-600">Watch it climb daily.</p>
-            </div>
-
-            {/* Step 4 */}
-            <div className="text-center scroll-reveal" style={{ animationDelay: '240ms' }}>
-              <div className="font-display text-3xl font-black gradient-text mb-4">04</div>
-              <h3 className="font-display text-xl font-bold mb-2">Walk in confident</h3>
-              <p className="text-gray-600">You've practiced this.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* TESTIMONIALS */}
-      <section ref={testimonialsRef} id="testimonials" className="py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-16 scroll-reveal">
-            <h2 className="font-display text-4xl lg:text-5xl font-bold mb-6">
-              They walked in. They got the offer.
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Testimonial 1 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '0ms' }}>
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <Quote className="w-12 h-12 text-[#CCFBF1] mb-4" />
-              <p className="text-gray-700 italic text-lg leading-relaxed mb-6">
-                "Walked into Amazon already knowing the questions."
-              </p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-[#0D9488] to-[#0F766E] rounded-full flex items-center justify-center text-white font-bold">
-                    AK
-                  </div>
-                  <div>
-                    <div className="font-semibold">Akhil Kumar</div>
-                    <div className="text-sm text-gray-500">VIT Vellore</div>
-                  </div>
-                </div>
-                <div className="px-3 py-1 bg-[#F0FDFA] text-[#0D9488] text-xs font-semibold rounded-lg">
-                  Amazon
-                </div>
-              </div>
-            </div>
-
-            {/* Testimonial 2 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '80ms' }}>
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <Quote className="w-12 h-12 text-[#CCFBF1] mb-4" />
-              <p className="text-gray-700 italic text-lg leading-relaxed mb-6">
-                "GD battles flipped my fear into leadership."
-              </p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-[#0D9488] to-[#0F766E] rounded-full flex items-center justify-center text-white font-bold">
-                    PN
-                  </div>
-                  <div>
-                    <div className="font-semibold">Priya Nair</div>
-                    <div className="text-sm text-gray-500">PSG College of Technology</div>
-                  </div>
-                </div>
-                <div className="px-3 py-1 bg-[#F0FDFA] text-[#0D9488] text-xs font-semibold rounded-lg">
-                  Infosys
-                </div>
-              </div>
-            </div>
-
-            {/* Testimonial 3 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '160ms' }}>
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <Quote className="w-12 h-12 text-[#CCFBF1] mb-4" />
-              <p className="text-gray-700 italic text-lg leading-relaxed mb-6">
-                "480 → 790 in 6 weeks. Insane clarity."
-              </p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-[#0D9488] to-[#0F766E] rounded-full flex items-center justify-center text-white font-bold">
-                    RS
-                  </div>
-                  <div>
-                    <div className="font-semibold">Rohan Sharma</div>
-                    <div className="text-sm text-gray-500">SRMIST</div>
-                  </div>
-                </div>
-                <div className="px-3 py-1 bg-[#F0FDFA] text-[#0D9488] text-xs font-semibold rounded-lg">
-                  Wipro
-                </div>
-              </div>
-            </div>
-
-            {/* Testimonial 4 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg card-hover scroll-reveal" style={{ animationDelay: '240ms' }}>
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <Quote className="w-12 h-12 text-[#CCFBF1] mb-4" />
-              <p className="text-gray-700 italic text-lg leading-relaxed mb-6">
-                "80% question match. Got the offer day one."
-              </p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-[#0D9488] to-[#0F766E] rounded-full flex items-center justify-center text-white font-bold">
-                    MV
-                  </div>
-                  <div>
-                    <div className="font-semibold">Meera Verma</div>
-                    <div className="text-sm text-gray-500">Thapar University</div>
-                  </div>
-                </div>
-                <div className="px-3 py-1 bg-[#F0FDFA] text-[#0D9488] text-xs font-semibold rounded-lg">
-                  TCS
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA BANNER */}
-      <section ref={ctaRef} className="py-24 px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto bg-gradient-to-r from-[#0D9488] to-[#0F766E] rounded-3xl p-12 lg:p-16 text-center shadow-2xl scroll-reveal">
-          <h2 className="font-display text-4xl lg:text-5xl font-bold text-white mb-6">
-            Your competition already started.
+      <section id="how-it-works" className="bg-white py-20">
+        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+          <h2 className="font-display mb-12 text-center text-4xl font-black text-[#0d0d1a] sm:text-5xl">
+            From signup to offer letter.
           </h2>
-          <p className="text-lg text-[#CCFBF1] mb-8 max-w-2xl mx-auto">
-            Free forever. No card. 60-second signup.
-          </p>
-          <Link href="/login" className="inline-flex items-center px-8 py-4 bg-white text-[#0D9488] font-bold rounded-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            Take your free mock now <ArrowRight className="ml-2 w-5 h-5" />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["01", "Sign up", "90 seconds. No card."],
+              ["02", "Take a mock", "Real questions, AI feedback."],
+              ["03", "Track score", "Watch it climb daily."],
+              ["04", "Walk in confident", "You've practiced this."],
+            ].map(([n, t, d]) => (
+              <article key={n} className="rounded-2xl border border-gray-100 bg-[#f9fbff] p-6 text-center">
+                <p className="font-display text-3xl font-black text-cyan-700">{n}</p>
+                <h3 className="font-display mt-3 text-xl font-bold">{t}</h3>
+                <p className="mt-1 text-sm text-gray-600">{d}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="pricing" className="bg-[#f4f8ff] py-20">
+        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+          <div className="mb-12 text-center">
+            <h2 className="font-display text-4xl font-black text-[#0d0d1a] sm:text-5xl">
+              Honest pricing. Built for students.
+            </h2>
+            <p className="mt-3 text-gray-600">Start free. Upgrade when you're hooked.</p>
+          </div>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <article className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
+              <p className="text-sm font-semibold text-cyan-700">Starter</p>
+              <h3 className="font-display mt-2 text-3xl font-black">Free Forever</h3>
+              <p className="mt-1 text-gray-500">₹0 / forever</p>
+              <ul className="mt-5 space-y-2 text-sm text-gray-700">
+                <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" /> 4 AI mock interviews</li>
+                <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" /> 1 GD battle</li>
+                <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" /> Basic BRIDGE score</li>
+              </ul>
+              <Link href="/login" className="mt-6 inline-flex rounded-xl border border-cyan-600 px-5 py-2 text-sm font-semibold text-cyan-700">
+                Start Free
+              </Link>
+            </article>
+            <article className="rounded-3xl border-2 border-cyan-200 bg-gradient-to-br from-cyan-600 to-teal-600 p-8 text-white shadow-lg">
+              <p className="text-xs font-bold uppercase tracking-wider text-cyan-100">Most popular</p>
+              <h3 className="font-display mt-2 text-3xl font-black">Placement Crusher</h3>
+              <p className="mt-1 text-cyan-100">₹499 / month</p>
+              <ul className="mt-5 space-y-2 text-sm">
+                <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-300" /> 20 AI video interviews / month</li>
+                <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-300" /> 20 GD battles / month</li>
+                <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-300" /> Unlimited improvement guides</li>
+              </ul>
+              <Link href="/login" className="mt-6 inline-flex rounded-xl bg-white px-5 py-2 text-sm font-bold text-cyan-700">
+                Go Pro
+              </Link>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="stories" className="bg-white py-20">
+        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+          <h2 className="font-display mb-12 text-center text-4xl font-black text-[#0d0d1a] sm:text-5xl">
+            They walked in. They got the offer.
+          </h2>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {[
+              ["Akhil Kumar", "VIT → Amazon", "Walked into Amazon already knowing the questions."],
+              ["Priya Nair", "PSG → Infosys", "GD battles flipped my fear into leadership."],
+              ["Rohan Sharma", "SRMIST → Wipro", "480 → 790 in 6 weeks. Insane clarity."],
+              ["Sneha Patel", "Manipal → TCS", "80% question match. Got the offer day one."],
+            ].map(([name, sub, quote]) => (
+              <article key={name} className="rounded-2xl border border-gray-100 bg-[#f9fbff] p-6 shadow-sm">
+                <div className="mb-4 flex text-yellow-400">
+                  {[...Array(5)].map((_, i) => <Star key={`${name}-${i}`} className="h-4 w-4 fill-current" />)}
+                </div>
+                <Quote className="mb-2 h-8 w-8 text-cyan-300" />
+                <p className="text-gray-700">"{quote}"</p>
+                <div className="mt-4">
+                  <p className="font-semibold text-[#0d0d1a]">{name}</p>
+                  <p className="text-sm text-cyan-700">{sub}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-[#0f1221] px-4 py-20 text-white sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[920px] rounded-3xl border border-white/20 bg-white/10 p-10 text-center backdrop-blur">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">Only 50 free spots this week</p>
+          <h2 className="font-display text-4xl font-black sm:text-5xl">Your competition already started.</h2>
+          <p className="mx-auto mt-4 max-w-xl text-cyan-100">Free forever. No card. 60-second signup.</p>
+          <Link href="/login" className="mt-7 inline-flex items-center rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 px-7 py-3 text-sm font-bold text-white shadow-lg">
+            Take your free mock now <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-gray-900 text-gray-400 py-16 px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-            {/* Column 1 */}
-            <div className="lg:col-span-1">
-              <div className="flex items-center gap-2 mb-4">
-                <img 
-                  src="/images/bridgeai-logo.png" 
-                  alt="BridgeAI"
-                  className="h-14 w-auto"
-                />
-              </div>
-              <p className="text-sm mb-4">India's AI-powered placement prep platform</p>
-              <div className="flex space-x-4">
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <Mail className="w-5 h-5" />
-                </a>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <Phone className="w-5 h-5" />
-                </a>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <MapPin className="w-5 h-5" />
-                </a>
-              </div>
+      <footer className="bg-[#0b0f1f] px-4 py-14 text-gray-400 sm:px-6 lg:px-8">
+        <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-10 md:grid-cols-4">
+          <div>
+            <div className="inline-flex w-fit items-center rounded-xl bg-white px-2 py-1 ring-1 ring-white/20">
+              <img
+                src="/images/bridgeai-logo.png"
+                alt="BridgeAI"
+                className="h-9 w-auto max-w-[170px] object-contain"
+              />
             </div>
-
-            {/* Column 2 */}
-            <div>
-              <h4 className="text-white font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#how-it-works" className="hover:text-white transition-colors">How it Works</a></li>
-                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">BRIDGE Score</a></li>
-              </ul>
-            </div>
-
-            {/* Column 3 */}
-            <div>
-              <h4 className="text-white font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">About</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
-              </ul>
-            </div>
-
-            {/* Column 4 */}
-            <div>
-              <h4 className="text-white font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Terms</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Cookie Policy</a></li>
-              </ul>
-            </div>
+            <p className="mt-3 text-sm">AI placement prep for ambitious Indian students.</p>
           </div>
-
-          <div className="border-t border-gray-800 pt-8 text-center text-sm">
-            <p> 2026 BRIDGE. Made with in India</p>
+          <div>
+            <p className="text-sm font-bold text-white">Product</p>
+            <ul className="mt-3 space-y-2 text-sm">
+              <li><a href="#features">Features</a></li>
+              <li><a href="#how-it-works">How it works</a></li>
+              <li><a href="#pricing">Pricing</a></li>
+              <li><a href="#">BRIDGE Score</a></li>
+            </ul>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-white">Company</p>
+            <ul className="mt-3 space-y-2 text-sm">
+              <li>About</li>
+              <li>Blog</li>
+              <li>Careers</li>
+              <li>Press</li>
+            </ul>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-white">Contact</p>
+            <ul className="mt-3 space-y-2 text-sm">
+              <li>hello@bridgeai.in</li>
+              <li>Pune, India</li>
+              <li>For Recruiters</li>
+            </ul>
           </div>
         </div>
+        <div className="mx-auto mt-10 w-full max-w-[1200px] border-t border-white/10 pt-5 text-center text-xs">
+          © 2026 BridgeAI · Crafted with intent in India
+        </div>
       </footer>
-
-      {/* Recruiter Link */}
-      <div className="fixed bottom-8 right-8 z-40">
-        <Link href="/recruiter" className="bg-[#0D9488] hover:bg-[#0F766E] text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg">
-          For Recruiters 
-        </Link>
-      </div>
     </div>
   );
 }
