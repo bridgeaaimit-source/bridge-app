@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause, Volume2, Lightbulb, Star, History, Download, DownloadCloud } from "lucide-react";
+import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause, Volume2, Lightbulb, Star, History, Download, DownloadCloud, Book } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { auth, db } from "@/lib/firebase";
@@ -1268,55 +1268,203 @@ export default function SmartInterviewPage() {
                 ))}
               </div>
 
-              {/* Interviewer Notes */}
-              {feedback.interviewer_notes && (
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-[#0D9488]" />
-                    Interviewer Notes
+              {/* Summary */}
+              {feedback.summary && (
+                <div className="bg-gradient-to-r from-[#0D9488] to-[#0F766E] rounded-2xl p-8 text-white">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5" />
+                    Performance Summary
                   </h3>
-                  <p className="text-gray-700">{feedback.interviewer_notes}</p>
+                  <p className="text-[#CCFBF1] mb-4">{feedback.summary.key_takeaways}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                    {feedback.summary.strengths && (
+                      <div>
+                        <div className="text-sm font-semibold mb-2 text-[#CCFBF1]">Strengths</div>
+                        <ul className="space-y-1">
+                          {feedback.summary.strengths.map((s, i) => (
+                            <li key={i} className="text-sm flex items-center gap-2">
+                              <CheckCircle className="w-3 h-3" />
+                              {s}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {feedback.summary.weaknesses && (
+                      <div>
+                        <div className="text-sm font-semibold mb-2 text-[#CCFBF1]">Areas to Improve</div>
+                        <ul className="space-y-1">
+                          {feedback.summary.weaknesses.map((w, i) => (
+                            <li key={i} className="text-sm flex items-center gap-2">
+                              <AlertCircle className="w-3 h-3" />
+                              {w}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
-              {/* Strengths & Weaknesses */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Strengths */}
-                {feedback.strengths && feedback.strengths.length > 0 && (
-                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      Your Strengths
-                    </h3>
-                    <ul className="space-y-3">
-                      {feedback.strengths.map((strength, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <Star className="w-4 h-4 text-green-600 mt-1 flex-shrink-0" />
-                          <span className="text-gray-700 text-sm">{strength}</span>
-                        </li>
-                      ))}
-                    </ul>
+              {/* Score Breakdown */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Object.entries(feedback.scores || {}).map(([key, value]) => (
+                  <div key={key} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center">
+                    <div className="text-2xl font-bold text-gray-900 mb-1">{value}/10</div>
+                    <div className="text-sm text-gray-600 capitalize">{key.replace('_', ' ')}</div>
                   </div>
-                )}
-
-                {/* Weaknesses */}
-                {feedback.weaknesses && feedback.weaknesses.length > 0 && (
-                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5 text-orange-600" />
-                      Areas to Improve
-                    </h3>
-                    <ul className="space-y-3">
-                      {feedback.weaknesses.map((weakness, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <Target className="w-4 h-4 text-orange-600 mt-1 flex-shrink-0" />
-                          <span className="text-gray-700 text-sm">{weakness}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                ))}
               </div>
+
+              {/* Question-by-Question Analysis */}
+              {feedback.question_analysis && feedback.question_analysis.length > 0 && (
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <History className="w-5 h-5 text-[#0D9488]" />
+                    Question-by-Question Analysis
+                  </h3>
+                  <div className="space-y-4">
+                    {feedback.question_analysis.map((qa, index) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <div className="text-sm font-semibold text-[#0D9488] mb-1">Q{qa.question_number}</div>
+                            <div className="text-sm text-gray-700 font-medium">{qa.question}</div>
+                          </div>
+                          <div className="text-lg font-bold text-[#0D9488]">{qa.score}/10</div>
+                        </div>
+                        <div className="text-sm text-gray-600 mb-3">{qa.answer_quality}</div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {qa.what_did_well && qa.what_did_well.length > 0 && (
+                            <div className="bg-green-50 rounded-lg p-3">
+                              <div className="text-xs font-semibold text-green-700 mb-1">What You Did Well</div>
+                              <ul className="space-y-1">
+                                {qa.what_did_well.map((item, i) => (
+                                  <li key={i} className="text-xs text-green-600 flex items-center gap-1">
+                                    <CheckCircle className="w-3 h-3" />
+                                    {item}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {qa.what_to_improve && qa.what_to_improve.length > 0 && (
+                            <div className="bg-orange-50 rounded-lg p-3">
+                              <div className="text-xs font-semibold text-orange-700 mb-1">What to Improve</div>
+                              <ul className="space-y-1">
+                                {qa.what_to_improve.map((item, i) => (
+                                  <li key={i} className="text-xs text-orange-600 flex items-center gap-1">
+                                    <Target className="w-3 h-3" />
+                                    {item}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Actionable Feedback */}
+              {feedback.actionable_feedback && (
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-[#0D9488]" />
+                    Actionable Next Steps
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {feedback.actionable_feedback.immediate_steps && (
+                      <div>
+                        <div className="text-sm font-semibold text-gray-900 mb-3">Immediate Steps</div>
+                        <ul className="space-y-2">
+                          {feedback.actionable_feedback.immediate_steps.map((step, i) => (
+                            <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                              <div className="w-5 h-5 bg-[#0D9488] text-white rounded-full flex items-center justify-center text-xs flex-shrink-0">{i + 1}</div>
+                              {step}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {feedback.actionable_feedback.resources && (
+                      <div>
+                        <div className="text-sm font-semibold text-gray-900 mb-3">Recommended Resources</div>
+                        <ul className="space-y-2">
+                          {feedback.actionable_feedback.resources.map((resource, i) => (
+                            <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                              <Book className="w-4 h-4 text-[#0D9488] mt-0.5 flex-shrink-0" />
+                              {resource}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {feedback.actionable_feedback.practice_areas && (
+                      <div>
+                        <div className="text-sm font-semibold text-gray-900 mb-3">Practice Areas</div>
+                        <ul className="space-y-2">
+                          {feedback.actionable_feedback.practice_areas.map((area, i) => (
+                            <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                              <Target className="w-4 h-4 text-[#0D9488] mt-0.5 flex-shrink-0" />
+                              {area}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Career Insights */}
+              {feedback.career_insights && (
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Award className="w-5 h-5 text-[#0D9488]" />
+                    Career Insights
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="text-center">
+                      <div className="text-sm text-gray-600 mb-1">Market Fit</div>
+                      <div className={`text-lg font-bold ${
+                        feedback.career_insights.market_fit === 'High' ? 'text-green-600' :
+                        feedback.career_insights.market_fit === 'Medium' ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
+                        {feedback.career_insights.market_fit}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-sm text-gray-600 mb-1">Salary Range</div>
+                      <div className="text-lg font-bold text-gray-900">{feedback.career_insights.salary_range}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-sm text-gray-600 mb-1">Growth Potential</div>
+                      <div className={`text-lg font-bold ${
+                        feedback.career_insights.growth_potential === 'High' ? 'text-green-600' :
+                        feedback.career_insights.growth_potential === 'Medium' ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
+                        {feedback.career_insights.growth_potential}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600 mb-2">Recommended Roles</div>
+                      <div className="flex flex-wrap gap-2">
+                        {feedback.career_insights.recommended_roles?.map((role, i) => (
+                          <span key={i} className="px-3 py-1 bg-[#0D9488]/10 text-[#0D9488] rounded-full text-xs font-medium">
+                            {role}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Improvement Roadmap */}
               {feedback.improvement_roadmap && feedback.improvement_roadmap.length > 0 && (

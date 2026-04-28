@@ -342,7 +342,7 @@ Return ONLY valid JSON:
       `Q${i+1}: ${h.question}\nA${i+1}: ${h.answer}\nScore: ${h.score || 'N/A'}` 
     ).join('\n\n');
 
-    const prompt = `You are evaluating a candidate interview.
+    const prompt = `You are an expert technical interviewer evaluating a candidate's interview performance.
 
 Job Role: ${job_role}
 Round: ${round}
@@ -350,21 +350,48 @@ Round: ${round}
 Interview History:
 ${historyText}
 
-Provide a simple evaluation in JSON format:
+Provide a DETAILED evaluation in JSON format:
 {
-  "placement_chance": 75,
-  "verdict": "Strong Maybe",
-  "overall_score": 8,
+  "placement_chance": 0-100,
+  "verdict": "Strong Hire / Hire / Strong Maybe / Weak Maybe / Not Hire",
+  "overall_score": 0-10,
+  "summary": {
+    "strengths": ["specific strength 1", "specific strength 2", "specific strength 3"],
+    "weaknesses": ["specific weakness 1", "specific weakness 2"],
+    "key_takeaways": "2-3 sentence summary of overall performance"
+  },
   "scores": {
-    "communication": 8,
-    "technical_knowledge": 7,
-    "resume_jd_fit": 8,
-    "confidence": 7,
-    "answer_quality": 8
+    "communication": 0-10,
+    "technical_knowledge": 0-10,
+    "resume_jd_fit": 0-10,
+    "confidence": 0-10,
+    "answer_quality": 0-10,
+    "problem_solving": 0-10
+  },
+  "question_analysis": [
+    {
+      "question_number": 1,
+      "question": "the question asked",
+      "answer_quality": "detailed evaluation of the answer",
+      "score": 0-10,
+      "what_did_well": ["specific thing done well"],
+      "what_to_improve": ["specific improvement needed"]
+    }
+  ],
+  "actionable_feedback": {
+    "immediate_steps": ["step 1", "step 2", "step 3"],
+    "resources": ["resource 1", "resource 2"],
+    "practice_areas": ["area 1", "area 2"]
+  },
+  "career_insights": {
+    "market_fit": "High/Medium/Low",
+    "salary_range": "estimated range",
+    "growth_potential": "High/Medium/Low",
+    "recommended_roles": ["role 1", "role 2"]
   }
 }
 
-Return ONLY the JSON, no other text.`;
+Return ONLY the JSON, no other text. Be specific and detailed in your analysis.`;
 
     console.log('📝 Prompt length:', prompt.length);
     console.log('📝 History length:', historyText.length);
