@@ -187,21 +187,26 @@ export function useDeepgramTranscription() {
 
   /**
    * Start audio recording
+   * @param {MediaStream|null} existingStream - Optional existing stream (for video mode)
    */
-  const startRecording = useCallback(async () => {
+  const startRecording = useCallback(async (existingStream = null) => {
     try {
       setError(null);
       
-      // Get microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 16000, // Deepgram prefers 16kHz
-          channelCount: 1,
-        }
-      });
+      let stream = existingStream;
+      
+      // If no existing stream, get microphone access
+      if (!stream) {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 16000, // Deepgram prefers 16kHz
+            channelCount: 1,
+          }
+        });
+      }
 
       // Create MediaRecorder
       const mediaRecorder = new MediaRecorder(stream, {
@@ -217,8 +222,10 @@ export function useDeepgramTranscription() {
       };
 
       mediaRecorder.onstop = () => {
-        // Stop all tracks
-        stream.getTracks().forEach(track => track.stop());
+        // Only stop tracks if we created the stream (not in video mode)
+        if (!existingStream) {
+          stream.getTracks().forEach(track => track.stop());
+        }
       };
 
       mediaRecorderRef.current = mediaRecorder;

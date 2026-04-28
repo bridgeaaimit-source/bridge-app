@@ -204,13 +204,15 @@ export default function SmartInterviewPage() {
       setRecordingTimeLeft(120);
       setIsRecording(true);
 
-      // Start Deepgram transcription for video mode
-      startDeepgramRecording();
-
+      // Get video stream first
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
+
+      // Start Deepgram transcription with the existing stream
+      // Pass the stream so it doesn't request microphone access again
+      startDeepgramRecording(stream);
 
       setVideoStream(stream);
       videoChunksRef.current = [];
