@@ -102,15 +102,15 @@ export default function Home() {
       <nav className={`fixed top-0 z-50 w-full transition-all duration-300 ${
         scrolled ? "border-b border-gray-100 bg-white/90 backdrop-blur-md" : "bg-white"
       }`}>
-        <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-20 w-full max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link
             href="/"
-            className="flex items-center h-full py-1"
+            className="flex items-center h-full py-2"
           >
             <img
-              src="/images/bridgeai-logo.png"
+              src="/logo.svg"
               alt="BridgeAI"
-              className="h-16 w-auto object-contain"
+              className="h-auto w-48 object-contain"
             />
           </Link>
 
@@ -370,7 +370,7 @@ export default function Home() {
           <div>
             <div className="inline-flex w-fit items-center rounded-xl bg-white px-2 py-1 ring-1 ring-white/20">
               <img
-                src="/images/bridgeai-logo.png"
+                src="/logo.svg"
                 alt="BridgeAI"
                 className="h-16 w-auto max-w-[250px] object-contain"
               />
