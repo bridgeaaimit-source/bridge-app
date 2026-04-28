@@ -24,6 +24,7 @@ import toast from 'react-hot-toast';
 
 export default function TokenDashboard() {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [tokenData, setTokenData] = useState([]);
   const [userStats, setUserStats] = useState([]);
   const [dailyStats, setDailyStats] = useState([]);
@@ -34,7 +35,10 @@ export default function TokenDashboard() {
   const [topConsumer, setTopConsumer] = useState(null);
 
   useEffect(() => {
-    fetchTokenData();
+    fetchTokenData().catch(err => {
+      setError(err.message);
+      setLoading(false);
+    });
   }, [selectedPeriod]);
 
   async function fetchTokenData() {
@@ -198,6 +202,22 @@ export default function TokenDashboard() {
             Monitor API token consumption and user analytics
           </p>
         </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-8">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-red-900 mb-1">Error Loading Dashboard</h3>
+                <p className="text-sm text-red-700 mb-3">{error}</p>
+                <p className="text-xs text-red-600">
+                  This may be due to Firebase Admin initialization issues. Check browser console for details.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
