@@ -167,9 +167,13 @@ export default function SmartInterviewPage() {
     recognitionInstance.onstart = () => {};
 
     recognitionInstance.onresult = (event) => {
-      const current = event.resultIndex;
-      const transcript = event.results[current][0].transcript;
-      setTranscript(transcript);
+      let finalTranscript = '';
+      for (let i = 0; i < event.results.length; i += 1) {
+        finalTranscript += `${event.results[i][0].transcript} `;
+      }
+      const normalized = finalTranscript.trim();
+      setTranscript(normalized);
+      latestTranscriptRef.current = normalized;
     };
 
     recognitionInstance.onerror = (event) => {
@@ -252,7 +256,17 @@ export default function SmartInterviewPage() {
       setVideoStream(stream);
       videoChunksRef.current = [];
 
-      const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+      const preferredMime =
+        typeof MediaRecorder !== "undefined" &&
+        MediaRecorder.isTypeSupported &&
+        MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
+          ? "video/webm;codecs=vp9,opus"
+          : "video/webm";
+
+      const recorder = new MediaRecorder(
+        stream,
+        preferredMime ? { mimeType: preferredMime } : undefined
+      );
       mediaRecorderRef.current = recorder;
 
       recorder.ondataavailable = (event) => {
@@ -364,8 +378,13 @@ export default function SmartInterviewPage() {
     }
   };
 
-  const submitAnswer = async () => {
-    const answer = mode === 'voice' ? transcript : currentAnswer;
+  const submitAnswer = async (overrideAnswer) => {
+    const answer =
+      typeof overrideAnswer === "string"
+        ? overrideAnswer
+        : mode === 'voice'
+          ? (latestTranscriptRef.current || transcript)
+          : currentAnswer;
     
     if (!answer.trim()) {
       toast.error('Please provide an answer');
@@ -461,6 +480,12 @@ export default function SmartInterviewPage() {
       setIsTyping(false);
       setCurrentAnswer('');
       setTranscript('');
+      latestTranscriptRef.current = '';
+      if (mode === 'video') {
+        setRecordedVideoUrl('');
+        setRecordingState('idle');
+        setRecordingTimeLeft(120);
+      }
     }
   };
 
@@ -1090,8 +1115,7 @@ export default function SmartInterviewPage() {
                             </button>
                             <button
                               onClick={() => {
-                                setCurrentAnswer(transcript);
-                                submitAnswer();
+                                submitAnswer(latestTranscriptRef.current || transcript);
                               }}
                               disabled={!transcript.trim() || isTyping}
                               className="rounded-lg bg-[#0D9488] px-4 py-2 text-white hover:bg-[#0F766E] transition-colors disabled:opacity-50"
