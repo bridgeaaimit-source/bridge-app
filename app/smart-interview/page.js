@@ -30,6 +30,7 @@ export default function SmartInterviewPage() {
   const [recordedVideoUrl, setRecordedVideoUrl] = useState('');
   const [recordingTimeLeft, setRecordingTimeLeft] = useState(120);
   const [recordingState, setRecordingState] = useState('idle'); // idle | recording | recorded
+  const [isVideoRecording, setIsVideoRecording] = useState(false);
   const mediaRecorderRef = useRef(null);
   const videoChunksRef = useRef([]);
   const recordingTimerRef = useRef(null);
@@ -198,7 +199,7 @@ export default function SmartInterviewPage() {
       setRecordedVideoUrl("");
       setRecordingState('recording');
       setRecordingTimeLeft(120);
-      setIsRecording(true);
+      setIsVideoRecording(true);
 
       // Get video stream with audio
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -236,7 +237,7 @@ export default function SmartInterviewPage() {
         const url = URL.createObjectURL(blob);
         setRecordedVideoUrl(url);
         setRecordingState('recorded');
-        setIsRecording(false);
+        setIsVideoRecording(false);
         stopVideoStream();
       };
 
@@ -253,7 +254,7 @@ export default function SmartInterviewPage() {
       }, 1000);
     } catch (error) {
       console.error("Video recording error:", error);
-      setIsRecording(false);
+      setIsVideoRecording(false);
       setRecordingState('idle');
       toast.error("Could not access camera/microphone. Please allow permissions.");
     }
@@ -1080,7 +1081,7 @@ export default function SmartInterviewPage() {
 
                       <div className="flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2 text-sm">
                         <span className="font-medium text-gray-700">
-                          {recordingState === 'recording' ? 'Recording...' : 'Ready to record'}
+                          {isVideoRecording ? 'Recording...' : recordingState === 'recorded' ? 'Recorded' : 'Ready to record'}
                         </span>
                         <span className="font-bold text-[#0D9488]">{formatTime(recordingTimeLeft)}</span>
                       </div>
@@ -1092,7 +1093,7 @@ export default function SmartInterviewPage() {
                       </div>
 
                       <div className="flex flex-wrap gap-2">
-                        {!isRecording && (
+                        {!isVideoRecording && (
                           <button
                             onClick={startVideoRecording}
                             className="rounded-lg bg-[#0D9488] px-4 py-2 text-white hover:bg-[#0F766E] transition-colors"
@@ -1100,7 +1101,7 @@ export default function SmartInterviewPage() {
                             Start Video Recording
                           </button>
                         )}
-                        {isRecording && (
+                        {isVideoRecording && (
                           <button
                             onClick={stopVideoRecording}
                             className="rounded-lg bg-red-500 px-4 py-2 text-white hover:bg-red-600 transition-colors"
