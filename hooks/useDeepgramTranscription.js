@@ -140,7 +140,7 @@ export function useDeepgramTranscription() {
         throw new Error('Deepgram API key not configured');
       }
 
-      // Create WebSocket connection with API token
+      // Create WebSocket connection with API key as query parameter (required for browser)
       const wsUrl = new URL(config.deepgramUrl);
       wsUrl.searchParams.append('token', config.apiKey);
       wsUrl.searchParams.append('model', config.options.model);
