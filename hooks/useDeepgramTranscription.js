@@ -156,12 +156,13 @@ export function useDeepgramTranscription() {
         }
       }
 
+      // Only append new final transcript to avoid duplicates
       const currentFinal = finalTranscriptRef.current;
       const newTranscript = currentFinal + finalTranscript;
       const displayTranscript = newTranscript + interimTranscript;
 
       updateTranscript(displayTranscript.trim(), false);
-      finalTranscriptRef.current = displayTranscript.trim();
+      finalTranscriptRef.current = newTranscript.trim();
     };
 
     recognition.onerror = (event) => {

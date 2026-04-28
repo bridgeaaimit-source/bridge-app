@@ -1029,6 +1029,16 @@ export default function SmartInterviewPage() {
                             </button>
                           )}
 
+                          {/* Submit Answer button */}
+                          {fullTranscript && (
+                            <button
+                              onClick={() => submitAnswer(fullTranscript)}
+                              className="bg-[#0D9488] text-white px-6 py-3 rounded-lg hover:bg-[#0F766E] transition-colors"
+                            >
+                              Submit Answer
+                            </button>
+                          )}
+
                           <button
                             onClick={stopDeepgramRecording}
                             className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors"
