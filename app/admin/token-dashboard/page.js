@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AppShell from '@/components/AppShell';
+import toast from 'react-hot-toast';
 
 export default function TokenDashboard() {
   const [loading, setLoading] = useState(true);
@@ -39,6 +40,8 @@ export default function TokenDashboard() {
   async function fetchTokenData() {
     setLoading(true);
     try {
+      console.log('🔍 Starting token data fetch...');
+      
       // Get today's date
       const today = new Date().toISOString().split('T')[0];
       console.log('📊 Fetching token data starting from:', today);
@@ -48,10 +51,29 @@ export default function TokenDashboard() {
       const dailyData = [];
       const userMap = new Map(); // To aggregate user data across days
       
+      // First, check if the tokenUsage collection exists
+      const tokenUsageRef = collection(db, 'tokenUsage');
+      const tokenUsageSnapshot = await getDocs(tokenUsageRef);
+      console.log('📁 tokenUsage collection exists:', !tokenUsageSnapshot.empty);
+      console.log('📁 tokenUsage subcollections:', tokenUsageSnapshot.size);
+      
+      if (tokenUsageSnapshot.empty) {
+        console.warn('⚠️ No data in tokenUsage collection. Token tracking may not be enabled.');
+        setDailyStats([]);
+        setUserStats([]);
+        setTotalTokens(0);
+        setTotalUsers(0);
+        setTopConsumer(null);
+        setLoading(false);
+        return;
+      }
+      
       for (let i = 0; i < days; i++) {
         const date = new Date();
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
+        
+        console.log(`📅 Fetching data for ${dateStr}...`);
         
         const dailyRef = collection(db, 'tokenUsage', 'daily', dateStr);
         const snapshot = await getDocs(dailyRef);
@@ -121,6 +143,7 @@ export default function TokenDashboard() {
       
     } catch (error) {
       console.error('❌ Error fetching token data:', error);
+      toast.error('Failed to load token data: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -178,60 +201,96 @@ export default function TokenDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
+          {totalUsers === 0 && !loading ? (
+            <div className="col-span-full bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
+              <AlertCircle className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
+              <h3 className="font-semibold text-gray-900 mb-2">No Token Data Available</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Token tracking may not be enabled or no data has been collected yet. 
+                Check the browser console for detailed logs about the Firestore structure.
+              </p>
+              <button
+                onClick={fetchTokenData}
+                className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+              >
+                Refresh
+              </button>
             </div>
-            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-              {formatNumber(totalTokens)}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Total Tokens Used</div>
-          </motion.div>
+          ) : (
+            <>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                    <BarChart3 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                </div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                  {formatNumber(totalTokens)}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Total Tokens Used</div>
+              </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-              {totalUsers}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Active Users</div>
-          </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                    <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                  {totalUsers}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Active Users</div>
+              </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-              {topConsumer ? formatNumber(topConsumer.total) : '0'}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Top Consumer</div>
-            {topConsumer && (
-              <div className="text-xs text-gray-500 dark:text-gray-500 mt-1 truncate">
-                {topConsumer.userId.substring(0, 20)}...
-              </div>
-            )}
-          </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                  </div>
+                </div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                  {topConsumer ? formatNumber(topConsumer.total) : '0'}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Top Consumer</div>
+                {topConsumer && (
+                  <div className="text-xs text-gray-500 dark:text-gray-500 mt-1 truncate">
+                    {topConsumer.userId.substring(0, 20)}...
+                  </div>
+                )}
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                    <Clock className="w-6 h-6 text-green-600 dark:text-green-400" />
+                  </div>
+                </div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                  {dailyStats.length}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Days Tracked</div>
+              </motion.div>
+            </>
+          )}
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
