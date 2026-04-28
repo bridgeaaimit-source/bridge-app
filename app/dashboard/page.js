@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   Home, 
   Mic, 
@@ -33,6 +34,7 @@ import { useAuthBypass } from "@/hooks/useAuthBypass";
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
+  const router = useRouter();
   const [bridgeScore, setBridgeScore] = useState(null);
   const [greeting, setGreeting] = useState("");
   const [todayDate, setTodayDate] = useState("");
@@ -47,6 +49,10 @@ export default function Dashboard() {
   const [leaderboard, setLeaderboard] = useState([]);
 
   const { isBypassed, mockUserData } = useAuthBypass();
+
+  const handleStartChallenge = () => {
+    router.push('/smart-interview');
+  };
 
   useEffect(() => {
     // Set greeting regardless of auth mode
@@ -420,7 +426,7 @@ export default function Dashboard() {
               <p className="text-[#CCFBF1] mb-6">
                 Complete a full Amazon SDE technical interview with AI feedback
               </p>
-              <button className="bg-white text-[#0D9488] px-6 py-3 rounded-lg font-semibold hover:bg-[#F0FDFA] transition-colors">
+              <button onClick={handleStartChallenge} className="bg-white text-[#0D9488] px-6 py-3 rounded-lg font-semibold hover:bg-[#F0FDFA] transition-colors">
                 Start Challenge
               </button>
             </div>
