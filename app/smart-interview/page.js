@@ -198,11 +198,14 @@ export default function SmartInterviewPage() {
     }
 
     try {
-      setTranscript("");
+      clearTranscript();
       setRecordedVideoUrl("");
       setRecordingState('recording');
       setRecordingTimeLeft(120);
       setIsRecording(true);
+
+      // Start Deepgram transcription for video mode
+      startDeepgramRecording();
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
@@ -238,10 +241,11 @@ export default function SmartInterviewPage() {
         setRecordingState('recorded');
         setIsRecording(false);
         stopVideoStream();
+        // Stop Deepgram transcription
+        stopDeepgramRecording();
       };
 
       recorder.start();
-      startSpeechRecognition();
 
       recordingTimerRef.current = setInterval(() => {
         setRecordingTimeLeft((prev) => {
@@ -1127,6 +1131,7 @@ export default function SmartInterviewPage() {
                             <button
                               onClick={() => {
                                 stopVideoStream();
+                                stopDeepgramRecording();
                                 setRecordedVideoUrl('');
                                 setRecordingState('idle');
                                 clearTranscript();
