@@ -125,7 +125,7 @@ export default function AppShell({ children }) {
               {/* Logo - larger and always visible */}
               <Link href="/dashboard" className="flex items-center h-full">
                 <img 
-                  src="/images/bridgeai-logo.png" 
+                  src="/images/logo_navbar_64h.png" 
                   alt="BridgeAI" 
                   style={{height:'36px',width:'auto'}}
                 />

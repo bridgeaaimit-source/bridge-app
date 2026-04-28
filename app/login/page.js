@@ -95,7 +95,7 @@ export default function LoginPage() {
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
               <img 
-                src="/images/bridgeai-logo.png" 
+                src="/images/logo_400w.png" 
                 alt="BridgeAI"
                 style={{height:'56px',width:'auto',display:'block',margin:'0 auto'}}
               />
