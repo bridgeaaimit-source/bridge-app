@@ -180,10 +180,6 @@ export default function SmartInterviewPage() {
       recordingTimerRef.current = null;
     }
 
-    if (recognition) {
-      recognition.stop();
-    }
-
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     } else {
@@ -204,15 +200,14 @@ export default function SmartInterviewPage() {
       setRecordingTimeLeft(120);
       setIsRecording(true);
 
-      // Get video stream first
+      // Get video stream with audio
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
 
-      // Start Deepgram transcription with the existing stream
-      // Pass the stream so it doesn't request microphone access again
-      startDeepgramRecording(stream);
+      // Note: Deepgram transcription is disabled in video mode
+      // to avoid MediaRecorder conflicts. The video records audio anyway.
 
       setVideoStream(stream);
       videoChunksRef.current = [];
@@ -243,8 +238,6 @@ export default function SmartInterviewPage() {
         setRecordingState('recorded');
         setIsRecording(false);
         stopVideoStream();
-        // Stop Deepgram transcription
-        stopDeepgramRecording();
       };
 
       recorder.start();
@@ -1092,24 +1085,11 @@ export default function SmartInterviewPage() {
                         <span className="font-bold text-[#0D9488]">{formatTime(recordingTimeLeft)}</span>
                       </div>
 
-                      {fullTranscript && (
-                        <div className="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-700">
-                          <span className="font-semibold text-gray-900">Transcript: </span>
-                          {fullTranscript}
-                          {Object.keys(fillerWordCounts).length > 0 && (
-                            <div className="mt-2">
-                              <div className="text-xs text-gray-500 mb-1">Filler words:</div>
-                              <div className="flex flex-wrap gap-1">
-                                {Object.entries(fillerWordCounts).map(([word, count]) => (
-                                  <span key={word} className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
-                                    {word} ({count})
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      <div className="rounded-lg border border-gray-200 bg-yellow-50 p-3 text-sm text-gray-700">
+                        <span className="font-semibold text-gray-900">Note: </span>
+                        Real-time transcription is disabled in video mode to ensure smooth recording.
+                        Your video includes audio and can be reviewed after recording.
+                      </div>
 
                       <div className="flex flex-wrap gap-2">
                         {!isRecording && (
@@ -1133,7 +1113,6 @@ export default function SmartInterviewPage() {
                             <button
                               onClick={() => {
                                 stopVideoStream();
-                                stopDeepgramRecording();
                                 setRecordedVideoUrl('');
                                 setRecordingState('idle');
                                 clearTranscript();
@@ -1145,9 +1124,9 @@ export default function SmartInterviewPage() {
                             </button>
                             <button
                               onClick={() => {
-                                submitAnswer(fullTranscript);
+                                submitAnswer("[Video answer submitted]");
                               }}
-                              disabled={!fullTranscript.trim() || isTyping}
+                              disabled={isTyping}
                               className="rounded-lg bg-[#0D9488] px-4 py-2 text-white hover:bg-[#0F766E] transition-colors disabled:opacity-50"
                             >
                               Submit Video Answer

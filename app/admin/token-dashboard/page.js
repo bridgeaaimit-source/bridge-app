@@ -45,6 +45,7 @@ export default function TokenDashboard() {
       // Fetch daily token usage for the last N days
       const days = selectedPeriod === '7days' ? 7 : selectedPeriod === '30days' ? 30 : 90;
       const dailyData = [];
+      const userMap = new Map(); // To aggregate user data across days
       
       for (let i = 0; i < days; i++) {
         const date = new Date();
@@ -56,7 +57,31 @@ export default function TokenDashboard() {
         
         let dayTotal = 0;
         snapshot.forEach(doc => {
-          dayTotal += doc.data().total || 0;
+          const data = doc.data();
+          dayTotal += data.total || 0;
+          
+          // Aggregate user data
+          if (!userMap.has(doc.id)) {
+            userMap.set(doc.id, {
+              userId: doc.id,
+              total: 0,
+              smartInterviewInit: 0,
+              smartInterviewContinue: 0,
+              smartInterviewEvaluate: 0,
+              lastUpdated: data.lastUsed?.toDate?.() || new Date()
+            });
+          }
+          
+          const user = userMap.get(doc.id);
+          user.total += data.total || 0;
+          user.smartInterviewInit += data['smart-interview-init'] || 0;
+          user.smartInterviewContinue += data['smart-interview-continue'] || 0;
+          user.smartInterviewEvaluate += data['smart-interview-evaluate'] || 0;
+          
+          // Update last used if newer
+          if (data.lastUsed?.toDate?.() > user.lastUpdated) {
+            user.lastUpdated = data.lastUsed.toDate();
+          }
         });
         
         dailyData.push({
@@ -68,30 +93,14 @@ export default function TokenDashboard() {
       
       setDailyStats(dailyData.reverse());
 
-      // Fetch user statistics
-      const usersRef = collection(db, 'tokenUsage', 'users');
-      const usersSnapshot = await getDocs(usersRef);
-      
-      const users = [];
-      let grandTotal = 0;
-      
-      usersSnapshot.forEach(doc => {
-        const data = doc.data();
-        const userTotal = data.total || 0;
-        grandTotal += userTotal;
-        
-        users.push({
-          userId: doc.id,
-          total: userTotal,
-          smartInterviewInit: data['smart-interview-init'] || 0,
-          smartInterviewContinue: data['smart-interview-continue'] || 0,
-          smartInterviewEvaluate: data['smart-interview-evaluate'] || 0,
-          lastUpdated: data.lastUpdated?.toDate?.() || new Date()
-        });
-      });
+      // Convert user map to array
+      const users = Array.from(userMap.values());
       
       // Sort by total usage (descending)
       users.sort((a, b) => b.total - a.total);
+      
+      // Calculate grand total
+      const grandTotal = users.reduce((sum, u) => sum + u.total, 0);
       
       setUserStats(users);
       setTotalTokens(grandTotal);
