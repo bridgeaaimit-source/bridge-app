@@ -25,6 +25,8 @@ export function useDeepgramTranscription() {
   const finalTranscriptRef = useRef('');
   const silenceTimeoutRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const useFallbackRef = useRef(false);
 
   // Filler word patterns
   const fillerPatterns = useRef([
@@ -118,6 +120,80 @@ export function useDeepgramTranscription() {
   }, [updateTranscript]);
 
   /**
+   * Start Web Speech API fallback (built-in browser transcription)
+   */
+  const startWebSpeechAPI = useCallback(() => {
+    if (typeof window === 'undefined') return;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setError('Speech recognition not supported in this browser');
+      setIsConnecting(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      console.log('Web Speech API started');
+      setIsConnecting(false);
+      setRecordingStatus('listening');
+    };
+
+    recognition.onresult = (event) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' ';
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      const currentFinal = finalTranscriptRef.current;
+      const newTranscript = currentFinal + finalTranscript;
+      const displayTranscript = newTranscript + interimTranscript;
+
+      updateTranscript(displayTranscript.trim(), false);
+      finalTranscriptRef.current = displayTranscript.trim();
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Web Speech API error:', event.error);
+      if (event.error === 'no-speech') {
+        // Restart if no speech
+        if (isRecording) {
+          recognition.start();
+        }
+      } else if (event.error !== 'aborted') {
+        setError('Speech recognition error: ' + event.error);
+        setIsConnecting(false);
+      }
+    };
+
+    recognition.onend = () => {
+      // Auto-restart if still recording
+      if (isRecording) {
+        try {
+          recognition.start();
+        } catch (e) {
+          console.log('Speech recognition restart failed:', e);
+        }
+      }
+    };
+
+    recognition.start();
+    recognitionRef.current = recognition;
+    useFallbackRef.current = true;
+  }, [isRecording, updateTranscript]);
+
+  /**
    * Connect to Deepgram WebSocket
    */
   const connectToDeepgram = useCallback(async () => {
@@ -175,13 +251,12 @@ export function useDeepgramTranscription() {
       ws.onclose = (event) => {
         console.log('Deepgram WebSocket closed:', event.code, event.reason);
         setIsConnecting(false);
-        
-        // Auto-reconnect if still recording
-        if (isRecording && event.code !== 1000) {
-          console.log('Attempting to reconnect...');
-          reconnectTimeoutRef.current = setTimeout(() => {
-            connectToDeepgram();
-          }, 2000);
+
+        // If connection failed, fall back to Web Speech API
+        if (event.code !== 1000) {
+          console.log('Deepgram failed, falling back to Web Speech API');
+          toast.error('Deepgram unavailable, using built-in transcription');
+          startWebSpeechAPI();
         }
       };
 
@@ -319,6 +394,12 @@ export function useDeepgramTranscription() {
       websocketRef.current = null;
     }
 
+    // Stop Web Speech API fallback
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+
     // Clear timeouts
     if (silenceTimeoutRef.current) {
       clearTimeout(silenceTimeoutRef.current);
@@ -330,6 +411,7 @@ export function useDeepgramTranscription() {
     setIsRecording(false);
     setRecordingStatus('idle');
     setInterimTranscript('');
+    useFallbackRef.current = false;
 
     toast.success('Recording stopped');
   }, []);
