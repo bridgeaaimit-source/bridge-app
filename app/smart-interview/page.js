@@ -15,7 +15,7 @@ export default function SmartInterviewPage() {
   const [jobRole, setJobRole] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [round, setRound] = useState('HR Round');
-  const [mode, setMode] = useState('text'); // 'text' | 'voice'
+  const [mode, setMode] = useState('text'); // 'text' | 'voice' | 'video'
   
   const { isBypassed, mockUserData } = useAuthBypass();
   
@@ -27,6 +27,15 @@ export default function SmartInterviewPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [recognition, setRecognition] = useState(null);
+  const [isVideoSupported, setIsVideoSupported] = useState(true);
+  const [videoStream, setVideoStream] = useState(null);
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState('');
+  const [recordingTimeLeft, setRecordingTimeLeft] = useState(120);
+  const [recordingState, setRecordingState] = useState('idle'); // idle | recording | recorded
+  const mediaRecorderRef = useRef(null);
+  const videoChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
+  const latestTranscriptRef = useRef('');
   const [questionNumber, setQuestionNumber] = useState(1);
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -44,6 +53,9 @@ export default function SmartInterviewPage() {
     if (typeof window !== 'undefined' && !('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       console.log('Speech recognition not supported');
     }
+    if (typeof window !== 'undefined' && !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
+      setIsVideoSupported(false);
+    }
     
     // Load voices for TTS
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -53,6 +65,24 @@ export default function SmartInterviewPage() {
       };
     }
   }, []);
+
+  useEffect(() => {
+    latestTranscriptRef.current = transcript;
+  }, [transcript]);
+
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+      if (videoStream) {
+        videoStream.getTracks().forEach((track) => track.stop());
+      }
+      if (recordedVideoUrl) {
+        URL.revokeObjectURL(recordedVideoUrl);
+      }
+    };
+  }, [videoStream, recordedVideoUrl]);
 
   const speakText = (text) => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -120,7 +150,7 @@ export default function SmartInterviewPage() {
     });
   };
 
-  const startRecording = () => {
+  const startSpeechRecognition = () => {
     if (typeof window === 'undefined') return;
     
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -134,10 +164,7 @@ export default function SmartInterviewPage() {
     recognitionInstance.interimResults = true;
     recognitionInstance.lang = 'en-US';
 
-    recognitionInstance.onstart = () => {
-      setIsRecording(true);
-      setTranscript("");
-    };
+    recognitionInstance.onstart = () => {};
 
     recognitionInstance.onresult = (event) => {
       const current = event.resultIndex;
@@ -147,25 +174,126 @@ export default function SmartInterviewPage() {
 
     recognitionInstance.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
-      setIsRecording(false);
-      toast.error('Speech recognition failed. Please try again.');
-    };
-
-    recognitionInstance.onend = () => {
-      setIsRecording(false);
-      if (transcript.trim()) {
-        setCurrentAnswer(transcript);
+      if (mode === 'voice') {
+        setIsRecording(false);
+        toast.error('Speech recognition failed. Please try again.');
       }
     };
 
-    setRecognition(recognitionInstance);
+    recognitionInstance.onend = () => {
+      if (mode === 'voice') {
+        setIsRecording(false);
+        const spokenText = latestTranscriptRef.current;
+        if (spokenText.trim()) {
+          setCurrentAnswer(spokenText);
+        }
+      }
+    };
+
     recognitionInstance.start();
+    setRecognition(recognitionInstance);
+    return recognitionInstance;
+  };
+
+  const startRecording = () => {
+    setTranscript("");
+    setIsRecording(true);
+    startSpeechRecognition();
   };
 
   const stopRecording = () => {
     if (recognition) {
       recognition.stop();
     }
+  };
+
+  const stopVideoStream = () => {
+    if (videoStream) {
+      videoStream.getTracks().forEach((track) => track.stop());
+      setVideoStream(null);
+    }
+  };
+
+  const stopVideoRecording = () => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+
+    if (recognition) {
+      recognition.stop();
+    }
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    } else {
+      setIsRecording(false);
+    }
+  };
+
+  const startVideoRecording = async () => {
+    if (!isVideoSupported) {
+      toast.error('Video recording is not supported in this browser');
+      return;
+    }
+
+    try {
+      setTranscript("");
+      setRecordedVideoUrl("");
+      setRecordingState('recording');
+      setRecordingTimeLeft(120);
+      setIsRecording(true);
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+
+      setVideoStream(stream);
+      videoChunksRef.current = [];
+
+      const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          videoChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(videoChunksRef.current, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+        setRecordedVideoUrl(url);
+        setRecordingState('recorded');
+        setIsRecording(false);
+        stopVideoStream();
+      };
+
+      recorder.start();
+      startSpeechRecognition();
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTimeLeft((prev) => {
+          if (prev <= 1) {
+            stopVideoRecording();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (error) {
+      console.error("Video recording error:", error);
+      setIsRecording(false);
+      setRecordingState('idle');
+      toast.error("Could not access camera/microphone. Please allow permissions.");
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const ss = String(seconds % 60).padStart(2, "0");
+    return `${mm}:${ss}`;
   };
 
   const startInterview = async () => {
@@ -648,7 +776,7 @@ export default function SmartInterviewPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Interview Mode</label>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-3 gap-3">
                         <button
                           onClick={() => setMode('text')}
                           className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${
@@ -670,6 +798,17 @@ export default function SmartInterviewPage() {
                         >
                           <Mic className="w-4 h-4" />
                           Voice Mode
+                        </button>
+                        <button
+                          onClick={() => setMode('video')}
+                          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${
+                            mode === 'video'
+                              ? 'bg-[#F0FDFA] text-[#0D9488] font-semibold'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          <Play className="w-4 h-4" />
+                          Video Mode
                         </button>
                       </div>
                     </div>
@@ -848,7 +987,7 @@ export default function SmartInterviewPage() {
                         <Send className="w-5 h-5" />
                       </button>
                     </div>
-                  ) : (
+                  ) : mode === 'voice' ? (
                     <div className="text-center">
                       {isRecording ? (
                         <div className="space-y-4">
@@ -878,6 +1017,90 @@ export default function SmartInterviewPage() {
                           </button>
                         </div>
                       )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="bg-gray-50 rounded-xl p-4">
+                        <div className="aspect-video w-full overflow-hidden rounded-lg bg-black">
+                          {videoStream ? (
+                            <video
+                              autoPlay
+                              muted
+                              playsInline
+                              ref={(node) => {
+                                if (node && videoStream) {
+                                  node.srcObject = videoStream;
+                                }
+                              }}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : recordedVideoUrl ? (
+                            <video controls src={recordedVideoUrl} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-sm text-gray-300">
+                              Camera preview will appear here
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2 text-sm">
+                        <span className="font-medium text-gray-700">
+                          {recordingState === 'recording' ? 'Recording...' : 'Ready to record'}
+                        </span>
+                        <span className="font-bold text-[#0D9488]">{formatTime(recordingTimeLeft)}</span>
+                      </div>
+
+                      {transcript && (
+                        <div className="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-700">
+                          <span className="font-semibold text-gray-900">Transcript: </span>
+                          {transcript}
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap gap-2">
+                        {!isRecording && (
+                          <button
+                            onClick={startVideoRecording}
+                            className="rounded-lg bg-[#0D9488] px-4 py-2 text-white hover:bg-[#0F766E] transition-colors"
+                          >
+                            Start Video Recording
+                          </button>
+                        )}
+                        {isRecording && (
+                          <button
+                            onClick={stopVideoRecording}
+                            className="rounded-lg bg-red-500 px-4 py-2 text-white hover:bg-red-600 transition-colors"
+                          >
+                            Stop Recording
+                          </button>
+                        )}
+                        {recordingState === 'recorded' && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setRecordedVideoUrl('');
+                                setRecordingState('idle');
+                                setTranscript('');
+                                setRecordingTimeLeft(120);
+                              }}
+                              className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              Retake
+                            </button>
+                            <button
+                              onClick={() => {
+                                setCurrentAnswer(transcript);
+                                submitAnswer();
+                              }}
+                              disabled={!transcript.trim() || isTyping}
+                              className="rounded-lg bg-[#0D9488] px-4 py-2 text-white hover:bg-[#0F766E] transition-colors disabled:opacity-50"
+                            >
+                              Submit Video Answer
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
