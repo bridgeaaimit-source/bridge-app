@@ -18,6 +18,8 @@ export function useDeepgramTranscription() {
 
   // Refs for audio and WebSocket
   const mediaRecorderRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const scriptProcessorRef = useRef(null);
   const websocketRef = useRef(null);
   const audioChunksRef = useRef([]);
   const finalTranscriptRef = useRef('');
@@ -134,20 +136,24 @@ export function useDeepgramTranscription() {
 
       const config = await response.json();
 
-      // Create WebSocket connection
-      const ws = new WebSocket(
-        `${config.deepgramUrl}?${new URLSearchParams({
-          model: config.options.model,
-          language: config.options.language,
-          smart_format: config.options.smart_format.toString(),
-          punctuate: config.options.punctuate.toString(),
-          profanity_filter: config.options.profanity_filter.toString(),
-          diarize: config.options.diarize.toString(),
-          interim_results: config.options.interim_results.toString(),
-          vad_events: config.options.vad_events.toString(),
-          endpointing: config.options.endpointing.toString(),
-        })}`
-      );
+      if (!config.apiKey) {
+        throw new Error('Deepgram API key not configured');
+      }
+
+      // Create WebSocket connection with API token
+      const wsUrl = new URL(config.deepgramUrl);
+      wsUrl.searchParams.append('token', config.apiKey);
+      wsUrl.searchParams.append('model', config.options.model);
+      wsUrl.searchParams.append('language', config.options.language);
+      wsUrl.searchParams.append('smart_format', config.options.smart_format.toString());
+      wsUrl.searchParams.append('punctuate', config.options.punctuate.toString());
+      wsUrl.searchParams.append('profanity_filter', config.options.profanity_filter.toString());
+      wsUrl.searchParams.append('diarize', config.options.diarize.toString());
+      wsUrl.searchParams.append('interim_results', config.options.interim_results.toString());
+      wsUrl.searchParams.append('vad_events', config.options.vad_events.toString());
+      wsUrl.searchParams.append('endpointing', config.options.endpointing.toString());
+
+      const ws = new WebSocket(wsUrl.toString());
 
       ws.onopen = () => {
         console.log('Deepgram WebSocket connected');
@@ -192,9 +198,9 @@ export function useDeepgramTranscription() {
   const startRecording = useCallback(async (existingStream = null) => {
     try {
       setError(null);
-      
+
       let stream = existingStream;
-      
+
       // If no existing stream, get microphone access
       if (!stream) {
         stream = await navigator.mediaDevices.getUserMedia({
@@ -202,48 +208,78 @@ export function useDeepgramTranscription() {
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true,
-            sampleRate: 16000, // Deepgram prefers 16kHz
+            sampleRate: 16000,
             channelCount: 1,
           }
         });
       }
 
-      // Create MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus',
-        audioBitsPerSecond: 16000,
-      });
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0 && websocketRef.current?.readyState === WebSocket.OPEN) {
-          // Send audio chunk to Deepgram
-          websocketRef.current.send(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        // Only stop tracks if we created the stream (not in video mode)
-        if (!existingStream) {
-          stream.getTracks().forEach(track => track.stop());
-        }
-      };
-
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      // Connect to Deepgram
+      // Connect to Deepgram first
       await connectToDeepgram();
 
-      // Start recording
-      mediaRecorder.start(250); // Send chunks every 250ms
+      // Check if we should use AudioContext (video mode) or MediaRecorder (voice mode)
+      if (existingStream) {
+        // Video mode: Use AudioContext to avoid MediaRecorder conflict
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)({
+          sampleRate: 16000
+        });
+        audioContextRef.current = audioContext;
+
+        // Get audio track from the stream
+        const audioTrack = stream.getAudioTracks()[0];
+        if (!audioTrack) {
+          throw new Error('No audio track in stream');
+        }
+
+        const audioStream = new MediaStream([audioTrack]);
+        const source = audioContext.createMediaStreamSource(audioStream);
+        const processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+        processor.onaudioprocess = (e) => {
+          if (websocketRef.current?.readyState === WebSocket.OPEN) {
+            const audioData = e.inputBuffer.getChannelData(0);
+            // Convert Float32Array to Int16Array
+            const int16Data = new Int16Array(audioData.length);
+            for (let i = 0; i < audioData.length; i++) {
+              int16Data[i] = Math.max(-32768, Math.min(32767, audioData[i] * 32768));
+            }
+            websocketRef.current.send(int16Data.buffer);
+          }
+        };
+
+        source.connect(processor);
+        processor.connect(audioContext.destination);
+        scriptProcessorRef.current = processor;
+      } else {
+        // Voice mode: Use MediaRecorder
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: 'audio/webm;codecs=opus',
+          audioBitsPerSecond: 16000,
+        });
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0 && websocketRef.current?.readyState === WebSocket.OPEN) {
+            websocketRef.current.send(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        mediaRecorderRef.current = mediaRecorder;
+        mediaRecorder.start(250);
+      }
+
+      audioChunksRef.current = [];
       setIsRecording(true);
       setRecordingStatus('listening');
-      
+
       toast.success('Recording started');
     } catch (error) {
       console.error('Failed to start recording:', error);
       setError(error.message);
-      
+
       if (error.name === 'NotAllowedError') {
         toast.error('Microphone access denied. Please allow microphone access.');
       } else if (error.name === 'NotFoundError') {
@@ -258,8 +294,20 @@ export function useDeepgramTranscription() {
    * Stop recording
    */
   const stopRecording = useCallback(() => {
+    // Stop MediaRecorder (voice mode)
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
+    }
+
+    // Stop AudioContext (video mode)
+    if (scriptProcessorRef.current) {
+      scriptProcessorRef.current.disconnect();
+      scriptProcessorRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
     }
 
     if (websocketRef.current) {
@@ -278,13 +326,10 @@ export function useDeepgramTranscription() {
     setIsRecording(false);
     setRecordingStatus('idle');
     setInterimTranscript('');
-    
+
     toast.success('Recording stopped');
   }, []);
 
-  /**
-   * Pause recording
-   */
   const pauseRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.pause();
