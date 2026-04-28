@@ -91,54 +91,31 @@ export default function JobsPage() {
           profile: profileData
         }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch jobs');
       }
-      
+
       console.log('Jobs fetched:', data.jobs?.length);
-      setJobs(data.jobs || []);
-      
-      if (data.jobs && data.jobs.length > 0) {
-        toast.success(`Found ${data.jobs.length} jobs matching your profile!`);
+      console.log('Profile insights:', data.profile_insights);
+
+      // Filter jobs with minimum 40% match
+      const relevantJobs = (data.jobs || []).filter(job => job.match_percent >= 40);
+
+      setJobs(relevantJobs);
+
+      if (relevantJobs.length > 0) {
+        const avgMatch = relevantJobs.reduce((sum, job) => sum + job.match_percent, 0) / relevantJobs.length;
+        toast.success(`Found ${relevantJobs.length} relevant jobs (avg match: ${Math.round(avgMatch)}%)`);
+      } else {
+        toast.error('No relevant jobs found. Try updating your resume with more specific skills.');
       }
     } catch (error) {
       console.error('Error fetching jobs:', error);
-      toast.error('Failed to load jobs. Showing sample jobs.');
-      
-      // Fallback to sample jobs if API fails
-      setJobs([
-        {
-          id: '1',
-          company: 'Google',
-          title: 'Software Engineer - Entry Level',
-          location: 'Bengaluru',
-          type: 'Full-time',
-          salary: '₹20-40 LPA',
-          match_percent: 92,
-          interview_probability: 87,
-          skills_required: ['Python', 'Java', 'SQL', 'Git'],
-          posted_days_ago: 2,
-          apply_url: 'https://www.google.com/careers',
-          description: 'Join Google as a Software Engineer and work on cutting-edge technology.'
-        },
-        {
-          id: '2',
-          company: 'Microsoft',
-          title: 'Data Scientist',
-          location: 'Hyderabad',
-          type: 'Full-time',
-          salary: '₹15-30 LPA',
-          match_percent: 88,
-          interview_probability: 82,
-          skills_required: ['Python', 'ML', 'Statistics', 'SQL'],
-          posted_days_ago: 3,
-          apply_url: 'https://careers.microsoft.com',
-          description: 'Work on data-driven solutions at Microsoft.'
-        }
-      ]);
+      toast.error('Failed to load jobs. Please try again.');
+      setJobs([]);
     } finally {
       setLoading(false);
     }
@@ -545,6 +522,21 @@ export default function JobsPage() {
                         {/* Description */}
                         {job.description && (
                           <p className="text-sm text-gray-600 line-clamp-2">{job.description}</p>
+                        )}
+
+                        {/* Match Reasons - Personalized */}
+                        {job.match_reasons && job.match_reasons.length > 0 && (
+                          <div className="bg-green-50 rounded-lg p-3">
+                            <div className="text-xs font-semibold text-green-700 mb-2">Why this matches you:</div>
+                            <ul className="space-y-1">
+                              {job.match_reasons.slice(0, 2).map((reason, i) => (
+                                <li key={i} className="text-xs text-green-600 flex items-start gap-1">
+                                  <CheckCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                  <span>{reason}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         )}
 
                         {/* Skills */}

@@ -181,49 +181,60 @@ Return ONLY valid JSON:
     ).join('\n\n');
 
     // Claude matches and scores
-    const matchPrompt = `You are a career advisor 
-for Indian college students.
+    const matchPrompt = `You are a STRICT career advisor for Indian college students.
 
 CANDIDATE PROFILE:
 Name: ${profile?.name}
 Degree: ${profile?.education?.degree}
+College: ${profile?.education?.college}
 Skills: ${profile?.skills?.join(', ')}
 Domains: ${profile?.domains?.join(', ')}
 Experience: ${profile?.experience_level}
 Location: ${profile?.location}
 Looking for: ${profile?.looking_for}
+Job Titles Suitable: ${profile?.job_titles_suitable?.join(', ') || 'Not specified'}
 
-${realJobs.length > 0 
+${realJobs.length > 0
   ? `REAL JOBS TO MATCH (use EXACT apply URLs):
 ${jobList}
 
-Score each job against the profile.
+STRICT MATCHING CRITERIA:
+1. Match score MUST be based on actual skills overlap
+2. Jobs with < 40% match should NOT be included
+3. Experience level MUST match (Fresher should NOT see Senior roles)
+4. Location preference should be considered
+5. Job type (Full-time/Internship) MUST match "Looking for" preference
+6. Domain relevance is CRITICAL - filter out unrelated domains
+7. Only include jobs that have at least 2-3 skills from the candidate's profile
+
 Keep the EXACT apply_url from the job data.`
-  : `No real jobs fetched. Generate 8 realistic 
-Indian job listings with these apply URLs:
-- For MNC jobs: use LinkedIn search URLs
-- For startups: use company career pages
-- For internships: use Internshala URLs
-Make them realistic for this profile.`
+  : `No real jobs fetched. Generate 6-8 HIGHLY SPECIFIC 
+Indian job listings that match this exact profile.
+- Use actual company names that hire this profile
+- Make job titles match profile's suitable job titles
+- Use skills from the candidate's skill list
+- Match the experience level (${profile?.experience_level})
+- Match the job type preference (${profile?.looking_for})
+- Use realistic apply URLs (LinkedIn, company sites)`
 }
 
-Return ONLY valid JSON:
+Return ONLY valid JSON with STRICT filtering:
 {
   "jobs": [
     {
       "id": "unique_id",
-      "title": "exact job title",
+      "title": "exact job title (MUST match profile)",
       "company": "exact company name",
       "location": "city, state",
-      "type": "Full-time or Internship",
+      "type": "Full-time or Internship (MUST match preference)",
       "salary": "realistic salary/stipend",
-      "skills_required": ["skill1", "skill2"],
-      "experience_required": "0-1 years",
-      "description": "2-3 line description",
-      "match_percent": (realistic 40-90),
-      "match_reasons": ["reason1", "reason2"],
-      "gap_reasons": ["gap1"],
-      "interview_probability": (realistic 30-80),
+      "skills_required": ["skill1", "skill2", "skill3"],
+      "experience_required": "0-1 years (MUST match profile)",
+      "description": "2-3 line description specific to profile",
+      "match_percent": (MUST be realistic 40-95 based on actual skill overlap),
+      "match_reasons": ["specific reason why this matches", "another reason"],
+      "gap_reasons": ["if any gaps exist"],
+      "interview_probability": (realistic 30-85),
       "apply_url": "EXACT real URL from job data",
       "posted_days_ago": (number),
       "is_easy_apply": true/false,
@@ -239,7 +250,13 @@ Return ONLY valid JSON:
     "avg_match_score": (number),
     "total_jobs_found": ${realJobs.length}
   }
-}`;
+}
+
+IMPORTANT: 
+- Only return jobs with match_percent >= 40
+- If no jobs meet the criteria, return empty jobs array
+- Do NOT include generic/template jobs
+- Every job must be personalized to this specific candidate profile`;
 
     const matchMsg = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
