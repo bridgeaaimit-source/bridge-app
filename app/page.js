@@ -77,11 +77,17 @@ function StatCounter({ target, suffix, label }) {
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [recSecs, setRecSecs] = useState(134);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', fn);
     return () => window.removeEventListener('scroll', fn);
+  }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => setRecSecs(s => s + 1), 1000);
+    return () => clearInterval(t);
   }, []);
 
   return (
@@ -91,13 +97,22 @@ export default function Home() {
         @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
         @keyframes pdot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.4)} }
         @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+        @keyframes speakPulse { 0%{box-shadow:0 0 0 0 rgba(13,148,136,0.45)} 70%{box-shadow:0 0 0 9px rgba(13,148,136,0)} 100%{box-shadow:0 0 0 0 rgba(13,148,136,0)} }
         .marquee { animation: marquee 30s linear infinite; }
         .float-card { animation: float 4s ease-in-out infinite; }
         .pdot { animation: pdot 1.4s ease-in-out infinite; }
+        .speak-ring { animation: speakPulse 1.6s ease-out infinite; }
         .shimmer-btn {
           background: linear-gradient(90deg,#0D9488 0%,#14B8A6 45%,#0D9488 90%);
           background-size: 200% 100%;
           animation: shimmer 2.5s linear infinite;
+        }
+        .bento-card {
+          transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .bento-card:hover {
+          box-shadow: 0 8px 32px rgba(13,148,136,0.15);
+          border-color: #2DD4BF;
         }
         @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
       `}</style>
@@ -269,119 +284,168 @@ export default function Home() {
             <motion.p variants={FU} className="mt-3 text-lg text-gray-600">Every feature is built to push your BRIDGE Score closer to 1000.</motion.p>
           </motion.div>
 
-          <motion.div variants={STAGGER} initial="hidden" whileInView="visible" viewport={{once:true,margin:"-80px"}} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <motion.div
+            variants={{ hidden:{}, visible:{ transition:{ staggerChildren:0.1 } } }}
+            initial="hidden" whileInView="visible" viewport={{once:true,margin:"-80px"}}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
 
             {/* Card 1 — AI Video (span 2) */}
-            <motion.div variants={FU} whileHover={{y:-4,transition:{duration:0.2}}}
-              className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-7 shadow-sm">
+            <motion.div
+              variants={{ hidden:{opacity:0,y:24,scale:0.97}, visible:{opacity:1,y:0,scale:1,transition:{duration:0.5}} }}
+              whileHover={{y:-6,scale:1.01,transition:{duration:0.2}}}
+              className="bento-card lg:col-span-2 bg-[#F0FDFA] rounded-2xl border border-[#99F6E4] p-7 cursor-pointer">
               <div className="mb-5 rounded-xl bg-gray-900 p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-1.5">
                     <span className="pdot h-2 w-2 rounded-full bg-red-500 inline-block"/>
                     <span className="text-xs font-semibold text-red-400">REC</span>
                   </div>
-                  <span className="text-xs text-gray-400 font-mono">02:14</span>
+                  <span className="text-xs text-gray-400 font-mono">
+                    {String(Math.floor(recSecs/60)).padStart(2,'0')}:{String(recSecs%60).padStart(2,'0')}
+                  </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="h-20 rounded-lg bg-gray-800 flex items-center justify-center">
                     <span className="text-xs font-bold text-[#0D9488]">YOU</span>
                   </div>
                   <div className="col-span-2 space-y-2">
-                    {[["Eye Contact","92%","text-emerald-400"],["Confidence","84%","text-sky-400"],["Clarity","78%","text-amber-400"]].map(([l,v,c])=>(
-                      <div key={l} className="flex justify-between bg-gray-800 rounded-lg px-3 py-1.5">
-                        <span className="text-xs text-gray-400">{l}</span>
-                        <span className={`text-xs font-bold ${c}`}>{v}</span>
+                    {[["Eye Contact",92,"text-emerald-400"],["Confidence",84,"text-sky-400"],["Clarity",78,"text-amber-400"]].map(([l,v,c])=>(
+                      <div key={l} className="bg-gray-800 rounded-lg px-3 py-1.5">
+                        <div className="flex justify-between mb-1">
+                          <span className="text-xs text-gray-400">{l}</span>
+                          <span className={`text-xs font-bold ${c}`}>{v}%</span>
+                        </div>
+                        <div className="h-1 rounded-full bg-gray-700 overflow-hidden">
+                          <motion.div initial={{width:0}} whileInView={{width:`${v}%`}}
+                            transition={{duration:0.8,delay:0.2}} viewport={{once:true}}
+                            className={`h-full rounded-full ${l==="Eye Contact"?"bg-emerald-400":l==="Confidence"?"bg-sky-400":"bg-amber-400"}`}/>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-              <h3 className="font-display text-xl font-bold text-[#0D0D1A]">Your camera on. Our AI watches everything.</h3>
-              <p className="mt-2 text-sm text-gray-600">Eye contact, posture, voice tremor, filler words — all analyzed in real time.</p>
+              <h3 className="font-display text-xl font-bold text-[#134E4A]">Your camera on. Our AI watches everything.</h3>
+              <p className="mt-2 text-sm text-teal-700">Eye contact, posture, voice tremor, filler words — all analyzed in real time.</p>
             </motion.div>
 
             {/* Card 2 — BRIDGE Score */}
-            <motion.div variants={FU} whileHover={{y:-4,transition:{duration:0.2}}}
-              className="bg-gradient-to-br from-[#0D9488] to-[#0F766E] rounded-2xl p-7 text-white">
+            <motion.div
+              variants={{ hidden:{opacity:0,y:24,scale:0.97}, visible:{opacity:1,y:0,scale:1,transition:{duration:0.5}} }}
+              whileHover={{y:-6,scale:1.01,transition:{duration:0.2}}}
+              className="bento-card bg-[#F0FDFA] rounded-2xl border border-[#99F6E4] p-7 cursor-pointer">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm font-bold text-[#134E4A]">BRIDGE Score</span>
+                <span className="flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                  <span className="pdot h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block"/> LIVE
+                </span>
+              </div>
               <div className="flex justify-center mb-4">
                 <div className="relative">
                   <svg width="88" height="88" viewBox="0 0 88 88">
-                    <circle cx="44" cy="44" r="35" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="6"/>
-                    <circle cx="44" cy="44" r="35" fill="none" stroke="#CCFBF1" strokeWidth="6"
-                      strokeDasharray="220" strokeDashoffset="61" strokeLinecap="round"
-                      transform="rotate(-90 44 44)"/>
+                    <circle cx="44" cy="44" r="35" fill="none" stroke="#CCFBF1" strokeWidth="6"/>
+                    <motion.circle cx="44" cy="44" r="35" fill="none" stroke="#0D9488" strokeWidth="6"
+                      strokeDasharray="220" initial={{strokeDashoffset:220}} whileInView={{strokeDashoffset:61}}
+                      transition={{duration:1.2,ease:"easeOut"}} viewport={{once:true}}
+                      strokeLinecap="round" transform="rotate(-90 44 44)"/>
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="font-display text-2xl font-black">720</span>
-                    <span className="text-[10px] text-white/60">/1000</span>
+                    <span className="font-display text-2xl font-black text-[#134E4A]">720</span>
+                    <span className="text-[10px] text-teal-500">/1000</span>
                   </div>
                 </div>
               </div>
               <div className="space-y-2 mb-4">
                 {[["Comm",82],["Confidence",75],["Technical",68]].map(([l,v])=>(
                   <div key={l}>
-                    <div className="flex justify-between text-xs mb-1"><span className="text-white/70">{l}</span><span className="font-semibold text-[#CCFBF1]">{v}%</span></div>
-                    <div className="h-1.5 rounded-full bg-white/20"><div className="h-full bg-[#CCFBF1] rounded-full" style={{width:`${v}%`}}/></div>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-teal-600">{l}</span>
+                      <span className="font-semibold text-[#134E4A]">{v}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-teal-100 overflow-hidden">
+                      <motion.div initial={{width:0}} whileInView={{width:`${v}%`}}
+                        transition={{duration:0.9,ease:"easeOut",delay:0.1}} viewport={{once:true}}
+                        className="h-full bg-[#0D9488] rounded-full"/>
+                    </div>
                   </div>
                 ))}
               </div>
-              <h3 className="font-display text-lg font-bold">BRIDGE Score — Placement readiness / 1000</h3>
+              <h3 className="font-display text-base font-bold text-[#134E4A]">BRIDGE Score — Placement readiness / 1000</h3>
             </motion.div>
 
             {/* Card 3 — GD Battles */}
-            <motion.div variants={FU} whileHover={{y:-4,transition:{duration:0.2}}}
-              className="bg-white rounded-2xl border border-gray-100 p-7 shadow-sm">
+            <motion.div
+              variants={{ hidden:{opacity:0,y:24,scale:0.97}, visible:{opacity:1,y:0,scale:1,transition:{duration:0.5}} }}
+              whileHover={{y:-6,scale:1.01,transition:{duration:0.2}}}
+              className="bento-card bg-[#F0FDFA] rounded-2xl border border-[#99F6E4] p-7 cursor-pointer">
               <div className="flex items-center gap-2 mb-5">
-                {[["AK","bg-violet-500"],["PR","bg-pink-500"],["RS","bg-amber-500"],["AI","bg-[#0D9488]"]].map(([init,col])=>(
-                  <div key={init} className={`${col} h-11 w-11 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-white shadow`}>{init}</div>
+                {[["AK","bg-violet-500",false],["PR","bg-pink-500",false],["RS","bg-amber-500",false],["AI","bg-[#0D9488]",true]].map(([init,col,speaking])=>(
+                  <div key={init} className={`${col} ${speaking?"speak-ring":""} h-11 w-11 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-white`}>{init}</div>
                 ))}
               </div>
-              <h3 className="font-display text-xl font-bold text-[#0D0D1A]">GD Battles — 4 students. 5 mins. AI judge.</h3>
-              <p className="mt-2 text-sm text-gray-600">Practice like a real selection round with live opponents.</p>
+              <h3 className="font-display text-xl font-bold text-[#134E4A]">GD Battles — 4 students. 5 mins. AI judge.</h3>
+              <p className="mt-2 text-sm text-teal-700">Practice like a real selection round with live opponents.</p>
             </motion.div>
 
             {/* Card 4 — Questions */}
-            <motion.div variants={FU} whileHover={{y:-4,transition:{duration:0.2}}}
-              className="bg-white rounded-2xl border border-gray-100 p-7 shadow-sm">
+            <motion.div
+              variants={{ hidden:{opacity:0,y:24,scale:0.97}, visible:{opacity:1,y:0,scale:1,transition:{duration:0.5}} }}
+              whileHover={{y:-6,scale:1.01,transition:{duration:0.2}}}
+              className="bento-card bg-[#F0FDFA] rounded-2xl border border-[#99F6E4] p-7 cursor-pointer">
               <div className="flex flex-wrap gap-2 mb-5">
-                {COMPANIES.slice(0,6).map(c=>(
-                  <span key={c} className="rounded-full bg-[#F0FDFA] border border-[#CCFBF1] px-3 py-1 text-xs font-semibold text-[#0D9488]">{c}</span>
+                {COMPANIES.slice(0,6).map((c,i)=>(
+                  <motion.span key={c}
+                    initial={{opacity:0,scale:0.8}} whileInView={{opacity:1,scale:1}}
+                    transition={{duration:0.3,delay:i*0.05}} viewport={{once:true}}
+                    whileHover={{scale:1.05}}
+                    className="rounded-full bg-white border border-[#99F6E4] px-3 py-1 text-xs font-semibold text-[#0D9488] cursor-pointer transition-colors hover:border-[#0D9488]">{c}</motion.span>
                 ))}
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-500">+200 more</span>
+                <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-600">+200 more</span>
               </div>
-              <h3 className="font-display text-xl font-bold text-[#0D0D1A]">500+ real questions from real companies.</h3>
-              <p className="mt-2 text-sm text-gray-600">Sourced from actual interview experiences at top companies.</p>
+              <h3 className="font-display text-xl font-bold text-[#134E4A]">500+ real questions from real companies.</h3>
+              <p className="mt-2 text-sm text-teal-700">Sourced from actual interview experiences at top companies.</p>
             </motion.div>
 
             {/* Card 5 — Resume */}
-            <motion.div variants={FU} whileHover={{y:-4,transition:{duration:0.2}}}
-              className="bg-white rounded-2xl border border-gray-100 p-7 shadow-sm">
-              <div className="mb-5 rounded-xl bg-gray-50 border border-gray-100 p-4">
+            <motion.div
+              variants={{ hidden:{opacity:0,y:24,scale:0.97}, visible:{opacity:1,y:0,scale:1,transition:{duration:0.5}} }}
+              whileHover={{y:-6,scale:1.01,transition:{duration:0.2}}}
+              className="bento-card bg-[#F0FDFA] rounded-2xl border border-[#99F6E4] p-7 cursor-pointer">
+              <div className="mb-5 rounded-xl bg-white border border-[#CCFBF1] p-4">
                 <div className="flex justify-between mb-2">
-                  <span className="text-xs font-semibold text-gray-600">ATS Score</span>
-                  <span className="text-lg font-black text-emerald-600">96%</span>
+                  <span className="text-xs font-semibold text-teal-600">ATS Score</span>
+                  <span className="text-lg font-black text-[#134E4A]">96%</span>
                 </div>
-                <div className="h-2 rounded-full bg-gray-200"><div className="h-full bg-emerald-500 rounded-full" style={{width:"96%"}}/></div>
-                <span className="mt-2 inline-block rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-xs font-semibold">✓ 3 keywords boosted</span>
+                <div className="h-2 rounded-full bg-teal-100 overflow-hidden">
+                  <motion.div initial={{width:0}} whileInView={{width:"96%"}}
+                    transition={{duration:1,ease:"easeOut",delay:0.2}} viewport={{once:true}}
+                    className="h-full bg-[#0D9488] rounded-full"/>
+                </div>
+                <span className="mt-2 inline-block rounded-full bg-teal-100 text-teal-700 px-2 py-0.5 text-xs font-semibold">✓ 3 keywords boosted</span>
               </div>
-              <h3 className="font-display text-xl font-bold text-[#0D0D1A]">AI Resume — ATS-optimized. Recruiter-approved.</h3>
-              <p className="mt-2 text-sm text-gray-600">Instant keyword suggestions and role-specific improvements.</p>
+              <h3 className="font-display text-xl font-bold text-[#134E4A]">AI Resume — ATS-optimized. Recruiter-approved.</h3>
+              <p className="mt-2 text-sm text-teal-700">Instant keyword suggestions and role-specific improvements.</p>
             </motion.div>
 
             {/* Card 6 — Roadmap (full width) */}
-            <motion.div variants={FU} whileHover={{y:-4,transition:{duration:0.2}}}
-              className="lg:col-span-3 bg-white rounded-2xl border border-gray-100 p-7 shadow-sm">
+            <motion.div
+              variants={{ hidden:{opacity:0,y:24,scale:0.97}, visible:{opacity:1,y:0,scale:1,transition:{duration:0.5}} }}
+              whileHover={{y:-6,scale:1.01,transition:{duration:0.2}}}
+              className="bento-card lg:col-span-3 bg-[#F0FDFA] rounded-2xl border border-[#99F6E4] p-7 cursor-pointer">
               <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-5">
                 {[["M","Mock"],["T","GD"],["W","DSA"],["T","Mock"],["F","Resume"],["S","GD"],["S","Rest"]].map(([day,act],i)=>(
-                  <div key={i} className={`flex-shrink-0 flex flex-col items-center gap-1 rounded-xl px-4 py-3 min-w-[64px] ${i===3?"bg-[#0D9488] text-white":"bg-gray-50 border border-gray-100"}`}>
-                    <span className={`text-xs font-bold ${i===3?"text-white/70":"text-gray-400"}`}>{day}</span>
-                    <span className={`text-xs font-semibold ${i===3?"text-white":"text-gray-700"}`}>{act}</span>
+                  <motion.div key={i}
+                    initial={{opacity:0,y:12}} whileInView={{opacity:1,y:0}}
+                    transition={{duration:0.35,delay:i*0.06}} viewport={{once:true}}
+                    className={`flex-shrink-0 flex flex-col items-center gap-1 rounded-xl px-4 py-3 min-w-[64px] ${i===3?"bg-[#0D9488] text-white":"bg-white border border-[#CCFBF1]"}`}>
+                    <span className={`text-xs font-bold ${i===3?"text-white/70":"text-teal-400"}`}>{day}</span>
+                    <span className={`text-xs font-semibold ${i===3?"text-white":"text-teal-700"}`}>{act}</span>
                     {i===3 && <span className="text-[10px] text-[#CCFBF1]">Today</span>}
-                  </div>
+                  </motion.div>
                 ))}
               </div>
-              <h3 className="font-display text-xl font-bold text-[#0D0D1A]">Personal Roadmap — Your next 7 days, planned by AI.</h3>
-              <p className="mt-2 text-sm text-gray-600">Built from your weak spots. Updated every morning. No guesswork.</p>
+              <h3 className="font-display text-xl font-bold text-[#134E4A]">Personal Roadmap — Your next 7 days, planned by AI.</h3>
+              <p className="mt-2 text-sm text-teal-700">Built from your weak spots. Updated every morning. No guesswork.</p>
             </motion.div>
           </motion.div>
         </div>
