@@ -92,27 +92,58 @@ Return ONLY valid JSON:
   if (action === 'fetch_jobs') {
     const { profile } = await request.json()
       .catch(() => ({}));
-    
-    console.log('Fetching real jobs for:', 
+
+    console.log('Fetching real jobs for:',
       profile?.job_titles_suitable?.[0]);
 
     let realJobs = [];
 
-    // Build search queries from profile
-    const searchQueries = [
-      profile?.job_titles_suitable?.[0] || 'fresher',
-      profile?.domains?.[0] || 'marketing',
-    ];
+    // Build more specific search queries from profile
+    const experienceLevel = profile?.experience_level || 'Fresher';
+    const location = profile?.location || 'India';
+    const lookingFor = profile?.looking_for || 'Full-time';
 
-    for (const query of searchQueries) {
+    // Create multiple specific search queries
+    const searchQueries = [];
+
+    // Query 1: Specific job title + experience
+    if (profile?.job_titles_suitable?.[0]) {
+      searchQueries.push(`${profile.job_titles_suitable[0]} ${experienceLevel}`);
+    }
+
+    // Query 2: Domain + experience
+    if (profile?.domains?.[0]) {
+      searchQueries.push(`${profile.domains[0]} ${experienceLevel}`);
+    }
+
+    // Query 3: Top skills
+    if (profile?.skills?.length > 0) {
+      searchQueries.push(`${profile.skills.slice(0, 2).join(' ')} ${experienceLevel}`);
+    }
+
+    // Query 4: Job type specific
+    if (lookingFor !== 'Both') {
+      searchQueries.push(`${lookingFor} ${experienceLevel}`);
+    }
+
+    // Fallback query if none above
+    if (searchQueries.length === 0) {
+      searchQueries.push(`${experienceLevel} jobs`);
+    }
+
+    // Remove duplicates and limit to 4 queries
+    const uniqueQueries = [...new Set(searchQueries)].slice(0, 4);
+
+    for (const query of uniqueQueries) {
       try {
         console.log('Searching JSearch for:', query);
-        
+
         const jobRes = await fetch(
           `https://jsearch.p.rapidapi.com/search?` +
-          `query=${encodeURIComponent(query + ' fresher india')}&` +
-          `page=1&num_pages=2&date_posted=week&` +
-          `country=in&language=en`,
+          `query=${encodeURIComponent(query)}&` +
+          `page=1&num_pages=1&date_posted=week&` +
+          `country=in&language=en&` +
+          `employment_types=${lookingFor === 'Internship' ? 'INTERN' : lookingFor === 'Full-time' ? 'FULLTIME' : 'PARTTIME'}`,
           {
             method: 'GET',
             headers: {

@@ -431,8 +431,24 @@ export default function JobsPage() {
               {profile && (
                 <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 mb-6 text-white">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold mb-2">Your Profile Summary</h3>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-semibold">Your Profile Summary</h3>
+                        <button
+                          onClick={() => document.getElementById('change-resume-input').click()}
+                          className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors flex items-center gap-1"
+                        >
+                          <Upload className="w-3 h-3" />
+                          Change Resume
+                        </button>
+                        <input
+                          id="change-resume-input"
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          onChange={handleResumeUpload}
+                          className="hidden"
+                        />
+                      </div>
                       <div className="flex items-center gap-4 text-sm">
                         <span>{profile.name}</span>
                         <span>•</span>
