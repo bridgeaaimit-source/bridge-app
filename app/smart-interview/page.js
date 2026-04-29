@@ -9,6 +9,19 @@ import { doc, setDoc, collection, addDoc, query, orderBy, limit, getDocs, getDoc
 import { useAuthBypass } from "@/hooks/useAuthBypass";
 import { useAssemblyAI as useDeepgramTranscription } from "@/hooks/useAssemblyAI";
 
+// Build clean [{question, answer}] pairs from conversationHistory array (moved outside to fix prerender hoisting)
+const buildHistory = (history) => {
+  const pairs = [];
+  for (let i = 0; i < history.length - 1; i += 2) {
+    const q = history[i];
+    const a = history[i + 1];
+    if (q?.role === 'interviewer' && a?.role === 'user' && q.message && a.message) {
+      pairs.push({ question: q.message, answer: a.message });
+    }
+  }
+  return pairs;
+};
+
 export default function SmartInterviewPage() {
   const router = useRouter();
   const [stage, setStage] = useState('setup'); // 'setup' | 'interviewing' | 'feedback' | 'history'
@@ -380,19 +393,6 @@ export default function SmartInterviewPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Build clean [{question, answer}] pairs from conversationHistory array
-  const buildHistory = (history) => {
-    const pairs = [];
-    for (let i = 0; i < history.length - 1; i += 2) {
-      const q = history[i];
-      const a = history[i + 1];
-      if (q?.role === 'interviewer' && a?.role === 'user' && q.message && a.message) {
-        pairs.push({ question: q.message, answer: a.message });
-      }
-    }
-    return pairs;
   };
 
   const submitAnswer = async (overrideAnswer, shouldFinish = false) => {
