@@ -1,5 +1,7 @@
 "use client";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
+
+export const dynamic = "force-dynamic";
 import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause, Volume2, Lightbulb, Star, History, Download, DownloadCloud, Book } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useRouter } from "next/navigation";
@@ -91,10 +93,6 @@ export default function SmartInterviewPage() {
   const videoTranscript = fullTranscript || interimTranscript;
   
   const fileInputRef = useRef(null);
-
-  // Memoize history length to avoid calling buildHistory in JSX during prerender
-  const historyLength = useMemo(() => buildHistory(conversationHistory).length, [conversationHistory]);
-  const hasHistoryAnswers = historyLength > 0;
 
   // Check browser support for speech recognition
   useEffect(() => {
@@ -977,7 +975,8 @@ export default function SmartInterviewPage() {
             <button
               onClick={() => {
                 const hasCurrentAnswer = fullTranscript || interimTranscript || currentAnswer;
-                if (hasHistoryAnswers || hasCurrentAnswer) {
+                const hasHistory = conversationHistory.length > 0;
+                if (hasHistory || hasCurrentAnswer) {
                   stopDeepgramRecording();
                   submitAnswer(fullTranscript || interimTranscript || currentAnswer, true);
                 } else {
@@ -987,7 +986,7 @@ export default function SmartInterviewPage() {
               className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
             >
               <X className="w-4 h-4" />
-              {hasHistoryAnswers || fullTranscript || currentAnswer ? 'Finish & Get Feedback' : 'End Interview'}
+              {conversationHistory.length > 0 || fullTranscript || currentAnswer ? 'Finish & Get Feedback' : 'End Interview'}
             </button>
           </div>
 
