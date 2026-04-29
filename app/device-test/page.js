@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+export const dynamic = "force-dynamic";
+
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Camera, Mic, Volume2, CheckCircle, XCircle, AlertCircle,
@@ -555,7 +557,7 @@ function VoiceTest({ onResult, selectedLang, onLangChange }) {
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export default function DeviceTestPage() {
+function DeviceTestContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextRoute = searchParams.get("next") || "/smart-interview";
@@ -688,5 +690,13 @@ export default function DeviceTestPage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+export default function DeviceTestPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin" /></div>}>
+      <DeviceTestContent />
+    </Suspense>
   );
 }
