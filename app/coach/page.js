@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Home, Mic, Zap, Trophy, User, Edit, Languages, Lightbulb, Wand2, ChevronLeft } from "lucide-react";
 import toast from "react-hot-toast";
+import AppShell from "@/components/AppShell";
 
 export default function CoachPage() {
   const [rawAnswer, setRawAnswer] = useState("");
@@ -62,6 +63,7 @@ export default function CoachPage() {
   };
 
   return (
+    <AppShell>
     <div className="min-h-screen bg-[#0A0A0F] text-white">
       <div className="max-w-md mx-auto px-6 py-6">
         
@@ -266,5 +268,6 @@ export default function CoachPage() {
         </nav>
       </div>
     </div>
+    </AppShell>
   );
 }

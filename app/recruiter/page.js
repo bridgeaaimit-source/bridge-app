@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { 
   collection, getDocs, doc, setDoc, 
@@ -7,12 +8,34 @@ import {
   query, orderBy, serverTimestamp,
   getDoc
 } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import AppShell from "@/components/AppShell";
 import { Users, Star, MessageSquare, Briefcase, Search, Filter, ChevronRight, Mail, Phone, MapPin, Award, TrendingUp } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function RecruiterPage() {
+  const router = useRouter();
+  const [authorized, setAuthorized] = useState(false);
   const [activeTab, setActiveTab] = useState('browse');
+
+  // Auth guard — only admin/recruiter roles
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!user) { router.replace('/login'); return; }
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        const role = snap.exists() ? snap.data().role : 'student';
+        if (role === 'admin' || role === 'recruiter') {
+          setAuthorized(true);
+        } else {
+          toast.error('Access denied — recruiter only');
+          router.replace('/dashboard');
+        }
+      } catch { router.replace('/dashboard'); }
+    });
+    return () => unsub();
+  }, [router]);
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [shortlisted, setShortlisted] = useState([]);
@@ -197,6 +220,10 @@ export default function RecruiterPage() {
       setMatchLoading(false);
     }
   };
+
+  if (!authorized) {
+    return <div className="flex items-center justify-center h-screen text-gray-400">Checking access...</div>;
+  }
 
   if (loading) {
     return (

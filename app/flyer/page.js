@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Home, Mic, Zap, Trophy, User, Download, Share2, Sparkles } from "lucide-react";
+import AppShell from "@/components/AppShell";
 
 const templates = [
   {
@@ -203,6 +204,7 @@ export default function FlyerPage() {
   };
 
   return (
+    <AppShell>
     <div className="min-h-screen bg-[#0A0A0F] text-white">
       <div className="max-w-md mx-auto px-6 py-6">
         
@@ -354,5 +356,6 @@ export default function FlyerPage() {
         </nav>
       </div>
     </div>
+    </AppShell>
   );
 }

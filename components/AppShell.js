@@ -118,19 +118,23 @@ export default function AppShell({ children }) {
     setShowModal(false);
   }, [isBypassed, currentUser]);
 
+  const userRole = userProfile?.role || 'student';
+  const isAdmin = userRole === 'admin';
+  const isRecruiter = userRole === 'recruiter' || isAdmin;
+
   const navigation = [
     { href: '/dashboard', icon: Home, label: 'Dashboard', tour: null },
     { href: '/career-intelligence', icon: Sparkles, label: 'Career Intelligence', tour: 'nav-career' },
     { href: '/interview', icon: Mic, label: 'Mock Interview', tour: 'nav-interview' },
     { href: '/smart-interview', icon: FileText, label: 'Smart Interview', tour: null },
-    { href: '/pdf-reader', icon: BookOpen, label: 'PDF Reader', tour: null },
     { href: '/pulse', icon: Zap, label: 'PULSE', tour: null },
     { href: '/gd', icon: MessageSquare, label: 'GD Practice', tour: 'nav-gd' },
     { href: '/jobs', icon: Briefcase, label: 'Jobs', tour: null },
     { href: '/leaderboard', icon: Trophy, label: 'Leaderboard', tour: 'nav-leaderboard' },
-    { href: '/recruiter', icon: Users, label: 'Recruiter', tour: null },
     { href: '/profile', icon: User, label: 'Profile', tour: 'nav-profile' },
-    { href: '/admin/token-dashboard', icon: BarChart3, label: 'Token Analytics', tour: null },
+    // Admin/Recruiter only
+    ...(isRecruiter ? [{ href: '/recruiter', icon: Users, label: 'Recruiter', tour: null }] : []),
+    ...(isAdmin ? [{ href: '/admin/token-dashboard', icon: BarChart3, label: 'Token Analytics', tour: null }] : []),
   ];
 
   const isActive = (href) => pathname === href;

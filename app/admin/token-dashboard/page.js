@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import { 
   BarChart3, 
   Users, 
@@ -16,9 +19,29 @@ import {
   Filter
 } from 'lucide-react';
 import AppShell from '@/components/AppShell';
+import toast from 'react-hot-toast';
 
 export default function TokenDashboard() {
+  const router = useRouter();
+  const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Admin-only guard
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!user) { router.replace('/login'); return; }
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        if (snap.exists() && snap.data().role === 'admin') {
+          setAuthorized(true);
+        } else {
+          toast.error('Access denied — admin only');
+          router.replace('/dashboard');
+        }
+      } catch { router.replace('/dashboard'); }
+    });
+    return () => unsub();
+  }, [router]);
   const [error, setError] = useState(null);
   const [totalTokens, setTotalTokens] = useState(0);
   const [totalUsers, setTotalUsers] = useState(0);
@@ -130,6 +153,10 @@ export default function TokenDashboard() {
     a.download = `token-usage-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   };
+
+  if (!authorized) {
+    return <div className="flex items-center justify-center h-screen text-gray-400">Checking access...</div>;
+  }
 
   return (
     <AppShell>

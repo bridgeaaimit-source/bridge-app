@@ -17,22 +17,23 @@ function saveLocal(data) {
   try { localStorage.setItem("bridge_checklist", JSON.stringify(data)); } catch {}
 }
 
-export default function GettingStartedChecklist({ stats, userProfile }) {
+export default function GettingStartedChecklist({ stats, userProfile, gdJoined = false, resumeUploaded = false }) {
   const [checked, setChecked] = useState({});
   const [dismissed, setDismissed] = useState(false);
   const [allDone, setAllDone] = useState(false);
 
   useEffect(() => {
     const stored = loadLocal();
-    // Auto-check based on real stats
+    // Auto-check all 4 items based on real data (no manual ticking)
     const auto = {
-      ...stored,
       interview: (stats?.interviewsDone || 0) > 0,
-      profile: !!(userProfile?.college && userProfile?.college !== "Add College"),
+      profile: !!(userProfile?.college && userProfile?.college !== "Add College" && userProfile?.college !== ""),
+      gd: gdJoined,
+      resume: resumeUploaded || !!(userProfile?.resume || userProfile?.resumeUrl),
     };
     setChecked(auto);
     setDismissed(!!stored._dismissed);
-  }, [stats, userProfile]);
+  }, [stats, userProfile, gdJoined, resumeUploaded]);
 
   useEffect(() => {
     const done = ITEMS.every((i) => checked[i.id]);
@@ -48,12 +49,6 @@ export default function GettingStartedChecklist({ stats, userProfile }) {
       setTimeout(() => setDismissed(true), 5000);
     }
   }, [checked, allDone]);
-
-  const toggle = (id) => {
-    const next = { ...checked, [id]: !checked[id] };
-    setChecked(next);
-    saveLocal(next);
-  };
 
   const dismiss = () => {
     const next = { ...checked, _dismissed: true };
@@ -102,10 +97,10 @@ export default function GettingStartedChecklist({ stats, userProfile }) {
             <div className="space-y-3">
               {ITEMS.map((item) => (
                 <div key={item.id} className="flex items-center gap-3">
-                  <button
-                    onClick={() => toggle(item.id)}
+                  {/* Non-clickable checkbox - auto-tick only */}
+                  <div
                     className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-all ${
-                      checked[item.id] ? "bg-[#0D9488] border-[#0D9488]" : "border-gray-300 hover:border-[#0D9488]"
+                      checked[item.id] ? "bg-[#0D9488] border-[#0D9488]" : "border-gray-300"
                     }`}
                   >
                     {checked[item.id] && (
@@ -113,7 +108,7 @@ export default function GettingStartedChecklist({ stats, userProfile }) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     )}
-                  </button>
+                  </div>
                   <Link href={item.href}
                     className={`text-sm flex-1 hover:text-[#0D9488] transition-colors ${
                       checked[item.id] ? "line-through text-gray-400" : "text-gray-700"
