@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Home, Mic, Zap, Trophy, User, Crown, Flame, Star, Medal, Award, Users } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
-import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -79,31 +78,18 @@ export default function LeaderboardPage() {
           student.rank = index + 1;
         });
 
-        // Get current user
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-          if (user) {
-            setCurrentUser(user);
-            
-            // Check if current user is in leaderboard
-            const currentUserIndex = usersData.findIndex(s => s.uid === user.uid);
-            if (currentUserIndex === -1) {
-              // Add current user at the end if not in top 50
-              const userRef = usersData.find(doc => doc.id === user.uid);
-              if (userRef) {
-                usersData.push({
-                  ...userRef,
-                  rank: usersData.length + 1,
-                  isCurrentUser: true
-                });
-              }
-            } else {
-              usersData[currentUserIndex].isCurrentUser = true;
-            }
+        // Mark current user — use auth.currentUser directly (no subscription leak)
+        const user = auth.currentUser;
+        if (user) {
+          setCurrentUser(user);
+          const currentUserIndex = usersData.findIndex(s => s.uid === user.uid);
+          if (currentUserIndex !== -1) {
+            usersData[currentUserIndex].isCurrentUser = true;
           }
-        });
+        }
 
-        // Fill with placeholders if less than 10 students
-        while (students.length < 10) {
+        // Fill with placeholders if less than 10 students (check usersData, NOT state)
+        while (usersData.length < 10) {
           usersData.push({
             rank: usersData.length + 1,
             name: "Be the first! 🚀",
