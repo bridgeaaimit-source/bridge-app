@@ -56,7 +56,7 @@ function detectFillers(text) {
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
-export function useAssemblyAI() {
+export function useAssemblyAI({ onVoiceCommand } = {}) {
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -69,6 +69,7 @@ export function useAssemblyAI() {
   const [speechLang, setSpeechLangState] = useState('en-IN');
   const [volume, setVolume] = useState(0);
   const [usingFallback, setUsingFallback] = useState(false);
+  const [voiceCommandDetected, setVoiceCommandDetected] = useState(null);
 
   const recognitionRef = useRef(null);
   const wsRef = useRef(null);
@@ -266,12 +267,21 @@ export function useAssemblyAI() {
         commitFinal(newFinal);
         if (interimText) { setInterimTranscript(interimText); updateStats((newFinal + ' ' + interimText).trim()); }
 
-        // Silence detection — 4s after last final word
+        // Voice command detection: finish/end/stop interview
+        const lower = newFinal.toLowerCase();
+        if (/\b(finish|end|stop)\s+(the\s+)?interview\b/.test(lower) || /\bi\s+(want to|wanna)\s+(finish|end|stop)\b/.test(lower)) {
+          if (!voiceCommandDetected) {
+            setVoiceCommandDetected('finish');
+            onVoiceCommand?.('finish');
+          }
+        }
+
+        // Silence detection — 6s after last final word (longer for natural pauses)
         silenceTimer.current = setTimeout(() => {
           if (isRecordingRef.current && finalRef.current.length > 20) {
             setRecordingStatus('paused');
           }
-        }, 4000);
+        }, 6000);
       } else if (interimText) {
         setInterimTranscript(interimText);
         updateStats((finalRef.current + ' ' + interimText).trim());
@@ -286,15 +296,31 @@ export function useAssemblyAI() {
       if (e.error !== 'aborted') console.warn('Speech error:', e.error);
     };
 
-    // ── KEY FIX: 50ms restart prevents dropped words between pauses ──────────
+    // ── Smart restart: 1000ms delay prevents mid-sentence interruptions ────
+    // Web Speech API auto-ends after ~60s of silence or sometimes randomly.
+    // We wait 1s then restart only if still recording and not mid-speech.
     recognition.onend = () => {
       if (!isRecordingRef.current) return;
       clearTimeout(restartTimer.current);
       restartTimer.current = setTimeout(() => {
-        if (isRecordingRef.current && recognitionRef.current) {
-          try { recognition.start(); } catch {}
+        if (isRecordingRef.current && !recognitionRef.current) {
+          // Only restart if we haven't already started a new one
+          const newRec = new SR();
+          newRec.continuous = true;
+          newRec.interimResults = true;
+          newRec.maxAlternatives = 3;
+          newRec.lang = useLang;
+          // Copy all handlers
+          newRec.onstart = recognition.onstart;
+          newRec.onresult = recognition.onresult;
+          newRec.onerror = recognition.onerror;
+          newRec.onend = recognition.onend;
+          try {
+            newRec.start();
+            recognitionRef.current = newRec;
+          } catch {}
         }
-      }, 50); // 50ms — short enough that no spoken words are missed
+      }, 1000);
     };
 
     try {
@@ -390,6 +416,11 @@ export function useAssemblyAI() {
     setFillerWordCounts({});
     setError(null);
     setVolume(0);
+    setVoiceCommandDetected(null);
+  }, []);
+
+  const resetVoiceCommand = useCallback(() => {
+    setVoiceCommandDetected(null);
   }, []);
 
   const exportTranscript = useCallback(() => {
@@ -419,6 +450,8 @@ export function useAssemblyAI() {
     setLang,
     volume,
     usingFallback,
+    voiceCommandDetected,
+    resetVoiceCommand,
     startRecording,
     stopRecording,
     clearTranscript,

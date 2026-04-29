@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause, Volume2, Lightbulb, Star, History, Download, DownloadCloud, Book } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useRouter } from "next/navigation";
@@ -46,7 +46,22 @@ export default function SmartInterviewPage() {
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [feedbackHistory, setFeedbackHistory] = useState([]);
   
-  // Use Deepgram transcription hook
+  // Use a ref so the callback always sees latest state without circular deps
+  const voiceCmdStateRef = useRef({});
+
+  // Voice command handler — say "finish interview" to end early
+  const handleVoiceCommand = useCallback((command) => {
+    const { stage, mode, fullTranscript, interimTranscript, currentAnswer,
+            stopFn, submitFn } = voiceCmdStateRef.current;
+    if (command === 'finish' && stage === 'interviewing' && (mode === 'voice' || mode === 'video')) {
+      toast.success('Voice command: finishing interview...');
+      stopFn?.();
+      const finalAnswer = fullTranscript || interimTranscript || currentAnswer || '';
+      submitFn?.(finalAnswer, true);
+    }
+  }, []);
+
+  // Use Deepgram transcription hook with voice command support
   const {
     isRecording,
     isConnecting,
@@ -60,16 +75,24 @@ export default function SmartInterviewPage() {
     error: transcriptionError,
     speechLang,
     setLang,
+    voiceCommandDetected,
+    resetVoiceCommand,
     startRecording: startDeepgramRecording,
     stopRecording: stopDeepgramRecording,
     clearTranscript,
     exportTranscript,
-  } = useDeepgramTranscription();
+  } = useDeepgramTranscription({ onVoiceCommand: handleVoiceCommand });
 
   // submitAnswer uses fullTranscript in video mode too
   const videoTranscript = fullTranscript || interimTranscript;
   
   const fileInputRef = useRef(null);
+
+  // Keep ref in sync so voice command callback always reads latest values
+  voiceCmdStateRef.current = {
+    stage, mode, fullTranscript, interimTranscript, currentAnswer,
+    stopFn: stopDeepgramRecording, submitFn: submitAnswer,
+  };
 
   // Check browser support for speech recognition
   useEffect(() => {
@@ -359,7 +382,7 @@ export default function SmartInterviewPage() {
     }
   };
 
-  const submitAnswer = async (overrideAnswer) => {
+  const submitAnswer = async (overrideAnswer, shouldFinish = false) => {
     const answer =
       typeof overrideAnswer === "string"
         ? overrideAnswer
@@ -367,25 +390,40 @@ export default function SmartInterviewPage() {
           ? fullTranscript
           : currentAnswer;
     
-    if (!answer.trim()) {
+    if (!answer.trim() && !shouldFinish) {
       toast.error('Please provide an answer');
       return;
     }
 
     setIsTyping(true);
     
-    // Add user's answer to conversation
+    // Add user's answer to conversation (even if empty when finishing)
     const formattedHistory = conversationHistory.map((item, index) => ({
       question: item.role === 'interviewer' ? item.message : (conversationHistory[index - 1]?.message || ''),
       answer: item.role === 'user' ? item.message : (conversationHistory[index + 1]?.message || '')
     })).filter(item => item.question && item.answer);
     
-    const newHistory = [...formattedHistory, { question: currentQuestion, answer }];
-    setConversationHistory([
-      ...conversationHistory,
-      { role: 'interviewer', message: currentQuestion },
-      { role: 'user', message: answer }
-    ]);
+    const newHistory = answer.trim() 
+      ? [...formattedHistory, { question: currentQuestion, answer }]
+      : formattedHistory;
+      
+    if (answer.trim()) {
+      setConversationHistory([
+        ...conversationHistory,
+        { role: 'interviewer', message: currentQuestion },
+        { role: 'user', message: answer }
+      ]);
+    }
+
+    // Voice command or manual finish — end immediately
+    if (shouldFinish) {
+      setIsTyping(false);
+      setCurrentAnswer('');
+      clearTranscript();
+      toast.success('Interview finished! Generating feedback...');
+      await getFeedback(newHistory);
+      return;
+    }
 
     // Hard limit: End interview after 10 questions
     if (questionNumber >= 10) {
@@ -911,11 +949,19 @@ export default function SmartInterviewPage() {
               <p className="text-gray-600 mt-1">Question {questionNumber} • {round}</p>
             </div>
             <button
-              onClick={resetInterview}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              onClick={() => {
+                if ((mode === 'voice' || mode === 'video') && (fullTranscript || interimTranscript || conversationHistory.length > 0)) {
+                  // Finish with feedback
+                  stopDeepgramRecording();
+                  submitAnswer(fullTranscript || interimTranscript, true);
+                } else {
+                  resetInterview();
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
             >
               <X className="w-4 h-4" />
-              End Interview
+              {mode === 'voice' || mode === 'video' ? 'Finish & Get Feedback' : 'End Interview'}
             </button>
           </div>
 
@@ -975,22 +1021,33 @@ export default function SmartInterviewPage() {
                 {/* Answer Input */}
                 <div className="border-t pt-4">
                   {mode === 'text' ? (
-                    <div className="flex gap-3">
-                      <input
-                        type="text"
-                        value={currentAnswer}
-                        onChange={(e) => setCurrentAnswer(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && submitAnswer()}
-                        placeholder="Type your answer..."
-                        className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent"
-                      />
-                      <button
-                        onClick={submitAnswer}
-                        disabled={!currentAnswer.trim() || isTyping}
-                        className="px-6 py-3 bg-[#0D9488] text-white rounded-lg hover:bg-[#0D9488] transition-colors disabled:opacity-50"
-                      >
-                        <Send className="w-5 h-5" />
-                      </button>
+                    <div className="space-y-3">
+                      <div className="flex gap-3">
+                        <input
+                          type="text"
+                          value={currentAnswer}
+                          onChange={(e) => setCurrentAnswer(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && submitAnswer()}
+                          placeholder="Type your answer..."
+                          className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent"
+                        />
+                        <button
+                          onClick={submitAnswer}
+                          disabled={!currentAnswer.trim() || isTyping}
+                          className="px-6 py-3 bg-[#0D9488] text-white rounded-lg hover:bg-[#0F766E] transition-colors disabled:opacity-50"
+                        >
+                          <Send className="w-5 h-5" />
+                        </button>
+                      </div>
+                      {conversationHistory.length > 0 && (
+                        <button
+                          onClick={() => submitAnswer(currentAnswer, true)}
+                          disabled={isTyping || isEvaluating}
+                          className="w-full py-2 rounded-lg border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-40"
+                        >
+                          Finish Interview &amp; Get Feedback
+                        </button>
+                      )}
                     </div>
                   ) : mode === 'voice' ? (
                     <div className="space-y-4">
@@ -1026,6 +1083,14 @@ export default function SmartInterviewPage() {
                             </div>
                           </div>
 
+                          {/* Voice command detected banner */}
+                          {voiceCommandDetected === 'finish' && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-2">
+                              <span className="text-amber-600 font-semibold">Voice command detected:</span>
+                              <span className="text-amber-800">"Finish interview" — wrapping up...</span>
+                            </div>
+                          )}
+
                           {/* Live transcript box */}
                           <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 min-h-[80px] text-left">
                             {(fullTranscript || interimTranscript) ? (
@@ -1034,7 +1099,7 @@ export default function SmartInterviewPage() {
                                 {interimTranscript && <span className="text-gray-400 italic"> {interimTranscript}</span>}
                               </p>
                             ) : (
-                              <p className="text-sm text-gray-400 italic animate-pulse">Listening... speak now</p>
+                              <p className="text-sm text-gray-400 italic animate-pulse">Listening... speak now (say "finish interview" anytime to end)</p>
                             )}
                           </div>
 
@@ -1137,9 +1202,9 @@ export default function SmartInterviewPage() {
 
                       {/* Live transcript during recording */}
                       {isVideoRecording && (
-                        <div className="rounded-lg bg-gray-50 border border-gray-200 p-3 text-sm">
-                          <div className="flex justify-between mb-1">
-                            <span className="text-xs font-semibold text-gray-500">Live Transcript</span>
+                        <div className="rounded-lg bg-gray-50 border border-gray-200 p-3 text-sm space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-xs font-semibold text-gray-500">Live Transcript <span className="font-normal text-gray-400">(say "finish interview" to end)</span></span>
                             <div className="flex gap-4 text-xs">
                               <span className="text-[#0D9488] font-bold">{wordCount} words</span>
                               {Object.keys(fillerWordCounts).length > 0 && (
@@ -1147,16 +1212,29 @@ export default function SmartInterviewPage() {
                               )}
                             </div>
                           </div>
+                          {voiceCommandDetected === 'finish' && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 font-medium">
+                              Voice command detected: finishing interview...
+                            </div>
+                          )}
                           <div className="text-gray-700 min-h-[40px]">
-                            {fullTranscript || interimTranscript || <span className="text-gray-400 italic">Listening...</span>}
+                            <span className="text-gray-900">{transcript}</span>
+                            {interimTranscript && <span className="text-gray-400 italic"> {interimTranscript}</span>}
+                            {!transcript && !interimTranscript && <span className="text-gray-400 italic">Listening... speak now</span>}
                           </div>
                           {Object.keys(fillerWordCounts).length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
+                            <div className="flex flex-wrap gap-1">
                               {Object.entries(fillerWordCounts).map(([word, count]) => (
                                 <span key={word} className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">{word} ×{count}</span>
                               ))}
                             </div>
                           )}
+                          {/* Finish early during video */}
+                          <button
+                            onClick={() => { stopVideoRecording(); setTimeout(() => submitAnswer(fullTranscript || interimTranscript, true), 300); }}
+                            className="w-full mt-1 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-medium hover:bg-red-50 transition-colors">
+                            Finish Interview &amp; Get Feedback
+                          </button>
                         </div>
                       )}
 
@@ -1213,13 +1291,18 @@ export default function SmartInterviewPage() {
                               Retake
                             </button>
                             <button
-                              onClick={() => {
-                                submitAnswer(videoTranscript || "[Video answer submitted]");
-                              }}
-                              disabled={!videoTranscript?.trim() || isTyping}
+                              onClick={() => submitAnswer(videoTranscript || '[Video answer submitted]')}
+                              disabled={isTyping}
                               className="rounded-lg bg-[#0D9488] px-4 py-2 text-white hover:bg-[#0F766E] transition-colors disabled:opacity-50"
                             >
-                              Submit Video Answer
+                              Submit Answer →
+                            </button>
+                            <button
+                              onClick={() => submitAnswer(videoTranscript || '[Video answer submitted]', true)}
+                              disabled={isTyping || isEvaluating}
+                              className="rounded-lg border border-red-200 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+                            >
+                              Finish &amp; Get Feedback
                             </button>
                           </>
                         )}
