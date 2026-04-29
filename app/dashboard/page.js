@@ -32,6 +32,8 @@ import { doc, collection, query, orderBy, limit, getDocs, getDoc, where, setDoc 
 import { db } from "@/lib/firebase";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
 import { motion } from "framer-motion";
+import GettingStartedChecklist from "@/components/onboarding/GettingStartedChecklist";
+import InfoTooltip from "@/components/onboarding/InfoTooltip";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -274,6 +276,11 @@ export default function Dashboard() {
   return (
     <AppShell>
       <div className="max-w-7xl mx-auto px-4 md:px-8">
+        {/* Getting Started Checklist */}
+        <div className="pt-6">
+          <GettingStartedChecklist stats={stats} userProfile={null} />
+        </div>
+
         {/* Greeting Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -297,6 +304,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0 }}
             className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100"
+          data-tour="bridge-score-stat"
           >
             <div className="flex items-center justify-between mb-3 lg:mb-4">
               <div className="w-10 h-10 lg:w-12 lg:h-12 bg-[#CCFBF1] rounded-full flex items-center justify-center">
@@ -310,8 +318,9 @@ export default function Dashboard() {
             <div className="text-2xl lg:text-3xl font-bold gradient-text mb-1">
               {stats.bridgeScore === 0 ? "—" : stats.bridgeScore}
             </div>
-            <div className="text-xs lg:text-sm text-gray-600">
+            <div className="text-xs lg:text-sm text-gray-600 flex items-center gap-1">
               {stats.bridgeScore === 0 ? "Complete an interview to get your score" : "BRIDGE Score"}
+              <InfoTooltip text="Your overall placement readiness score out of 1000. Every activity pushes it higher." />
             </div>
           </motion.div>
 
@@ -339,6 +348,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100"
+          data-tour="streak-card"
           >
             <div className="flex items-center justify-between mb-3 lg:mb-4">
               <div className="w-10 h-10 lg:w-12 lg:h-12 bg-orange-100 rounded-full flex items-center justify-center">
@@ -350,7 +360,10 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="text-2xl lg:text-3xl font-bold text-gray-900  mb-1">{stats.currentStreak} <span className="text-lg lg:text-base">🔥</span></div>
-            <div className="text-xs lg:text-sm text-gray-600">Current Streak</div>
+            <div className="text-xs lg:text-sm text-gray-600 flex items-center gap-1">
+              {stats.currentStreak === 0 ? <span className="text-orange-500">Start your streak today!</span> : "Current Streak"}
+              <InfoTooltip text="Consecutive days you've practiced on Bridge. Keep it alive!" />
+            </div>
           </motion.div>
 
           <motion.div
@@ -369,7 +382,10 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="text-2xl lg:text-3xl font-bold text-gray-900  mb-1">{stats.avgScore.toFixed(1)}</div>
-            <div className="text-xs lg:text-sm text-gray-600">Avg Score</div>
+            <div className="text-xs lg:text-sm text-gray-600 flex items-center gap-1">
+              Avg Score
+              <InfoTooltip text="AI-measured average score from your last 5 mock interviews." />
+            </div>
           </motion.div>
         </div>
 
@@ -415,7 +431,7 @@ export default function Dashboard() {
             </div>
 
             {/* Today's Challenge */}
-            <div className="bg-gradient-to-r from-[#0D9488] to-[#14B8A6] rounded-2xl p-6 text-white">
+            <div className="bg-gradient-to-r from-[#0D9488] to-[#14B8A6] rounded-2xl p-6 text-white" data-tour="start-challenge">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Today's Challenge</h2>
                 <div className="flex items-center gap-2 text-[#CCFBF1]">
@@ -435,7 +451,7 @@ export default function Dashboard() {
           {/* Right Column */}
           <div className="space-y-6">
             {/* BRIDGE Score Card */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100" data-tour="bridge-score-card">
               <h3 className="font-semibold text-gray-900 mb-4">BRIDGE Score</h3>
               <div className="flex flex-col items-center">
                 <div className="relative w-32 h-32 mb-4">
@@ -475,10 +491,16 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="text-center">
-                  <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">
-                    <Award className="w-3 h-3 mr-1" />
-                    Top 15%
-                  </span>
+                  {stats.bridgeScore > 0 ? (
+                    <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">
+                      <Award className="w-3 h-3 mr-1" />
+                      Top 15%
+                    </span>
+                  ) : (
+                    <Link href="/interview" className="text-sm text-[#0D9488] hover:text-[#0F766E] font-medium">
+                      Take a mock to unlock your score →
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
@@ -496,28 +518,29 @@ export default function Dashboard() {
                           <Icon className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-gray-900 truncate">
-                            {activity.title}
-                          </div>
+                          <div className="text-sm font-medium text-gray-900 truncate">{activity.title}</div>
                           <div className="text-xs text-gray-500">{activity.time}</div>
                         </div>
-                        {activity.score && (
-                          <div className="text-sm font-semibold text-green-600">{activity.score}</div>
-                        )}
-                        {activity.result && (
-                          <div className="text-xs font-semibold text-green-600">{activity.result}</div>
-                        )}
+                        {activity.score && <div className="text-sm font-semibold text-green-600">{activity.score}</div>}
+                        {activity.result && <div className="text-xs font-semibold text-green-600">{activity.result}</div>}
                       </div>
                     );
                   })
                 ) : (
-                  <div className="text-center py-8">
-                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Target className="w-6 h-6 text-gray-400" />
-                    </div>
-                    <div className="text-gray-500 text-sm mb-2">No activity yet</div>
-                    <Link href="/interview" className="text-[#0D9488] text-sm hover:text-[#0F766E] font-medium inline-flex items-center gap-1">
-                      Start your first interview! →
+                  <div className="text-center py-6">
+                    {/* Simple SVG illustration */}
+                    <svg className="w-16 h-16 mx-auto mb-3" viewBox="0 0 64 64" fill="none">
+                      <rect x="8" y="20" width="48" height="32" rx="4" fill="#F0FDFA" stroke="#99F6E4" strokeWidth="2"/>
+                      <rect x="14" y="12" width="36" height="12" rx="3" fill="#CCFBF1" stroke="#99F6E4" strokeWidth="1.5"/>
+                      <circle cx="32" cy="38" r="8" fill="#0D9488" opacity="0.15"/>
+                      <path d="M28 38l3 3 5-5" stroke="#0D9488" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <p className="text-gray-700 font-medium text-sm mb-1">No mocks yet — your journey starts here</p>
+                    {stats.currentStreak === 0 && (
+                      <p className="text-xs text-orange-500 mb-3">🔥 Start your streak today — take one mock or join a GD</p>
+                    )}
+                    <Link href="/interview" className="inline-flex items-center gap-1 px-4 py-2 bg-[#0D9488] text-white text-sm rounded-lg hover:bg-[#0F766E] transition-colors font-medium">
+                      Take your first mock interview →
                     </Link>
                   </div>
                 )}

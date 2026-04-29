@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -23,9 +23,12 @@ import {
 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthBypass } from '@/hooks/useAuthBypass';
+import OnboardingModal from '@/components/onboarding/OnboardingModal';
+import ProductTour from '@/components/onboarding/ProductTour';
+import HelpButton from '@/components/onboarding/HelpButton';
 
 export default function AppShell({ children }) {
   const router = useRouter();
@@ -34,23 +37,27 @@ export default function AppShell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState(3);
+  const [showModal, setShowModal] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   
   const { isBypassed, mockUserData } = useAuthBypass();
 
   useEffect(() => {
-    // Use mock user if bypass is enabled
     if (isBypassed && mockUserData) {
       setUserProfile(mockUserData.user);
+      // Check localStorage for bypass onboarding state
+      const done = typeof window !== 'undefined' && localStorage.getItem('bridge_onboarding_done') === 'true';
+      if (!done) setShowModal(true);
       return;
     }
 
-    // Load real user data from Firebase
     return onAuthStateChanged(auth, async (user) => {
       if (user) {
+        setCurrentUser(user);
         try {
           const userRef = doc(db, 'users', user.uid);
           const userSnap = await getDoc(userRef);
-          
           if (userSnap.exists()) {
             const userData = userSnap.data();
             setUserProfile({
@@ -60,40 +67,70 @@ export default function AppShell({ children }) {
               college: userData.college || 'Student',
               role: userData.role || 'student'
             });
+            // Show onboarding if not completed
+            if (!userData.onboardingCompleted) setShowModal(true);
           } else {
-            setUserProfile({
-              name: user.displayName,
-              college: 'Add College',
-              bridgeScore: 0,
-              photo: user.photoURL
-            });
+            setUserProfile({ name: user.displayName, college: 'Add College', bridgeScore: 0, photo: user.photoURL });
+            setShowModal(true);
           }
         } catch (error) {
           console.error('Error loading user profile:', error);
-          setUserProfile({
-            name: user.displayName,
-            college: 'Add College',
-            bridgeScore: 0,
-            photo: user.photoURL
-          });
+          setUserProfile({ name: user.displayName, college: 'Add College', bridgeScore: 0, photo: user.photoURL });
         }
       }
     });
-  }, []);
+  }, [isBypassed]);
+
+  const handleOnboardingComplete = useCallback(async ({ goal, companies }) => {
+    if (isBypassed) {
+      typeof window !== 'undefined' && localStorage.setItem('bridge_onboarding_done', 'true');
+    } else if (currentUser) {
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, {
+          onboardingCompleted: true,
+          onboardingCompletedAt: new Date().toISOString(),
+          ...(goal && { goal }),
+          ...(companies?.length && { targetCompanies: companies }),
+        });
+      } catch (e) {
+        console.error('Onboarding save error:', e);
+      }
+    }
+  }, [isBypassed, currentUser]);
+
+  const handleModalComplete = useCallback(async (data) => {
+    await handleOnboardingComplete(data);
+    setShowModal(false);
+    // Start tour after short delay
+    setTimeout(() => setShowTour(true), 600);
+  }, [handleOnboardingComplete]);
+
+  const handleModalSkip = useCallback(async () => {
+    if (isBypassed) {
+      typeof window !== 'undefined' && localStorage.setItem('bridge_onboarding_done', 'true');
+    } else if (currentUser) {
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, { onboardingCompleted: true, onboardingSkipped: true });
+      } catch {}
+    }
+    setShowModal(false);
+  }, [isBypassed, currentUser]);
 
   const navigation = [
-    { href: '/dashboard', icon: Home, label: 'Dashboard' },
-    { href: '/career-intelligence', icon: Sparkles, label: 'Career Intelligence' },
-    { href: '/interview', icon: Mic, label: 'Mock Interview' },
-    { href: '/smart-interview', icon: FileText, label: 'Smart Interview' },
-    { href: '/pdf-reader', icon: BookOpen, label: 'PDF Reader' },
-    { href: '/pulse', icon: Zap, label: 'PULSE' },
-    { href: '/gd', icon: MessageSquare, label: 'GD Practice' },
-    { href: '/jobs', icon: Briefcase, label: 'Jobs' },
-    { href: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-    { href: '/recruiter', icon: Users, label: 'Recruiter' },
-    { href: '/profile', icon: User, label: 'Profile' },
-    { href: '/admin/token-dashboard', icon: BarChart3, label: 'Token Analytics' },
+    { href: '/dashboard', icon: Home, label: 'Dashboard', tour: null },
+    { href: '/career-intelligence', icon: Sparkles, label: 'Career Intelligence', tour: 'nav-career' },
+    { href: '/interview', icon: Mic, label: 'Mock Interview', tour: 'nav-interview' },
+    { href: '/smart-interview', icon: FileText, label: 'Smart Interview', tour: null },
+    { href: '/pdf-reader', icon: BookOpen, label: 'PDF Reader', tour: null },
+    { href: '/pulse', icon: Zap, label: 'PULSE', tour: null },
+    { href: '/gd', icon: MessageSquare, label: 'GD Practice', tour: 'nav-gd' },
+    { href: '/jobs', icon: Briefcase, label: 'Jobs', tour: null },
+    { href: '/leaderboard', icon: Trophy, label: 'Leaderboard', tour: 'nav-leaderboard' },
+    { href: '/recruiter', icon: Users, label: 'Recruiter', tour: null },
+    { href: '/profile', icon: User, label: 'Profile', tour: 'nav-profile' },
+    { href: '/admin/token-dashboard', icon: BarChart3, label: 'Token Analytics', tour: null },
   ];
 
   const isActive = (href) => pathname === href;
@@ -150,13 +187,13 @@ export default function AppShell({ children }) {
             <div className="flex items-center gap-3">
               {/* Profile Pic */}
               {userProfile?.photo ? (
-                <img 
+                <img data-tour="profile-avatar"
                   src={userProfile.photo} 
                   alt={userProfile.name}
                   className="w-9 h-9 rounded-full object-cover border-2 border-[#0D9488]"
                 />
               ) : (
-                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-br from-[#0D9488] to-[#14B8A6]">
+                <div data-tour="profile-avatar" className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-br from-[#0D9488] to-[#14B8A6]">
                   {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
               )}
@@ -169,7 +206,7 @@ export default function AppShell({ children }) {
               </div>
 
               {/* Bell */}
-              <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors ml-2">
+              <button data-tour="bell" className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors ml-2">
                 <Bell className="w-5 h-5" />
                 {notifications > 0 && (
                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -194,6 +231,7 @@ export default function AppShell({ children }) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
+                  {...(item.tour ? { 'data-tour': item.tour } : {})}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                     isActive(item.href)
                       ? 'bg-[#F0FDFA] text-[#0D9488] border-l-4 border-[#0D9488]'
@@ -232,6 +270,23 @@ export default function AppShell({ children }) {
       <main className="md:ml-64 pt-14 md:pt-16 min-h-screen bg-[#F0FDFA]">
         {children}
       </main>
+
+      {/* Onboarding Modal */}
+      <OnboardingModal
+        isOpen={showModal}
+        userName={userProfile?.name || ''}
+        onComplete={handleModalComplete}
+        onSkip={handleModalSkip}
+      />
+
+      {/* Product Tour */}
+      <ProductTour
+        isOpen={showTour}
+        onClose={() => setShowTour(false)}
+      />
+
+      {/* Floating Help Button */}
+      <HelpButton onStartTour={() => { setShowTour(false); setTimeout(() => setShowTour(true), 100); }} />
     </div>
   );
 }
