@@ -19,25 +19,68 @@ function getRect(selector) {
     const el = document.querySelector(selector);
     if (!el) return null;
     const r = el.getBoundingClientRect();
-    return { top: r.top + window.scrollY, left: r.left + window.scrollX, width: r.width, height: r.height, viewTop: r.top, viewLeft: r.left };
+    // Return viewport-relative coordinates (no scrollY/X)
+    return {
+      top: r.top,
+      left: r.left,
+      width: r.width,
+      height: r.height,
+      right: r.right,
+      bottom: r.bottom
+    };
   } catch { return null; }
 }
 
-const PAD = 10;
+const PAD = 12;
+const TOOLTIP_W = 288;
+const TOOLTIP_H = 160;
 
 function getTooltipStyle(rect, pos, windowW, windowH) {
   if (!rect) return { top: "50%", left: "50%", transform: "translate(-50%,-50%)" };
-  const isMobile = windowW < 640;
-  const effectivePos = isMobile ? "top" : pos;
 
-  if (effectivePos === "right" && rect.viewLeft + rect.width + 260 < windowW) {
-    return { position: "fixed", top: rect.viewTop + rect.height / 2 - 80, left: rect.viewLeft + rect.width + PAD + 8 };
+  // Check if element is in sidebar (left side, narrow width)
+  const isInSidebar = rect.left < 300 && rect.width < 280;
+  const isMobile = windowW < 768;
+
+  // Calculate available space
+  const spaceRight = windowW - rect.right;
+  const spaceLeft = rect.left;
+  const spaceBottom = windowH - rect.bottom;
+  const spaceTop = rect.top;
+
+  // Determine best position
+  let finalPos = pos;
+
+  // If requested position doesn't fit, pick one that does
+  if (pos === "right" && spaceRight < TOOLTIP_W + PAD) finalPos = "left";
+  if (pos === "left" && spaceLeft < TOOLTIP_W + PAD) finalPos = "bottom";
+  if (pos === "bottom" && spaceBottom < TOOLTIP_H) finalPos = "top";
+  if (pos === "top" && spaceTop < TOOLTIP_H) finalPos = "right";
+
+  // Mobile: always use top or bottom
+  if (isMobile) {
+    finalPos = spaceBottom > TOOLTIP_H ? "bottom" : "top";
   }
-  if (effectivePos === "bottom" && rect.viewTop + rect.height + 200 < windowH) {
-    return { position: "fixed", top: rect.viewTop + rect.height + PAD + 8, left: Math.min(rect.viewLeft, windowW - 288) };
+
+  // Calculate position
+  let top, left;
+
+  if (finalPos === "right") {
+    top = Math.max(PAD, Math.min(rect.top + rect.height / 2 - 60, windowH - TOOLTIP_H - PAD));
+    left = Math.min(rect.right + PAD, windowW - TOOLTIP_W - PAD);
+  } else if (finalPos === "left") {
+    top = Math.max(PAD, Math.min(rect.top + rect.height / 2 - 60, windowH - TOOLTIP_H - PAD));
+    left = Math.max(PAD, rect.left - TOOLTIP_W - PAD);
+  } else if (finalPos === "bottom") {
+    top = Math.min(rect.bottom + PAD, windowH - TOOLTIP_H - PAD);
+    left = Math.max(PAD, Math.min(rect.left, windowW - TOOLTIP_W - PAD));
+  } else {
+    // top (default)
+    top = Math.max(PAD, rect.top - TOOLTIP_H - PAD);
+    left = Math.max(PAD, Math.min(rect.left + rect.width / 2 - TOOLTIP_W / 2, windowW - TOOLTIP_W - PAD));
   }
-  // Default: top
-  return { position: "fixed", top: Math.max(PAD, rect.viewTop - 200 - PAD), left: Math.min(rect.viewLeft, windowW - 288) };
+
+  return { position: "fixed", top, left };
 }
 
 export default function ProductTour({ isOpen, onClose, startStep = 0 }) {
@@ -60,15 +103,27 @@ export default function ProductTour({ isOpen, onClose, startStep = 0 }) {
 
   useEffect(() => {
     if (!isOpen) return;
-    measure();
-    // Scroll element into view
-    try {
-      const el = document.querySelector(STEPS[step]?.target);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-    } catch {}
+    // Small delay to ensure DOM is settled
+    const timer = setTimeout(() => {
+      measure();
+      // Scroll element into view if needed
+      try {
+        const el = document.querySelector(STEPS[step]?.target);
+        if (el) {
+          const r = el.getBoundingClientRect();
+          // Only scroll if element is off-screen
+          if (r.top < 0 || r.bottom > window.innerHeight) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }
+      } catch {}
+    }, 100);
     const onResize = () => measure();
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", onResize);
+    };
   }, [step, isOpen, measure]);
 
   if (!isOpen) return null;
@@ -77,10 +132,10 @@ export default function ProductTour({ isOpen, onClose, startStep = 0 }) {
   const tooltipStyle = getTooltipStyle(rect, current?.pos, windowSize.w, windowSize.h);
   const isLast = step === STEPS.length - 1;
 
-  // Spotlight using 4 overlay quadrants
+  // Spotlight using 4 overlay quadrants (viewport coordinates)
   const spotPad = 8;
-  const sTop = rect ? Math.max(0, rect.viewTop - spotPad) : 0;
-  const sLeft = rect ? Math.max(0, rect.viewLeft - spotPad) : 0;
+  const sTop = rect ? Math.max(0, rect.top - spotPad) : 0;
+  const sLeft = rect ? Math.max(0, rect.left - spotPad) : 0;
   const sW = rect ? rect.width + spotPad * 2 : 0;
   const sH = rect ? rect.height + spotPad * 2 : 0;
 
