@@ -578,8 +578,12 @@ function DeviceTestContent() {
   };
 
   const handleContinue = () => {
-    if (skipChecked && typeof window !== "undefined") {
-      localStorage.setItem("bridge_skip_device_test", "true");
+    if (typeof window !== "undefined") {
+      // Always mark this session as tested so smart-interview doesn't redirect back
+      sessionStorage.setItem("bridge_device_test_done", "true");
+      if (skipChecked) {
+        localStorage.setItem("bridge_skip_device_test", "true");
+      }
     }
     router.push(nextRoute);
   };
@@ -680,14 +684,12 @@ function DeviceTestContent() {
           </div>
         )}
 
-        {!allDone && (
-          <div className="mt-6 text-center">
-            <button onClick={handleContinue}
-              className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1 mx-auto">
-              <SkipForward className="w-4 h-4" /> Skip setup and go directly to interview
-            </button>
-          </div>
-        )}
+        <div className="mt-6 text-center">
+          <button onClick={handleContinue}
+            className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1 mx-auto">
+            <SkipForward className="w-4 h-4" /> Skip and go directly to interview
+          </button>
+        </div>
       </div>
     </AppShell>
   );

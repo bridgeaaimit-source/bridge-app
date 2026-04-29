@@ -287,11 +287,14 @@ export default function SmartInterviewPage() {
       return;
     }
 
-    // Gate through device test unless user opted out
-    const skipTest = typeof window !== 'undefined' && localStorage.getItem('bridge_skip_device_test') === 'true';
-    if (!skipTest && (mode === 'voice' || mode === 'video')) {
-      router.push(`/device-test?next=${encodeURIComponent('/smart-interview')}`);
-      return;
+    // Gate through device test unless already done this session or permanently skipped
+    if (typeof window !== 'undefined' && (mode === 'voice' || mode === 'video')) {
+      const permanentSkip = localStorage.getItem('bridge_skip_device_test') === 'true';
+      const sessionDone  = sessionStorage.getItem('bridge_device_test_done') === 'true';
+      if (!permanentSkip && !sessionDone) {
+        router.push(`/device-test?next=${encodeURIComponent('/smart-interview')}`);
+        return;
+      }
     }
 
     setLoading(true);
