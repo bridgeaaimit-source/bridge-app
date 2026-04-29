@@ -179,7 +179,7 @@ export default function ProfilePage() {
           photo: currentUser.photoURL || '',
           role: 'student',
           approved: true,
-          bridgeScore: 500,
+          bridgeScore: 0,
           interviewsDone: 0,
           avgScore: 0,
           streak: 0,

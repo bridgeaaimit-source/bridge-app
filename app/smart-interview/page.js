@@ -556,7 +556,7 @@ export default function SmartInterviewPage() {
               await setDoc(userRef, {
                 interviewsDone: 1,
                 avgScore: data.overall_score || 5,
-                bridgeScore: 500 + (data.overall_score || 5) * 10,
+                bridgeScore: (data.overall_score || 5) * 10,
                 streak: 1,
                 updatedAt: new Date().toISOString()
               });
