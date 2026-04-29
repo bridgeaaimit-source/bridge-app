@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause, Volume2, Lightbulb, Star, History, Download, DownloadCloud, Book } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useRouter } from "next/navigation";
@@ -65,26 +65,27 @@ export default function SmartInterviewPage() {
   };
 
   // Use Deepgram transcription hook with voice command support
+  // Temporarily disabled to isolate prerender error
   const {
-    isRecording,
-    isConnecting,
-    transcript,
-    interimTranscript,
-    fullTranscript,
-    wordCount,
-    fillerWords,
-    fillerWordCounts,
-    recordingStatus,
-    error: transcriptionError,
-    speechLang,
-    setLang,
-    voiceCommandDetected,
-    resetVoiceCommand,
-    startRecording: startDeepgramRecording,
-    stopRecording: stopDeepgramRecording,
-    clearTranscript,
-    exportTranscript,
-  } = useDeepgramTranscription({ onVoiceCommand: handleVoiceCommand });
+    isRecording: isRecording = false,
+    isConnecting: isConnecting = false,
+    transcript: transcript = '',
+    interimTranscript: interimTranscript = '',
+    fullTranscript: fullTranscript = '',
+    wordCount: wordCount = 0,
+    fillerWords: fillerWords = [],
+    fillerWordCounts: fillerWordCounts = {},
+    recordingStatus: recordingStatus = 'idle',
+    error: transcriptionError = null,
+    speechLang: speechLang = 'en-IN',
+    setLang: setLang = () => {},
+    voiceCommandDetected: voiceCommandDetected = null,
+    resetVoiceCommand: resetVoiceCommand = () => {},
+    startRecording: startDeepgramRecording = () => {},
+    stopRecording: stopDeepgramRecording = () => {},
+    clearTranscript: clearTranscript = () => {},
+    exportTranscript: exportTranscript = () => {},
+  } = typeof window !== 'undefined' ? useDeepgramTranscription({ onVoiceCommand: handleVoiceCommand }) : {};
 
   // submitAnswer uses fullTranscript in video mode too
   const videoTranscript = fullTranscript || interimTranscript;
