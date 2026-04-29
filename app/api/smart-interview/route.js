@@ -338,11 +338,13 @@ Return ONLY valid JSON:
 
   // ACTION 3: Final evaluation with placement chance
   if (action === 'evaluate') {
-    const historyText = conversation_history.map((h, i) => 
-      `Q${i+1}: ${h.question}\nA${i+1}: ${h.answer}\nScore: ${h.score || 'N/A'}` 
+    const historyText = conversation_history.map((h, i) =>
+      `Q${i+1}: ${h.question}\nA${i+1}: ${h.answer}\nScore: ${h.score || 'N/A'}`
     ).join('\n\n');
 
-    const prompt = `You are an expert technical interviewer evaluating a candidate's interview performance.
+    const prompt = `You are an encouraging and supportive interviewer evaluating a FRESHER candidate.
+
+IMPORTANT: Most candidates are FRESHERS with little to no experience. Be LENIENT, encouraging, and focus on POTENTIAL not perfection.
 
 Job Role: ${job_role}
 Round: ${round}
@@ -350,30 +352,38 @@ Round: ${round}
 Interview History:
 ${historyText}
 
+SCORING GUIDELINES (BE GENEROUS):
+- Give 6-7/10 for average answers (this is GOOD for a fresher)
+- Give 8-9/10 for clear, thoughtful answers
+- Give 10/10 only for exceptional answers
+- Placement chance: Start at 60% and increase based on effort, clarity, and potential
+- Even if answers are basic, if the candidate shows interest and effort, give them 50-60%
+- Only give below 40% if answers are completely irrelevant or show zero effort
+
 Provide a DETAILED evaluation in JSON format:
 {
-  "placement_chance": 0-100,
+  "placement_chance": 50-85 (be generous, most freshers deserve 60-75%),
   "verdict": "Strong Hire / Hire / Strong Maybe / Weak Maybe / Not Hire",
-  "overall_score": 0-10,
+  "overall_score": 5-9 (be generous, give 6-7 for average performance),
   "summary": {
     "strengths": ["specific strength 1", "specific strength 2", "specific strength 3"],
     "weaknesses": ["specific weakness 1", "specific weakness 2"],
-    "key_takeaways": "2-3 sentence summary of overall performance"
+    "key_takeaways": "2-3 sentence encouraging summary of overall performance"
   },
   "scores": {
-    "communication": 0-10,
-    "technical_knowledge": 0-10,
-    "resume_jd_fit": 0-10,
-    "confidence": 0-10,
-    "answer_quality": 0-10,
-    "problem_solving": 0-10
+    "communication": 5-9,
+    "technical_knowledge": 5-9,
+    "resume_jd_fit": 5-9,
+    "confidence": 5-9,
+    "answer_quality": 5-9,
+    "problem_solving": 5-9
   },
   "question_analysis": [
     {
       "question_number": 1,
       "question": "the question asked",
       "answer_quality": "detailed evaluation of the answer",
-      "score": 0-10,
+      "score": 5-9,
       "what_did_well": ["specific thing done well"],
       "what_to_improve": ["specific improvement needed"]
     }
@@ -385,13 +395,13 @@ Provide a DETAILED evaluation in JSON format:
   },
   "career_insights": {
     "market_fit": "High/Medium/Low",
-    "salary_range": "estimated range",
+    "salary_range": "estimated range for fresher level",
     "growth_potential": "High/Medium/Low",
     "recommended_roles": ["role 1", "role 2"]
   }
 }
 
-Return ONLY the JSON, no other text. Be specific and detailed in your analysis.`;
+Return ONLY the JSON, no other text. Be ENCOURAGING, focus on POTENTIAL, and be GENEROUS with scores for freshers.`;
 
     console.log('📝 Prompt length:', prompt.length);
     console.log('📝 History length:', historyText.length);
@@ -429,35 +439,39 @@ Return ONLY the JSON, no other text. Be specific and detailed in your analysis.`
       console.error('❌ Empty response from Claude - API call succeeded but no content');
       console.error('This might be due to:');
       console.error('1. Prompt too long');
-  
+
       console.error('2. API rate limiting');
       console.error('3. Model content filtering');
       return Response.json({
-        placement_chance: 50,
-        verdict: "Weak Maybe",
-        overall_score: 5,
+        placement_chance: 65,
+        verdict: "Hire",
+        overall_score: 7,
         scores: {
-          communication: 5,
-          technical_knowledge: 5,
-          resume_jd_fit: 5,
-          confidence: 5,
-          answer_quality: 5
+          communication: 7,
+          technical_knowledge: 7,
+          resume_jd_fit: 7,
+          confidence: 7,
+          answer_quality: 7,
+          problem_solving: 7
         },
-        best_answer: {
-          question: "No specific answer available",
-          why: "AI analysis temporarily unavailable"
+        summary: {
+          strengths: ["Completed the interview", "Showed interest and effort"],
+          weaknesses: ["Analysis temporarily unavailable"],
+          key_takeaways: "Good effort shown. AI analysis temporarily unavailable."
         },
-        worst_answer: {
-          question: "No specific answer available", 
-          why: "AI analysis temporarily unavailable"
+        question_analysis: [],
+        actionable_feedback: {
+          immediate_steps: ["Try again for detailed analysis"],
+          resources: [],
+          practice_areas: []
         },
-        filler_words_summary: "Analysis temporarily unavailable",
-        strengths: ["Answer provided"],
-        weaknesses: ["Needs more details"],
-        improvement_roadmap: ["Practice more interviews", "Improve technical knowledge", "Work on communication"],
-        interviewer_notes: "AI analysis temporarily unavailable - please try again",
-        should_hire: false,
-        hire_reasoning: "Unable to complete full analysis due to technical issues. Please retry."
+        career_insights: {
+          market_fit: "Medium",
+          salary_range: "Entry level",
+          growth_potential: "High",
+          recommended_roles: [job_role]
+        },
+        interviewer_notes: "AI analysis temporarily unavailable - please try again"
       });
     }
     
@@ -481,33 +495,37 @@ Return ONLY the JSON, no other text. Be specific and detailed in your analysis.`
         }
       }
       
-      // Fallback response
+      // Fallback response (lenient for freshers)
       return Response.json({
-        placement_chance: 50,
-        verdict: "Weak Maybe",
-        overall_score: 5,
+        placement_chance: 65,
+        verdict: "Hire",
+        overall_score: 7,
         scores: {
-          communication: 5,
-          technical_knowledge: 5,
-          resume_jd_fit: 5,
-          confidence: 5,
-          answer_quality: 5
+          communication: 7,
+          technical_knowledge: 7,
+          resume_jd_fit: 7,
+          confidence: 7,
+          answer_quality: 7,
+          problem_solving: 7
         },
-        best_answer: {
-          question: "No specific answer available",
-          why: "AI analysis temporarily unavailable"
+        summary: {
+          strengths: ["Completed the interview", "Showed interest and effort"],
+          weaknesses: ["Analysis temporarily unavailable"],
+          key_takeaways: "Good effort shown. AI analysis temporarily unavailable."
         },
-        worst_answer: {
-          question: "No specific answer available",
-          why: "AI analysis temporarily unavailable"
+        question_analysis: [],
+        actionable_feedback: {
+          immediate_steps: ["Try again for detailed analysis"],
+          resources: [],
+          practice_areas: []
         },
-        filler_words_summary: "Analysis temporarily unavailable",
-        strengths: ["Answer provided"],
-        weaknesses: ["Needs more details"],
-        improvement_roadmap: ["Practice more interviews", "Improve technical knowledge", "Work on communication"],
-        interviewer_notes: "AI analysis temporarily unavailable - please try again",
-        should_hire: false,
-        hire_reasoning: "Unable to complete full analysis due to technical issues. Please retry."
+        career_insights: {
+          market_fit: "Medium",
+          salary_range: "Entry level",
+          growth_potential: "High",
+          recommended_roles: [job_role]
+        },
+        interviewer_notes: "AI analysis temporarily unavailable - please try again"
       });
     }
   }
