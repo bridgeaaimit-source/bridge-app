@@ -382,6 +382,19 @@ export default function SmartInterviewPage() {
     }
   };
 
+  // Build clean [{question, answer}] pairs from conversationHistory array
+  const buildHistory = (history) => {
+    const pairs = [];
+    for (let i = 0; i < history.length - 1; i += 2) {
+      const q = history[i];
+      const a = history[i + 1];
+      if (q?.role === 'interviewer' && a?.role === 'user' && q.message && a.message) {
+        pairs.push({ question: q.message, answer: a.message });
+      }
+    }
+    return pairs;
+  };
+
   const submitAnswer = async (overrideAnswer, shouldFinish = false) => {
     const answer =
       typeof overrideAnswer === "string"
@@ -397,19 +410,17 @@ export default function SmartInterviewPage() {
 
     setIsTyping(true);
     
-    // Add user's answer to conversation (even if empty when finishing)
-    const formattedHistory = conversationHistory.map((item, index) => ({
-      question: item.role === 'interviewer' ? item.message : (conversationHistory[index - 1]?.message || ''),
-      answer: item.role === 'user' ? item.message : (conversationHistory[index + 1]?.message || '')
-    })).filter(item => item.question && item.answer);
+    // Build clean history from existing conversation
+    const formattedHistory = buildHistory(conversationHistory);
     
-    const newHistory = answer.trim() 
+    // Append current answer if present
+    const newHistory = answer.trim()
       ? [...formattedHistory, { question: currentQuestion, answer }]
       : formattedHistory;
       
     if (answer.trim()) {
-      setConversationHistory([
-        ...conversationHistory,
+      setConversationHistory(prev => [
+        ...prev,
         { role: 'interviewer', message: currentQuestion },
         { role: 'user', message: answer }
       ]);
@@ -420,6 +431,10 @@ export default function SmartInterviewPage() {
       setIsTyping(false);
       setCurrentAnswer('');
       clearTranscript();
+      if (newHistory.length === 0) {
+        toast.error('Please answer at least one question before finishing.');
+        return;
+      }
       toast.success('Interview finished! Generating feedback...');
       await getFeedback(newHistory);
       return;
@@ -633,8 +648,20 @@ export default function SmartInterviewPage() {
       }
       
     } catch (error) {
-      toast.error(error.message || 'Failed to get feedback');
       console.error('Feedback error:', error);
+      // Still show feedback screen with an error state rather than leaving user stuck
+      setFeedback({
+        error: true,
+        overall_score: 0,
+        placement_chance: 'Unable to evaluate',
+        verdict: 'Feedback generation failed. Please try again.',
+        scores: {},
+        strengths: [],
+        improvements: ['Try again with a more stable network connection.'],
+        summary: error.message || 'Failed to generate feedback.'
+      });
+      setStage('feedback');
+      toast.error('Could not generate full feedback. Showing partial results.');
     } finally {
       setIsEvaluating(false);
     }
@@ -950,10 +977,11 @@ export default function SmartInterviewPage() {
             </div>
             <button
               onClick={() => {
-                if ((mode === 'voice' || mode === 'video') && (fullTranscript || interimTranscript || conversationHistory.length > 0)) {
-                  // Finish with feedback
+                const hasAnswers = buildHistory(conversationHistory).length > 0;
+                const hasCurrentAnswer = fullTranscript || interimTranscript || currentAnswer;
+                if (hasAnswers || hasCurrentAnswer) {
                   stopDeepgramRecording();
-                  submitAnswer(fullTranscript || interimTranscript, true);
+                  submitAnswer(fullTranscript || interimTranscript || currentAnswer, true);
                 } else {
                   resetInterview();
                 }
@@ -961,7 +989,7 @@ export default function SmartInterviewPage() {
               className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
             >
               <X className="w-4 h-4" />
-              {mode === 'voice' || mode === 'video' ? 'Finish & Get Feedback' : 'End Interview'}
+              {buildHistory(conversationHistory).length > 0 || fullTranscript || currentAnswer ? 'Finish & Get Feedback' : 'End Interview'}
             </button>
           </div>
 
