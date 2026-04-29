@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Home, Mic, Zap, Trophy, User, Edit3, Target, Award, TrendingUp, Calendar, Mail, Phone, MapPin, GraduationCap, Briefcase } from "lucide-react";
+import { Home, Mic, Zap, Trophy, User, Edit3, Target, Award, TrendingUp, Calendar, Mail, Phone, MapPin, GraduationCap, Briefcase, Upload, CheckCircle, FileText } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { onAuthStateChanged } from "firebase/auth";
@@ -34,6 +34,8 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [resumeFileName, setResumeFileName] = useState('');
+  const [resumeUploading, setResumeUploading] = useState(false);
 
   const { isBypassed, mockUserData } = useAuthBypass();
 
@@ -87,8 +89,8 @@ export default function ProfilePage() {
           };
           
           if (userSnap.exists()) {
-            // Merge Firestore data with base data
             const data = userSnap.data();
+            if (data.resumeFileName) setResumeFileName(data.resumeFileName);
             setUserData({
               ...baseUserData,
               college: data.college || '',
@@ -137,6 +139,44 @@ export default function ProfilePage() {
 
     return () => unsubscribe();
   }, []);
+
+  const handleResumeChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!validTypes.includes(file.type)) { toast.error('Please upload a PDF, DOC, or DOCX file'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('File too large (max 5MB)'); return; }
+    setResumeUploading(true);
+    const toastId = toast.loading('Uploading and analysing resume...');
+    try {
+      const dataUrl = await new Promise((res, rej) => {
+        const r = new FileReader(); r.readAsDataURL(file);
+        r.onload = () => res(r.result); r.onerror = rej;
+      });
+      const base64 = dataUrl.split(',')[1];
+      let bridgeScore = userData.bridgeScore;
+      try {
+        const scoreRes = await fetch('/api/jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'score_resume', resume_base64: base64 })
+        });
+        if (scoreRes.ok) {
+          const scoreData = await scoreRes.json();
+          bridgeScore = scoreData.bridge_score || bridgeScore;
+        }
+      } catch {}
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, { resumeUploaded: true, resumeFileName: file.name, resumeBase64: dataUrl, bridgeScore, updatedAt: new Date().toISOString() });
+      setResumeFileName(file.name);
+      setUserData(prev => ({ ...prev, bridgeScore }));
+      toast.success(`Resume updated! New Bridge Score: ${bridgeScore}`, { id: toastId });
+    } catch (err) {
+      toast.error('Failed to update resume', { id: toastId });
+    } finally {
+      setResumeUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!currentUser) {
@@ -371,6 +411,30 @@ export default function ProfilePage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                 placeholder="Tell us about yourself..."
               />
+            </div>
+
+            {/* Resume section — always visible */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-[#0D9488]" />
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">Resume</div>
+                    <div className="text-xs text-gray-500">{resumeFileName || 'No resume uploaded'}</div>
+                  </div>
+                  {resumeFileName && <CheckCircle className="w-4 h-4 text-green-500" />}
+                </div>
+                <label className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${
+                  resumeUploading ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#0D9488] text-white hover:bg-[#0F766E]'
+                }`}>
+                  {resumeUploading ? (
+                    <><div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> Analysing...</>
+                  ) : (
+                    <><Upload className="w-4 h-4" /> {resumeFileName ? 'Change Resume' : 'Upload Resume'}</>
+                  )}
+                  <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleResumeChange} disabled={resumeUploading} />
+                </label>
+              </div>
             </div>
 
             {isEditing && (

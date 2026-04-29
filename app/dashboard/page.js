@@ -49,6 +49,8 @@ export default function Dashboard() {
   });
   const [recentActivity, setRecentActivity] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [resumeUploaded, setResumeUploaded] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
 
   const { isBypassed, mockUserData } = useAuthBypass();
 
@@ -110,9 +112,11 @@ export default function Dashboard() {
             // Set user name from Firestore (more reliable than displayName)
             setUserName(userData.name || user.displayName || 'User');
             
+            setResumeUploaded(!!userData.resumeUploaded);
+            setUserProfile({ college: userData.college || '', name: userData.name || '' });
             const score = userData.bridgeScore;
             const userStats = {
-              bridgeScore: typeof score === 'number' ? score : parseInt(score) || 500,
+              bridgeScore: typeof score === 'number' ? score : parseInt(score) || 0,
               interviewsDone: userData.interviewsDone || 0,
               currentStreak: userData.streak || 0,
               avgScore: userData.avgScore || 0
@@ -137,7 +141,7 @@ export default function Dashboard() {
               photo: user.photoURL || '',
               role: 'student',
               approved: true,
-              bridgeScore: 500,
+              bridgeScore: 0,
               interviewsDone: 0,
               avgScore: 0,
               streak: 0,
@@ -278,7 +282,7 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         {/* Getting Started Checklist */}
         <div className="pt-6">
-          <GettingStartedChecklist stats={stats} userProfile={null} />
+          <GettingStartedChecklist stats={stats} userProfile={userProfile} resumeUploaded={resumeUploaded} />
         </div>
 
         {/* Greeting Section */}
@@ -316,10 +320,10 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="text-2xl lg:text-3xl font-bold gradient-text mb-1">
-              {stats.bridgeScore === 0 ? "—" : stats.bridgeScore}
+              {stats.bridgeScore}
             </div>
             <div className="text-xs lg:text-sm text-gray-600 flex items-center gap-1">
-              {stats.bridgeScore === 0 ? "Complete an interview to get your score" : "BRIDGE Score"}
+              BRIDGE Score
               <InfoTooltip text="Your overall placement readiness score out of 1000. Every activity pushes it higher." />
             </div>
           </motion.div>
