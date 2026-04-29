@@ -61,6 +61,9 @@ export default function SmartInterviewPage() {
     clearTranscript,
     exportTranscript,
   } = useDeepgramTranscription();
+
+  // submitAnswer uses fullTranscript in video mode too
+  const videoTranscript = fullTranscript || interimTranscript;
   
   const fileInputRef = useRef(null);
 
@@ -183,8 +186,6 @@ export default function SmartInterviewPage() {
 
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
-    } else {
-      setIsRecording(false);
     }
   };
 
@@ -1095,13 +1096,39 @@ export default function SmartInterviewPage() {
                       </div>
 
                       <div className="flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2 text-sm">
-                        <span className="font-medium text-gray-700">
+                        <span className="font-medium text-gray-700 flex items-center gap-2">
+                          {isVideoRecording && <span className="w-2 h-2 rounded-full bg-red-500 inline-block animate-pulse"/>}
                           {isVideoRecording ? 'Recording...' : recordingState === 'recorded' ? 'Recorded' : 'Ready to record'}
                         </span>
                         <span className="font-bold text-[#0D9488]">{formatTime(recordingTimeLeft)}</span>
                       </div>
 
-                      {fullTranscript && (
+                      {/* Live transcript during recording */}
+                      {isVideoRecording && (
+                        <div className="rounded-lg bg-gray-50 border border-gray-200 p-3 text-sm">
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs font-semibold text-gray-500">Live Transcript</span>
+                            <div className="flex gap-4 text-xs">
+                              <span className="text-[#0D9488] font-bold">{wordCount} words</span>
+                              {Object.keys(fillerWordCounts).length > 0 && (
+                                <span className="text-orange-500 font-bold">{fillerWords.length} fillers</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-gray-700 min-h-[40px]">
+                            {fullTranscript || interimTranscript || <span className="text-gray-400 italic">Listening...</span>}
+                          </div>
+                          {Object.keys(fillerWordCounts).length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {Object.entries(fillerWordCounts).map(([word, count]) => (
+                                <span key={word} className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">{word} ×{count}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {!isVideoRecording && fullTranscript && (
                         <div className="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-700">
                           <span className="font-semibold text-gray-900">Transcript: </span>
                           {fullTranscript}
@@ -1119,6 +1146,7 @@ export default function SmartInterviewPage() {
                           )}
                         </div>
                       )}
+
 
                       <div className="flex flex-wrap gap-2">
                         {!isVideoRecording && (
@@ -1154,9 +1182,9 @@ export default function SmartInterviewPage() {
                             </button>
                             <button
                               onClick={() => {
-                                submitAnswer(fullTranscript || "[Video answer submitted]");
+                                submitAnswer(videoTranscript || "[Video answer submitted]");
                               }}
-                              disabled={!fullTranscript?.trim() || isTyping}
+                              disabled={!videoTranscript?.trim() || isTyping}
                               className="rounded-lg bg-[#0D9488] px-4 py-2 text-white hover:bg-[#0F766E] transition-colors disabled:opacity-50"
                             >
                               Submit Video Answer
