@@ -403,6 +403,8 @@ export default function SmartInterviewPage() {
           ? fullTranscript
           : currentAnswer;
     
+    console.log('submitAnswer called:', { answer, shouldFinish, mode, currentQuestion });
+
     if (!answer.trim() && !shouldFinish) {
       toast.error('Please provide an answer');
       return;
@@ -412,11 +414,14 @@ export default function SmartInterviewPage() {
     
     // Build clean history from existing conversation
     const formattedHistory = buildHistory(conversationHistory);
+    console.log('Formatted history from conversationHistory:', formattedHistory);
     
     // Append current answer if present
     const newHistory = answer.trim()
       ? [...formattedHistory, { question: currentQuestion, answer }]
       : formattedHistory;
+    
+    console.log('Final history to send:', newHistory);
       
     if (answer.trim()) {
       setConversationHistory(prev => [
@@ -431,6 +436,7 @@ export default function SmartInterviewPage() {
       setIsTyping(false);
       setCurrentAnswer('');
       clearTranscript();
+      console.log('shouldFinish=true, newHistory.length:', newHistory.length);
       if (newHistory.length === 0) {
         toast.error('Please answer at least one question before finishing.');
         return;
@@ -524,10 +530,12 @@ export default function SmartInterviewPage() {
 
   const getFeedback = async (formattedHistory) => {
     setIsEvaluating(true);
-    
+
     // formattedHistory is already in the correct format: [{question, answer}, ...]
-    console.log('Sending conversation history to API:', formattedHistory);
-    
+    console.log('getFeedback called with history:', formattedHistory);
+    console.log('resumeBase64 length:', resumeBase64?.length);
+    console.log('jobRole:', jobRole, 'round:', round);
+
     try {
       const response = await fetch('/api/smart-interview', {
         method: 'POST',
@@ -543,6 +551,8 @@ export default function SmartInterviewPage() {
           conversation_history: formattedHistory,
         }),
       });
+
+      console.log('API response status:', response.status);
 
       // Check if response is OK before trying to parse JSON
       if (!response.ok) {
