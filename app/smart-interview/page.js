@@ -67,7 +67,7 @@ export default function SmartInterviewPage() {
   };
 
   // Use Deepgram transcription hook with voice command support
-  // Temporarily disabled to isolate prerender error
+  // Temporarily disabled entirely to isolate prerender error
   const {
     isRecording: isRecording = false,
     isConnecting: isConnecting = false,
@@ -87,7 +87,7 @@ export default function SmartInterviewPage() {
     stopRecording: stopDeepgramRecording = () => {},
     clearTranscript: clearTranscript = () => {},
     exportTranscript: exportTranscript = () => {},
-  } = typeof window !== 'undefined' ? useDeepgramTranscription({ onVoiceCommand: handleVoiceCommand }) : {};
+  } = {};
 
   // submitAnswer uses fullTranscript in video mode too
   const videoTranscript = fullTranscript || interimTranscript;
