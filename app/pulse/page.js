@@ -1,541 +1,453 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { 
-  Home, Mic, Zap, Trophy, User, Plus, Filter, TrendingUp, X, RefreshCw, 
-  ExternalLink, Users, Calendar, Search, Clock, MessageSquare, Lightbulb, 
-  Target, ArrowUpRight, Bookmark, Share2, Eye, Flame, Star, Sparkles, 
-  Brain, Rocket, Award, BarChart3, Globe, Building2, Briefcase, 
-  GraduationCap, Code, DollarSign, MapPin, ChevronRight, Bell, Settings, 
-  Menu, TrendingUpIcon, UsersIcon, CalendarIcon, Heart, Newspaper, 
-  Hash, ArrowRight, CheckCircle, AlertCircle 
+import { useState, useEffect } from "react";
+import {
+  Search, ArrowUpRight, Bookmark, Star, Newspaper, ArrowRight,
+  CheckCircle, AlertCircle, TrendingUp, Zap, Sparkles, Building2,
+  Lightbulb, MessageSquare, Quote, Target, BarChart2, Eye, Clock
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
-import toast from "react-hot-toast";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
 
-const categories = ["All", "Marketing", "Finance", "HR", "Analytics", "Tech", "MBA"];
+const CATEGORIES = ["All", "Marketing", "Finance", "HR", "Analytics", "Tech", "MBA"];
 
-// Mock news data for bypass mode
-const mockNewsData = {
-  articles: [
-    {
-      title: "AI Revolution in Tech Industry: What Students Need to Know",
-      description: "Major tech companies are investing heavily in AI, creating new opportunities for graduates with machine learning skills.",
-      url: "https://example.com/ai-revolution",
-      urlToImage: null,
-      publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      source: { name: "Tech News" }
-    },
-    {
-      title: "Top 10 Skills Employers Are Looking For in 2024",
-      description: "Communication, problem-solving, and adaptability top the list of most sought-after skills by recruiters.",
-      url: "https://example.com/top-skills",
-      urlToImage: null,
-      publishedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-      source: { name: "Career Insights" }
-    },
-    {
-      title: "Startup Funding Reaches New Heights in Q1 2024",
-      description: "Indian startups raised $4.2B in Q1, with fintech and edtech leading the way.",
-      url: "https://example.com/startup-funding",
-      urlToImage: null,
-      publishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      source: { name: "Business Today" }
-    }
-  ]
+// Get IST date string — resets at 6 AM IST (00:30 UTC)
+function getISTDateKey() {
+  const now = new Date();
+  // IST = UTC+5:30. Reset at 6AM IST = 0:30 UTC
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const istMs = utcMs + 5.5 * 60 * 60 * 1000;
+  const ist = new Date(istMs);
+  // Subtract 6 hours so "today" resets at 6 AM IST
+  const adjusted = new Date(istMs - 6 * 60 * 60 * 1000);
+  const y = adjusted.getFullYear();
+  const m = String(adjusted.getMonth() + 1).padStart(2, '0');
+  const d = String(adjusted.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function loadCache(key) {
+  try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+}
+function saveCache(key, data) {
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
+}
+
+const FALLBACK_GD = {
+  gd_topic: "Is AI replacing human creativity?",
+  why_trending: "AI tools are disrupting creative industries globally in 2025",
+  pros: ["AI enables faster content creation at scale — a 3-minute video ad now takes hours, not weeks", "Reduces production costs by up to 70%, making creativity accessible to small businesses", "Democratises design tools — anyone with a prompt can create professional visuals"],
+  cons: ["Loss of emotional depth — AI lacks lived human experience that drives truly resonant storytelling", "Copyright & ownership issues remain legally unresolved across global markets", "Threatens livelihoods of creative professionals — illustrators, copywriters, video editors"],
+  example_argument: "While AI optimises reach and speed, it cannot replicate the emotional resonance of human storytelling. The most powerful campaigns — like Amul's or Apple's — come from human insight about culture, not pattern matching. AI should augment, not replace, human creativity.",
+  key_facts: ["AI art market grew 300% in 2024 (Forbes)", "60% of designers use AI tools daily (Adobe State of Creativity 2024)", "India's creative economy employs 8 million people directly"],
+  how_to_start: "I'd like to begin by drawing a distinction — AI doesn't replace creativity, it changes who can be creative. The real question is whether we're ready to redefine what we value in creative work.",
+  power_phrase: "The question isn't whether AI can create — it's whether creation without human intent has meaning.",
+  interview_connection: "Interviewers in marketing, media, or tech often ask your stance on AI in your domain. Frame it as: tool + human = unstoppable.",
+  difficulty: "Medium",
 };
 
 export default function PulsePage() {
-  const [loading, setLoading] = useState(true);
-  const [newsData, setNewsData] = useState(null);
-  const [newsLoading, setNewsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [activeCategory, setActiveCategory] = useState("All");
   const [gdInsights, setGdInsights] = useState(null);
   const [gdLoading, setGdLoading] = useState(true);
-  const [gdPracticeLoading, setGdPracticeLoading] = useState(false);
-  const [loadingArticle, setLoadingArticle] = useState('');
-  const [selectedArticle, setSelectedArticle] = useState(null);
-  const [savedArticles, setSavedArticles] = useState([]);
+  const [newsData, setNewsData] = useState(null);
+  const [newsLoading, setNewsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [savedArticles, setSavedArticles] = useState([]);
+  const [gdPracticeLoading, setGdPracticeLoading] = useState(false);
 
   const { isBypassed } = useAuthBypass();
 
-  useEffect(() => {
-    // Auth bypass for testing
-    if (isBypassed) {
-      console.log('🔓 Pulse - Auth bypass enabled');
-      setNewsData(mockNewsData);
-      setGdInsights({
-        gd_topic: "The Impact of Artificial Intelligence on Job Markets",
-        pros: "Creates new opportunities in AI/ML fields, increases productivity, enables innovation in various sectors",
-        cons: "Potential job displacement in routine tasks, requires continuous upskilling, widens skill gap",
-        power_phrase: "AI is not replacing humans, it's augmenting human capabilities and creating new opportunities for those who adapt"
-      });
-      setLoading(false);
-      setNewsLoading(false);
+  // Fetch GD insights — client-side daily cache, no repeated AI calls
+  const fetchGDInsights = async (category) => {
+    const dateKey = getISTDateKey();
+    const cacheKey = `pulse_gd_${category}_${dateKey}`;
+    const cached = loadCache(cacheKey);
+    if (cached && cached.gd_topic) {
+      setGdInsights(cached);
       setGdLoading(false);
       return;
     }
-
-    fetchNews("All");
-    fetchGDInsights("All");
-  }, [isBypassed]);
-
-  const fetchGDInsights = async (category) => {
     setGdLoading(true);
     try {
-      const res = await fetch(`/api/gd-insights?category=${category}`);
-      
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-      
+      const res = await fetch(`/api/gd-insights?category=${encodeURIComponent(category)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      
-      if (!data || !data.gd_topic) {
-        throw new Error('Invalid response format');
-      }
-      
+      if (!data?.gd_topic) throw new Error('Bad response');
+      saveCache(cacheKey, data);
       setGdInsights(data);
-    } catch (err) {
-      console.error('GD insights error:', err);
-      // Fallback GD content
-      setGdInsights({
-        gd_topic: "The Impact of Artificial Intelligence on Job Markets",
-        pros: "New opportunities, increased productivity",
-        cons: "Job displacement, skill requirements",
-        power_phrase: "AI is changing how we work, not replacing human potential"
-      });
+    } catch {
+      setGdInsights(FALLBACK_GD);
     } finally {
       setGdLoading(false);
     }
   };
 
+  // Fetch news — client-side daily cache
   const fetchNews = async (category) => {
+    const dateKey = getISTDateKey();
+    const cacheKey = `pulse_news_${category}_${dateKey}`;
+    const cached = loadCache(cacheKey);
+    if (cached?.articles?.length) {
+      setNewsData(cached);
+      setNewsLoading(false);
+      return;
+    }
     setNewsLoading(true);
-    setError(null);
-    
     try {
-      const response = await fetch(`/api/news?category=${encodeURIComponent(category)}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      
-      if (!data || !data.articles) {
-        throw new Error('Invalid response format');
-      }
-      
+      const res = await fetch(`/api/news?category=${encodeURIComponent(category)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!data?.articles) throw new Error('Bad response');
+      saveCache(cacheKey, data);
       setNewsData(data);
-    } catch (err) {
-      console.error('News fetch error:', err);
-      const errorMessage = err.message || 'Unknown error occurred';
-      setError(`Failed to load news: ${errorMessage}. Please check your API keys.`);
-      
-      // Fallback content
-      setNewsData({
-        articles: [
-          {
-            title: "TCS Announces 10,000 New Hiring for 2024",
-            description: "Tata Consultancy Services plans to hire 10,000 fresh graduates in FY2024 with focus on AI and digital skills.",
-            url: "https://example.com/tcs-hiring",
-            source: "TCS",
-            time: "2 hours ago"
-          },
-          {
-            title: "Infosys Expands Campus Recruitment Program",
-            description: "Infosys launches enhanced campus recruitment program with competitive packages for engineering graduates.",
-            url: "https://example.com/infosys-campus",
-            source: "Infosys",
-            time: "5 hours ago"
-          },
-          {
-            title: "Wipro Partners with Colleges for Skill Development",
-            description: "Wipro announces partnership with 50 engineering colleges for skill development and placement training.",
-            url: "https://example.com/wipro-partners",
-            source: "Wipro",
-            time: "1 day ago"
-          }
-        ]
-      });
+    } catch {
+      setNewsData({ articles: [
+        { title: "TCS Announces 40,000 New Hires for FY2025", description: "Tata Consultancy Services plans to hire 40,000 fresh graduates focused on AI and cloud technologies.", url: "#", source: "TCS", time: "Today" },
+        { title: "Top Skills Employers Want in 2025", description: "AI literacy, communication, and adaptability top the list of most sought-after skills by Indian recruiters.", url: "#", source: "LinkedIn India", time: "Today" },
+        { title: "India Startup Ecosystem Hits $150B Valuation", description: "Indian startups raised record funding in 2024 with fintech and edtech leading growth.", url: "#", source: "Inc42", time: "Today" },
+      ]});
     } finally {
       setNewsLoading(false);
-      setLoading(false);
     }
   };
 
-  const refreshNews = () => {
-    toast("Refreshing news...");
-    fetchNews(activeCategory);
+  useEffect(() => {
+    if (isBypassed) {
+      setGdInsights(FALLBACK_GD);
+      setNewsData({ articles: [
+        { title: "AI Revolution: What Students Must Know", description: "Major companies are investing in AI, creating massive opportunities for graduates.", url: "#", source: "Tech News", time: "2h ago" },
+        { title: "Top 10 Skills Employers Want in 2025", description: "Communication, problem-solving, and AI literacy top recruiter wishlists.", url: "#", source: "Career Insights", time: "5h ago" },
+      ]});
+      setGdLoading(false);
+      setNewsLoading(false);
+      return;
+    }
+    fetchGDInsights("All");
+    fetchNews("All");
+  }, [isBypassed]);
+
+  const handleCategoryChange = (cat) => {
+    setActiveCategory(cat);
+    fetchGDInsights(cat);
+    fetchNews(cat);
   };
 
-  const handleCategoryChange = (category) => {
-    setActiveCategory(category);
-    fetchNews(category);
-    fetchGDInsights(category);
-  };
-
-  const handleGDPractice = async () => {
+  const handleGDPractice = () => {
     setGdPracticeLoading(true);
-    
     try {
       sessionStorage.setItem('gd_topic', JSON.stringify(gdInsights));
       window.location.href = '/gd';
-    } catch (err) {
-      console.error('GD generation error:', err);
-    } finally {
-      setGdPracticeLoading(false);
-    }
+    } catch { setGdPracticeLoading(false); }
   };
 
-  const toggleSaveArticle = (article) => {
-    setSavedArticles(prev => 
-      prev.some(a => a.title === article.title) 
-        ? prev.filter(a => a.title !== article.title)
-        : [...prev, article]
-    );
-  };
+  const toggleSave = (article) => setSavedArticles(prev =>
+    prev.some(a => a.title === article.title) ? prev.filter(a => a.title !== article.title) : [...prev, article]
+  );
 
-  const isArticleSaved = (article) => {
-    return savedArticles.some(a => a.title === article.title);
-  };
-
-  const filteredArticles = newsData?.articles?.filter(article => 
-    article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    article.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredArticles = newsData?.articles?.filter(a =>
+    a.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    a.description?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
-  if (loading) {
-    return (
-      <AppShell>
-        <div className="min-h-screen bg-[#F0FDFA]">
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <div className="w-12 h-12 animate-spin rounded-full border-4 border-[#CCFBF1] border-t-[#0D9488] mx-auto mb-4"></div>
-              <div className="text-lg font-semibold text-[#44445A]">Loading PULSE Feed...</div>
-            </div>
-          </div>
-        </div>
-      </AppShell>
-    );
-  }
+  const difficultyColor = { Easy: 'text-green-700 bg-green-100', Medium: 'text-yellow-700 bg-yellow-100', Hard: 'text-red-700 bg-red-100' };
 
   return (
     <AppShell>
       <div className="min-h-screen bg-[#F0FDFA]">
-        {/* Header */}
-        <div className="bg-white border-b border-[#E8E8F0]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#F0FDFA] rounded-lg flex items-center justify-center">
-                    <Newspaper className="w-5 h-5 text-[#0D9488]" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-[#0D0D1A]">PULSE Feed</h1>
-                    <p className="text-sm text-[#8888A0]">Real-time placement insights</p>
-                  </div>
-                </div>
+
+        {/* ── Page Header ── */}
+        <div className="bg-white border-b border-gray-200 px-4 sm:px-8 py-4">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#F0FDFA] rounded-xl flex items-center justify-center">
+                <Zap className="w-5 h-5 text-[#0D9488]" />
               </div>
-              
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <div className="w-2 h-2 bg-[#0D9488] rounded-full"></div>
-                  <span>Live</span>
-                </div>
-                <button
-                  onClick={refreshNews}
-                  className="p-2 text-gray-500 hover:text-[#0D9488] hover:bg-[#F0FDFA] rounded-lg transition-colors"
-                >
-                  <RefreshCw className="w-5 h-5" />
-                </button>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">PULSE Feed</h1>
+                <p className="text-xs text-gray-500">Updates daily at 6 AM · {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}</p>
               </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-500 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              Live today
             </div>
           </div>
         </div>
 
-        {/* GD Booster Banner */}
-        {!gdLoading && gdInsights && (
-          <div className="bg-gradient-to-r from-[#0D9488] to-[#14B8A6]">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-center">
-                {/* Topic */}
-                <div className="lg:col-span-1">
-                  <div className="text-white/80 text-xs font-semibold uppercase tracking-wider mb-2">
-                    Today's GD Topic
-                  </div>
-                  <div className="text-white text-xl font-bold leading-tight">
-                    {gdInsights.gd_topic}
-                  </div>
-                </div>
-
-                {/* Points */}
-                <div className="lg:col-span-1">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-300 flex-shrink-0" />
-                      <span className="text-white text-sm truncate">{gdInsights.pros}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-red-300 flex-shrink-0" />
-                      <span className="text-white text-sm truncate">{gdInsights.cons}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quote */}
-                <div className="lg:col-span-1">
-                  <div className="text-[#14B8A6]/60 text-sm italic border-l-2 border-[#14B8A6] pl-4">
-                    "{gdInsights.power_phrase}"
-                  </div>
-                </div>
-
-                {/* CTA */}
-                <div className="lg:col-span-1">
-                  <button
-                    onClick={handleGDPractice}
-                    disabled={gdPracticeLoading}
-                    className="w-full bg-white text-[#0D9488] px-6 py-3 rounded-lg font-semibold hover:bg-[#F0FDFA] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {gdPracticeLoading ? (
-                      <>
-                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-[#0D9488] border-t-transparent"></div>
-                        Loading...
-                      </>
-                    ) : (
-                      <>
-                        Practice Now
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Category Pills - Horizontal at top */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => handleCategoryChange(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                  activeCategory === category
-                    ? 'bg-[#0D9488] text-white shadow-md'
-                    : 'bg-white text-[#44445A] border border-[#E8E8F0] hover:border-[#0D9488] hover:text-[#0D9488]'
+        {/* ── Category Pills ── */}
+        <div className="bg-white border-b border-gray-100 px-4 sm:px-8 py-3">
+          <div className="max-w-7xl mx-auto flex gap-2 overflow-x-auto scrollbar-hide">
+            {CATEGORIES.map(cat => (
+              <button key={cat} onClick={() => handleCategoryChange(cat)}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  activeCategory === cat
+                    ? 'bg-[#0D9488] text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:bg-[#F0FDFA] hover:text-[#0D9488]'
                 }`}>
-                {category}
+                {cat}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left Sidebar - Removed Categories */}
-            <div className="lg:col-span-3 hidden lg:block">
-              {/* Saved Articles / Stats can go here */}
-              <div className="bg-white rounded-xl border border-[#E8E8F0] p-6 mb-6">
-                <h3 className="font-semibold text-[#0D0D1A] mb-4">Quick Stats</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#F0FDFA] flex items-center justify-center">
-                      <Newspaper className="w-5 h-5 text-[#0D9488]" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-[#0D0D1A]">{filteredArticles.length}</p>
-                      <p className="text-xs text-[#8888A0]">Articles</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 space-y-8">
 
-              {/* Stats */}
-              <div className="bg-white rounded-xl border border-[#E8E8F0] p-6">
-                <h3 className="font-semibold text-[#0D0D1A] mb-4">Today's Stats</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#8888A0]">Articles</span>
-                    <span className="font-semibold text-[#0D0D1A]">{newsData?.articles?.length || 0}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#8888A0]">GD Topics</span>
-                    <span className="font-semibold text-[#0D0D1A]">1</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#8888A0]">Updated</span>
-                    <span className="font-semibold text-gray-900">{new Date().toLocaleTimeString()}</span>
-                  </div>
-                </div>
+          {/* ══════════════════════════════════════════
+              GD DEEP-DIVE SECTION
+          ══════════════════════════════════════════ */}
+          {gdLoading ? (
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 animate-pulse space-y-4">
+              <div className="h-5 bg-gray-200 rounded w-1/3"></div>
+              <div className="h-8 bg-gray-200 rounded w-2/3"></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="h-24 bg-gray-100 rounded-xl"></div>
+                <div className="h-24 bg-gray-100 rounded-xl"></div>
               </div>
             </div>
+          ) : gdInsights && (
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
 
-            {/* Center Content */}
-            <div className="lg:col-span-6">
-              {/* Search */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Search articles..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  />
+              {/* Topic Header */}
+              <div className="bg-gradient-to-r from-[#0D9488] to-[#0891B2] px-6 py-5">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-bold text-teal-100 uppercase tracking-widest">Today's GD Topic</span>
+                      {gdInsights.difficulty && (
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white`}>
+                          {gdInsights.difficulty}
+                        </span>
+                      )}
+                    </div>
+                    <h2 className="text-2xl font-bold text-white leading-snug">{gdInsights.gd_topic}</h2>
+                    {gdInsights.why_trending && (
+                      <p className="text-teal-100 text-sm mt-1.5 flex items-center gap-1.5">
+                        <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                        {gdInsights.why_trending}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleGDPractice}
+                    disabled={gdPracticeLoading}
+                    className="shrink-0 bg-white text-[#0D9488] font-bold px-6 py-3 rounded-xl hover:bg-teal-50 transition-colors flex items-center gap-2 shadow-md disabled:opacity-60"
+                  >
+                    {gdPracticeLoading ? <><div className="w-4 h-4 border-2 border-[#0D9488]/40 border-t-[#0D9488] rounded-full animate-spin" /> Starting...</> : <><MessageSquare className="w-4 h-4" /> Practice GD Now</>}
+                  </button>
                 </div>
               </div>
 
-              {/* Articles */}
-              <div className="space-y-4">
-                {newsLoading ? (
-                  <div className="space-y-4">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="bg-white rounded-xl border border-gray-200 p-6">
-                        <div className="animate-pulse space-y-3">
-                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                          <div className="h-3 bg-gray-200 rounded w-full"></div>
-                          <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : error ? (
-                  <div className="bg-red-50 rounded-xl border border-red-200 p-6 text-center">
-                    <div className="text-red-600 mb-4">{error}</div>
-                    <button
-                      onClick={() => fetchNews(activeCategory)}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                ) : filteredArticles.length > 0 ? (
-                  filteredArticles.map((article, index) => (
-                    <div key={index} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
-                      <div className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-xs font-medium text-[#0D9488] bg-[#F0FDFA] px-2 py-1 rounded">
-                                {article.source || 'Unknown'}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {article.time || 'Just now'}
-                              </span>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                              {article.title}
-                            </h3>
-                            <p className="text-gray-600 text-sm leading-relaxed">
-                              {article.description}
-                            </p>
-                          </div>
-                        </div>
+              <div className="p-6 space-y-6">
 
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <span className="text-xs text-gray-500 flex items-center gap-1">
-                              <Eye className="w-3 h-3" />
-                              {Math.floor(Math.random() * 1000) + 100}
-                            </span>
-                            <span className="text-xs text-gray-500 flex items-center gap-1">
-                              <MessageSquare className="w-3 h-3" />
-                              {Math.floor(Math.random() * 50) + 5}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => toggleSaveArticle(article)}
-                              className="p-2 text-gray-400 hover:text-yellow-500 transition-colors"
-                            >
-                              <Bookmark className={`w-4 h-4 ${isArticleSaved(article) ? 'fill-current text-yellow-500' : ''}`} />
-                            </button>
-                            <a
-                              href={article.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[#0D9488] hover:text-[#0F766E] font-medium text-sm flex items-center gap-1"
-                            >
-                              Read More
-                              <ArrowUpRight className="w-3 h-3" />
-                            </a>
-                          </div>
-                        </div>
-                      </div>
+                {/* Pros & Cons */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Pros */}
+                  <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+                    <h3 className="text-sm font-bold text-green-800 mb-3 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" /> Arguments FOR
+                    </h3>
+                    <ul className="space-y-2">
+                      {(Array.isArray(gdInsights.pros) ? gdInsights.pros : [gdInsights.pros]).map((p, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-green-900">
+                          <span className="mt-1 w-4 h-4 rounded-full bg-green-200 text-green-800 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
+                          {p}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  {/* Cons */}
+                  <div className="bg-red-50 rounded-xl p-4 border border-red-100">
+                    <h3 className="text-sm font-bold text-red-800 mb-3 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" /> Arguments AGAINST
+                    </h3>
+                    <ul className="space-y-2">
+                      {(Array.isArray(gdInsights.cons) ? gdInsights.cons : [gdInsights.cons]).map((c, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-red-900">
+                          <span className="mt-1 w-4 h-4 rounded-full bg-red-200 text-red-800 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
+                          {c}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Key Facts + How to Start */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {gdInsights.key_facts?.length > 0 && (
+                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                      <h3 className="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2">
+                        <BarChart2 className="w-4 h-4" /> Key Facts & Data
+                      </h3>
+                      <ul className="space-y-2">
+                        {gdInsights.key_facts.map((f, i) => (
+                          <li key={i} className="text-sm text-blue-900 flex items-start gap-2">
+                            <span className="text-blue-400 mt-0.5">•</span>{f}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  ))
-                ) : (
-                  <div className="bg-gray-50 rounded-xl border border-gray-200 p-12 text-center">
-                    <div className="text-gray-500 font-medium mb-2">
-                      {searchQuery ? 'No articles found for your search' : 'No articles found'}
+                  )}
+                  {gdInsights.how_to_start && (
+                    <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                      <h3 className="text-sm font-bold text-purple-800 mb-3 flex items-center gap-2">
+                        <Target className="w-4 h-4" /> How to Start Speaking
+                      </h3>
+                      <p className="text-sm text-purple-900 italic leading-relaxed">"{gdInsights.how_to_start}"</p>
                     </div>
-                    <div className="text-gray-400 text-sm">
-                      {searchQuery ? 'Try a different search term' : 'Try selecting a different category'}
-                    </div>
+                  )}
+                </div>
+
+                {/* Example Argument */}
+                {gdInsights.example_argument && (
+                  <div className="bg-[#F0FDFA] rounded-xl p-4 border border-teal-200">
+                    <h3 className="text-sm font-bold text-teal-800 mb-2 flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4" /> Winning Argument (use this in GD)
+                    </h3>
+                    <p className="text-sm text-teal-900 leading-relaxed">{gdInsights.example_argument}</p>
                   </div>
                 )}
-              </div>
-            </div>
 
-            {/* Right Sidebar */}
-            <div className="lg:col-span-3">
-              {/* Top Companies */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Top Companies</h3>
-                <div className="space-y-3">
-                  {[
-                    { name: 'Google', jobs: 245, trend: 'up' },
-                    { name: 'Microsoft', jobs: 189, trend: 'up' },
-                    { name: 'Amazon', jobs: 167, trend: 'down' },
-                    { name: 'TCS', jobs: 423, trend: 'up' },
-                    { name: 'Infosys', jobs: 378, trend: 'stable' }
-                  ].map((company, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                {/* Power Phrase + Interview connection */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {gdInsights.power_phrase && (
+                    <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200 flex items-start gap-3">
+                      <Star className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
                       <div>
-                        <div className="font-medium text-gray-900">{company.name}</div>
-                        <div className="text-xs text-gray-500">{company.jobs} positions</div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {company.trend === 'up' && <TrendingUp className="w-4 h-4 text-green-500" />}
-                        {company.trend === 'down' && <TrendingUp className="w-4 h-4 text-red-500 rotate-180" />}
-                        {company.trend === 'stable' && <div className="w-4 h-4 bg-gray-300 rounded-full"></div>}
+                        <div className="text-xs font-bold text-yellow-800 mb-1">Power Phrase</div>
+                        <p className="text-sm text-yellow-900 font-medium italic">"{gdInsights.power_phrase}"</p>
                       </div>
                     </div>
-                  ))}
+                  )}
+                  {gdInsights.interview_connection && (
+                    <div className="bg-orange-50 rounded-xl p-4 border border-orange-200 flex items-start gap-3">
+                      <Sparkles className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+                      <div>
+                        <div className="text-xs font-bold text-orange-800 mb-1">Interview Link</div>
+                        <p className="text-sm text-orange-900">{gdInsights.interview_connection}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Practice CTA bottom */}
+                <div className="border-t border-gray-100 pt-4 flex items-center justify-between flex-wrap gap-3">
+                  <p className="text-sm text-gray-500">Ready? Jump into the live GD arena with AI participants.</p>
+                  <button
+                    onClick={handleGDPractice}
+                    disabled={gdPracticeLoading}
+                    className="bg-[#0D9488] text-white font-semibold px-6 py-2.5 rounded-xl hover:bg-[#0F766E] transition-colors flex items-center gap-2 text-sm"
+                  >
+                    {gdPracticeLoading ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Starting...</> : <>Start GD Practice <ArrowRight className="w-4 h-4" /></>}
+                  </button>
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* Pro Tip */}
-              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl border border-yellow-200 p-6">
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-500" />
-                  Pro Tip
-                </h3>
-                <p className="text-gray-700 text-sm leading-relaxed">
-                  Research the company's recent achievements and challenges before your interview. This shows genuine interest and helps you ask insightful questions.
-                </p>
+          {/* ══════════════════════════════════════════
+              NEWS FEED
+          ══════════════════════════════════════════ */}
+          <div>
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Newspaper className="w-5 h-5 text-[#0D9488]" /> Placement News
+              </h2>
+              {/* Search */}
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search articles..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30 bg-white text-gray-900 placeholder-gray-400"
+                />
               </div>
             </div>
+
+            {newsLoading ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+                    <div className="space-y-3">
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-3 bg-gray-100 rounded w-full"></div>
+                      <div className="h-3 bg-gray-100 rounded w-5/6"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredArticles.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredArticles.map((article, i) => (
+                  <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-[#0D9488]/30 transition-all group">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xs font-semibold text-[#0D9488] bg-[#F0FDFA] px-2 py-0.5 rounded-full border border-teal-100">
+                        {typeof article.source === 'object' ? article.source?.name : article.source || 'News'}
+                      </span>
+                      <span className="text-xs text-gray-400 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {article.time || (article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'Today')}
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-2 leading-snug group-hover:text-[#0D9488] transition-colors line-clamp-2">
+                      {article.title}
+                    </h3>
+                    <p className="text-xs text-gray-600 leading-relaxed line-clamp-2 mb-3">
+                      {article.description}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <button onClick={() => toggleSave(article)} className="p-1.5 text-gray-400 hover:text-yellow-500 transition-colors rounded-lg hover:bg-yellow-50">
+                        <Bookmark className={`w-4 h-4 ${savedArticles.some(a => a.title === article.title) ? 'fill-yellow-400 text-yellow-500' : ''}`} />
+                      </button>
+                      {article.url && article.url !== '#' ? (
+                        <a href={article.url} target="_blank" rel="noopener noreferrer"
+                          className="text-xs font-semibold text-[#0D9488] hover:text-[#0F766E] flex items-center gap-1">
+                          Read More <ArrowUpRight className="w-3 h-3" />
+                        </a>
+                      ) : (
+                        <span className="text-xs text-gray-300">Source unavailable</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                <Newspaper className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-600 font-medium">{searchQuery ? 'No articles match your search' : 'No articles available'}</p>
+                <p className="text-gray-400 text-sm mt-1">{searchQuery ? 'Try a different keyword' : 'Check back after 6 AM IST'}</p>
+              </div>
+            )}
           </div>
+
+          {/* ── Top Companies sidebar-style row ── */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-[#0D9488]" /> Top Hiring Companies
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              {[
+                { name: 'Google', jobs: 245, trend: 'up' },
+                { name: 'Microsoft', jobs: 189, trend: 'up' },
+                { name: 'Amazon', jobs: 167, trend: 'down' },
+                { name: 'TCS', jobs: 423, trend: 'up' },
+                { name: 'Infosys', jobs: 378, trend: 'stable' },
+              ].map((c, i) => (
+                <div key={i} className="flex flex-col items-center justify-center p-3 bg-gray-50 rounded-xl border border-gray-100 text-center hover:border-[#0D9488]/30 transition-all">
+                  <div className="font-semibold text-gray-900 text-sm">{c.name}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">{c.jobs} positions</div>
+                  <div className="mt-1.5">
+                    {c.trend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-green-500 mx-auto" />}
+                    {c.trend === 'down' && <TrendingUp className="w-3.5 h-3.5 text-red-400 rotate-180 mx-auto" />}
+                    {c.trend === 'stable' && <div className="w-3 h-0.5 bg-gray-300 mx-auto mt-1"></div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
       </div>
     </AppShell>
