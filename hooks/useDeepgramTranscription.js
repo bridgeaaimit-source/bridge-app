@@ -17,8 +17,9 @@ export function useDeepgramTranscription() {
   const scriptProcessorRef = useRef(null);
   const websocketRef = useRef(null);
   const finalTranscriptRef = useRef('');
-  const isRecordingRef = useRef(false); // use ref to avoid stale closures in callbacks
+  const isRecordingRef = useRef(false);
   const recognitionRef = useRef(null);
+  const webSpeechStartedRef = useRef(false); // prevent double-start
 
   // Indian English filler words — covers both standard and desi fillers
   const fillerPatterns = useRef([
@@ -79,18 +80,24 @@ export function useDeepgramTranscription() {
     }
   }, [updateTranscript]);
 
-  // Web Speech API fallback — uses ref so auto-restart logic works without stale state
+  // Web Speech API — primary reliable path for voice recording
   const startWebSpeechAPI = useCallback(() => {
+    // Guard: prevent double-start (called from both onerror and onclose paths)
+    if (webSpeechStartedRef.current) return;
+    webSpeechStartedRef.current = true;
+
     if (typeof window === 'undefined') return;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setError('Speech recognition not supported in this browser');
+      setError('Speech recognition not supported. Please use Chrome or Edge.');
       setIsConnecting(false);
       return;
     }
+
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
     recognition.lang = 'en-IN'; // Indian English
 
     recognition.onstart = () => {
@@ -107,95 +114,120 @@ export function useDeepgramTranscription() {
         if (event.results[i].isFinal) final += t + ' ';
         else interim += t;
       }
-      const newFinal = (finalTranscriptRef.current + ' ' + final).trim();
-      finalTranscriptRef.current = newFinal;
-      updateTranscript((newFinal + ' ' + interim).trim(), false);
+      if (final) {
+        const newFinal = (finalTranscriptRef.current + ' ' + final).trim();
+        finalTranscriptRef.current = newFinal;
+        updateTranscript((newFinal + ' ' + interim).trim(), false);
+      } else if (interim) {
+        updateTranscript((finalTranscriptRef.current + ' ' + interim).trim(), false);
+      }
     };
 
     recognition.onerror = (event) => {
-      if (event.error === 'no-speech' && isRecordingRef.current) {
-        try { recognition.start(); } catch (e) { /* already running */ }
+      if (!isRecordingRef.current) return;
+      // no-speech and audio-capture are non-fatal — just restart
+      if (event.error === 'no-speech' || event.error === 'audio-capture') {
+        try { recognition.stop(); } catch {}
+        // onend will restart
+      } else if (event.error === 'network') {
+        // network error — retry after short delay
+        setTimeout(() => { if (isRecordingRef.current) { try { recognition.start(); } catch {} } }, 1000);
       } else if (event.error !== 'aborted') {
-        setError('Speech recognition error: ' + event.error);
+        console.warn('Speech recognition error:', event.error);
       }
     };
 
     recognition.onend = () => {
       if (isRecordingRef.current) {
-        try { recognition.start(); } catch (e) { /* ignore */ }
+        // Auto-restart to maintain continuous recording
+        setTimeout(() => {
+          if (isRecordingRef.current && recognitionRef.current) {
+            try { recognition.start(); } catch {}
+          }
+        }, 100);
       }
     };
 
-    recognition.start();
-    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+      recognitionRef.current = recognition;
+    } catch (e) {
+      console.error('Failed to start speech recognition:', e);
+      webSpeechStartedRef.current = false;
+    }
   }, [updateTranscript]);
 
-  // connectToDeepgram now returns a Promise that resolves only when WS is OPEN
-  // This fixes the race condition where audio was sent before the socket was ready
   const connectToDeepgram = useCallback(() => {
     return new Promise(async (resolve, reject) => {
+      let settled = false;
+      const settle = (fn, val) => { if (!settled) { settled = true; fn(val); } };
+
       try {
         setIsConnecting(true);
         setError(null);
 
         const response = await fetch('/api/transcription/stream', { method: 'POST' });
-        if (!response.ok) throw new Error('Failed to get transcription config');
+        if (!response.ok) throw new Error('Config fetch failed');
         const config = await response.json();
-        if (!config.apiKey) throw new Error('Deepgram API key not configured');
+        if (!config.apiKey) throw new Error('No API key');
 
-        // Build WebSocket URL with Indian English and best settings
         const wsUrl = new URL('wss://api.deepgram.com/v1/listen');
         wsUrl.searchParams.set('model', 'nova-2');
-        wsUrl.searchParams.set('language', 'en-IN');       // Indian English
+        wsUrl.searchParams.set('language', 'en-IN');
         wsUrl.searchParams.set('smart_format', 'true');
         wsUrl.searchParams.set('punctuate', 'true');
         wsUrl.searchParams.set('interim_results', 'true');
         wsUrl.searchParams.set('vad_events', 'true');
-        wsUrl.searchParams.set('endpointing', '300');       // 300ms silence = end of utterance
-        wsUrl.searchParams.set('filler_words', 'true');     // Deepgram native filler detection
+        wsUrl.searchParams.set('endpointing', '300');
+        wsUrl.searchParams.set('filler_words', 'true');
         wsUrl.searchParams.set('token', config.apiKey);
 
         const ws = new WebSocket(wsUrl.toString());
 
-        // Resolve ONLY when WS is open — audio setup happens after this
+        // 5-second timeout — if Deepgram doesn't open, reject and use Web Speech API
+        const timeout = setTimeout(() => {
+          try { ws.close(); } catch {}
+          settle(reject, new Error('Deepgram timeout'));
+        }, 5000);
+
         ws.onopen = () => {
-          console.log('✅ Deepgram WebSocket open');
+          clearTimeout(timeout);
           setIsConnecting(false);
           setRecordingStatus('listening');
           websocketRef.current = ws;
-          resolve();
+          settle(resolve, undefined);
         };
 
         ws.onmessage = handleWebSocketMessage;
 
-        ws.onerror = (err) => {
-          console.error('Deepgram WS error:', err);
+        ws.onerror = () => {
+          clearTimeout(timeout);
           setIsConnecting(false);
-          reject(new Error('WebSocket connection failed'));
+          settle(reject, new Error('WebSocket failed'));
         };
 
         ws.onclose = (event) => {
           setIsConnecting(false);
-          if (event.code !== 1000) {
-            console.log('Deepgram closed unexpectedly, falling back to Web Speech API');
-            toast.error('Using browser transcription (Deepgram unavailable)');
-            startWebSpeechAPI();
+          // Only fall back if we haven't already resolved (i.e. WS was never open)
+          // AND if this wasn't a clean close. The settled guard prevents double Web Speech start.
+          if (!settled && event.code !== 1000) {
+            settle(reject, new Error('WebSocket closed before open'));
           }
         };
 
         websocketRef.current = ws;
       } catch (err) {
-        setError(err.message);
         setIsConnecting(false);
-        reject(err);
+        settle(reject, err);
       }
     });
-  }, [handleWebSocketMessage, startWebSpeechAPI]);
+  }, [handleWebSocketMessage]);
 
   const startRecording = useCallback(async (existingStream = null) => {
     try {
       setError(null);
       isRecordingRef.current = true;
+      webSpeechStartedRef.current = false; // reset for each new recording session
 
       let stream = existingStream;
       if (!stream) {
@@ -210,12 +242,11 @@ export function useDeepgramTranscription() {
         });
       }
 
-      // Try Deepgram — if it fails, fall back to Web Speech API
+      // Try Deepgram first — silently fall back to Web Speech API if unavailable
       try {
-        await connectToDeepgram(); // WS is guaranteed OPEN when this resolves
-      } catch (deepgramErr) {
-        console.warn('Deepgram unavailable, using Web Speech API:', deepgramErr.message);
-        toast.error('Using browser transcription');
+        await connectToDeepgram();
+      } catch {
+        // Silent fallback — no toast, just use Web Speech API
         startWebSpeechAPI();
         setIsRecording(true);
         return;
@@ -280,6 +311,7 @@ export function useDeepgramTranscription() {
 
   const stopRecording = useCallback(() => {
     isRecordingRef.current = false;
+    webSpeechStartedRef.current = false;
 
     if (mediaRecorderRef.current?.state !== 'inactive') {
       try { mediaRecorderRef.current.stop(); } catch (e) { /* ignore */ }
