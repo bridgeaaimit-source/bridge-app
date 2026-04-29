@@ -395,13 +395,13 @@ Provide a DETAILED evaluation in JSON format:
   },
   "career_insights": {
     "market_fit": "High/Medium/Low",
-    "salary_range": "estimated range for fresher level",
+    "salary_range": "estimated range in Indian Rupees (₹) for fresher level",
     "growth_potential": "High/Medium/Low",
     "recommended_roles": ["role 1", "role 2"]
   }
 }
 
-Return ONLY the JSON, no other text. Be ENCOURAGING, focus on POTENTIAL, and be GENEROUS with scores for freshers.`;
+Return ONLY the JSON, no other text. Be ENCOURAGING, focus on POTENTIAL, and be GENEROUS with scores for freshers. Use Indian Rupees (₹) for salary range.`;
 
     console.log('📝 Prompt length:', prompt.length);
     console.log('📝 History length:', historyText.length);
@@ -467,7 +467,7 @@ Return ONLY the JSON, no other text. Be ENCOURAGING, focus on POTENTIAL, and be 
         },
         career_insights: {
           market_fit: "Medium",
-          salary_range: "Entry level",
+          salary_range: "₹3-6 LPA (Entry level)",
           growth_potential: "High",
           recommended_roles: [job_role]
         },
@@ -521,7 +521,7 @@ Return ONLY the JSON, no other text. Be ENCOURAGING, focus on POTENTIAL, and be 
         },
         career_insights: {
           market_fit: "Medium",
-          salary_range: "Entry level",
+          salary_range: "₹3-6 LPA (Entry level)",
           growth_potential: "High",
           recommended_roles: [job_role]
         },

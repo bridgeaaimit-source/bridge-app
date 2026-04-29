@@ -50,9 +50,9 @@ export default function Page() {
           newScores[key] = Math.min(10, Math.round(oldVal * 2));
         });
 
-        // Increase placement chance significantly
+        // Increase placement chance significantly (2x multiplier for more lenient scoring)
         const oldPlacement = oldFeedback.placement_chance || 50;
-        const newPlacement = Math.min(85, Math.round(oldPlacement * 1.5));
+        const newPlacement = Math.min(90, Math.round(oldPlacement * 2));
 
         // Update verdict to be more positive
         const oldVerdict = oldFeedback.verdict || 'Weak Maybe';
