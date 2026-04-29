@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause, Volume2, Lightbulb, Star, History, Download, DownloadCloud, Book } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useRouter } from "next/navigation";
@@ -58,21 +58,11 @@ export default function SmartInterviewPage() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [feedbackHistory, setFeedbackHistory] = useState([]);
-  
-  // Use a ref so the callback always sees latest state without circular deps
-  const voiceCmdStateRef = useRef({});
 
-  // Voice command handler — say "finish interview" to end early
-  const handleVoiceCommand = useCallback((command) => {
-    const { stage, mode, fullTranscript, interimTranscript, currentAnswer,
-            stopFn, submitFn } = voiceCmdStateRef.current;
-    if (command === 'finish' && stage === 'interviewing' && (mode === 'voice' || mode === 'video')) {
-      toast.success('Voice command: finishing interview...');
-      stopFn?.();
-      const finalAnswer = fullTranscript || interimTranscript || currentAnswer || '';
-      submitFn?.(finalAnswer, true);
-    }
-  }, []);
+  // Voice command handler — say "finish interview" to end early (temporarily disabled to fix prerender)
+  const handleVoiceCommand = (command) => {
+    // Voice command feature temporarily disabled
+  };
 
   // Use Deepgram transcription hook with voice command support
   const {
@@ -101,18 +91,16 @@ export default function SmartInterviewPage() {
   
   const fileInputRef = useRef(null);
 
-  // Keep ref in sync so voice command callback always reads latest values
-  voiceCmdStateRef.current = {
-    stage, mode, fullTranscript, interimTranscript, currentAnswer,
-    stopFn: stopDeepgramRecording, submitFn: submitAnswer,
-  };
+  // Memoize history length to avoid calling buildHistory in JSX during prerender
+  const historyLength = useMemo(() => buildHistory(conversationHistory).length, [conversationHistory]);
+  const hasHistoryAnswers = historyLength > 0;
 
   // Check browser support for speech recognition
   useEffect(() => {
     if (typeof window !== 'undefined' && !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
       setIsVideoSupported(false);
     }
-    
+
     // Load voices for TTS
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.getVoices();
@@ -987,9 +975,8 @@ export default function SmartInterviewPage() {
             </div>
             <button
               onClick={() => {
-                const hasAnswers = buildHistory(conversationHistory).length > 0;
                 const hasCurrentAnswer = fullTranscript || interimTranscript || currentAnswer;
-                if (hasAnswers || hasCurrentAnswer) {
+                if (hasHistoryAnswers || hasCurrentAnswer) {
                   stopDeepgramRecording();
                   submitAnswer(fullTranscript || interimTranscript || currentAnswer, true);
                 } else {
@@ -999,7 +986,7 @@ export default function SmartInterviewPage() {
               className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
             >
               <X className="w-4 h-4" />
-              {buildHistory(conversationHistory).length > 0 || fullTranscript || currentAnswer ? 'Finish & Get Feedback' : 'End Interview'}
+              {hasHistoryAnswers || fullTranscript || currentAnswer ? 'Finish & Get Feedback' : 'End Interview'}
             </button>
           </div>
 
