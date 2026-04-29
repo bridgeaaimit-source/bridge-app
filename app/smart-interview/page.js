@@ -2,13 +2,15 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronLeft, Brain, Mic, Keyboard, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause, Volume2, Lightbulb, Star, History, Download, DownloadCloud, Book } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, collection, addDoc, query, orderBy, limit, getDocs, getDoc, updateDoc } from "firebase/firestore";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
-import { useDeepgramTranscription } from "@/hooks/useDeepgramTranscription";
+import { useAssemblyAI as useDeepgramTranscription } from "@/hooks/useAssemblyAI";
 
 export default function SmartInterviewPage() {
+  const router = useRouter();
   const [stage, setStage] = useState('setup'); // 'setup' | 'interviewing' | 'feedback' | 'history'
   const [resumeBase64, setResumeBase64] = useState('');
   const [resumeFileName, setResumeFileName] = useState('');
@@ -56,6 +58,8 @@ export default function SmartInterviewPage() {
     fillerWordCounts,
     recordingStatus,
     error: transcriptionError,
+    speechLang,
+    setLang,
     startRecording: startDeepgramRecording,
     stopRecording: stopDeepgramRecording,
     clearTranscript,
@@ -202,11 +206,19 @@ export default function SmartInterviewPage() {
       setRecordingTimeLeft(120);
       setIsVideoRecording(true);
 
-      // Get video stream with audio
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
+      // Get video+audio stream — fall back to audio-only if camera unavailable
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      } catch (streamErr) {
+        if (streamErr.name === 'NotFoundError' || streamErr.name === 'NotReadableError') {
+          // Try audio only if camera is the problem
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          toast('Camera not found — recording audio only', { icon: '🎙️' });
+        } else {
+          throw streamErr;
+        }
+      }
 
       // Start Deepgram transcription with the existing stream
       // Now uses AudioContext to avoid MediaRecorder conflicts
@@ -272,6 +284,13 @@ export default function SmartInterviewPage() {
   const startInterview = async () => {
     if (!resumeBase64 || !jobRole) {
       toast.error('Please upload resume and enter job role');
+      return;
+    }
+
+    // Gate through device test unless user opted out
+    const skipTest = typeof window !== 'undefined' && localStorage.getItem('bridge_skip_device_test') === 'true';
+    if (!skipTest && (mode === 'voice' || mode === 'video')) {
+      router.push(`/device-test?next=${encodeURIComponent('/smart-interview')}`);
       return;
     }
 
@@ -971,101 +990,111 @@ export default function SmartInterviewPage() {
                       </button>
                     </div>
                   ) : mode === 'voice' ? (
-                    <div className="text-center">
+                    <div className="space-y-4">
+                      {/* Language selector */}
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="text-xs text-gray-500">Language:</span>
+                        {[{code:'en-IN',label:'🇮🇳 India'},{code:'en-GB',label:'🇬🇧 UK'},{code:'en-US',label:'🇺🇸 US'}].map(l => (
+                          <button key={l.code} onClick={() => setLang(l.code)}
+                            className={`text-xs px-2 py-1 rounded-full border transition-all ${
+                              speechLang === l.code ? 'bg-[#0D9488] text-white border-[#0D9488]' : 'bg-white text-gray-600 border-gray-200 hover:border-[#0D9488]'
+                            }`}>{l.label}</button>
+                        ))}
+                      </div>
+
+                      {/* Recording state */}
                       {isConnecting ? (
-                        <div className="space-y-4">
-                          <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto animate-pulse">
-                            <Mic className="w-8 h-8 text-white" />
+                        <div className="flex flex-col items-center gap-3 py-4">
+                          <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center animate-pulse">
+                            <Mic className="w-7 h-7 text-yellow-600" />
                           </div>
-                          <div className="text-gray-900">Connecting to transcription service...</div>
+                          <p className="text-sm text-gray-600">Starting microphone...</p>
                         </div>
                       ) : isRecording ? (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-center gap-2">
-                            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                            <div className="text-gray-900 font-semibold capitalize">{recordingStatus}</div>
-                          </div>
-                          
-                          {/* Analytics */}
-                          <div className="flex justify-center gap-6 text-sm">
-                            <div className="text-center">
-                              <div className="font-bold text-[#0D9488]">{wordCount}</div>
-                              <div className="text-gray-600">Words</div>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-xl px-4 py-2">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></span>
+                              <span className="text-sm font-semibold text-red-700">Recording — speak your answer</span>
                             </div>
-                            <div className="text-center">
-                              <div className="font-bold text-orange-600">{fillerWords.length}</div>
-                              <div className="text-gray-600">Fillers</div>
+                            <div className="flex gap-3 text-xs text-gray-500">
+                              <span><span className="font-bold text-[#0D9488]">{wordCount}</span> words</span>
+                              {fillerWords.length > 0 && <span><span className="font-bold text-orange-500">{fillerWords.length}</span> fillers</span>}
                             </div>
                           </div>
 
-                          {/* Transcript */}
-                          <div className="bg-gray-50 rounded-lg p-4 text-left max-h-48 overflow-y-auto">
-                            <div className="text-sm text-gray-700">
-                              {fullTranscript || interimTranscript || 'Listening...'}
-                            </div>
+                          {/* Live transcript box */}
+                          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 min-h-[80px] text-left">
+                            {(fullTranscript || interimTranscript) ? (
+                              <p className="text-sm text-gray-800 leading-relaxed">
+                                <span className="text-gray-900">{transcript}</span>
+                                {interimTranscript && <span className="text-gray-400 italic"> {interimTranscript}</span>}
+                              </p>
+                            ) : (
+                              <p className="text-sm text-gray-400 italic animate-pulse">Listening... speak now</p>
+                            )}
                           </div>
 
-                          {/* Filler word highlights */}
+                          {/* Filler words */}
                           {Object.keys(fillerWordCounts).length > 0 && (
-                            <div className="mt-2">
-                              <div className="text-xs text-gray-500 mb-2">Filler words detected:</div>
-                              <div className="flex flex-wrap gap-2 justify-center">
-                                {Object.entries(fillerWordCounts).map(([word, count]) => (
-                                  <span key={word} className="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold">
-                                    {word} ({count})
-                                  </span>
-                                ))}
-                              </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              <span className="text-xs text-gray-400">Fillers:</span>
+                              {Object.entries(fillerWordCounts).map(([word, count]) => (
+                                <span key={word} className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">{word} ×{count}</span>
+                              ))}
                             </div>
                           )}
 
-                          {/* Export button */}
-                          {fullTranscript && (
-                            <button
-                              onClick={exportTranscript}
-                              className="text-sm text-[#0D9488] hover:underline flex items-center justify-center gap-1"
-                            >
-                              <Download className="w-4 h-4" />
-                              Export Transcript
+                          <div className="flex gap-3 pt-1">
+                            <button onClick={stopDeepgramRecording}
+                              className="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-2">
+                              <span className="w-3 h-3 bg-white rounded-full"></span> Stop Recording
                             </button>
-                          )}
-
-                          {/* Submit Answer button */}
-                          {fullTranscript && (
-                            <button
-                              onClick={() => submitAnswer(fullTranscript)}
-                              className="bg-[#0D9488] text-white px-6 py-3 rounded-lg hover:bg-[#0F766E] transition-colors"
-                            >
-                              Submit Answer
-                            </button>
-                          )}
-
-                          <button
-                            onClick={stopDeepgramRecording}
-                            className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors"
-                          >
-                            Stop Recording
-                          </button>
+                            {fullTranscript && (
+                              <button onClick={() => {
+                                const captured = fullTranscript || interimTranscript;
+                                stopDeepgramRecording();
+                                setTimeout(() => submitAnswer(captured), 50);
+                              }}
+                                className="flex-1 bg-[#0D9488] text-white py-3 rounded-xl font-semibold hover:bg-[#0F766E] transition-colors">
+                                Stop & Submit →
+                              </button>
+                            )}
+                          </div>
                         </div>
                       ) : (
-                        <div className="space-y-4">
-                          <div className="w-16 h-16 bg-[#F0FDFA] rounded-full flex items-center justify-center mx-auto">
-                            <Mic className="w-8 h-8 text-[#0D9488]" />
-                          </div>
-                          <div className="text-gray-600">Click to start recording</div>
-                          {transcriptionError && (
-                            <div className="text-sm text-red-600">{transcriptionError}</div>
+                        <div className="space-y-3">
+                          {/* Transcript persists here after stop */}
+                          {fullTranscript && (
+                            <div className="bg-[#F0FDFA] border border-teal-200 rounded-xl p-4">
+                              <p className="text-xs font-semibold text-teal-700 mb-1">Your answer (ready to submit):</p>
+                              <p className="text-sm text-gray-800 leading-relaxed">{fullTranscript}</p>
+                            </div>
                           )}
-                          <button
-                            onClick={() => {
-                              clearTranscript();
-                              startDeepgramRecording();
-                            }}
-                            disabled={isConnecting}
-                            className="bg-[#0D9488] text-white px-6 py-3 rounded-lg hover:bg-[#0F766E] transition-colors disabled:opacity-50"
-                          >
-                            {isConnecting ? 'Connecting...' : 'Start Recording'}
-                          </button>
+
+                          {transcriptionError && (
+                            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{transcriptionError}</div>
+                          )}
+
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => { clearTranscript(); startDeepgramRecording(); }}
+                              disabled={isConnecting}
+                              className="flex-1 bg-[#0D9488] text-white py-3 rounded-xl font-semibold hover:bg-[#0F766E] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                              <Mic className="w-4 h-4" />
+                              {fullTranscript ? 'Re-record' : 'Start Recording'}
+                            </button>
+                            <button
+                              onClick={() => submitAnswer(fullTranscript)}
+                              disabled={!fullTranscript || isTyping}
+                              className="flex-1 bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                              Submit Answer →
+                            </button>
+                          </div>
+
+                          {!fullTranscript && (
+                            <p className="text-center text-xs text-gray-400">Press Start Recording, speak your answer, then Stop &amp; Submit</p>
+                          )}
                         </div>
                       )}
                     </div>
