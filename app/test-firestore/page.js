@@ -1,1 +1,8 @@
-"use client";`nimport { useEffect } from "react";`nimport { useRouter } from "next/navigation";`nexport default function Page() { const r = useRouter(); useEffect(() => { r.replace("/dashboard"); }, [r]); return null; }
+"use client";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+export default function Page() {
+  const r = useRouter();
+  useEffect(() => { r.replace("/dashboard"); }, [r]);
+  return null;
+}
