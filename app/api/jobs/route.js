@@ -88,6 +88,46 @@ Return ONLY valid JSON:
     return Response.json(JSON.parse(text));
   }
 
+  // ACTION: Score resume quality → initial Bridge Score
+  if (action === 'score_resume') {
+    const scorePrompt = `You are evaluating a student resume for quality and career readiness.
+
+Score this resume across these dimensions and return ONLY valid JSON (no extra text):
+{
+  "overall_score": <integer 0-100>,
+  "bridge_score": <integer 0-200, calculated as overall_score * 2>,
+  "breakdown": {
+    "completeness": <0-25, does it have contact, education, skills, experience/projects>,
+    "clarity": <0-25, is it well-structured, readable, no typos>,
+    "relevance": <0-25, does it show job-ready skills and achievements>,
+    "impact": <0-25, does it show quantified results, internships, projects>
+  },
+  "strengths": ["strength1", "strength2"],
+  "improvements": ["improvement1", "improvement2"],
+  "verdict": "Brief 1-line verdict on this resume"
+}
+
+Be honest and fair. A blank or minimal resume should score 10-30. A strong MBA/engineering resume with projects and internships should score 70-90.`;
+
+    const message = await client.messages.create({
+      model: 'claude-haiku-4-20250514',
+      max_tokens: 600,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'document',
+            source: { type: 'base64', media_type: 'application/pdf', data: resume_base64 }
+          },
+          { type: 'text', text: scorePrompt }
+        ]
+      }]
+    });
+
+    const scoreText = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return Response.json(JSON.parse(scoreText));
+  }
+
   // ACTION 2: Fetch and match real jobs
   if (action === 'fetch_jobs') {
     const { profile } = await request.json()

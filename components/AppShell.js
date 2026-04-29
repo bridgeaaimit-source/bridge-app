@@ -73,12 +73,12 @@ export default function AppShell({ children }) {
               role: userData.role || 'student'
             });
             setResumeUploaded(!!userData.resumeUploaded);
-            // Show onboarding if not completed
-            if (!userData.onboardingCompleted) setShowModal(true);
+            // Only show onboarding AFTER resume is uploaded
+            if (userData.resumeUploaded && !userData.onboardingCompleted) setShowModal(true);
           } else {
             setUserProfile({ name: user.displayName, college: 'Add College', bridgeScore: 0, photo: user.photoURL });
             setResumeUploaded(false);
-            setShowModal(true);
+            // Don't show modal yet — resume gate comes first
           }
         } catch (error) {
           console.error('Error loading user profile:', error);
@@ -126,6 +126,8 @@ export default function AppShell({ children }) {
     setShowModal(false);
   }, [isBypassed, currentUser]);
 
+  const [resumeScore, setResumeScore] = useState(null);
+
   const handleResumeGateUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -137,17 +139,40 @@ export default function AppShell({ children }) {
     try {
       const userRef = doc(db, 'users', currentUser.uid);
       const snap = await getDoc(userRef);
-      const base64 = await new Promise((res, rej) => {
+      // Read as data URL (includes base64 prefix)
+      const dataUrl = await new Promise((res, rej) => {
         const r = new FileReader(); r.readAsDataURL(file);
         r.onload = () => res(r.result); r.onerror = rej;
       });
-      const updateData = { resumeUploaded: true, resumeFileName: file.name, resumeBase64: base64, updatedAt: new Date().toISOString() };
+      // Strip prefix for API
+      const base64 = dataUrl.split(',')[1];
+      // Score resume via AI
+      let bridgeScore = 0;
+      let scoreData = null;
+      try {
+        const scoreRes = await fetch('/api/jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'score_resume', resume_base64: base64 })
+        });
+        if (scoreRes.ok) {
+          scoreData = await scoreRes.json();
+          bridgeScore = scoreData.bridge_score || 0;
+          setResumeScore(scoreData);
+        }
+      } catch (scoreErr) { console.error('Resume scoring failed', scoreErr); }
+      const updateData = { resumeUploaded: true, resumeFileName: file.name, resumeBase64: dataUrl, bridgeScore, resumeScore: scoreData, updatedAt: new Date().toISOString() };
       if (snap.exists()) {
         await updateDoc(userRef, updateData);
       } else {
-        await setDoc(userRef, { uid: currentUser.uid, name: currentUser.displayName || '', email: currentUser.email || '', photo: currentUser.photoURL || '', role: 'student', bridgeScore: 0, interviewsDone: 0, avgScore: 0, streak: 0, createdAt: new Date().toISOString(), ...updateData });
+        await setDoc(userRef, { uid: currentUser.uid, name: currentUser.displayName || '', email: currentUser.email || '', photo: currentUser.photoURL || '', role: 'student', interviewsDone: 0, avgScore: 0, streak: 0, createdAt: new Date().toISOString(), ...updateData });
       }
       setResumeUploaded(true);
+      // Now trigger onboarding if not done
+      const updatedSnap = await getDoc(userRef);
+      if (!updatedSnap.data()?.onboardingCompleted) {
+        setTimeout(() => setShowModal(true), 800);
+      }
     } catch (e) { console.error('Resume save error', e); alert('Failed to save resume. Try again.'); }
     finally { setUploadingResume(false); }
   };
@@ -318,7 +343,7 @@ export default function AppShell({ children }) {
 
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Upload Your Resume First</h2>
               <p className="text-gray-500 text-sm mb-6">
-                Hey {currentUser?.displayName?.split(' ')[0] || 'there'} 👋 — to personalise your experience and enable AI-powered interviews, please upload your resume before getting started.
+                Hey {currentUser?.displayName?.split(' ')[0] || 'there'} 👋 — upload your resume to get your <strong className="text-[#0D9488]">personalised Bridge Score</strong> and unlock all AI features.
               </p>
 
               {/* Steps */}
@@ -334,7 +359,7 @@ export default function AppShell({ children }) {
               {/* Upload button */}
               <label className={`w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-white cursor-pointer transition-all ${uploadingResume ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#0D9488] hover:bg-[#0F766E]'}`}>
                 {uploadingResume ? (
-                  <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Saving...</>
+                  <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Analysing resume...</>
                 ) : resumeFile ? (
                   <><CheckCircle className="w-4 h-4" /> {resumeFile.name}</>
                 ) : (
@@ -343,7 +368,10 @@ export default function AppShell({ children }) {
                 <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleResumeGateUpload} disabled={uploadingResume} />
               </label>
 
-              <p className="text-xs text-gray-400 mt-3">Max 5MB · PDF, DOC, or DOCX</p>
+              {uploadingResume && (
+                <p className="text-xs text-[#0D9488] mt-3 font-medium">AI is scoring your resume — this takes ~10 seconds...</p>
+              )}
+              {!uploadingResume && <p className="text-xs text-gray-400 mt-3">Max 5MB · PDF, DOC, or DOCX</p>}
             </div>
           </div>
         </div>
