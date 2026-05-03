@@ -60,6 +60,8 @@ export default function SmartInterviewPage() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [feedbackHistory, setFeedbackHistory] = useState([]);
+  const [interviewerThought, setInterviewerThought] = useState('');
+  const [startError, setStartError] = useState('');
 
   // Voice command handler — say "finish interview" to end early (temporarily disabled to fix prerender)
   const handleVoiceCommand = (command) => {
@@ -413,22 +415,30 @@ export default function SmartInterviewPage() {
       }
 
       setCurrentQuestion(data.question);
+      setInterviewerThought(data.interviewer_thought || '');
       setConversationHistory([
         { role: 'interviewer', message: data.question }
       ]);
       setStage('interviewing');
       setQuestionNumber(1);
-      
+      setStartError('');
+
       if (autoSpeak) {
         speakText(data.question);
       }
-      
+
     } catch (error) {
-      toast.error(error.message || 'Failed to start interview');
       console.error('Interview start error:', error);
+      setStartError(error.message || 'Failed to start interview. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleClarification = () => {
+    const clarification = window.prompt('What would you like clarified about this question?');
+    if (!clarification) return;
+    submitAnswer(`[Clarification needed]: ${clarification}`, false);
   };
 
   const submitAnswer = async (overrideAnswer, shouldFinish = false) => {
@@ -535,12 +545,13 @@ export default function SmartInterviewPage() {
 
       if (data.question) {
         setCurrentQuestion(data.question);
+        setInterviewerThought(data.interviewer_thought || '');
         setConversationHistory([
           ...newHistory,
           { role: 'interviewer', message: data.question }
         ]);
         setQuestionNumber(questionNumber + 1);
-        
+
         if (autoSpeak) {
           speakText(data.question);
         }
@@ -932,13 +943,32 @@ export default function SmartInterviewPage() {
                 </div>
 
                 {/* Start Button */}
+                {startError && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                    <p className="text-red-600 text-sm">❌ {startError}</p>
+                    <button onClick={() => setStartError('')} className="text-red-400 text-xs mt-1">Dismiss</button>
+                  </div>
+                )}
+
+                <div className="bg-[#F0FDFA] border border-[#0D9488]/20 rounded-xl p-4 mb-4">
+                  <p className="text-sm text-[#0D9488] font-medium mb-1">What to expect:</p>
+                  <ul className="text-xs text-[#44445A] space-y-1">
+                    <li>• AI reads your resume carefully</li>
+                    <li>• Asks 8-10 personalized questions</li>
+                    <li>• You can ask for clarification anytime</li>
+                    <li>• Detailed feedback at the end</li>
+                    <li>• Takes about 15-20 minutes</li>
+                  </ul>
+                </div>
+
                 <button
                   onClick={startInterview}
                   disabled={!resumeBase64 || !jobRole || loading}
                   className="w-full bg-gradient-to-r from-[#0D9488] to-[#0F766E] text-white py-4 rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Preparing Interview...' : 'Start Interview'}
+                  {loading ? 'Preparing Interview...' : 'Start Practice Interview →'}
                 </button>
+                <p className="text-xs text-[#8888A0] text-center mt-2">🔒 This is a safe practice session. Nothing is recorded or shared.</p>
               </div>
             </div>
 
@@ -1044,6 +1074,14 @@ export default function SmartInterviewPage() {
             {/* Left Column - Interview Area */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                {/* Interviewer Thought Context */}
+                {interviewerThought && (
+                  <div className="bg-[#F0FDFA] border border-[#0D9488]/20 rounded-xl p-3 mb-3">
+                    <p className="text-xs text-[#8888A0] mb-1">💭 Why this question:</p>
+                    <p className="text-xs text-[#44445A]">{interviewerThought}</p>
+                  </div>
+                )}
+
                 {/* AI Interviewer Card */}
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-12 h-12 bg-[#F0FDFA] rounded-full flex items-center justify-center">
@@ -1113,6 +1151,13 @@ export default function SmartInterviewPage() {
                           <Send className="w-5 h-5" />
                         </button>
                       </div>
+                      <button
+                        onClick={handleClarification}
+                        disabled={isTyping}
+                        className="text-xs text-[#0D9488] underline"
+                      >
+                        🤔 Ask for clarification on this question
+                      </button>
                       {conversationHistory.length > 0 && (
                         <button
                           onClick={() => submitAnswer(currentAnswer, true)}
