@@ -123,19 +123,68 @@ export default function SmartInterviewPage() {
     };
   }, [videoStream, recordedVideoUrl]);
 
-  const speakText = (text) => {
+  const currentAudioRef = useRef(null);
+
+  const speakTextFallback = (text) => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.9;
       utterance.pitch = 1;
       utterance.volume = 1;
-      
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => setIsSpeaking(false);
       utterance.onerror = () => setIsSpeaking(false);
-      
       window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const speakText = async (text) => {
+    if (!text) return;
+
+    // Stop any current audio
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    setIsSpeaking(true);
+
+    try {
+      const response = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        throw new Error('ElevenLabs TTS unavailable');
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      currentAudioRef.current = audio;
+
+      audio.onended = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+        currentAudioRef.current = null;
+      };
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+        currentAudioRef.current = null;
+        speakTextFallback(text);
+      };
+
+      await audio.play();
+    } catch (err) {
+      console.warn('ElevenLabs TTS failed, using browser fallback:', err.message);
+      speakTextFallback(text);
     }
   };
 
