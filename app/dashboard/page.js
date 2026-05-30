@@ -289,8 +289,8 @@ export default function Dashboard() {
         {/* Greeting */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-10 gap-3 mt-4">
           <div>
-            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1" style={{fontFamily:'DM Sans,sans-serif'}}>{todayDate}</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900" style={{fontFamily:'Syne,sans-serif'}}>{greeting}, {firstName} 👋</h2>
+            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1" >{todayDate}</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900" >{greeting}, {firstName} 👋</h2>
           </div>
         </div>
 
@@ -306,8 +306,8 @@ export default function Dashboard() {
               <div className={`w-12 h-12 ${bg} rounded-full flex items-center justify-center mb-3`}>
                 <Icon className={`w-6 h-6 ${color}`} />
               </div>
-              <p className="text-xs text-gray-400 mb-1" style={{fontFamily:'DM Sans,sans-serif'}}>{label}</p>
-              <p className="text-2xl md:text-3xl font-bold text-[#00685f]" style={{fontFamily:'Syne,sans-serif'}}>{value}</p>
+              <p className="text-xs text-gray-400 mb-1" >{label}</p>
+              <p className="text-2xl md:text-3xl font-bold text-[#00685f]" >{value}</p>
             </div>
           ))}
         </div>
@@ -322,18 +322,18 @@ export default function Dashboard() {
             <div className="bg-gradient-to-r from-[#0D9488] to-[#14B8A6] rounded-2xl p-8 text-white relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6" data-tour="start-challenge">
               <div className="relative z-10">
                 <span className="inline-block bg-white/20 text-white text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-white/30 mb-3">⚡ Today's Challenge</span>
-                <h3 className="text-xl font-bold mb-2" style={{fontFamily:'Syne,sans-serif'}}>Complete Amazon SDE technical interview</h3>
+                <h3 className="text-xl font-bold mb-2" >Complete Amazon SDE technical interview</h3>
                 <p className="text-[#CCFBF1] text-sm max-w-md">Practice data structures and system design questions tailored to Amazon's hiring bar.</p>
               </div>
               <button onClick={handleStartChallenge} className="relative z-10 bg-white text-[#0D9488] font-bold px-6 py-3 rounded-full hover:bg-[#F0FDFA] transition-colors shrink-0 shadow-sm flex items-center gap-2 text-sm">
                 Start Now <ChevronRight className="w-4 h-4" />
               </button>
-              <div className="absolute -right-6 -bottom-10 text-[140px] text-white/10 font-bold pointer-events-none select-none" style={{fontFamily:'Syne,sans-serif'}}>AI</div>
+              <div className="absolute -right-6 -bottom-10 text-[140px] text-white/10 font-bold pointer-events-none select-none" >AI</div>
             </div>
 
             {/* Keep the Momentum */}
             <div>
-              <h3 className="text-lg font-bold text-gray-800 mb-5" style={{fontFamily:'Syne,sans-serif'}}>Keep the momentum 🔥</h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-5" >Keep the momentum 🔥</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {features.map((feature, i) => {
                   const Icon = feature.icon;
@@ -343,7 +343,7 @@ export default function Dashboard() {
                       <div className="w-10 h-10 bg-[#CCFBF1] rounded-xl flex items-center justify-center mb-4 text-[#0D9488] group-hover:bg-[#0D9488] group-hover:text-white transition-colors">
                         <Icon className="w-5 h-5" />
                       </div>
-                      <h4 className="font-bold text-gray-900 mb-1" style={{fontFamily:'Syne,sans-serif'}}>{feature.title}</h4>
+                      <h4 className="font-bold text-gray-900 mb-1" >{feature.title}</h4>
                       <p className="text-sm text-gray-500 mb-4">{feature.description}</p>
                       <div className="flex items-center gap-1 text-[#0D9488] text-xs font-bold">
                         <span>Continue</span>
@@ -362,7 +362,7 @@ export default function Dashboard() {
             {/* Readiness Score Ring */}
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.08)] flex flex-col items-center" data-tour="bridge-score-card">
               <div className="w-full mb-4">
-                <h3 className="font-bold text-gray-800" style={{fontFamily:'Syne,sans-serif'}}>Readiness Score</h3>
+                <h3 className="font-bold text-gray-800" >Readiness Score</h3>
                 <p className="text-xs text-gray-400">Top 15% of candidates</p>
               </div>
               <div className="relative w-44 h-44 flex items-center justify-center mb-4">
@@ -380,7 +380,7 @@ export default function Dashboard() {
                     strokeDashoffset={circumference - (circumference * scorePercent / 100)} />
                 </svg>
                 <div className="absolute flex flex-col items-center">
-                  <span className="text-3xl font-bold text-[#0D9488]" style={{fontFamily:'Syne,sans-serif'}}>
+                  <span className="text-3xl font-bold text-[#0D9488]" >
                     {stats.bridgeScore || '—'}
                   </span>
                   <span className="text-[10px] font-bold text-[#0D9488] bg-[#CCFBF1] px-2 py-0.5 rounded-full mt-1">
@@ -395,7 +395,7 @@ export default function Dashboard() {
 
             {/* Recent Activity */}
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.05)]">
-              <h3 className="font-bold text-gray-800 mb-5" style={{fontFamily:'Syne,sans-serif'}}>Recent Activity</h3>
+              <h3 className="font-bold text-gray-800 mb-5" >Recent Activity</h3>
               <div className="flex flex-col gap-4">
                 {recentActivity.length > 0 ? (
                   recentActivity.slice(0, 4).map((activity, i) => {

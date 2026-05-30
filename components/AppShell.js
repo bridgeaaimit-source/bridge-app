@@ -248,7 +248,7 @@ export default function AppShell({ children }) {
                     ? 'text-[#00685f] bg-[#6df5e1]/30 border-l-4 border-[#00685f]'
                     : 'text-gray-500 opacity-80 hover:bg-[#6df5e1]/20 hover:text-[#00685f]'
                 }`}
-                style={{fontFamily:'DM Sans,sans-serif'}}
+                
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
                 <span>{item.label}</span>
@@ -261,7 +261,7 @@ export default function AppShell({ children }) {
           <Link
             href="/smart-interview"
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#0D9488] to-[#14B8A6] text-white py-3 rounded-2xl font-semibold text-sm shadow-md hover:shadow-lg hover:opacity-95 transition-all"
-            style={{fontFamily:'DM Sans,sans-serif'}}
+            
           >
             <Rocket className="w-4 h-4" /> Start Practice
           </Link>
@@ -282,12 +282,12 @@ export default function AppShell({ children }) {
       {!isBypassed && resumeUploaded === false && currentUser && (
         <div className="fixed inset-0 z-[100] bg-[#fcf8ff] flex items-center justify-center p-6">
           <div className="max-w-md w-full text-center">
-            <h1 className="text-2xl font-extrabold text-[#00685f] mb-8" style={{fontFamily:'Syne,sans-serif'}}>BridgeAI</h1>
+            <h1 className="text-2xl font-extrabold text-[#00685f] mb-8" >BridgeAI</h1>
             <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
               <div className="w-16 h-16 bg-[#CCFBF1] rounded-full flex items-center justify-center mx-auto mb-5">
                 <Upload className="w-8 h-8 text-[#0D9488]" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2" style={{fontFamily:'Syne,sans-serif'}}>Upload Your Resume First</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2" >Upload Your Resume First</h2>
               <p className="text-gray-500 text-sm mb-6">
                 Hey {currentUser?.displayName?.split(' ')[0] || 'there'} 👋 — upload your resume to get your <strong className="text-[#0D9488]">personalised Bridge Score</strong> and unlock all AI features.
               </p>
@@ -341,7 +341,7 @@ export default function AppShell({ children }) {
               ) : (
                 <Icon className="w-5 h-5" />
               )}
-              <span className="text-[10px] font-semibold" style={{fontFamily:'DM Sans,sans-serif'}}>{item.label}</span>
+              <span className="text-[10px] font-semibold" >{item.label}</span>
             </Link>
           );
         })}

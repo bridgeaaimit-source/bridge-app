@@ -1,46 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
-import * as admin from 'firebase-admin';
+import { adminDb, trackTokens } from '@/lib/firebase-admin';
 
-// Initialize Firebase Admin only if credentials are available
-let db = null;
-try {
-  if (!admin.apps.length && 
-      process.env.FIREBASE_CLIENT_EMAIL && 
-      process.env.FIREBASE_PRIVATE_KEY && 
-      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY
-          ?.replace(/\\n/g, '\n')
-      })
-    });
-  }
-  db = admin.firestore();
-} catch (error) {
-  console.warn('Firebase Admin initialization failed:', error.message);
-}
 
-// Track token usage
-async function trackTokens(userId, feature, inputTokens, outputTokens) {
-  if (!db) return;
-  const total = (inputTokens || 0) + (outputTokens || 0);
-  const today = new Date().toISOString().split('T')[0];
-  
-  try {
-    await db.collection('tokenUsage').doc('daily').collection(today).doc(userId || 'anonymous').set({
-      userId: userId || 'anonymous',
-      [feature]: admin.firestore.FieldValue.increment(total),
-      total: admin.firestore.FieldValue.increment(total),
-      lastUsed: admin.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-    
-    console.log(`📊 ${userId || 'anonymous'} | ${feature}: ${total} tokens`);
-  } catch (e) {
-    console.error('Token tracking failed:', e);
-  }
-}
+
+
 
 export async function POST(request) {
   try {
@@ -66,7 +29,7 @@ export async function POST(request) {
     console.log('Matching candidates for requirements:', requirements);
 
     // Fetch all students from Firestore using Admin SDK
-    const usersRef = db.collection('users');
+    const usersRef = adminDb.collection('users');
     const snapshot = await usersRef.get();
     const candidates = [];
 
