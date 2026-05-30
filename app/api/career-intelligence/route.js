@@ -1,73 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-// Force Node.js runtime for file processing
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Robust PDF parsing function that works in serverless environments
-async function extractPDFText(buffer) {
-  try {
-    console.log('Starting robust PDF extraction...');
-    
-    // Method 1: Try pdf-parse with proper error handling
-    try {
-      console.log('Attempting pdf-parse...');
-      const pdfParse = await import('pdf-parse');
-      
-      // Configure pdf-parse options for better extraction
-      const options = {
-        // Maximum number of pages to parse (to prevent timeouts)
-        max: 20,
-        // Normalize whitespace
-        normalizeWhitespace: false,
-        // Disable hyphenation
-        disableCombineTextItems: false
-      };
-      
-      const pdfData = await pdfParse.default(buffer, options);
-      const text = pdfData.text;
-      
-      if (text && text.trim().length > 50) {
-        console.log('pdf-parse succeeded, extracted:', text.length, 'characters');
-        console.log('PDF info:', pdfData.numpages, 'pages');
-        return text;
-      }
-      
-      console.log('pdf-parse returned empty text');
-      
-    } catch (pdfParseError) {
-      console.log('pdf-parse failed:', pdfParseError.message);
-    }
-    
-    // Method 2: Simple text extraction as fallback
-    try {
-      console.log('Attempting text extraction fallback...');
-      // Try to extract readable text from PDF buffer
-      const text = buffer.toString('utf8');
-      const cleanText = text.replace(/[^\x20-\x7E\n\r]/g, ' ').replace(/\s+/g, ' ').trim();
-      
-      if (cleanText.length > 100) {
-        console.log('Text extraction succeeded, length:', cleanText.length);
-        return cleanText.substring(0, 10000); // Limit to 10k chars
-      }
-      
-      console.log('Text extraction returned insufficient text');
-      
-    } catch (textError) {
-      console.log('Text extraction failed:', textError.message);
-    }
-    
-    throw new Error('PDF parsing methods failed. The PDF might be image-based, encrypted, or corrupted.');
-    
-  } catch (error) {
-    console.error('All PDF extraction methods failed:', error);
-    throw new Error(`PDF extraction failed: ${error.message}`);
-  }
-}
-
 export async function POST(request) {
   try {
-    // Parse multipart form data
     const formData = await request.formData();
     const resumeFile = formData.get('resume');
     const resumeTextInput = formData.get('resumeText');
@@ -81,68 +18,11 @@ export async function POST(request) {
       );
     }
 
-    console.log('Processing career intelligence request...');
-    console.log('Job Role:', jobRole);
-    
-    let resumeText = '';
-    
-    // If text input provided, use it directly
-    if (resumeTextInput) {
-      resumeText = resumeTextInput;
-      console.log('Using provided resume text, length:', resumeText.length);
-    } 
-    // Otherwise, parse PDF file
-    else if (resumeFile) {
-      console.log('Resume file:', resumeFile.name);
-      
-      try {
-        // Convert resume file to buffer and extract text
-        const bytes = await resumeFile.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        
-        console.log('Extracting text from PDF, file size:', bytes.byteLength, 'bytes');
-        
-        // Use the PDF extraction function
-        resumeText = await extractPDFText(buffer);
-        console.log('Successfully extracted resume text, length:', resumeText.length);
-        
-        // Log first 200 characters to verify content
-        console.log('PDF content preview:', resumeText.substring(0, 200) + '...');
-        
-      } catch (error) {
-        console.error('PDF extraction error:', error);
-        
-        return Response.json(
-          { 
-            error: 'Failed to extract text from PDF. The PDF might be image-based or encrypted.',
-            suggestion: 'Try copying text from your PDF and using the Text option instead.',
-            details: error.message
-          },
-          { status: 400 }
-        );
-      }
-    }
-    
-    // Validate we have enough resume text
-    if (!resumeText || resumeText.trim().length < 50) {
-      return Response.json(
-        { error: 'Resume text is too short. Please provide a complete resume with work experience, education, and skills.' },
-        { status: 400 }
-      );
-    }
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-    // Use Claude to analyze career gap
-    const client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY
-    });
+    const analysisInstruction = `You are the world's best career coach, technical recruiter, and skills gap analyst. You have deep knowledge of every industry certification, online course, job market demand, and hiring pattern. When analyzing, be brutally honest but constructive. Always provide REAL, working URLs — never make up URLs.
 
-    const prompt = `You are the world's best career coach, technical recruiter, and skills gap analyst. You have deep knowledge of every industry certification, online course, job market demand, and hiring pattern. When analyzing, be brutally honest but constructive. Always provide REAL, working URLs — never make up URLs.
-
-CANDIDATE'S RESUME:
-${resumeText}
-
-TARGET JOB ROLE:
-${jobRole}
+TARGET JOB ROLE: ${jobRole}
 
 JOB DESCRIPTION:
 ${jobDescription}
@@ -238,10 +118,25 @@ IMPORTANT:
 
     console.log('Calling Claude API...');
 
+    let messageContent;
+    if (resumeFile) {
+      const bytes = await resumeFile.arrayBuffer();
+      const base64 = Buffer.from(bytes).toString('base64');
+      messageContent = [
+        { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
+        { type: 'text', text: analysisInstruction },
+      ];
+    } else {
+      if (!resumeTextInput || resumeTextInput.trim().length < 50) {
+        return Response.json({ error: 'Resume text is too short. Please provide your full resume.' }, { status: 400 });
+      }
+      messageContent = [{ type: 'text', text: `CANDIDATE RESUME:\n${resumeTextInput}\n\n${analysisInstruction}` }];
+    }
+
     const message = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 8000,
-      messages: [{ role: 'user', content: prompt }]
+      messages: [{ role: 'user', content: messageContent }],
     });
 
     const responseText = message.content[0].text

@@ -154,36 +154,36 @@ export default function PulsePage() {
 
   return (
     <AppShell>
-      <div className="min-h-screen bg-[#F0FDFA]">
+      <div className="min-h-screen bg-[#fcf8ff]">
 
         {/* ── Page Header ── */}
-        <div className="bg-white border-b border-gray-200 px-4 sm:px-8 py-4">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#F0FDFA] rounded-xl flex items-center justify-center">
-                <Zap className="w-5 h-5 text-[#0D9488]" />
+        <div className="max-w-[1200px] mx-auto px-4 md:px-10 pt-8 pb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-6">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900" style={{fontFamily:'Syne,sans-serif'}}>GD Pulse</h1>
+                <span className="flex items-center gap-1 text-xs text-green-700 bg-green-100 border border-green-200 px-3 py-1 rounded-full font-semibold">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" /> Live
+                </span>
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">PULSE Feed</h1>
-                <p className="text-xs text-gray-500">Updates daily at 6 AM · {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}</p>
-              </div>
+              <p className="text-gray-400 text-sm">Trending insights · {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}</p>
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-500 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              Live today
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search articles…"
+                className="w-full bg-white border-2 border-[#CCFBF1] focus:border-[#0D9488] rounded-full pl-9 pr-4 py-2 text-sm outline-none transition-colors" />
             </div>
           </div>
-        </div>
 
-        {/* ── Category Pills ── */}
-        <div className="bg-white border-b border-gray-100 px-4 sm:px-8 py-3">
-          <div className="max-w-7xl mx-auto flex gap-2 overflow-x-auto scrollbar-hide">
+          {/* Category Pills */}
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
             {CATEGORIES.map(cat => (
               <button key={cat} onClick={() => handleCategoryChange(cat)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                className={`px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all border ${
                   activeCategory === cat
-                    ? 'bg-[#0D9488] text-white shadow-sm'
-                    : 'bg-gray-100 text-gray-600 hover:bg-[#F0FDFA] hover:text-[#0D9488]'
+                    ? 'bg-[#0D9488] text-white border-[#0D9488] shadow-sm'
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-[#0D9488] hover:text-[#0D9488]'
                 }`}>
                 {cat}
               </button>
@@ -191,7 +191,7 @@ export default function PulsePage() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 space-y-8">
+        <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-4 space-y-8">
 
           {/* ══════════════════════════════════════════
               GD DEEP-DIVE SECTION
@@ -349,22 +349,9 @@ export default function PulsePage() {
               NEWS FEED
           ══════════════════════════════════════════ */}
           <div>
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <Newspaper className="w-5 h-5 text-[#0D9488]" /> Placement News
-              </h2>
-              {/* Search */}
-              <div className="relative w-full sm:w-72">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search articles..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30 bg-white text-gray-900 placeholder-gray-400"
-                />
-              </div>
-            </div>
+            <h2 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
+              <Newspaper className="w-5 h-5 text-[#0D9488]" /> Placement News
+            </h2>
 
             {newsLoading ? (
               <div className="space-y-4">
@@ -381,9 +368,10 @@ export default function PulsePage() {
             ) : filteredArticles.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredArticles.map((article, i) => (
-                  <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-[#0D9488]/30 transition-all group">
+                  <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.05)] hover:shadow-[0_4px_20px_rgba(13,148,136,0.12)] hover:border-[#CCFBF1] transition-all group overflow-hidden">
+                    <div className="p-5">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs font-semibold text-[#0D9488] bg-[#F0FDFA] px-2 py-0.5 rounded-full border border-teal-100">
+                      <span className="text-[11px] font-bold uppercase tracking-wide text-[#0D9488] bg-[#CCFBF1] px-2 py-0.5 rounded-full">
                         {typeof article.source === 'object' ? article.source?.name : article.source || 'News'}
                       </span>
                       <span className="text-xs text-gray-400 flex items-center gap-1">
@@ -391,10 +379,10 @@ export default function PulsePage() {
                         {article.time || (article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'Today')}
                       </span>
                     </div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-2 leading-snug group-hover:text-[#0D9488] transition-colors line-clamp-2">
+                    <h3 className="text-sm font-bold text-gray-900 mb-2 leading-snug group-hover:text-[#0D9488] transition-colors line-clamp-2" style={{fontFamily:'Syne,sans-serif'}}>
                       {article.title}
                     </h3>
-                    <p className="text-xs text-gray-600 leading-relaxed line-clamp-2 mb-3">
+                    <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-3">
                       {article.description}
                     </p>
                     <div className="flex items-center justify-between">
@@ -410,6 +398,7 @@ export default function PulsePage() {
                         <span className="text-xs text-gray-300">Source unavailable</span>
                       )}
                     </div>
+                  </div>
                   </div>
                 ))}
               </div>

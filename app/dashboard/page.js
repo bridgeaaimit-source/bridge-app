@@ -34,6 +34,7 @@ import { useAuthBypass } from "@/hooks/useAuthBypass";
 import { motion } from "framer-motion";
 import GettingStartedChecklist from "@/components/onboarding/GettingStartedChecklist";
 import InfoTooltip from "@/components/onboarding/InfoTooltip";
+import OnboardingTour from "@/components/OnboardingTour";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -276,308 +277,149 @@ export default function Dashboard() {
   };
 
   const firstName = userName?.split(' ')[0] || 'there';
+  const scorePercent = stats.bridgeScore ? Math.min(stats.bridgeScore / 10, 100) : 0;
+  const circumference = 2 * Math.PI * 45;
 
   return (
     <AppShell>
-      <div className="max-w-7xl mx-auto px-4 md:px-8">
-        {/* Getting Started Checklist */}
-        <div className="pt-6">
-          <GettingStartedChecklist stats={stats} userProfile={userProfile} resumeUploaded={resumeUploaded} />
-        </div>
+      <OnboardingTour />
+      <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10">
+        <GettingStartedChecklist stats={stats} userProfile={userProfile} resumeUploaded={resumeUploaded} />
 
-        {/* Greeting Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {greeting}, {firstName} 👋
-              </h1>
-              <p className="text-gray-600">Here's your placement prep summary for today</p>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200">
-              <Calendar className="w-4 h-4 text-gray-500" />
-              <span className="text-sm text-gray-600">{todayDate}</span>
-            </div>
+        {/* Greeting */}
+        <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-10 gap-3 mt-4">
+          <div>
+            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1" style={{fontFamily:'DM Sans,sans-serif'}}>{todayDate}</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900" style={{fontFamily:'Syne,sans-serif'}}>{greeting}, {firstName} 👋</h2>
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 lg:mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0 }}
-            className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100"
-          data-tour="bridge-score-stat"
-          >
-            <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-[#CCFBF1] rounded-full flex items-center justify-center">
-                <Trophy className="w-5 h-5 lg:w-6 lg:h-6 text-[#0D9488]" />
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-10">
+          {[
+            { icon: Trophy, label: 'BRIDGE Score', value: stats.bridgeScore, bg: 'bg-[#CCFBF1]', color: 'text-[#0D9488]' },
+            { icon: Mic,    label: 'Interviews',   value: stats.interviewsDone, bg: 'bg-blue-100', color: 'text-blue-600' },
+            { icon: Flame,  label: 'Day Streak',   value: stats.currentStreak, bg: 'bg-orange-100', color: 'text-orange-500' },
+            { icon: Star,   label: 'Avg Score',    value: stats.avgScore?.toFixed(1) ?? '0.0', bg: 'bg-green-100', color: 'text-green-600' },
+          ].map(({ icon: Icon, label, value, bg, color }) => (
+            <div key={label} className="bg-white rounded-2xl p-5 shadow-[0_4px_20px_rgba(13,148,136,0.08)] border border-gray-100 flex flex-col items-center text-center hover:shadow-[0_4px_20px_rgba(13,148,136,0.16)] transition-shadow">
+              <div className={`w-12 h-12 ${bg} rounded-full flex items-center justify-center mb-3`}>
+                <Icon className={`w-6 h-6 ${color}`} />
               </div>
-              <div className="flex items-center text-green-600 text-xs lg:text-sm hidden sm:flex">
-                <ArrowUp className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
-                <span>+12</span>
-              </div>
+              <p className="text-xs text-gray-400 mb-1" style={{fontFamily:'DM Sans,sans-serif'}}>{label}</p>
+              <p className="text-2xl md:text-3xl font-bold text-[#00685f]" style={{fontFamily:'Syne,sans-serif'}}>{value}</p>
             </div>
-            <div className="text-2xl lg:text-3xl font-bold gradient-text mb-1">
-              {stats.bridgeScore}
-            </div>
-            <div className="text-xs lg:text-sm text-gray-600 flex items-center gap-1">
-              BRIDGE Score
-              <InfoTooltip text="Your overall placement readiness score out of 1000. Every activity pushes it higher." />
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100"
-          >
-            <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Mic className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600" />
-              </div>
-              <div className="flex items-center text-green-600 text-xs lg:text-sm hidden sm:flex">
-                <ArrowUp className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
-                <span>+3</span>
-              </div>
-            </div>
-            <div className="text-2xl lg:text-3xl font-bold text-gray-900  mb-1">{stats.interviewsDone}</div>
-            <div className="text-xs lg:text-sm text-gray-600">Interviews Done</div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100"
-          data-tour="streak-card"
-          >
-            <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                <Flame className="w-5 h-5 lg:w-6 lg:h-6 text-orange-600" />
-              </div>
-              <div className="flex items-center text-red-600 text-xs lg:text-sm hidden sm:flex">
-                <ArrowDown className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
-                <span>-1</span>
-              </div>
-            </div>
-            <div className="text-2xl lg:text-3xl font-bold text-gray-900  mb-1">{stats.currentStreak} <span className="text-lg lg:text-base">🔥</span></div>
-            <div className="text-xs lg:text-sm text-gray-600 flex items-center gap-1">
-              {stats.currentStreak === 0 ? <span className="text-orange-500">Start your streak today!</span> : "Current Streak"}
-              <InfoTooltip text="Consecutive days you've practiced on Bridge. Keep it alive!" />
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100"
-          >
-            <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <Star className="w-5 h-5 lg:w-6 lg:h-6 text-green-600" />
-              </div>
-              <div className="flex items-center text-green-600 text-xs lg:text-sm hidden sm:flex">
-                <ArrowUp className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
-                <span>+0.3</span>
-              </div>
-            </div>
-            <div className="text-2xl lg:text-3xl font-bold text-gray-900  mb-1">{stats.avgScore.toFixed(1)}</div>
-            <div className="text-xs lg:text-sm text-gray-600 flex items-center gap-1">
-              Avg Score
-              <InfoTooltip text="AI-measured average score from your last 5 mock interviews." />
-            </div>
-          </motion.div>
+          ))}
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Continue Preparing */}
-          <div className="lg:col-span-2 space-y-6">
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+
+          {/* Left 2/3 */}
+          <div className="lg:col-span-2 flex flex-col gap-8">
+
+            {/* Today's Challenge Banner */}
+            <div className="bg-gradient-to-r from-[#0D9488] to-[#14B8A6] rounded-2xl p-8 text-white relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6" data-tour="start-challenge">
+              <div className="relative z-10">
+                <span className="inline-block bg-white/20 text-white text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-white/30 mb-3">⚡ Today's Challenge</span>
+                <h3 className="text-xl font-bold mb-2" style={{fontFamily:'Syne,sans-serif'}}>Complete Amazon SDE technical interview</h3>
+                <p className="text-[#CCFBF1] text-sm max-w-md">Practice data structures and system design questions tailored to Amazon's hiring bar.</p>
+              </div>
+              <button onClick={handleStartChallenge} className="relative z-10 bg-white text-[#0D9488] font-bold px-6 py-3 rounded-full hover:bg-[#F0FDFA] transition-colors shrink-0 shadow-sm flex items-center gap-2 text-sm">
+                Start Now <ChevronRight className="w-4 h-4" />
+              </button>
+              <div className="absolute -right-6 -bottom-10 text-[140px] text-white/10 font-bold pointer-events-none select-none" style={{fontFamily:'Syne,sans-serif'}}>AI</div>
+            </div>
+
+            {/* Keep the Momentum */}
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Continue Preparing</h2>
+              <h3 className="text-lg font-bold text-gray-800 mb-5" style={{fontFamily:'Syne,sans-serif'}}>Keep the momentum 🔥</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {features.map((feature, index) => {
+                {features.map((feature, i) => {
                   const Icon = feature.icon;
                   return (
-                    <Link
-                      key={index}
-                      href={feature.href}
-                      className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-[#CCFBF1] transition-all duration-200 group"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
-                            feature.color === 'purple' ? 'bg-gradient-to-br from-[#F0FDFA] to-[#CCFBF1]' :
-                            'bg-gradient-to-br from-sky-50 to-sky-100'
-                          }`}>
-                            <Icon className={`w-7 h-7 ${
-                              feature.color === 'purple' ? 'text-[#0D9488]' :
-                              'text-sky-600'
-                            }`} />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900 group-hover:text-[#0D9488] transition-colors">
-                              {feature.title}
-                            </h3>
-                            <p className="text-sm text-gray-600">{feature.description}</p>
-                          </div>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#0D9488] transition-colors" />
+                    <Link key={i} href={feature.href}
+                      className="bg-white rounded-2xl p-6 border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.05)] hover:shadow-[0_4px_20px_rgba(13,148,136,0.15)] hover:border-[#CCFBF1] transition-all group cursor-pointer">
+                      <div className="w-10 h-10 bg-[#CCFBF1] rounded-xl flex items-center justify-center mb-4 text-[#0D9488] group-hover:bg-[#0D9488] group-hover:text-white transition-colors">
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <h4 className="font-bold text-gray-900 mb-1" style={{fontFamily:'Syne,sans-serif'}}>{feature.title}</h4>
+                      <p className="text-sm text-gray-500 mb-4">{feature.description}</p>
+                      <div className="flex items-center gap-1 text-[#0D9488] text-xs font-bold">
+                        <span>Continue</span>
+                        <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </Link>
                   );
                 })}
               </div>
             </div>
-
-            {/* Today's Challenge */}
-            <div className="bg-gradient-to-r from-[#0D9488] to-[#14B8A6] rounded-2xl p-6 text-white" data-tour="start-challenge">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">Today's Challenge</h2>
-                <div className="flex items-center gap-2 text-[#CCFBF1]">
-                  <Clock className="w-4 h-4" />
-                  <span className="text-sm">15 min</span>
-                </div>
-              </div>
-              <p className="text-[#CCFBF1] mb-6">
-                Complete a full Amazon SDE technical interview with AI feedback
-              </p>
-              <button onClick={handleStartChallenge} className="bg-white text-[#0D9488] px-6 py-3 rounded-lg font-semibold hover:bg-[#F0FDFA] transition-colors">
-                Start Challenge
-              </button>
-            </div>
           </div>
 
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* BRIDGE Score Card */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100" data-tour="bridge-score-card">
-              <h3 className="font-semibold text-gray-900 mb-4">BRIDGE Score</h3>
-              <div className="flex flex-col items-center">
-                <div className="relative w-32 h-32 mb-4">
-                  <svg className="w-32 h-32 transform -rotate-90">
-                    <circle
-                      cx="64"
-                      cy="64"
-                      r="56"
-                      stroke="#E5E7EB"
-                      strokeWidth="12"
-                      fill="none"
-                    />
-                    <circle
-                      cx="64"
-                      cy="64"
-                      r="56"
-                      stroke="url(#gradient)"
-                      strokeWidth="12"
-                      fill="none"
-                      strokeDasharray={`${2 * Math.PI * 56 * 0.742} ${2 * Math.PI * 56}`}
-                      strokeLinecap="round"
-                    />
-                    <defs>
-                      <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#0D9488" />
-                        <stop offset="100%" stopColor="#14B8A6" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="text-3xl font-bold gradient-text">
-                      {stats.bridgeScore === 0 ? "—" : stats.bridgeScore}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {stats.bridgeScore === 0 ? "Complete an interview to get your score" : "BRIDGE Score"}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-center">
-                  {stats.bridgeScore > 0 ? (
-                    <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">
-                      <Award className="w-3 h-3 mr-1" />
-                      Top 15%
-                    </span>
-                  ) : (
-                    <Link href="/interview" className="text-sm text-[#0D9488] hover:text-[#0F766E] font-medium">
-                      Take a mock to unlock your score →
-                    </Link>
-                  )}
+          {/* Right 1/3 */}
+          <div className="flex flex-col gap-6">
+
+            {/* Readiness Score Ring */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.08)] flex flex-col items-center" data-tour="bridge-score-card">
+              <div className="w-full mb-4">
+                <h3 className="font-bold text-gray-800" style={{fontFamily:'Syne,sans-serif'}}>Readiness Score</h3>
+                <p className="text-xs text-gray-400">Top 15% of candidates</p>
+              </div>
+              <div className="relative w-44 h-44 flex items-center justify-center mb-4">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  <defs>
+                    <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#0D9488" />
+                      <stop offset="100%" stopColor="#14B8A6" />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="#CCFBF1" strokeWidth="8" />
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="url(#scoreGrad)"
+                    strokeWidth="8" strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={circumference - (circumference * scorePercent / 100)} />
+                </svg>
+                <div className="absolute flex flex-col items-center">
+                  <span className="text-3xl font-bold text-[#0D9488]" style={{fontFamily:'Syne,sans-serif'}}>
+                    {stats.bridgeScore || '—'}
+                  </span>
+                  <span className="text-[10px] font-bold text-[#0D9488] bg-[#CCFBF1] px-2 py-0.5 rounded-full mt-1">
+                    {stats.bridgeScore > 0 ? '+12 this week' : 'Start a mock'}
+                  </span>
                 </div>
               </div>
+              <Link href="/interview" className="w-full text-center text-sm text-[#0D9488] font-semibold hover:bg-[#CCFBF1]/50 py-2 rounded-xl transition-colors">
+                View detailed analysis →
+              </Link>
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <h3 className="font-semibold text-gray-900 mb-4">Recent Activity</h3>
-              <div className="space-y-3">
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.05)]">
+              <h3 className="font-bold text-gray-800 mb-5" style={{fontFamily:'Syne,sans-serif'}}>Recent Activity</h3>
+              <div className="flex flex-col gap-4">
                 {recentActivity.length > 0 ? (
-                  recentActivity.slice(0, 5).map((activity, index) => {
+                  recentActivity.slice(0, 4).map((activity, i) => {
                     const Icon = getActivityIcon(activity.type);
                     return (
-                      <div key={index} className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getActivityColor(activity.type)}`}>
+                      <div key={i} className="flex items-start gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${getActivityColor(activity.type)}`}>
                           <Icon className="w-4 h-4" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-gray-900 truncate">{activity.title}</div>
-                          <div className="text-xs text-gray-500">{activity.time}</div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{activity.title}</p>
+                          <p className="text-xs text-gray-400">{activity.score ? `Scored ${activity.score} • ` : ''}{activity.time}</p>
                         </div>
-                        {activity.score && <div className="text-sm font-semibold text-green-600">{activity.score}</div>}
-                        {activity.result && <div className="text-xs font-semibold text-green-600">{activity.result}</div>}
                       </div>
                     );
                   })
                 ) : (
-                  <div className="text-center py-6">
-                    {/* Simple SVG illustration */}
-                    <svg className="w-16 h-16 mx-auto mb-3" viewBox="0 0 64 64" fill="none">
-                      <rect x="8" y="20" width="48" height="32" rx="4" fill="#F0FDFA" stroke="#99F6E4" strokeWidth="2"/>
-                      <rect x="14" y="12" width="36" height="12" rx="3" fill="#CCFBF1" stroke="#99F6E4" strokeWidth="1.5"/>
-                      <circle cx="32" cy="38" r="8" fill="#0D9488" opacity="0.15"/>
-                      <path d="M28 38l3 3 5-5" stroke="#0D9488" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <p className="text-gray-700 font-medium text-sm mb-1">No mocks yet — your journey starts here</p>
-                    {stats.currentStreak === 0 && (
-                      <p className="text-xs text-orange-500 mb-3">🔥 Start your streak today — take one mock or join a GD</p>
-                    )}
-                    <Link href="/interview" className="inline-flex items-center gap-1 px-4 py-2 bg-[#0D9488] text-white text-sm rounded-lg hover:bg-[#0F766E] transition-colors font-medium">
-                      Take your first mock interview →
+                  <div className="text-center py-4">
+                    <p className="text-sm text-gray-500 mb-3">No activity yet — start your first mock!</p>
+                    <Link href="/interview" className="inline-flex items-center gap-1 px-4 py-2 bg-[#0D9488] text-white text-sm rounded-xl font-semibold hover:opacity-90 transition-opacity">
+                      Take first mock <ChevronRight className="w-3 h-3" />
                     </Link>
                   </div>
                 )}
-              </div>
-            </div>
-
-            {/* Leaderboard Preview */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900">Leaderboard</h3>
-                <Link href="/leaderboard" className="text-[#0D9488] text-sm hover:text-[#0F766E]">
-                  View All
-                </Link>
-              </div>
-              <div className="space-y-3">
-                {leaderboard.map((student) => (
-                  <div key={student.rank} className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      student.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
-                      student.rank === 2 ? 'bg-gray-100 text-gray-700' :
-                      'bg-orange-100 text-orange-700'
-                    }`}>
-                      {student.rank}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">
-                        {student.name}
-                      </div>
-                      <div className="text-xs text-gray-500">{student.college}</div>
-                    </div>
-                    <div className="text-sm font-bold text-gray-900">{student.score}</div>
-                  </div>
-                ))}
               </div>
             </div>
           </div>

@@ -6,22 +6,20 @@ import Link from 'next/link';
 import { 
   Home, 
   Mic, 
-  FileText, 
   Zap, 
-  MessageSquare, 
-  Briefcase, 
   Trophy, 
-  Users, 
   User, 
   Bell, 
-  Search, 
   LogOut,
-  Sparkles,
-  Menu,
-  BarChart3,
-  BookOpen,
   Upload,
-  CheckCircle
+  CheckCircle,
+  Rocket,
+  Briefcase,
+  Users,
+  Newspaper,
+  Navigation,
+  BarChart2,
+  Sparkles
 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -181,173 +179,117 @@ export default function AppShell({ children }) {
   const isAdmin = userRole === 'admin';
   const isRecruiter = userRole === 'recruiter' || isAdmin;
 
-  const navigation = [
-    { href: '/dashboard', icon: Home, label: 'Dashboard', tour: null },
-    { href: '/career-intelligence', icon: Sparkles, label: 'Career Intelligence', tour: 'nav-career' },
-    { href: '/interview', icon: Mic, label: 'Mock Interview', tour: 'nav-interview' },
-    { href: '/smart-interview', icon: FileText, label: 'Smart Interview', tour: null },
-    { href: '/pulse', icon: Zap, label: 'PULSE', tour: null },
-    { href: '/gd', icon: MessageSquare, label: 'GD Practice', tour: 'nav-gd' },
-    { href: '/jobs', icon: Briefcase, label: 'Jobs', tour: null },
-    { href: '/leaderboard', icon: Trophy, label: 'Leaderboard', tour: 'nav-leaderboard' },
-    { href: '/profile', icon: User, label: 'Profile', tour: 'nav-profile' },
-    // Admin/Recruiter only
-    ...(isRecruiter ? [{ href: '/recruiter', icon: Users, label: 'Recruiter', tour: null }] : []),
-    ...(isAdmin ? [{ href: '/admin/token-dashboard', icon: BarChart3, label: 'Token Analytics', tour: null }] : []),
+  const sidebarNav = [
+    { href: '/dashboard',   icon: Home,       label: 'Home',           group: ['/dashboard'], tour: 'dashboard' },
+    { href: '/smart-interview', icon: Mic,    label: 'Smart Interview',group: ['/smart-interview', '/interview', '/device-test'], tour: 'smart-interview' },
+    { href: '/pulse',       icon: Users,      label: 'GD Pulse',       group: ['/pulse', '/gd', '/coach'], tour: 'gd-practice' },
+    { href: '/skillpulse',  icon: BarChart2,  label: 'SkillPulse',     group: ['/skillpulse'], tour: 'pulse' },
+    { href: '/career-gps',  icon: Navigation, label: 'Career GPS',     group: ['/career-gps'] },
+    { href: '/career-intelligence', icon: Sparkles, label: 'Career Intelligence', group: ['/career-intelligence'] },
+    { href: '/jobs',        icon: Briefcase,  label: 'Jobs',           group: ['/jobs'], tour: 'jobs' },
+    { href: '/leaderboard', icon: Trophy,     label: 'Leaderboard',    group: ['/leaderboard'], tour: 'leaderboard' },
+    { href: '/profile',     icon: User,       label: 'Profile',        group: ['/profile'], tour: 'profile' },
+    ...(isRecruiter ? [{ href: '/recruiter', icon: User, label: 'Recruiter', group: ['/recruiter'] }] : []),
   ];
 
-  const isActive = (href) => pathname === href;
+  const mobileNav = [
+    { href: '/dashboard', icon: Home, label: 'Home', group: ['/dashboard'] },
+    { href: '/smart-interview', icon: Mic, label: 'Interview', group: ['/smart-interview', '/interview', '/device-test'] },
+    { href: '/pulse', icon: Newspaper, label: 'Pulse', group: ['/pulse', '/career-intelligence'] },
+    { href: '/leaderboard', icon: Trophy, label: 'Rank', group: ['/leaderboard'] },
+    { href: '/profile', icon: User, label: 'Me', group: ['/profile'] },
+  ];
+
+  const isGroupActive = (group) => group.some(p => pathname === p || pathname.startsWith(p + '/'));
 
   return (
-    <div className="min-h-screen bg-[#F0FDFA]">
-      {/* Mobile Menu Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/30 z-40 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <div className="min-h-screen bg-[#fcf8ff] flex flex-col md:flex-row">
 
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 h-14 md:h-16 bg-white border-b border-gray-200 z-40">
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-14 md:h-16">
-            {/* Left Side - Logo */}
-            <div className="flex items-center gap-3 h-full">
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="md:hidden p-2"
+      {/* ── Mobile Top App Bar ── */}
+      <header className="md:hidden flex justify-between items-center w-full px-6 h-16 bg-white shadow-sm fixed top-0 z-40">
+        <Link href="/dashboard">
+          <img src="/images/logo_navbar_48h.png" alt="BridgeAI" className="h-8 w-auto" />
+        </Link>
+        <div className="flex items-center gap-2">
+          <button className="p-2 rounded-full hover:bg-[#CCFBF1]/30 transition-colors text-gray-500">
+            <Bell className="w-5 h-5" />
+          </button>
+          {userProfile?.photo ? (
+            <img src={userProfile.photo} alt={userProfile.name} className="w-8 h-8 rounded-full object-cover border-2 border-[#008378]" />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-[#CCFBF1] flex items-center justify-center text-[#00685f] font-bold text-sm">
+              {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* ── Desktop Sidebar ── */}
+      <nav className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-[#f5f2ff] shadow-md z-50">
+        <div className="px-5 py-5 bg-white border-b border-gray-100 flex justify-center">
+          <Link href="/dashboard" className="flex items-center justify-center">
+            <img src="/images/logo_navbar_48h.png" alt="BridgeAI" className="h-9 w-auto" />
+          </Link>
+        </div>
+
+        <div className="flex-1 flex flex-col gap-1 px-3 overflow-y-auto">
+          {sidebarNav.map((item) => {
+            const Icon = item.icon;
+            const active = isGroupActive(item.group);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                data-tour={item.tour}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                  active
+                    ? 'text-[#00685f] bg-[#6df5e1]/30 border-l-4 border-[#00685f]'
+                    : 'text-gray-500 opacity-80 hover:bg-[#6df5e1]/20 hover:text-[#00685f]'
+                }`}
+                style={{fontFamily:'DM Sans,sans-serif'}}
               >
-                <Menu className="w-6 h-6 text-gray-600" />
-              </button>
-              
-              {/* Logo - larger and always visible */}
-              <Link href="/dashboard" className="flex items-center h-full">
-                <img 
-                  src="/images/logo_navbar_64h.png" 
-                  alt="BridgeAI" 
-                  style={{height:'36px',width:'auto'}}
-                />
+                <Icon className="w-5 h-5 flex-shrink-0" />
+                <span>{item.label}</span>
               </Link>
-            </div>
+            );
+          })}
+        </div>
 
-            {/* Center - Search (Hidden on Mobile) */}
-            <div className="hidden md:flex flex-1 max-w-xl mx-8">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search features, topics, or help..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent text-gray-900 placeholder-gray-500"
-                />
-              </div>
-            </div>
-
-            {/* Right Side - Profile + Name + Bell */}
-            <div className="flex items-center gap-3">
-              {/* Profile Pic */}
-              {userProfile?.photo ? (
-                <img data-tour="profile-avatar"
-                  src={userProfile.photo} 
-                  alt={userProfile.name}
-                  className="w-9 h-9 rounded-full object-cover border-2 border-[#0D9488]"
-                />
-              ) : (
-                <div data-tour="profile-avatar" className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-br from-[#0D9488] to-[#14B8A6]">
-                  {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
-                </div>
-              )}
-              
-              {/* Name - hidden on small screens */}
-              <div className="hidden sm:block text-right">
-                <p className="text-sm font-semibold text-[#0D0D1A] truncate max-w-[120px]">
-                  {userProfile?.name || 'User'}
-                </p>
-              </div>
-
-              {/* Bell */}
-              <button data-tour="bell" className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors ml-2">
-                <Bell className="w-5 h-5" />
-                {notifications > 0 && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                )}
-              </button>
-            </div>
-          </div>
+        <div className="p-4 flex flex-col gap-3">
+          <Link
+            href="/smart-interview"
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#0D9488] to-[#14B8A6] text-white py-3 rounded-2xl font-semibold text-sm shadow-md hover:shadow-lg hover:opacity-95 transition-all"
+            style={{fontFamily:'DM Sans,sans-serif'}}
+          >
+            <Rocket className="w-4 h-4" /> Start Practice
+          </Link>
+          <button
+            onClick={() => {
+              if (isBypassed) { window.location.reload(); }
+              else { auth.signOut(); router.push('/login'); }
+            }}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl text-xs font-medium transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            {isBypassed ? 'Reset Bypass' : 'Sign Out'}
+          </button>
         </div>
       </nav>
 
-      {/* Sidebar */}
-      <aside className={`fixed left-0 top-14 md:top-16 h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } md:translate-x-0`}>
-        <div className="flex flex-col h-full">
-          {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  {...(item.tour ? { 'data-tour': item.tour } : {})}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                    isActive(item.href)
-                      ? 'bg-[#F0FDFA] text-[#0D9488] border-l-4 border-[#0D9488]'
-                      : 'text-gray-700 hover:bg-[#F0FDFA] hover:text-[#0D9488]'
-                  }`}
-                >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
-                  <span className="font-medium">{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Bottom Actions */}
-          <div className="p-4 border-t border-gray-200">
-            <button
-              onClick={() => {
-                if (isBypassed) {
-                  // In bypass mode, just reload the page
-                  window.location.reload();
-                } else {
-                  auth.signOut();
-                  router.push('/login');
-                }
-              }}
-              className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">{isBypassed ? 'Reset Bypass' : 'Sign Out'}</span>
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Resume Gate — blocks all content until resume uploaded */}
+      {/* ── Resume Gate ── */}
       {!isBypassed && resumeUploaded === false && currentUser && (
-        <div className="fixed inset-0 z-[100] bg-[#F0FDFA] flex items-center justify-center p-6">
+        <div className="fixed inset-0 z-[100] bg-[#fcf8ff] flex items-center justify-center p-6">
           <div className="max-w-md w-full text-center">
-            {/* Logo */}
-            <img src="/images/logo_navbar_64h.png" alt="BridgeAI" className="h-10 mx-auto mb-8" />
-
+            <h1 className="text-2xl font-extrabold text-[#00685f] mb-8" style={{fontFamily:'Syne,sans-serif'}}>BridgeAI</h1>
             <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-              <div className="w-16 h-16 bg-[#F0FDFA] rounded-full flex items-center justify-center mx-auto mb-5">
+              <div className="w-16 h-16 bg-[#CCFBF1] rounded-full flex items-center justify-center mx-auto mb-5">
                 <Upload className="w-8 h-8 text-[#0D9488]" />
               </div>
-
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Upload Your Resume First</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2" style={{fontFamily:'Syne,sans-serif'}}>Upload Your Resume First</h2>
               <p className="text-gray-500 text-sm mb-6">
                 Hey {currentUser?.displayName?.split(' ')[0] || 'there'} 👋 — upload your resume to get your <strong className="text-[#0D9488]">personalised Bridge Score</strong> and unlock all AI features.
               </p>
-
-              {/* Steps */}
-              <div className="text-left space-y-2 mb-7 bg-gray-50 rounded-xl p-4">
+              <div className="text-left space-y-2 mb-7 bg-[#f5f2ff] rounded-xl p-4">
                 {['Upload your resume (PDF/DOC)', 'Complete your profile', 'Start AI mock interviews'].map((s, i) => (
                   <div key={i} className="flex items-center gap-3 text-sm text-gray-700">
                     <div className="w-5 h-5 rounded-full bg-[#0D9488] text-white flex items-center justify-center text-xs font-bold shrink-0">{i + 1}</div>
@@ -355,9 +297,7 @@ export default function AppShell({ children }) {
                   </div>
                 ))}
               </div>
-
-              {/* Upload button */}
-              <label className={`w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-white cursor-pointer transition-all ${uploadingResume ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#0D9488] hover:bg-[#0F766E]'}`}>
+              <label className={`w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-semibold text-white cursor-pointer transition-all ${uploadingResume ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-[#0D9488] to-[#14B8A6] hover:opacity-90'}`}>
                 {uploadingResume ? (
                   <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Analysing resume...</>
                 ) : resumeFile ? (
@@ -367,22 +307,45 @@ export default function AppShell({ children }) {
                 )}
                 <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleResumeGateUpload} disabled={uploadingResume} />
               </label>
-
-              {uploadingResume && (
-                <p className="text-xs text-[#0D9488] mt-3 font-medium">AI is scoring your resume — this takes ~10 seconds...</p>
-              )}
+              {uploadingResume && <p className="text-xs text-[#0D9488] mt-3 font-medium">AI is scoring your resume — this takes ~10 seconds...</p>}
               {!uploadingResume && <p className="text-xs text-gray-400 mt-3">Max 5MB · PDF, DOC, or DOCX</p>}
             </div>
           </div>
         </div>
       )}
 
-      {/* Main Content */}
-      <main className="md:ml-64 pt-14 md:pt-16 min-h-screen bg-[#F0FDFA]">
+      {/* ── Main Content ── */}
+      <main className="flex-1 md:ml-64 pt-16 md:pt-0 pb-24 md:pb-0 min-h-screen bg-[#fcf8ff]">
         {children}
       </main>
 
-      {/* Onboarding Modal */}
+      {/* ── Mobile Bottom Nav ── */}
+      <nav className="md:hidden fixed bottom-0 w-full z-50 rounded-t-2xl bg-white shadow-[0_-4px_20px_rgba(0,104,95,0.1)] flex justify-around items-center h-20 px-4 border-t border-gray-100">
+        {mobileNav.map((item) => {
+          const Icon = item.icon;
+          const active = isGroupActive(item.group);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-all ${
+                active ? 'text-[#00685f]' : 'text-gray-400 hover:text-[#00685f]'
+              }`}
+            >
+              {active ? (
+                <div className="w-10 h-10 rounded-full bg-[#008378] flex items-center justify-center text-white -mt-1 shadow-sm">
+                  <Icon className="w-5 h-5" />
+                </div>
+              ) : (
+                <Icon className="w-5 h-5" />
+              )}
+              <span className="text-[10px] font-semibold" style={{fontFamily:'DM Sans,sans-serif'}}>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* ── Onboarding Modal ── */}
       <OnboardingModal
         isOpen={showModal}
         userName={userProfile?.name || ''}
@@ -390,13 +353,13 @@ export default function AppShell({ children }) {
         onSkip={handleModalSkip}
       />
 
-      {/* Product Tour */}
+      {/* ── Product Tour ── */}
       <ProductTour
         isOpen={showTour}
         onClose={() => setShowTour(false)}
       />
 
-      {/* Floating Help Button */}
+      {/* ── Floating Help Button ── */}
       <HelpButton onStartTour={() => { setShowTour(false); setTimeout(() => setShowTour(true), 100); }} />
     </div>
   );

@@ -125,10 +125,8 @@ export default function JobsPage() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Check file type
-    const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    if (!validTypes.includes(file.type)) {
-      toast.error('Please upload a PDF, DOC, or DOCX file');
+    if (file.type !== 'application/pdf') {
+      toast.error('Please upload a PDF file for accurate reading. Convert your resume to PDF and try again.');
       return;
     }
 
@@ -152,7 +150,8 @@ export default function JobsPage() {
         },
         body: JSON.stringify({
           action: 'extract_profile',
-          resume_base64: base64.split(',')[1] // Remove data:application/pdf;base64, prefix
+          resume_base64: base64.split(',')[1],
+          file_type: 'pdf',
         }),
       });
 
@@ -268,34 +267,21 @@ export default function JobsPage() {
   if (!resumeUploaded) {
     return (
       <AppShell>
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Upload Your Resume</h2>
-            
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-200 transition-colors">
-              <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-2">Drop your resume here or click to browse</p>
-              <p className="text-sm text-gray-500">PDF, DOC, DOCX (Max 5MB)</p>
-              <input
-                type="file"
-                accept=".pdf,.doc,.docx"
-                onChange={handleResumeUpload}
-                className="hidden"
-                id="resume-upload"
-              />
-              <label
-                htmlFor="resume-upload"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors cursor-pointer mt-4"
-              >
-                <FileText className="w-4 h-4" />
-                Choose File
-              </label>
+        <div className="max-w-[600px] mx-auto px-4 py-16">
+          <div className="bg-white rounded-3xl p-8 shadow-[0_4px_30px_rgba(13,148,136,0.1)] border border-gray-100 text-center">
+            <div className="w-16 h-16 bg-[#CCFBF1] rounded-2xl flex items-center justify-center mx-auto mb-5">
+              <Briefcase className="w-8 h-8 text-[#0D9488]" />
             </div>
-            
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-cyan-900">
-                💡 Upload your resume to get personalized job recommendations and apply with one click using our Smart Apply feature.
-              </p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2" style={{fontFamily:'Syne,sans-serif'}}>Upload Your Resume</h2>
+            <p className="text-gray-500 text-sm mb-8">Get personalized job matches and one-click Smart Apply</p>
+            <label className="block border-2 border-dashed border-[#CCFBF1] rounded-2xl p-8 hover:border-[#0D9488] transition-colors cursor-pointer mb-6">
+              <Upload className="w-10 h-10 text-[#0D9488] mx-auto mb-3" />
+              <p className="text-gray-600 text-sm font-medium">Drop your resume or click to browse</p>
+              <p className="text-xs text-gray-400 mt-1">PDF, DOC, DOCX · Max 5MB</p>
+              <input type="file" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} className="hidden" />
+            </label>
+            <div className="p-4 bg-[#F0FDFA] rounded-xl border border-[#CCFBF1]">
+              <p className="text-sm text-[#0D9488]">💡 AI reads your resume and matches you to the best opportunities across domains and companies.</p>
             </div>
           </div>
         </div>
@@ -305,16 +291,16 @@ export default function JobsPage() {
 
   return (
     <AppShell>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Jobs & Internships</h1>
-            <p className="text-gray-600 mt-1">Find opportunities that match your profile</p>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900" style={{fontFamily:'Syne,sans-serif'}}>Jobs & Internships</h1>
+            <p className="text-gray-500 mt-1 text-sm">Opportunities matched to your resume profile</p>
           </div>
           <button
             onClick={() => window.location.reload()}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
+            className="flex items-center gap-2 bg-[#CCFBF1] text-[#0D9488] px-4 py-2 rounded-full font-semibold text-sm hover:bg-[#99F6E4] transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Refresh
@@ -322,20 +308,20 @@ export default function JobsPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 mb-8 border-b border-gray-200">
+        <div className="flex gap-1 mb-8 p-1 bg-gray-100 rounded-2xl w-fit">
           {[
             { id: 'foryou', label: 'For You', icon: Target },
-            { id: 'mba', label: 'MBA Internships', icon: Award },
+            { id: 'mba', label: 'Internships', icon: Award },
             { id: 'smartapply', label: 'Smart Apply', icon: Brain },
             { id: 'postjob', label: 'Post a Job', icon: Building }
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 activeTab === tab.id
-                  ? 'border-purple-500 text-purple-500'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-[#0D9488] shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -362,7 +348,7 @@ export default function JobsPage() {
                     <div className="space-y-2">
                       {['Software', 'Data Science', 'Marketing', 'Finance', 'HR'].map((domain) => (
                         <label key={domain} className="flex items-center gap-2">
-                          <input type="checkbox" className="rounded border-gray-300 text-purple-500" />
+                          <input type="checkbox" className="rounded border-gray-300 accent-[#0D9488]" />
                           <span className="text-sm text-gray-700">{domain}</span>
                         </label>
                       ))}
@@ -375,17 +361,16 @@ export default function JobsPage() {
                     <div className="space-y-2">
                       {['Full Time', 'Internship', 'Part Time', 'Remote'].map((type) => (
                         <label key={type} className="flex items-center gap-2">
-                          <input type="checkbox" className="rounded border-gray-300 text-purple-500" />
+                          <input type="checkbox" className="rounded border-gray-300 accent-[#0D9488]" />
                           <span className="text-sm text-gray-700">{type}</span>
                         </label>
                       ))}
                     </div>
                   </div>
-
                   {/* Location Filter */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                    <select className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <select className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0D9488]/20">
                       <option>All Locations</option>
                       <option>Bengaluru</option>
                       <option>Mumbai</option>
@@ -395,18 +380,17 @@ export default function JobsPage() {
                     </select>
                   </div>
 
-                  <button className="w-full bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-500 transition-colors">
+                  <button className="w-full bg-gradient-to-r from-[#0D9488] to-[#14B8A6] text-white py-2.5 rounded-xl font-semibold hover:opacity-90 transition-opacity">
                     Apply Filters
                   </button>
                 </div>
               </div>
             </div>
-
             {/* Main Content - Job Cards */}
             <div className="lg:col-span-3">
               {/* Profile Banner */}
               {profile && (
-                <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 mb-6 text-white">
+                <div className="bg-gradient-to-r from-[#0D9488] to-[#14B8A6] rounded-2xl p-6 mb-6 text-white">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
@@ -418,13 +402,7 @@ export default function JobsPage() {
                           <Upload className="w-3 h-3" />
                           Change Resume
                         </button>
-                        <input
-                          id="change-resume-input"
-                          type="file"
-                          accept=".pdf,.doc,.docx"
-                          onChange={handleResumeUpload}
-                          className="hidden"
-                        />
+                        <input id="change-resume-input" type="file" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} className="hidden" />
                       </div>
                       <div className="flex items-center gap-4 text-sm">
                         <span>{profile.name}</span>
@@ -436,44 +414,42 @@ export default function JobsPage() {
                     </div>
                     <div className="text-right">
                       <div className="text-2xl font-bold">{profile.bridgeScore || 742}</div>
-                      <div className="text-xs text-purple-100">BRIDGE Score</div>
+                      <div className="text-xs text-[#CCFBF1]">BRIDGE Score</div>
                     </div>
                   </div>
                 </div>
               )}
-
               {/* Market Insights */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+              <div className="bg-white rounded-2xl p-6 shadow-[0_4px_20px_rgba(13,148,136,0.06)] border border-gray-100 mb-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Market Insights</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-500">2,847</div>
-                    <div className="text-sm text-gray-600">Active Jobs</div>
+                    <div className="text-2xl font-bold text-[#0D9488]">2,847</div>
+                    <div className="text-sm text-gray-500">Active Jobs</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">89%</div>
-                    <div className="text-sm text-gray-600">Match Rate</div>
+                    <div className="text-sm text-gray-500">Match Rate</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-cyan-600">156</div>
-                    <div className="text-sm text-gray-600">New This Week</div>
+                    <div className="text-2xl font-bold text-[#0D9488]">156</div>
+                    <div className="text-sm text-gray-500">New This Week</div>
                   </div>
                 </div>
               </div>
-
-              {/* Job Cards Grid */}
+              {/* Job Cards */}
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-center">
-                    <div className="w-8 h-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent mx-auto mb-4"></div>
-                    <div className="text-gray-600">Finding jobs for you...</div>
+                    <div className="w-8 h-8 animate-spin rounded-full border-2 border-[#0D9488]/30 border-t-[#0D9488] mx-auto mb-4"></div>
+                    <div className="text-gray-500 text-sm">Finding jobs for you...</div>
                   </div>
                 </div>
               ) : jobs.length === 0 ? (
                 <div className="text-center py-12">
-                  <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
-                  <p className="text-gray-600">Try adjusting your filters or upload a different resume</p>
+                  <Briefcase className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No jobs found</h3>
+                  <p className="text-gray-500 text-sm">Try adjusting your filters or upload a different resume</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -482,7 +458,7 @@ export default function JobsPage() {
                       {/* Header */}
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center text-lg font-bold text-purple-700">
+                          <div className="w-12 h-12 bg-gradient-to-br from-[#CCFBF1] to-[#99F6E4] rounded-2xl flex items-center justify-center text-lg font-bold text-[#0D9488]">
                             {job.company?.charAt(0)?.toUpperCase() || 'J'}
                           </div>
                           <div>
@@ -543,7 +519,7 @@ export default function JobsPage() {
                         {job.skills_required && job.skills_required.length > 0 && (
                           <div className="flex flex-wrap gap-2">
                             {job.skills_required.slice(0, 4).map((skill, i) => (
-                              <span key={i} className="px-2 py-1 bg-purple-50 text-purple-600 text-xs rounded-full">
+                              <span key={i} className="px-2 py-1 bg-[#F0FDFA] text-[#0D9488] text-xs rounded-full border border-[#CCFBF1]">
                                 {skill}
                               </span>
                             ))}
@@ -564,7 +540,7 @@ export default function JobsPage() {
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div 
-                                className="bg-gradient-to-r from-purple-600 to-purple-700 h-2 rounded-full"
+                                className="bg-gradient-to-r from-[#0D9488] to-[#14B8A6] h-2 rounded-full"
                                 style={{ width: `${job.interview_probability}%` }}
                               ></div>
                             </div>
@@ -583,7 +559,7 @@ export default function JobsPage() {
                               toast.success('Application process started!');
                             }
                           }}
-                          className="flex-1 bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center gap-2"
+                          className="flex-1 bg-gradient-to-r from-[#0D9488] to-[#14B8A6] text-white py-2.5 rounded-xl font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                         >
                           <ExternalLink className="w-4 h-4" />
                           Apply Now
@@ -613,27 +589,27 @@ export default function JobsPage() {
 
         {activeTab === 'smartapply' && (
           <div className="max-w-3xl mx-auto">
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Smart Apply</h2>
+            <div className="bg-white rounded-2xl p-8 shadow-[0_4px_20px_rgba(13,148,136,0.06)] border border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6" style={{fontFamily:'Syne,sans-serif'}}>Smart Apply</h2>
               
               {/* Mode Toggle */}
-              <div className="flex gap-2 mb-6 p-1 bg-gray-100 rounded-lg">
+              <div className="flex gap-1 mb-6 p-1 bg-gray-100 rounded-xl w-fit">
                 <button
                   onClick={() => setSmartApplyMode('url')}
-                  className={`flex-1 py-2 px-4 rounded-md transition-colors ${
+                  className={`py-2 px-5 rounded-lg text-sm font-semibold transition-colors ${
                     smartApplyMode === 'url'
-                      ? 'bg-white text-purple-500 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white text-[#0D9488] shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
                   Job URL
                 </button>
                 <button
                   onClick={() => setSmartApplyMode('paste')}
-                  className={`flex-1 py-2 px-4 rounded-md transition-colors ${
+                  className={`py-2 px-5 rounded-lg text-sm font-semibold transition-colors ${
                     smartApplyMode === 'paste'
-                      ? 'bg-white text-purple-500 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white text-[#0D9488] shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
                   Paste JD
@@ -649,7 +625,7 @@ export default function JobsPage() {
                     value={smartApplyUrl}
                     onChange={(e) => setSmartApplyUrl(e.target.value)}
                     placeholder="https://company.com/careers/job-id"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488]"
                   />
                 </div>
               ) : (
@@ -660,7 +636,7 @@ export default function JobsPage() {
                     onChange={(e) => setSmartApplyJD(e.target.value)}
                     placeholder="Paste the complete job description here..."
                     rows={8}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488]"
                   />
                 </div>
               )}
@@ -668,7 +644,7 @@ export default function JobsPage() {
               <button 
                 onClick={handleSmartApply}
                 disabled={smartApplyLoading}
-                className="w-full bg-purple-500 text-white py-3 rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-[#0D9488] to-[#14B8A6] text-white py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {smartApplyLoading ? (
                   <>
@@ -701,7 +677,7 @@ export default function JobsPage() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <div className="text-3xl font-bold text-purple-600">
+                        <div className="text-3xl font-bold text-[#0D9488]">
                           {smartApplyResult.match_percent}%
                         </div>
                         <div className="text-xs text-gray-600">Match</div>
@@ -714,7 +690,7 @@ export default function JobsPage() {
                         <div className="flex items-center gap-2">
                           <div className="flex-1 bg-gray-200 rounded-full h-2">
                             <div 
-                              className="bg-purple-600 h-2 rounded-full"
+                              className="bg-[#0D9488] h-2 rounded-full"
                               style={{ width: `${smartApplyResult.interview_probability}%` }}
                             ></div>
                           </div>
@@ -784,7 +760,7 @@ export default function JobsPage() {
                     <ol className="space-y-2">
                       {smartApplyResult.preparation_plan?.map((step, i) => (
                         <li key={i} className="text-sm text-gray-700 flex gap-3">
-                          <span className="font-semibold text-purple-600">{i + 1}.</span>
+                          <span className="font-semibold text-[#0D9488]">{i + 1}.</span>
                           <span>{step}</span>
                         </li>
                       ))}
@@ -929,13 +905,13 @@ export default function JobsPage() {
           </div>
         )}
 
-        {/* MBA Internships Tab */}
+        {/* Internships Tab */}
         {activeTab === 'mba' && (
           <div className="max-w-4xl mx-auto">
             {/* Header */}
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-[#0D0D1A]">
-                MBA Internship Hub
+                Internship Hub
               </h2>
               <p className="text-[#8888A0] mt-1">
                 Upload your resume → Get matched internships instantly

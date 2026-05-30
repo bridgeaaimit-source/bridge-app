@@ -1,708 +1,740 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { motion, useInView, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
-  ArrowRight, Trophy, Star, Users, Menu, X, CheckCircle,
-  Play, Video, MessageSquare, FileText, MapPin, Zap,
-  TrendingUp, Award, Brain
+  ArrowRight, Sun, Moon, Menu, X, CheckCircle, Check, Star,
+  Search, Shield, Mic, Users, BarChart2, Brain, Trophy, Zap,
+  Video, MessageSquare, TrendingUp, Eye, ChevronRight
 } from "lucide-react";
-import Link from 'next/link';
+import Link from "next/link";
 
-/* ─── COUNT-UP HOOK ──────────────────────────────────── */
-function useCountUp(target, duration = 2000) {
-  const [count, setCount] = useState(0);
-  const [started, setStarted] = useState(false);
-  const ref = useRef(null);
-
+/* ─── DARK MODE HOOK ────────────────────────────────── */
+function useDarkMode() {
+  const [dark, setDark] = useState(false);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setStarted(true); },
-      { threshold: 0.3 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
+    const saved = localStorage.getItem("bridge_theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = saved ? saved === "dark" : prefersDark;
+    setDark(isDark);
+    document.documentElement.classList.toggle("dark", isDark);
   }, []);
-
-  useEffect(() => {
-    if (!started) return;
-    const t0 = performance.now();
-    const tick = (now) => {
-      const p = Math.min((now - t0) / duration, 1);
-      const e = 1 - Math.pow(1 - p, 3);
-      setCount(Math.floor(e * target));
-      if (p < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }, [started, target, duration]);
-
-  return [count, ref];
+  const toggle = () => {
+    setDark(d => {
+      const next = !d;
+      document.documentElement.classList.toggle("dark", next);
+      localStorage.setItem("bridge_theme", next ? "dark" : "light");
+      return next;
+    });
+  };
+  return [dark, toggle];
 }
 
-/* ─── ANIMATION VARIANTS ─────────────────────────────── */
-const FU = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
-};
-const FI = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.5 } } };
-const STAGGER = { hidden: {}, visible: { transition: { staggerChildren: 0.1 } } };
-
-/* ─── DATA ───────────────────────────────────────────── */
-const TICKER = [
-  "🔥 Aarav from VIT just scored 812 on Amazon mock",
-  "🟢 Live GD Battle starting · 3 seats left",
-  "🎉 Priya cleared Infosys round 2 today",
-  "📈 Karan: 612 → 748 in 4 weeks",
-  "🏆 Top of leaderboard: Meera (PSG)",
-  "⚡ Rohan unlocked TCS Digital pack",
-  "💼 Sneha finished her 50th mock interview",
-];
-const COLLEGES = ["VIT", "PSG Tech", "SRMIST", "MIT WPU", "Manipal", "LPU", "Amity", "NMIMS", "BITS Pilani", "SRM", "Anna Univ", "VIT-AP"];
-const COMPANIES = ["Amazon", "Google", "TCS", "Infosys", "Wipro", "Microsoft", "HCL", "Cognizant"];
-
-/* ─── COUNTER ITEM ───────────────────────────────────── */
-function StatCounter({ target, suffix, label }) {
-  const [count, ref] = useCountUp(target, 2000);
+/* ─── SCORE GAUGE SVG ───────────────────────────────── */
+function ScoreGauge({ score, max = 1000, size = 180, strokeWidth = 12 }) {
+  const radius = (size - strokeWidth * 2) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference * (1 - score / max);
   return (
-    <div ref={ref} className="text-center">
-      <p className="font-display text-5xl font-black text-[#0D9488]">{count.toLocaleString()}{suffix}</p>
-      <p className="mt-2 text-base text-gray-600">{label}</p>
+    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(45,212,191,0.12)" strokeWidth={strokeWidth} />
+        <motion.circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="url(#gaugeGrad)" strokeWidth={strokeWidth}
+          strokeLinecap="round" strokeDasharray={circumference}
+          initial={{ strokeDashoffset: circumference }} animate={{ strokeDashoffset: dashOffset }}
+          transition={{ duration: 1.2, ease: "easeOut" }} />
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#0D9488" />
+            <stop offset="100%" stopColor="#2DD4BF" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <motion.span className="text-3xl font-black text-[#0D9488]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>{score}</motion.span>
+        <span className="text-xs text-gray-400 dark:text-gray-500">/ {max}</span>
+      </div>
     </div>
   );
 }
 
-/* ─── MAIN PAGE ──────────────────────────────────────── */
-export default function Home() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+/* ─── METRIC BAR ────────────────────────────────────── */
+function MetricBar({ label, value, delay = 0 }) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex justify-between text-xs">
+        <span className="text-gray-600 dark:text-gray-400">{label}</span>
+        <span className="font-semibold text-[#0D9488]">{value}%</span>
+      </div>
+      <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+        <motion.div className="h-full rounded-full bg-gradient-to-r from-[#0D9488] to-[#2DD4BF]"
+          initial={{ width: 0 }} animate={{ width: `${value}%` }}
+          transition={{ duration: 1, delay, ease: [0.22, 1, 0.36, 1] }} />
+      </div>
+    </div>
+  );
+}
+
+/* ─── MARQUEE ───────────────────────────────────────── */
+function Marquee({ items, duration = 30 }) {
+  const doubled = [...items, ...items];
+  return (
+    <div className="overflow-hidden relative">
+      <div className="absolute inset-y-0 left-0 w-24 z-10 bg-gradient-to-r from-[#FAF9F6] dark:from-[#030908] to-transparent pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-24 z-10 bg-gradient-to-l from-[#FAF9F6] dark:from-[#030908] to-transparent pointer-events-none" />
+      <motion.div className="flex gap-4 whitespace-nowrap"
+        animate={{ x: [0, "-50%"] }} transition={{ duration, repeat: Infinity, ease: "linear" }}>
+        {doubled.map((item, i) => (
+          <span key={i} className="inline-flex items-center px-5 py-2 rounded-full border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-[#0E1A18]/60 backdrop-blur-sm text-sm font-medium text-gray-700 dark:text-gray-300 flex-shrink-0">
+            {item}
+          </span>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
+/* ─── TIMELINE STEP ─────────────────────────────────── */
+function TimelineStep({ num, title, desc, icon: Icon, isLast }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  return (
+    <div ref={ref} className="flex gap-6">
+      <div className="flex flex-col items-center">
+        <motion.div initial={{ scale: 0, opacity: 0 }} animate={inView ? { scale: 1, opacity: 1 } : {}}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="w-12 h-12 rounded-full border-2 border-[#0D9488] bg-white dark:bg-[#0A1211] flex items-center justify-center flex-shrink-0 shadow-[0_0_16px_rgba(13,148,136,0.25)]">
+          <Icon className="w-5 h-5 text-[#0D9488]" />
+        </motion.div>
+        {!isLast && <div className="w-px flex-1 bg-gradient-to-b from-[#0D9488]/60 to-transparent mt-2 min-h-[48px]" />}
+      </div>
+      <motion.div initial={{ opacity: 0, x: 24 }} animate={inView ? { opacity: 1, x: 0 } : {}}
+        transition={{ duration: 0.5, delay: 0.2 }} className="pb-12">
+        <span className="text-xs font-mono text-[#0D9488] mb-1 block">0{num}</span>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{title}</h3>
+        <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed max-w-md">{desc}</p>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ─── RECRUIT ROW ───────────────────────────────────── */
+function RecruitRow({ name, college, track, score }) {
+  return (
+    <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+      className="flex items-center justify-between px-4 py-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-[#0E1A18]/50 backdrop-blur-sm hover:border-[#0D9488]/40 transition-colors">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0D9488] to-[#2DD4BF] flex items-center justify-center text-white text-xs font-black flex-shrink-0">
+          {name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-900 dark:text-white">{name}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{college}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-[#F0FDFA] dark:bg-[#0D9488]/10 text-[#0D9488] border border-[#CCFBF1] dark:border-[#0D9488]/20">{track}</span>
+        <span className="font-bold text-sm text-gray-800 dark:text-white">{score}<span className="text-gray-400 font-normal">/1000</span></span>
+        <Shield className="w-4 h-4 text-[#0D9488]" />
+      </div>
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
+   MAIN PAGE
+═══════════════════════════════════════════════════ */
+export default function LandingPage() {
+  const [dark, toggleDark] = useDarkMode();
   const [scrolled, setScrolled] = useState(false);
-  const [recSecs, setRecSecs] = useState(134);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("Consulting");
+  const [recruitSearch, setRecruitSearch] = useState("");
+  const [recruitFilter, setRecruitFilter] = useState("All");
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', fn);
-    return () => window.removeEventListener('scroll', fn);
+    window.addEventListener("scroll", fn, { passive: true });
+    return () => window.removeEventListener("scroll", fn);
   }, []);
 
-  useEffect(() => {
-    const t = setInterval(() => setRecSecs(s => s + 1), 1000);
-    return () => clearInterval(t);
-  }, []);
+  const TABS = {
+    Consulting: {
+      score: 842, role: "Management Consultant", sub: "BCG · McKinsey · Deloitte",
+      metrics: [
+        { label: "Structured Thinking", value: 88 }, { label: "Pacing & Delivery", value: 84 },
+        { label: "Composure Under Pressure", value: 79 }, { label: "Case Framework", value: 91 },
+      ],
+      transcript: "Walk me through a profitability framework for a mid-size FMCG brand seeing 15% margin compression in Q2.",
+    },
+    Product: {
+      score: 815, role: "Product Manager", sub: "Razorpay · Zepto · CRED",
+      metrics: [
+        { label: "Product Intuition", value: 82 }, { label: "User Empathy", value: 86 },
+        { label: "Prioritization Logic", value: 77 }, { label: "Metrics Fluency", value: 80 },
+      ],
+      transcript: "You're the PM for Google Pay India. DAU drops 18% on Tuesdays. How do you diagnose and respond?",
+    },
+    Leadership: {
+      score: 798, role: "Leadership Track", sub: "TATA · Mahindra · Aditya Birla",
+      metrics: [
+        { label: "Conflict Resolution", value: 81 }, { label: "Stakeholder Influence", value: 76 },
+        { label: "Vision Communication", value: 84 }, { label: "Team Alignment", value: 79 },
+      ],
+      transcript: "You've inherited a disengaged team of 12. Two are actively disruptive. What's your 30-day plan?",
+    },
+    Tech: {
+      score: 871, role: "Software Engineer", sub: "Google · Microsoft · Flipkart",
+      metrics: [
+        { label: "System Design", value: 89 }, { label: "DSA Fluency", value: 85 },
+        { label: "Code Quality", value: 88 }, { label: "Trade-off Reasoning", value: 82 },
+      ],
+      transcript: "Design a distributed URL shortener handling 100M URLs/day. Walk through your architecture choices.",
+    },
+  };
+  const current = TABS[activeTab];
+
+  const ALL_RECRUITS = [
+    { name: "Siddharth Roy", college: "IIM Ahmedabad", track: "Consulting", score: 865 },
+    { name: "Priya Sharma", college: "IIT Bombay", track: "Tech", score: 891 },
+    { name: "Arjun Menon", college: "BITS Pilani", track: "Product", score: 823 },
+    { name: "Kavya Nair", college: "ISB Hyderabad", track: "Leadership", score: 844 },
+    { name: "Rohan Das", college: "IIM Calcutta", track: "Consulting", score: 812 },
+    { name: "Sneha Iyer", college: "NIT Trichy", track: "Tech", score: 876 },
+    { name: "Vikram Patel", college: "IIM Bangalore", track: "Product", score: 809 },
+    { name: "Ananya Gupta", college: "XLRI Jamshedpur", track: "Leadership", score: 858 },
+  ];
+
+  const filteredRecruits = useMemo(() =>
+    ALL_RECRUITS.filter(r => {
+      const s = r.name.toLowerCase().includes(recruitSearch.toLowerCase()) || r.college.toLowerCase().includes(recruitSearch.toLowerCase());
+      const f = recruitFilter === "All" || r.track === recruitFilter;
+      return s && f;
+    }),
+  [recruitSearch, recruitFilter]);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white text-[#0D0D1A]">
-      <style jsx global>{`
-        @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
-        @keyframes pdot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.4)} }
-        @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-        @keyframes speakPulse { 0%{box-shadow:0 0 0 0 rgba(13,148,136,0.45)} 70%{box-shadow:0 0 0 9px rgba(13,148,136,0)} 100%{box-shadow:0 0 0 0 rgba(13,148,136,0)} }
-        .marquee { animation: marquee 30s linear infinite; }
-        .float-card { animation: float 4s ease-in-out infinite; }
-        .pdot { animation: pdot 1.4s ease-in-out infinite; }
-        .speak-ring { animation: speakPulse 1.6s ease-out infinite; }
-        .shimmer-btn {
-          background: linear-gradient(90deg,#0D9488 0%,#14B8A6 45%,#0D9488 90%);
-          background-size: 200% 100%;
-          animation: shimmer 2.5s linear infinite;
-        }
-        .bento-card {
-          transition: box-shadow 0.2s ease, border-color 0.2s ease;
-        }
-        .bento-card:hover {
-          box-shadow: 0 8px 32px rgba(13,148,136,0.15);
-          border-color: #2DD4BF;
-        }
-        @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-      `}</style>
+    <div className="min-h-screen bg-[#FAF9F6] dark:bg-[#030908] text-gray-900 dark:text-white transition-colors duration-300 overflow-x-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
 
-      {/* ── NAVBAR ──────────────────────────────────────── */}
-      <nav className={`fixed top-0 z-50 w-full transition-all duration-300 ${scrolled ? "border-b border-gray-100 bg-white/95 backdrop-blur-lg shadow-sm" : "bg-white"}`}>
-        <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8 py-3">
-          <Link href="/" className="flex items-center">
-            <img src="/images/logo_navbar_64h.png" alt="BridgeAI" style={{height:'40px',width:'auto'}} />
+      {/* ── BACKGROUND SYSTEM ──────────────────────────── */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <motion.div className="absolute -top-40 -left-40 w-[700px] h-[700px] rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(13,148,136,0.18) 0%, transparent 70%)" }}
+          animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.6, 0.3] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }} />
+        <motion.div className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(45,212,191,0.12) 0%, transparent 70%)" }}
+          animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.5, 0.2] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 7.5 }} />
+        <div className="absolute inset-0 opacity-[0.07] dark:opacity-[0.12]"
+          style={{ backgroundImage: "radial-gradient(#2dd4bf 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
+        <motion.div className="absolute top-[30%] h-[1px] w-[300px]"
+          style={{ background: "linear-gradient(to right, transparent, rgba(13,148,136,0.7), transparent)", filter: "drop-shadow(0 0 6px #0D9488)", transform: "skewY(-2deg)" }}
+          animate={{ x: ["-100vw", "110vw"] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "linear", repeatDelay: 4 }} />
+        <motion.div className="absolute top-[65%] h-[1px] w-[200px]"
+          style={{ background: "linear-gradient(to left, transparent, rgba(45,212,191,0.5), transparent)", filter: "drop-shadow(0 0 4px #2DD4BF)", transform: "skewY(1.5deg)" }}
+          animate={{ x: ["110vw", "-100vw"] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "linear", repeatDelay: 6 }} />
+        <motion.div className="absolute top-[50%] h-[2px] w-[120px]"
+          style={{ background: "linear-gradient(to right, transparent, rgba(13,148,136,0.9), transparent)", filter: "drop-shadow(0 0 8px #0D9488)" }}
+          animate={{ x: ["-10%", "110vw"] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "linear", repeatDelay: 3 }} />
+        <motion.div className="absolute left-[40%] w-[2px] h-[120px]"
+          style={{ background: "linear-gradient(to bottom, transparent, rgba(45,212,191,0.8), transparent)", filter: "drop-shadow(0 0 8px #2DD4BF)" }}
+          animate={{ y: ["-10%", "110vh"] }}
+          transition={{ duration: 7, repeat: Infinity, ease: "linear", repeatDelay: 2 }} />
+      </div>
+
+      {/* ── NAVBAR ─────────────────────────────────────── */}
+      <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? "backdrop-blur-md bg-white/80 dark:bg-black/60 border-b border-gray-200/50 dark:border-white/8 shadow-sm" : ""}`}>
+        <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0D9488] to-[#2DD4BF] flex items-center justify-center">
+              <span className="text-white font-black text-sm">B</span>
+            </div>
+            <span style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }} className="font-black text-xl tracking-tight text-gray-900 dark:text-white">Bridge<span className="text-[#0D9488]">AI</span></span>
           </Link>
-          <div className="hidden items-center gap-8 md:flex">
-            {[["#features","Features"],["#how-it-works","How it Works"],["#pricing","Pricing"],["#stories","Stories"]].map(([h,l])=>(
-              <a key={h} href={h} className="text-sm font-medium text-gray-600 hover:text-[#0D9488] transition-colors">{l}</a>
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600 dark:text-gray-300">
+            {[["#product","Product"],["#score","Score"],["#recruiters","Recruiters"],["#pricing","Pricing"]].map(([h,l]) => (
+              <a key={h} href={h} className="hover:text-[#0D9488] transition-colors">{l}</a>
             ))}
+          </nav>
+          <div className="flex items-center gap-3">
+            <button onClick={toggleDark} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+              {dark ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className="w-4 h-4 text-gray-600" />}
+            </button>
+            <Link href="/login" className="hidden sm:inline-flex px-4 py-2 rounded-lg border border-gray-300 dark:border-white/20 text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">Login</Link>
+            <Link href="/login" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#0D524C] hover:bg-[#0D9488] text-white text-sm font-semibold transition-colors shadow-[0_0_16px_rgba(13,148,136,0.3)]">
+              Start Free <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+            <button onClick={() => setMenuOpen(v => !v)} className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10">
+              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
-          <div className="hidden items-center gap-3 md:flex">
-            <Link href="/login" className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:border-[#0D9488] hover:text-[#0D9488] transition-all">Login</Link>
-            <Link href="/login" className="shimmer-btn rounded-lg px-5 py-2 text-sm font-semibold text-white shadow-md">Start Free</Link>
-          </div>
-          <button onClick={()=>setMobileMenuOpen(p=>!p)} className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 md:hidden">
-            {mobileMenuOpen ? <X className="h-6 w-6"/> : <Menu className="h-6 w-6"/>}
-          </button>
         </div>
         <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div initial={{height:0,opacity:0}} animate={{height:"auto",opacity:1}} exit={{height:0,opacity:0}}
-              className="border-t border-gray-100 bg-white overflow-hidden md:hidden">
-              <div className="space-y-1 px-4 py-4">
-                {[["#features","Features"],["#how-it-works","How it Works"],["#pricing","Pricing"],["#stories","Stories"]].map(([h,l])=>(
-                  <a key={h} href={h} onClick={()=>setMobileMenuOpen(false)}
-                    className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-[#F0FDFA] hover:text-[#0D9488]">{l}</a>
+          {menuOpen && (
+            <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }}
+              className="md:hidden overflow-hidden bg-white/95 dark:bg-[#030908]/95 backdrop-blur-md border-b border-gray-100 dark:border-white/8">
+              <div className="px-6 py-4 flex flex-col gap-4 text-sm font-medium">
+                {[["#product","Product"],["#score","Score"],["#recruiters","Recruiters"],["#pricing","Pricing"]].map(([h,l]) => (
+                  <a key={h} href={h} onClick={() => setMenuOpen(false)} className="text-gray-700 dark:text-gray-300 hover:text-[#0D9488]">{l}</a>
                 ))}
-                <Link href="/login" className="mt-2 block rounded-lg shimmer-btn px-4 py-2.5 text-center text-sm font-semibold text-white">Start Free</Link>
+                <Link href="/login" className="text-center py-2.5 rounded-lg bg-[#0D9488] text-white font-semibold">Start Free</Link>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-      </nav>
+      </header>
 
-      {/* ── SECTION 1: HERO ─────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#0A3D36] via-[#0D9488] to-[#0F766E] text-white" style={{minHeight:"100vh",display:"flex",flexDirection:"column"}}>
-        <div className="absolute inset-0 opacity-10" style={{backgroundImage:"radial-gradient(#fff 1px,transparent 1px)",backgroundSize:"28px 28px"}}/>
-        <div className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-white/10 blur-3xl pointer-events-none"/>
-        <div className="absolute top-1/2 -left-24 h-64 w-64 rounded-full bg-white/5 blur-3xl pointer-events-none"/>
-
-        <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:px-8 pt-32 pb-16 flex-1">
-          {/* LEFT */}
-          <motion.div variants={STAGGER} initial="hidden" animate="visible" className="flex flex-col justify-center">
-            <motion.div variants={FU}>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold backdrop-blur-sm">
-                <span className="pdot h-2 w-2 rounded-full bg-red-400 inline-block"/>
-                Live · 1,247 students practicing now
-              </span>
+      {/* ── HERO ───────────────────────────────────────── */}
+      <section className="pt-32 pb-24 px-4 sm:px-6 lg:px-8" id="product">
+        <div className="mx-auto max-w-[1200px]">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div initial={{ opacity: 0, y: 32 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#CCFBF1] dark:border-[#0D9488]/30 bg-[#F0FDFA] dark:bg-[#0D9488]/10 text-xs font-semibold text-[#0D9488] mb-6">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0D9488] animate-pulse" />
+                AI-Powered Career Readiness · India&apos;s #1 Platform
+              </div>
+              <h1 style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }} className="text-5xl lg:text-6xl font-black tracking-tighter leading-[1.05] text-gray-900 dark:text-white mb-4">
+                Become impossible<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0D9488] to-[#2DD4BF]">to ignore.</span>
+              </h1>
+              <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-8 max-w-lg">
+                BridgeAI turns raw potential into verified proof. Train with AI interviewers, earn your BRIDGE Score, and walk into placements with institutional credibility.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link href="/login" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#0D9488] to-[#0D524C] text-white font-bold shadow-[0_4px_24px_rgba(13,148,136,0.35)] hover:scale-[1.02] transition-transform">
+                  Unlock Your BRIDGE Score <ArrowRight className="w-4 h-4" />
+                </Link>
+                <a href="#score" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl border border-gray-300 dark:border-white/20 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                  Explore the Framework
+                </a>
+              </div>
+              <div className="mt-8 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex -space-x-2">
+                  {[["AK","bg-violet-500"],["PR","bg-pink-500"],["RS","bg-amber-500"],["SP","bg-sky-500"]].map(([i,c]) => (
+                    <div key={i} className={`w-8 h-8 rounded-full ${c} border-2 border-white dark:border-[#030908] flex items-center justify-center text-xs text-white font-bold`}>{i}</div>
+                  ))}
+                </div>
+                <span><strong className="text-gray-800 dark:text-white">2,500+</strong> students trained this month</span>
+              </div>
             </motion.div>
 
-            <motion.h1 variants={FU} className="mt-6 font-display text-5xl font-black leading-[1.05] sm:text-6xl lg:text-7xl">
-              Crack your<br/><span className="text-[#CCFBF1]">dream job.</span>
-            </motion.h1>
-
-            <motion.p variants={FU} className="mt-5 max-w-lg text-lg text-white/80 leading-relaxed">
-              Real questions. Live AI feedback. Daily GD battles.<br/>One score that proves you&apos;re ready.
-            </motion.p>
-
-            <motion.div variants={FU} className="mt-8 flex flex-wrap gap-4">
-              <Link href="/login">
-                <motion.span whileHover={{scale:1.04}} whileTap={{scale:0.97}}
-                  className="inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-base font-bold text-[#0D9488] shadow-lg cursor-pointer">
-                  Start free mock <ArrowRight className="h-5 w-5"/>
-                </motion.span>
-              </Link>
-              <motion.button whileHover={{scale:1.04}} whileTap={{scale:0.97}}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-7 py-3.5 text-base font-semibold backdrop-blur-sm">
-                <Play className="h-5 w-5"/> Watch 90-sec demo
-              </motion.button>
-            </motion.div>
-
-            <motion.div variants={FU} className="mt-8 flex items-center gap-3">
-              <div className="flex -space-x-2">
-                {[["AK","bg-violet-500"],["PR","bg-pink-500"],["RS","bg-amber-500"],["SN","bg-sky-500"]].map(([i,c])=>(
-                  <div key={i} className={`${c} h-9 w-9 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white`}>{i}</div>
-                ))}
-              </div>
-              <p className="text-sm text-white/80"><strong className="text-white">2,500+</strong> students · ⭐ 4.9 rating</p>
-            </motion.div>
-          </motion.div>
-
-          {/* RIGHT — Floating App Mockup */}
-          <motion.div initial={{opacity:0,x:40}} animate={{opacity:1,x:0}} transition={{duration:0.8,delay:0.3}}
-            className="flex items-center justify-center lg:justify-end relative">
-            {/* Background card */}
-            <div className="absolute top-4 right-2 w-64 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 rotate-3 scale-90 opacity-50 pointer-events-none">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="pdot h-2 w-2 rounded-full bg-red-400 inline-block"/>
-                <span className="text-xs text-white/60">Interview in progress...</span>
-              </div>
-              <div className="h-14 rounded-lg bg-white/10 flex items-center justify-center text-white/30 text-xs">🎤 Recording answer...</div>
-            </div>
-            {/* Main floating card */}
-            <div className="float-card relative z-10 w-72 sm:w-80 rounded-3xl border border-white/20 bg-white/10 backdrop-blur-md p-6 shadow-2xl">
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="font-display text-xl font-bold">BRIDGE Score</h3>
-                <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 px-2.5 py-1 text-xs font-semibold text-emerald-300">
-                  <span className="pdot h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block"/> LIVE
-                </span>
-              </div>
-              <div className="flex justify-center mb-5">
-                <div className="relative">
-                  <svg width="110" height="110" viewBox="0 0 110 110">
-                    <circle cx="55" cy="55" r="46" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="8"/>
-                    <circle cx="55" cy="55" r="46" fill="none" stroke="#CCFBF1" strokeWidth="8"
-                      strokeDasharray="289" strokeDashoffset="80" strokeLinecap="round"
-                      transform="rotate(-90 55 55)"/>
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="font-display text-3xl font-black text-white">720</span>
-                    <span className="text-xs text-white/60">/ 1000</span>
+            {/* Score Widget */}
+            <motion.div initial={{ opacity: 0, y: 32, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}>
+              <div className="rounded-2xl border border-gray-200/60 dark:border-white/8 bg-white/70 dark:bg-[#0E1A18]/60 backdrop-blur-md p-6 shadow-[0_8px_40px_rgba(13,148,136,0.08)]">
+                <div className="flex gap-1 p-1 rounded-xl bg-gray-100 dark:bg-gray-900/60 mb-6">
+                  {Object.keys(TABS).map(tab => (
+                    <button key={tab} onClick={() => setActiveTab(tab)}
+                      className={`flex-1 py-2 px-1 rounded-lg text-xs font-semibold transition-all ${activeTab === tab ? "bg-white dark:bg-[#0D9488]/20 text-[#0D9488] shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"}`}>
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-6 items-start">
+                  <div className="flex flex-col items-center gap-3">
+                    <AnimatePresence mode="wait">
+                      <motion.div key={activeTab} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.4 }}>
+                        <ScoreGauge score={current.score} />
+                      </motion.div>
+                    </AnimatePresence>
+                    <div className="text-center">
+                      <p className="font-bold text-sm text-gray-900 dark:text-white">{current.role}</p>
+                      <p className="text-xs text-[#0D9488]">{current.sub}</p>
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-3 min-w-0">
+                    <AnimatePresence mode="wait">
+                      <motion.div key={activeTab} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.35 }} className="space-y-3">
+                        {current.metrics.map((m, i) => <MetricBar key={m.label} label={m.label} value={m.value} delay={i * 0.08} />)}
+                      </motion.div>
+                    </AnimatePresence>
+                    <AnimatePresence mode="wait">
+                      <motion.div key={`t-${activeTab}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, delay: 0.2 }}
+                        className="mt-4 p-3 rounded-xl border border-[#CCFBF1] dark:border-[#0D9488]/20 bg-[#F0FDFA] dark:bg-[#0D9488]/5">
+                        <p className="text-xs text-[#0D9488] font-semibold mb-1">AI Interviewer</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-300 italic leading-relaxed">&ldquo;{current.transcript}&rdquo;</p>
+                      </motion.div>
+                    </AnimatePresence>
                   </div>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── MARQUEE ─────────────────────────────────────── */}
+      <section className="py-12 border-y border-gray-100 dark:border-white/5 overflow-hidden">
+        <Marquee duration={28} items={[
+          "IIT Bombay","IIT Delhi","IIM Ahmedabad","IIM Bangalore","BITS Pilani","ISB Hyderabad","XLRI","NIT Trichy",
+          "BCG","McKinsey","Deloitte","Amazon","Microsoft","Razorpay","CRED","Zepto",
+        ]} />
+      </section>
+
+      {/* ── READINESS JOURNEY ───────────────────────────── */}
+      <section className="py-28 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[700px]">
+          <div className="text-center mb-16">
+            <span className="text-xs font-mono text-[#0D9488] tracking-widest uppercase mb-3 block">The Journey</span>
+            <h2 style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }} className="text-4xl font-black tracking-tight text-gray-900 dark:text-white">Your readiness, by design.</h2>
+          </div>
+          {[
+            { title: "Deep Assessment", desc: "AI maps your strengths, blind spots, and communication style across 8 dimensions in the first 20 minutes.", icon: Brain },
+            { title: "Active Simulation", desc: "Real-time AI mock interviews tailored to your target role. Voice, video, case, GD — all covered.", icon: Mic },
+            { title: "Feedback Loop", desc: "Every session generates a structured debrief with specific language coaching and STAR framework analysis.", icon: MessageSquare },
+            { title: "Merit Signalling", desc: "Your BRIDGE Score is computed after each session, creating a verified, growing track record.", icon: TrendingUp },
+            { title: "Credibility Layer", desc: "Scores are cryptographically hashed and verifiable by any recruiter through our Registry HUD.", icon: Shield },
+            { title: "Placement Ready", desc: "Walk into every interview with AI-matched job roles, smart apply answers, and verified credentials.", icon: Trophy },
+          ].map((s, i, arr) => <TimelineStep key={s.title} num={i + 1} title={s.title} desc={s.desc} icon={s.icon} isLast={i === arr.length - 1} />)}
+        </div>
+      </section>
+
+      {/* ── BRIDGE SCORE ────────────────────────────────── */}
+      <section className="py-28 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent via-[#F0FDFA]/40 dark:via-[#0D9488]/5 to-transparent" id="score">
+        <div className="mx-auto max-w-[600px] text-center">
+          <span className="text-xs font-mono text-[#0D9488] tracking-widest uppercase mb-3 block">Verified Credential</span>
+          <h2 style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }} className="text-4xl font-black tracking-tight text-gray-900 dark:text-white mb-4">The BRIDGE Score.</h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-12">One number that tells the whole story. Earned, not claimed.</p>
+          <div className="rounded-2xl border border-[#CCFBF1] dark:border-[#0D9488]/20 bg-white/70 dark:bg-[#0E1A18]/60 backdrop-blur-md p-10 shadow-[0_8px_48px_rgba(13,148,136,0.10)]">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F0FDFA] dark:bg-[#0D9488]/10 border border-[#CCFBF1] dark:border-[#0D9488]/20 text-[10px] font-mono text-[#0D9488] mb-8 tracking-widest">
+              <Shield className="w-3 h-3" /> SECURE DECENTRALIZED VERIFICATION ID · #BRG-2025-00418
+            </div>
+            <div className="flex justify-center mb-8"><ScoreGauge score={860} size={200} strokeWidth={14} /></div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/30 text-emerald-700 dark:text-emerald-400 text-sm font-bold mb-8">
+              <CheckCircle className="w-4 h-4" /> Top 2% Nationally Verified
+            </div>
+            <div className="space-y-3 text-left">
+              {[{ label: "Structured Thinking", value: 91 }, { label: "Communication Clarity", value: 86 }, { label: "Composure Under Pressure", value: 83 }].map((m, i) => (
+                <MetricBar key={m.label} label={m.label} value={m.value} delay={i * 0.1} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── INTERVIEW SIMULATION ────────────────────────── */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1200px]">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <span className="text-xs font-mono text-[#0D9488] tracking-widest uppercase mb-3 block">Smart Interview</span>
+              <h2 style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }} className="text-4xl font-black tracking-tight text-gray-900 dark:text-white mb-4">
+                AI that interviews like<br />a real partner-level panel.
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 leading-relaxed mb-6">Voice-to-voice simulation with eye contact tracking, pacing analysis, and instant structured feedback after every answer.</p>
+              <ul className="space-y-3">
+                {["Resume-contextual first questions — never generic","Real-time vocal pacing & filler word detection","STAR framework gap identification post-session","Supports Consulting, PM, Tech, and Leadership rounds"].map(f => (
+                  <li key={f} className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                    <Check className="w-4 h-4 text-[#0D9488] mt-0.5 flex-shrink-0" />{f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-gray-200/60 dark:border-white/8 bg-white/70 dark:bg-[#0E1A18]/60 backdrop-blur-md overflow-hidden shadow-[0_8px_40px_rgba(13,148,136,0.08)]">
+              <div className="relative bg-gray-900 aspect-video flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
+                <div className="relative z-10 flex flex-col items-center gap-3">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#0D9488] to-[#2DD4BF] flex items-center justify-center">
+                    <Video className="w-8 h-8 text-white" />
+                  </div>
+                  <span className="text-white text-sm font-medium">You</span>
+                </div>
+                <div className="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/20 border border-green-400/40 backdrop-blur-sm">
+                  <Eye className="w-3 h-3 text-green-400" />
+                  <span className="text-green-400 text-[10px] font-mono font-semibold">Eye Contact Tracking Active</span>
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                </div>
+                <div className="absolute bottom-3 right-3 w-20 rounded-xl overflow-hidden border-2 border-[#0D9488]/50">
+                  <div className="bg-gradient-to-br from-[#0D524C] to-[#0D9488] aspect-video flex items-center justify-center">
+                    <Brain className="w-6 h-6 text-white/70" />
+                  </div>
+                  <div className="bg-black/80 px-2 py-0.5 text-[9px] text-center text-white font-mono">AI Panel</div>
+                </div>
+              </div>
+              <div className="p-4 grid grid-cols-3 gap-3 border-t border-gray-100 dark:border-white/5">
+                {[{ label: "Vocal Pacing", value: "92/100", color: "text-green-500" }, { label: "Filler Words", value: "2 detected", color: "text-yellow-500" }, { label: "Eye Contact", value: "87%", color: "text-[#0D9488]" }].map(s => (
+                  <div key={s.label} className="text-center">
+                    <p className={`text-sm font-bold ${s.color}`}>{s.value}</p>
+                    <p className="text-[10px] text-gray-400">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── GD ROOMS ────────────────────────────────────── */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent via-[#F0FDFA]/30 dark:via-[#0D9488]/3 to-transparent">
+        <div className="mx-auto max-w-[1200px]">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="rounded-2xl border border-gray-200/60 dark:border-white/8 bg-white/70 dark:bg-[#0E1A18]/60 backdrop-blur-md p-6 shadow-[0_8px_40px_rgba(13,148,136,0.08)] order-2 lg:order-1">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-xs font-mono text-green-600 dark:text-green-400 font-semibold">GD Session · Live</span>
+              </div>
+              <div className="grid grid-cols-3 gap-3 mb-5">
+                {[
+                  { name: "You", color: "from-[#0D9488] to-[#2DD4BF]", icon: <Video className="w-5 h-5 text-white" />, active: true },
+                  { name: "AI Moderator", color: "from-violet-500 to-purple-600", icon: <Brain className="w-5 h-5 text-white" />, active: false },
+                  { name: "Rahul S.", color: "from-amber-400 to-orange-500", icon: <Users className="w-5 h-5 text-white" />, active: false },
+                ].map(p => (
+                  <div key={p.name} className={`rounded-xl overflow-hidden border-2 ${p.active ? "border-[#0D9488]" : "border-gray-200 dark:border-gray-700"}`}>
+                    <div className={`bg-gradient-to-br ${p.color} aspect-video flex items-center justify-center`}>{p.icon}</div>
+                    <div className="bg-gray-900/80 px-2 py-1 text-[10px] text-center text-white">{p.name}</div>
+                  </div>
+                ))}
               </div>
               <div className="space-y-2">
-                {[["🔥 Streak","14 days"],["🏆 Rank","#42 / 1,200"],["💪 Confidence","8.4 / 10"]].map(([l,v])=>(
-                  <div key={l} className="flex justify-between rounded-xl bg-white/10 px-4 py-2.5">
-                    <span className="text-sm text-white/80">{l}</span>
-                    <span className="text-sm font-semibold text-[#CCFBF1]">{v}</span>
+                {[
+                  { speaker: "Rahul S.", tag: "Consensus Builder", text: "Tesla's real barrier isn't EV tech — it's the charging infrastructure trust deficit.", color: "bg-amber-500" },
+                  { speaker: "You", tag: "MECE Framework", text: "Structuring this: Supply-side constraints, demand signals, regulatory headwinds.", color: "bg-[#0D9488]" },
+                  { speaker: "AI Moderator", tag: "Facilitator", text: "Strong point. Can someone challenge the infrastructure narrative with data?", color: "bg-violet-500" },
+                ].map((line, i) => (
+                  <div key={i} className="flex gap-3 text-xs">
+                    <div className={`w-5 h-5 rounded-full ${line.color} flex-shrink-0 flex items-center justify-center text-white font-bold`}>{line.speaker[0]}</div>
+                    <div>
+                      <span className="font-semibold text-gray-800 dark:text-gray-200">{line.speaker}</span>
+                      <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] bg-[#F0FDFA] dark:bg-[#0D9488]/10 text-[#0D9488] font-mono">{line.tag}</span>
+                      <p className="text-gray-500 dark:text-gray-400 mt-0.5">{line.text}</p>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
-          </motion.div>
-        </div>
-
-        {/* Ticker */}
-        <div className="relative overflow-hidden bg-black/20 backdrop-blur-sm border-t border-white/10 py-3">
-          <div className="pointer-events-none absolute left-0 top-0 h-full w-20 bg-gradient-to-r from-[#0A3D36] to-transparent z-10"/>
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-20 bg-gradient-to-l from-[#0F766E] to-transparent z-10"/>
-          <div className="marquee whitespace-nowrap inline-flex">
-            {[...TICKER,...TICKER].map((item,i)=>(
-              <span key={i} className="mx-8 inline-flex items-center gap-2 text-sm font-medium text-white/75">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block"/>{item}
-              </span>
-            ))}
+            <div className="order-1 lg:order-2">
+              <span className="text-xs font-mono text-[#0D9488] tracking-widest uppercase mb-3 block">GD Pulse</span>
+              <h2 style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }} className="text-4xl font-black tracking-tight text-gray-900 dark:text-white mb-4">
+                Group discussions<br />that sharpen, not just simulate.
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 leading-relaxed">AI moderator structures the debate. Real-time speech tagging identifies your framework usage and consensus-building patterns. Post-GD breakdown tells you exactly where you led and where you faded.</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── SECTION 2: COLLEGE STRIP ────────────────────── */}
-      <section className="bg-white border-b border-gray-100 py-10">
-        <motion.p variants={FI} initial="hidden" whileInView="visible" viewport={{once:true}}
-          className="text-center text-sm font-semibold text-gray-500 mb-6">
-          Students from 50+ colleges trust Bridge
-        </motion.p>
-        <div className="relative overflow-hidden">
-          <div className="pointer-events-none absolute left-0 top-0 h-full w-20 bg-gradient-to-r from-white to-transparent z-10"/>
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-20 bg-gradient-to-l from-white to-transparent z-10"/>
-          <div className="marquee whitespace-nowrap inline-flex">
-            {[...COLLEGES,...COLLEGES].map((c,i)=>(
-              <span key={i} className="mx-3 inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-5 py-2 text-sm font-semibold text-gray-600">{c}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── SECTION 3: FEATURES BENTO ───────────────────── */}
-      <section id="features" className="bg-[#F0FDFA] py-24">
-        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-          <motion.div variants={STAGGER} initial="hidden" whileInView="visible" viewport={{once:true,margin:"-100px"}} className="mb-14 text-center">
-            <motion.p variants={FU} className="text-sm font-bold uppercase tracking-widest text-[#0D9488]">The Stack</motion.p>
-            <motion.h2 variants={FU} className="font-display mt-3 text-4xl font-black text-[#0D0D1A] sm:text-5xl">Six weapons. One unfair advantage.</motion.h2>
-            <motion.p variants={FU} className="mt-3 text-lg text-gray-600">Every feature is built to push your BRIDGE Score closer to 1000.</motion.p>
-          </motion.div>
-
-          <motion.div
-            variants={{ hidden:{}, visible:{ transition:{ staggerChildren:0.1 } } }}
-            initial="hidden" whileInView="visible" viewport={{once:true,margin:"-80px"}}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-
-            {/* Card 1 — AI Video (span 2) */}
-            <motion.div
-              variants={{ hidden:{opacity:0,y:24,scale:0.97}, visible:{opacity:1,y:0,scale:1,transition:{duration:0.5}} }}
-              whileHover={{y:-6,scale:1.01,transition:{duration:0.2}}}
-              className="bento-card lg:col-span-2 bg-[#F0FDFA] rounded-2xl border border-[#99F6E4] p-7 cursor-pointer">
-              <div className="mb-5 rounded-xl bg-gray-900 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="pdot h-2 w-2 rounded-full bg-red-500 inline-block"/>
-                    <span className="text-xs font-semibold text-red-400">REC</span>
-                  </div>
-                  <span className="text-xs text-gray-400 font-mono">
-                    {String(Math.floor(recSecs/60)).padStart(2,'0')}:{String(recSecs%60).padStart(2,'0')}
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="h-20 rounded-lg bg-gray-800 flex items-center justify-center">
-                    <span className="text-xs font-bold text-[#0D9488]">YOU</span>
-                  </div>
-                  <div className="col-span-2 space-y-2">
-                    {[["Eye Contact",92,"text-emerald-400"],["Confidence",84,"text-sky-400"],["Clarity",78,"text-amber-400"]].map(([l,v,c])=>(
-                      <div key={l} className="bg-gray-800 rounded-lg px-3 py-1.5">
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs text-gray-400">{l}</span>
-                          <span className={`text-xs font-bold ${c}`}>{v}%</span>
-                        </div>
-                        <div className="h-1 rounded-full bg-gray-700 overflow-hidden">
-                          <motion.div initial={{width:0}} whileInView={{width:`${v}%`}}
-                            transition={{duration:0.8,delay:0.2}} viewport={{once:true}}
-                            className={`h-full rounded-full ${l==="Eye Contact"?"bg-emerald-400":l==="Confidence"?"bg-sky-400":"bg-amber-400"}`}/>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <h3 className="font-display text-xl font-bold text-[#134E4A]">Your camera on. Our AI watches everything.</h3>
-              <p className="mt-2 text-sm text-teal-700">Eye contact, posture, voice tremor, filler words — all analyzed in real time.</p>
-            </motion.div>
-
-            {/* Card 2 — BRIDGE Score */}
-            <motion.div
-              variants={{ hidden:{opacity:0,y:24,scale:0.97}, visible:{opacity:1,y:0,scale:1,transition:{duration:0.5}} }}
-              whileHover={{y:-6,scale:1.01,transition:{duration:0.2}}}
-              className="bento-card bg-[#F0FDFA] rounded-2xl border border-[#99F6E4] p-7 cursor-pointer">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-bold text-[#134E4A]">BRIDGE Score</span>
-                <span className="flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                  <span className="pdot h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block"/> LIVE
-                </span>
-              </div>
-              <div className="flex justify-center mb-4">
-                <div className="relative">
-                  <svg width="88" height="88" viewBox="0 0 88 88">
-                    <circle cx="44" cy="44" r="35" fill="none" stroke="#CCFBF1" strokeWidth="6"/>
-                    <motion.circle cx="44" cy="44" r="35" fill="none" stroke="#0D9488" strokeWidth="6"
-                      strokeDasharray="220" initial={{strokeDashoffset:220}} whileInView={{strokeDashoffset:61}}
-                      transition={{duration:1.2,ease:"easeOut"}} viewport={{once:true}}
-                      strokeLinecap="round" transform="rotate(-90 44 44)"/>
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="font-display text-2xl font-black text-[#134E4A]">720</span>
-                    <span className="text-[10px] text-teal-500">/1000</span>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2 mb-4">
-                {[["Comm",82],["Confidence",75],["Technical",68]].map(([l,v])=>(
-                  <div key={l}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-teal-600">{l}</span>
-                      <span className="font-semibold text-[#134E4A]">{v}%</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-teal-100 overflow-hidden">
-                      <motion.div initial={{width:0}} whileInView={{width:`${v}%`}}
-                        transition={{duration:0.9,ease:"easeOut",delay:0.1}} viewport={{once:true}}
-                        className="h-full bg-[#0D9488] rounded-full"/>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <h3 className="font-display text-base font-bold text-[#134E4A]">BRIDGE Score — Placement readiness / 1000</h3>
-            </motion.div>
-
-            {/* Card 3 — GD Battles */}
-            <motion.div
-              variants={{ hidden:{opacity:0,y:24,scale:0.97}, visible:{opacity:1,y:0,scale:1,transition:{duration:0.5}} }}
-              whileHover={{y:-6,scale:1.01,transition:{duration:0.2}}}
-              className="bento-card bg-[#F0FDFA] rounded-2xl border border-[#99F6E4] p-7 cursor-pointer">
+      {/* ── CAREER INTELLIGENCE ─────────────────────────── */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1200px]">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <span className="text-xs font-mono text-[#0D9488] tracking-widest uppercase mb-3 block">Career Intelligence</span>
+              <h2 style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }} className="text-4xl font-black tracking-tight text-gray-900 dark:text-white mb-4">
+                Daily Strategy Digest.<br />Built for GD and cases.
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 leading-relaxed">Every morning, BridgeAI surfaces a real global event — mapped to consulting angles, GD debate points, and interview talking positions.</p>
+            </div>
+            <div className="rounded-2xl border border-gray-200/60 dark:border-white/8 bg-white/70 dark:bg-[#0E1A18]/60 backdrop-blur-md p-6 shadow-[0_8px_40px_rgba(13,148,136,0.08)]">
               <div className="flex items-center gap-2 mb-5">
-                {[["AK","bg-violet-500",false],["PR","bg-pink-500",false],["RS","bg-amber-500",false],["AI","bg-[#0D9488]",true]].map(([init,col,speaking])=>(
-                  <div key={init} className={`${col} ${speaking?"speak-ring":""} h-11 w-11 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-white`}>{init}</div>
-                ))}
-              </div>
-              <h3 className="font-display text-xl font-bold text-[#134E4A]">GD Battles — 4 students. 5 mins. AI judge.</h3>
-              <p className="mt-2 text-sm text-teal-700">Practice like a real selection round with live opponents.</p>
-            </motion.div>
-
-            {/* Card 4 — Questions */}
-            <motion.div
-              variants={{ hidden:{opacity:0,y:24,scale:0.97}, visible:{opacity:1,y:0,scale:1,transition:{duration:0.5}} }}
-              whileHover={{y:-6,scale:1.01,transition:{duration:0.2}}}
-              className="bento-card bg-[#F0FDFA] rounded-2xl border border-[#99F6E4] p-7 cursor-pointer">
-              <div className="flex flex-wrap gap-2 mb-5">
-                {COMPANIES.slice(0,6).map((c,i)=>(
-                  <motion.span key={c}
-                    initial={{opacity:0,scale:0.8}} whileInView={{opacity:1,scale:1}}
-                    transition={{duration:0.3,delay:i*0.05}} viewport={{once:true}}
-                    whileHover={{scale:1.05}}
-                    className="rounded-full bg-white border border-[#99F6E4] px-3 py-1 text-xs font-semibold text-[#0D9488] cursor-pointer transition-colors hover:border-[#0D9488]">{c}</motion.span>
-                ))}
-                <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-600">+200 more</span>
-              </div>
-              <h3 className="font-display text-xl font-bold text-[#134E4A]">500+ real questions from real companies.</h3>
-              <p className="mt-2 text-sm text-teal-700">Sourced from actual interview experiences at top companies.</p>
-            </motion.div>
-
-            {/* Card 5 — Resume */}
-            <motion.div
-              variants={{ hidden:{opacity:0,y:24,scale:0.97}, visible:{opacity:1,y:0,scale:1,transition:{duration:0.5}} }}
-              whileHover={{y:-6,scale:1.01,transition:{duration:0.2}}}
-              className="bento-card bg-[#F0FDFA] rounded-2xl border border-[#99F6E4] p-7 cursor-pointer">
-              <div className="mb-5 rounded-xl bg-white border border-[#CCFBF1] p-4">
-                <div className="flex justify-between mb-2">
-                  <span className="text-xs font-semibold text-teal-600">ATS Score</span>
-                  <span className="text-lg font-black text-[#134E4A]">96%</span>
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0D9488] to-[#2DD4BF] flex items-center justify-center">
+                  <BarChart2 className="w-4 h-4 text-white" />
                 </div>
-                <div className="h-2 rounded-full bg-teal-100 overflow-hidden">
-                  <motion.div initial={{width:0}} whileInView={{width:"96%"}}
-                    transition={{duration:1,ease:"easeOut",delay:0.2}} viewport={{once:true}}
-                    className="h-full bg-[#0D9488] rounded-full"/>
+                <div>
+                  <p className="font-bold text-sm text-gray-900 dark:text-white">Daily Strategy Digest</p>
+                  <p className="text-[10px] text-gray-400">Today · May 26, 2026</p>
                 </div>
-                <span className="mt-2 inline-block rounded-full bg-teal-100 text-teal-700 px-2 py-0.5 text-xs font-semibold">✓ 3 keywords boosted</span>
+                <span className="ml-auto w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               </div>
-              <h3 className="font-display text-xl font-bold text-[#134E4A]">AI Resume — ATS-optimized. Recruiter-approved.</h3>
-              <p className="mt-2 text-sm text-teal-700">Instant keyword suggestions and role-specific improvements.</p>
-            </motion.div>
-
-            {/* Card 6 — Roadmap (full width) */}
-            <motion.div
-              variants={{ hidden:{opacity:0,y:24,scale:0.97}, visible:{opacity:1,y:0,scale:1,transition:{duration:0.5}} }}
-              whileHover={{y:-6,scale:1.01,transition:{duration:0.2}}}
-              className="bento-card lg:col-span-3 bg-[#F0FDFA] rounded-2xl border border-[#99F6E4] p-7 cursor-pointer">
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-5">
-                {[["M","Mock"],["T","GD"],["W","DSA"],["T","Mock"],["F","Resume"],["S","GD"],["S","Rest"]].map(([day,act],i)=>(
-                  <motion.div key={i}
-                    initial={{opacity:0,y:12}} whileInView={{opacity:1,y:0}}
-                    transition={{duration:0.35,delay:i*0.06}} viewport={{once:true}}
-                    className={`flex-shrink-0 flex flex-col items-center gap-1 rounded-xl px-4 py-3 min-w-[64px] ${i===3?"bg-[#0D9488] text-white":"bg-white border border-[#CCFBF1]"}`}>
-                    <span className={`text-xs font-bold ${i===3?"text-white/70":"text-teal-400"}`}>{day}</span>
-                    <span className={`text-xs font-semibold ${i===3?"text-white":"text-teal-700"}`}>{act}</span>
-                    {i===3 && <span className="text-[10px] text-[#CCFBF1]">Today</span>}
-                  </motion.div>
+              <div className="rounded-xl bg-gradient-to-br from-[#0D9488]/5 to-transparent border border-[#CCFBF1] dark:border-[#0D9488]/20 p-4 mb-4">
+                <p className="text-xs font-mono text-[#0D9488] mb-1">GLOBAL BRIEFING</p>
+                <h3 className="font-bold text-gray-900 dark:text-white mb-1">Tesla&apos;s Entry to Indian EV Market</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Competitive dynamics, infrastructure gaps, and regulatory tailwinds reshaping India&apos;s EV landscape.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { title: "Consulting Angle", points: ["Market entry framework", "PESTLE deep-dive", "BCG matrix positioning"] },
+                  { title: "GD Debate Points", points: ["Infrastructure deficit", "Domestic vs import duty", "Consumer trust curve"] },
+                ].map(col => (
+                  <div key={col.title} className="rounded-xl p-3 border border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-gray-900/30">
+                    <p className="text-[10px] font-semibold text-[#0D9488] mb-2 uppercase tracking-wide">{col.title}</p>
+                    <ul className="space-y-1">
+                      {col.points.map(p => (
+                        <li key={p} className="flex items-start gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+                          <ChevronRight className="w-3 h-3 text-[#0D9488] flex-shrink-0 mt-0.5" />{p}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
               </div>
-              <h3 className="font-display text-xl font-bold text-[#134E4A]">Personal Roadmap — Your next 7 days, planned by AI.</h3>
-              <p className="mt-2 text-sm text-teal-700">Built from your weak spots. Updated every morning. No guesswork.</p>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ── SECTION 4: SCORE EXPLAINER ──────────────────── */}
-      <section className="bg-white py-24">
-        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-          <motion.div variants={STAGGER} initial="hidden" whileInView="visible" viewport={{once:true}} className="text-center mb-16">
-            <motion.h2 variants={FU} className="font-display text-4xl font-black text-[#0D0D1A] sm:text-5xl">Watch yourself level up.</motion.h2>
-            <motion.p variants={FU} className="mt-3 text-lg text-gray-600">One number. Built from every mock, every battle, every word.</motion.p>
-          </motion.div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <motion.div initial={{opacity:0,x:-40}} whileInView={{opacity:1,x:0}} transition={{duration:0.7}} viewport={{once:true}} className="flex flex-col items-center">
-              <div className="relative">
-                <svg width="200" height="200" viewBox="0 0 200 200">
-                  <defs>
-                    <linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#0D9488"/>
-                      <stop offset="100%" stopColor="#14B8A6"/>
-                    </linearGradient>
-                  </defs>
-                  <circle cx="100" cy="100" r="80" fill="none" stroke="#F0FDFA" strokeWidth="14"/>
-                  <circle cx="100" cy="100" r="80" fill="none" stroke="url(#sg)" strokeWidth="14"
-                    strokeDasharray="503" strokeDashoffset="140" strokeLinecap="round" transform="rotate(-90 100 100)"/>
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="font-display text-5xl font-black text-[#0D9488]">720</span>
-                  <span className="text-gray-400 text-sm">/ 1000</span>
-                  <span className="mt-1 rounded-full bg-[#F0FDFA] px-3 py-0.5 text-xs font-semibold text-[#0D9488]">Intermediate</span>
-                </div>
-              </div>
-              <div className="mt-6 flex items-center gap-3 text-xs font-semibold">
-                <span className="text-red-400">Beginner</span>
-                <div className="h-px w-20 bg-gradient-to-r from-red-300 via-amber-300 to-emerald-400"/>
-                <span className="text-emerald-500">Expert</span>
-              </div>
-            </motion.div>
-            <motion.div variants={STAGGER} initial="hidden" whileInView="visible" viewport={{once:true,margin:"-80px"}} className="space-y-6">
-              {[["Communication",82],["Technical Depth",68],["Confidence",75],["Problem Solving",71]].map(([label,pct])=>(
-                <motion.div key={label} variants={FU}>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-semibold text-gray-700">{label}</span>
-                    <span className="text-sm font-bold text-[#0D9488]">{pct}%</span>
-                  </div>
-                  <div className="h-3 rounded-full bg-[#F0FDFA] overflow-hidden">
-                    <motion.div initial={{width:0}} whileInView={{width:`${pct}%`}} transition={{duration:1,ease:"easeOut",delay:0.2}}
-                      viewport={{once:true}} className="h-full rounded-full bg-gradient-to-r from-[#0D9488] to-[#14B8A6]"/>
-                  </div>
-                </motion.div>
+      {/* ── RECRUITER REGISTRY ──────────────────────────── */}
+      <section className="py-28 px-4 sm:px-6 lg:px-8" id="recruiters">
+        <div className="mx-auto max-w-[900px]">
+          <div className="text-center mb-12">
+            <span className="text-xs font-mono text-[#0D9488] tracking-widest uppercase mb-3 block">Recruiter Registry</span>
+            <h2 style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }} className="text-4xl font-black tracking-tight text-gray-900 dark:text-white mb-3">Verified talent. Zero noise.</h2>
+            <p className="text-gray-500 dark:text-gray-400">Every candidate score is cryptographically verified. Filter by track, search by name.</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input value={recruitSearch} onChange={e => setRecruitSearch(e.target.value)} placeholder="Search by name or college..."
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-[#0E1A18]/60 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#0D9488] transition-colors" />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {["All", "Consulting", "Product", "Leadership", "Tech"].map(f => (
+                <button key={f} onClick={() => setRecruitFilter(f)}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${recruitFilter === f ? "bg-[#0D9488] text-white shadow-[0_0_12px_rgba(13,148,136,0.3)]" : "border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-[#0D9488]/50 bg-white/50 dark:bg-[#0E1A18]/40"}`}>
+                  {f}
+                </button>
               ))}
-              <motion.div variants={FU} className="rounded-xl bg-[#F0FDFA] border border-[#CCFBF1] p-4">
-                <p className="text-xs font-semibold text-gray-500 mb-2">Score progression</p>
-                <div className="flex items-center gap-3 text-sm font-bold flex-wrap">
-                  <span className="text-gray-500">Week 1: <span className="text-[#0D9488]">460</span></span>
-                  <ArrowRight className="h-3 w-3 text-gray-400"/>
-                  <span className="text-gray-500">Week 3: <span className="text-[#0D9488]">610</span></span>
-                  <ArrowRight className="h-3 w-3 text-gray-400"/>
-                  <span className="text-gray-500">Week 6: <span className="text-[#0D9488]">780</span></span>
-                </div>
-              </motion.div>
-            </motion.div>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-gray-200/60 dark:border-white/8 bg-white/50 dark:bg-[#0E1A18]/40 backdrop-blur-md overflow-hidden shadow-[0_4px_24px_rgba(13,148,136,0.06)]">
+            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
+              <Shield className="w-4 h-4 text-[#0D9488]" />
+              <span className="text-xs font-mono text-gray-500 dark:text-gray-400">LIVE VERIFIED CANDIDATES · {filteredRecruits.length} results</span>
+            </div>
+            <div className="p-3 space-y-2 min-h-[240px]">
+              <AnimatePresence>
+                {filteredRecruits.length > 0 ? filteredRecruits.map(r => <RecruitRow key={r.name} {...r} />) : (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-12 text-gray-400">
+                    <Search className="w-8 h-8 mb-2 opacity-40" /><p className="text-sm">No candidates match your search.</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── SECTION 5: HOW IT WORKS ─────────────────────── */}
-      <section id="how-it-works" className="bg-[#F0FDFA] py-24">
-        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-          <motion.h2 variants={FU} initial="hidden" whileInView="visible" viewport={{once:true}}
-            className="font-display text-4xl font-black text-center text-[#0D0D1A] sm:text-5xl mb-16">
-            From signup to offer letter.
-          </motion.h2>
-          <motion.div variants={STAGGER} initial="hidden" whileInView="visible" viewport={{once:true,margin:"-80px"}}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {n:"01",icon:<Zap className="h-6 w-6 text-[#0D9488]"/>,title:"Sign up",desc:"90 seconds. No card."},
-              {n:"02",icon:<Video className="h-6 w-6 text-[#0D9488]"/>,title:"Take a mock",desc:"Real questions, AI feedback."},
-              {n:"03",icon:<TrendingUp className="h-6 w-6 text-[#0D9488]"/>,title:"Track score",desc:"Watch it climb daily."},
-              {n:"04",icon:<Award className="h-6 w-6 text-[#0D9488]"/>,title:"Walk in confident",desc:"You've practiced this."},
-            ].map((step,i)=>(
-              <motion.div key={step.n} variants={FU} whileHover={{y:-4,transition:{duration:0.2}}}
-                className="relative bg-white rounded-2xl border border-gray-100 p-7 shadow-sm text-center">
-                {i < 3 && <div className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10"><ArrowRight className="h-5 w-5 text-[#CCFBF1]"/></div>}
-                <div className="font-display text-4xl font-black text-[#CCFBF1] mb-3">{step.n}</div>
-                <div className="inline-flex rounded-xl bg-[#F0FDFA] p-3 mb-3">{step.icon}</div>
-                <h3 className="font-display text-xl font-bold text-[#0D0D1A]">{step.title}</h3>
-                <p className="mt-2 text-sm text-gray-600">{step.desc}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── SECTION 6: PRICING ──────────────────────────── */}
-      <section id="pricing" className="bg-white py-24">
-        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-          <motion.div variants={STAGGER} initial="hidden" whileInView="visible" viewport={{once:true}} className="text-center mb-16">
-            <motion.h2 variants={FU} className="font-display text-4xl font-black text-[#0D0D1A] sm:text-5xl">Honest pricing. Built for students.</motion.h2>
-            <motion.p variants={FU} className="mt-3 text-lg text-gray-600">Start free. Upgrade when you&apos;re hooked.</motion.p>
-          </motion.div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <motion.div initial={{opacity:0,x:-40}} whileInView={{opacity:1,x:0}} transition={{duration:0.6}} viewport={{once:true}}
-              whileHover={{y:-4}} className="rounded-3xl border-2 border-gray-200 bg-white p-10 shadow-sm">
-              <p className="text-sm font-semibold text-[#0D9488]">Starter</p>
-              <h3 className="font-display mt-2 text-3xl font-black text-[#0D0D1A]">Free Forever</h3>
-              <p className="mt-1 text-lg text-gray-500">₹0 / forever</p>
-              <ul className="mt-6 space-y-3 text-sm text-gray-700">
-                {["4 AI mock interviews","1 GD battle","Basic BRIDGE score","PDF Resume review"].map(f=>(
-                  <li key={f} className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0"/>{f}</li>
-                ))}
-              </ul>
-              <Link href="/login">
-                <motion.span whileHover={{scale:1.03}} whileTap={{scale:0.97}}
-                  className="mt-8 inline-flex cursor-pointer rounded-xl border-2 border-[#0D9488] px-7 py-3 text-base font-semibold text-[#0D9488] hover:bg-[#F0FDFA] transition-colors">
-                  Start Free
-                </motion.span>
-              </Link>
-            </motion.div>
-
-            <motion.div initial={{opacity:0,x:40}} whileInView={{opacity:1,x:0}} transition={{duration:0.6,delay:0.1}} viewport={{once:true}}
-              whileHover={{y:-4}} className="rounded-3xl border-2 border-[#0D9488] bg-gradient-to-br from-[#0D9488] to-[#0F766E] p-10 text-white shadow-xl relative overflow-hidden">
-              <div className="absolute top-4 right-4">
-                <span className="rounded-full bg-white/20 border border-white/30 px-3 py-1 text-xs font-bold">⭐ Most popular</span>
-              </div>
-              <p className="text-sm font-semibold text-[#CCFBF1]">Pro</p>
-              <h3 className="font-display mt-2 text-3xl font-black">Placement Crusher</h3>
-              <p className="mt-1 text-xl font-bold text-[#CCFBF1]">₹499 <span className="text-base font-normal">/ month</span></p>
-              <p className="text-xs text-white/50 mt-0.5">Less than 1 day of coaching fees.</p>
-              <ul className="mt-6 space-y-3 text-sm">
-                {["20 AI video interviews / month","20 GD battles / month","Unlimited improvement guides","Priority question bank","Personal roadmap updates"].map(f=>(
-                  <li key={f} className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-300 flex-shrink-0"/>{f}</li>
-                ))}
-              </ul>
-              <Link href="/login">
-                <motion.span whileHover={{scale:1.03}} whileTap={{scale:0.97}}
-                  className="mt-8 inline-flex cursor-pointer rounded-xl bg-white px-7 py-3 text-base font-bold text-[#0D9488] shadow-md">
-                  Go Pro →
-                </motion.span>
-              </Link>
-            </motion.div>
+      {/* ── TESTIMONIALS ────────────────────────────────── */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent via-[#F0FDFA]/40 dark:via-[#0D9488]/5 to-transparent">
+        <div className="mx-auto max-w-[1200px]">
+          <div className="text-center mb-12">
+            <span className="text-xs font-mono text-[#0D9488] tracking-widest uppercase mb-3 block">Success Stories</span>
+            <h2 style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }} className="text-4xl font-black tracking-tight text-gray-900 dark:text-white">They came. They trained. They placed.</h2>
           </div>
-        </div>
-      </section>
-
-      {/* ── SECTION 7: TESTIMONIALS ─────────────────────── */}
-      <section id="stories" className="bg-[#F0FDFA] py-24">
-        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-          <motion.div variants={STAGGER} initial="hidden" whileInView="visible" viewport={{once:true}} className="text-center mb-16">
-            <motion.h2 variants={FU} className="font-display text-4xl font-black text-[#0D0D1A] sm:text-5xl">They walked in. They got the offer.</motion.h2>
-            <motion.div variants={FU} className="mt-3 flex justify-center items-center gap-2">
-              <div className="flex text-yellow-400">{[...Array(5)].map((_,i)=><Star key={i} className="h-5 w-5 fill-current"/>)}</div>
-              <span className="text-gray-600 text-sm">4.9 from 1,200+ students</span>
-            </motion.div>
-          </motion.div>
-          <motion.div variants={STAGGER} initial="hidden" whileInView="visible" viewport={{once:true,margin:"-80px"}} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {[
-              {init:"AK",color:"bg-violet-500",name:"Akhil Kumar",school:"VIT → Amazon",quote:"Walked into Amazon already knowing the questions. Bridge is insane.",chip:"+45 mocks"},
-              {init:"PR",color:"bg-pink-500",name:"Priya Nair",school:"PSG → Infosys",quote:"GD battles flipped my fear into real leadership confidence.",chip:"10 GDs won"},
-              {init:"RS",color:"bg-amber-500",name:"Rohan Sharma",school:"SRMIST → Wipro",quote:"480 → 790 in 6 weeks. Insane clarity on exactly what to improve.",chip:"+310 pts"},
-              {init:"SP",color:"bg-sky-500",name:"Sneha Patel",school:"Manipal → TCS",quote:"80% question match with real interview. Got the offer day one.",chip:"Day 1 offer"},
-            ].map(t=>(
-              <motion.div key={t.name} variants={FU} whileHover={{y:-4,transition:{duration:0.2}}}
-                className="bg-white rounded-2xl border border-gray-100 p-7 shadow-sm">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className={`${t.color} h-12 w-12 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0`}>{t.init}</div>
+              { init: "AR", color: "from-violet-500 to-purple-600", name: "Ananya Rao", college: "IIM Bangalore → BCG", score: "868", delta: "+186 pts in 3 weeks", quote: "BCG asked me the exact case types I'd practiced. Bridge felt like insider training." },
+              { init: "VK", color: "from-[#0D9488] to-[#2DD4BF]", name: "Vikram Kumar", college: "IIT Delhi → Razorpay PM", score: "841", delta: "+140 pts", quote: "The PM simulations were scarily accurate. First-round offer from Razorpay." },
+              { init: "MS", color: "from-amber-400 to-orange-500", name: "Meera Sharma", college: "BITS Pilani → Microsoft", score: "891", delta: "+203 pts in 4 weeks", quote: "System design rounds felt familiar because I'd done them 20 times already on Bridge." },
+            ].map(t => (
+              <motion.div key={t.name} whileHover={{ y: -4 }} className="rounded-2xl border border-gray-200/60 dark:border-white/8 bg-white/70 dark:bg-[#0E1A18]/60 backdrop-blur-md p-7 shadow-[0_4px_24px_rgba(13,148,136,0.06)]">
+                <div className="flex items-center gap-4 mb-5">
+                  <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${t.color} flex items-center justify-center text-white font-black text-sm flex-shrink-0`}>{t.init}</div>
                   <div>
-                    <p className="font-semibold text-[#0D0D1A]">{t.name}</p>
-                    <p className="text-sm text-[#0D9488]">{t.school}</p>
+                    <p className="font-bold text-gray-900 dark:text-white text-sm">{t.name}</p>
+                    <p className="text-xs text-[#0D9488]">{t.college}</p>
                   </div>
-                  <span className="ml-auto rounded-full bg-[#F0FDFA] border border-[#CCFBF1] px-3 py-1 text-xs font-semibold text-[#0D9488] flex-shrink-0">{t.chip}</span>
                 </div>
-                <div className="flex text-yellow-400 mb-3">{[...Array(5)].map((_,i)=><Star key={i} className="h-4 w-4 fill-current"/>)}</div>
-                <p className="text-gray-700 leading-relaxed">&quot;{t.quote}&quot;</p>
+                <div className="flex text-yellow-400 mb-3">{[...Array(5)].map((_,i) => <Star key={i} className="w-3.5 h-3.5 fill-current"/>)}</div>
+                <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-4 italic">&ldquo;{t.quote}&rdquo;</p>
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
+                  <span className="text-xs font-bold text-[#0D9488]">Score {t.score}/1000</span>
+                  <span className="text-xs bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-700/30 px-2 py-1 rounded-full font-semibold">{t.delta}</span>
+                </div>
               </motion.div>
             ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── SECTION 8: STATS ────────────────────────────── */}
-      <section className="bg-white py-24 border-y border-gray-100">
-        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-10">
-            <StatCounter target={10000} suffix="+" label="Mock Interviews"/>
-            <StatCounter target={2500}  suffix="+" label="Active Students"/>
-            <StatCounter target={85}    suffix="%" label="Confidence Boost"/>
-            <StatCounter target={50}    suffix="+" label="Colleges"/>
           </div>
         </div>
       </section>
 
-      {/* ── SECTION 9: FINAL CTA ────────────────────────── */}
-      <section className="bg-[#0A3D36] py-28 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10" style={{backgroundImage:"radial-gradient(#fff 1px,transparent 1px)",backgroundSize:"24px 24px"}}/>
-        <div className="absolute -top-24 -right-24 h-80 w-80 rounded-full bg-[#0D9488]/40 blur-3xl pointer-events-none"/>
-        <div className="absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-[#14B8A6]/20 blur-3xl pointer-events-none"/>
-        <motion.div variants={STAGGER} initial="hidden" whileInView="visible" viewport={{once:true}}
-          className="relative mx-auto max-w-[800px] rounded-3xl border border-white/10 bg-white/5 p-12 text-center backdrop-blur-sm text-white">
-          <motion.div variants={FU} className="flex justify-center mb-4">
-            <span className="inline-flex items-center gap-2 rounded-full bg-red-500/20 border border-red-400/30 px-4 py-2 text-sm font-semibold text-red-300">
-              <span className="pdot h-2 w-2 rounded-full bg-red-400 inline-block"/>
-              Only 50 free spots this week
-            </span>
-          </motion.div>
-          <motion.h2 variants={FU} className="font-display text-4xl font-black sm:text-5xl">Your competition already started.</motion.h2>
-          <motion.p variants={FU} className="mt-4 text-lg text-white/70">Free forever. No card. 60-second signup.</motion.p>
-          <motion.div variants={FU} className="mt-8">
-            <Link href="/login">
-              <motion.span whileHover={{scale:1.05}} whileTap={{scale:0.97}}
-                className="shimmer-btn inline-flex items-center gap-2 cursor-pointer rounded-xl px-10 py-4 text-lg font-bold text-white shadow-lg">
-                Take your free mock now <ArrowRight className="h-6 w-6"/>
-              </motion.span>
-            </Link>
-          </motion.div>
-          <motion.div variants={FU} className="mt-6 flex flex-wrap justify-center gap-4 text-sm text-white/60">
-            {["No credit card","Cancel anytime","Used by 1,200+ students"].map(t=>(
-              <span key={t} className="flex items-center gap-1.5"><CheckCircle className="h-4 w-4 text-emerald-400"/>{t}</span>
-            ))}
-          </motion.div>
-        </motion.div>
+      {/* ── PRICING ─────────────────────────────────────── */}
+      <section className="py-28 px-4 sm:px-6 lg:px-8" id="pricing">
+        <div className="mx-auto max-w-[800px]">
+          <div className="text-center mb-12">
+            <span className="text-xs font-mono text-[#0D9488] tracking-widest uppercase mb-3 block">Pricing</span>
+            <h2 style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }} className="text-4xl font-black tracking-tight text-gray-900 dark:text-white">Start free. Go pro when you&apos;re ready.</h2>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-[#0E1A18]/60 backdrop-blur-md p-8">
+              <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-1">Starter</h3>
+              <div className="text-4xl font-black text-gray-900 dark:text-white mb-1">₹0 <span className="text-base font-normal text-gray-400">/ forever</span></div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">For students just getting started.</p>
+              <ul className="space-y-3 mb-8">
+                {["5 AI mock interviews/month","BRIDGE Score (basic)","GD Pulse access","Career Intelligence digest","Community access"].map(f => (
+                  <li key={f} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                    <Check className="w-4 h-4 text-[#0D9488] flex-shrink-0" />{f}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/login" className="block text-center py-3 rounded-xl border border-[#0D9488] text-[#0D9488] font-semibold hover:bg-[#F0FDFA] dark:hover:bg-[#0D9488]/10 transition-colors">
+                Start for Free
+              </Link>
+            </div>
+            <div className="rounded-2xl border-2 border-[#0D9488] bg-gradient-to-b from-[#0D9488]/5 to-white/70 dark:from-[#0D9488]/10 dark:to-[#0E1A18]/80 backdrop-blur-md p-8 relative shadow-[0_0_40px_rgba(13,148,136,0.15)]">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#0D9488] text-white text-xs font-bold whitespace-nowrap">Most Popular</div>
+              <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-1">Pro</h3>
+              <div className="text-4xl font-black text-gray-900 dark:text-white mb-1">₹999 <span className="text-base font-normal text-gray-400">/ month</span></div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">For serious placement seekers.</p>
+              <ul className="space-y-3 mb-8">
+                {["Unlimited AI mock interviews","Full BRIDGE Score + verified certificate","Live GD rooms with AI moderation","Smart Apply — AI job matching","Recruiter Registry visibility","Weekly personalized prep plan","Priority support"].map(f => (
+                  <li key={f} className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-200">
+                    <Check className="w-4 h-4 text-[#0D9488] flex-shrink-0" />{f}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/login" className="block text-center py-3 rounded-xl bg-gradient-to-r from-[#0D9488] to-[#0D524C] text-white font-bold shadow-[0_4px_16px_rgba(13,148,136,0.35)] hover:shadow-[0_4px_24px_rgba(13,148,136,0.5)] transition-all">
+                Start Pro Trial
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FINAL CTA ────────────────────────────────────── */}
+      <section className="py-28 px-4 sm:px-6 lg:px-8 bg-[#030908] dark:bg-[#010605] relative overflow-hidden">
+        <motion.div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full"
+          style={{ background: "radial-gradient(ellipse, rgba(13,148,136,0.25) 0%, transparent 70%)" }}
+          animate={{ opacity: [0.4, 0.8, 0.4] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} />
+        <motion.div className="absolute top-0 inset-x-0 h-[1px]"
+          style={{ background: "linear-gradient(to right, transparent, #0D9488, transparent)" }}
+          animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 3, repeat: Infinity }} />
+        <div className="relative mx-auto max-w-[700px] text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/20 border border-red-400/30 text-red-300 text-sm font-semibold mb-8">
+            <Zap className="w-4 h-4" /> Only 50 free spots remaining this batch
+          </div>
+          <h2 style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }} className="text-5xl font-black tracking-tighter text-white mb-4">
+            Your competition<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0D9488] to-[#2DD4BF]">already started.</span>
+          </h2>
+          <p className="text-gray-400 text-lg mb-10">Don&apos;t walk into placement season as a guess. Walk in as a verified, prepared, impossible-to-ignore candidate.</p>
+          <Link href="/login" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-[#0D9488] to-[#2DD4BF] text-white font-black text-lg shadow-[0_4px_32px_rgba(13,148,136,0.5)] hover:shadow-[0_4px_48px_rgba(13,148,136,0.7)] transition-all hover:scale-[1.02]">
+            Unlock Your BRIDGE Score <ArrowRight className="w-5 h-5" />
+          </Link>
+          <p className="text-gray-500 text-sm mt-4">No credit card. Takes 2 minutes.</p>
+        </div>
       </section>
 
       {/* ── FOOTER ──────────────────────────────────────── */}
-      <footer className="bg-[#0b0f1f] px-4 py-14 text-gray-400 sm:px-6 lg:px-8">
-        <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-10 md:grid-cols-4">
-          <div>
-            <div className="inline-flex items-center rounded-xl bg-white px-3 py-2">
-              <img src="/images/logo_navbar_64h.png" alt="BridgeAI" style={{height:'36px',width:'auto'}} />
+      <footer className="bg-[#030908] dark:bg-[#010605] border-t border-white/5 px-4 sm:px-6 lg:px-8 py-16">
+        <div className="mx-auto max-w-[1200px]">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0D9488] to-[#2DD4BF] flex items-center justify-center">
+                  <span className="text-white font-black text-sm">B</span>
+                </div>
+                <span className="font-black text-white">Bridge<span className="text-[#0D9488]">AI</span></span>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed">AI-powered placement readiness for Indian students. Train. Verify. Place.</p>
+              <p className="text-xs text-gray-600 mt-4">hello@appbridgeai.in</p>
             </div>
-            <p className="mt-3 text-sm">AI placement prep for ambitious Indian students.</p>
+            {[
+              { title: "Product", links: ["Smart Interview", "GD Pulse", "SkillPulse", "Career GPS", "Jobs"] },
+              { title: "Company", links: ["About", "Careers", "Blog", "Press"] },
+              { title: "Legal", links: ["Privacy Policy", "Terms of Use", "Cookie Policy"] },
+            ].map(col => (
+              <div key={col.title}>
+                <h4 className="text-xs font-bold text-white mb-4 tracking-widest uppercase">{col.title}</h4>
+                <ul className="space-y-2.5">
+                  {col.links.map(l => <li key={l}><a href="#" className="text-xs text-gray-500 hover:text-[#0D9488] transition-colors">{l}</a></li>)}
+                </ul>
+              </div>
+            ))}
           </div>
-          <div>
-            <p className="text-sm font-bold text-white">Product</p>
-            <ul className="mt-3 space-y-2 text-sm">
-              {[["#features","Features"],["#how-it-works","How it works"],["#pricing","Pricing"],["#","BRIDGE Score"]].map(([h,l])=>(
-                <li key={l}><a href={h} className="hover:text-[#0D9488] transition-colors">{l}</a></li>
-              ))}
-            </ul>
+          <div className="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-white/5 gap-4">
+            <p className="text-xs text-gray-600">© 2026 BridgeAI. All rights reserved.</p>
+            <p className="text-xs text-gray-600">Built with intent. For India&apos;s next generation of leaders.</p>
           </div>
-          <div>
-            <p className="text-sm font-bold text-white">Company</p>
-            <ul className="mt-3 space-y-2 text-sm">
-              {["About","Blog","Careers","Press"].map(l=><li key={l}>{l}</li>)}
-            </ul>
-          </div>
-          <div>
-            <p className="text-sm font-bold text-white">Contact</p>
-            <ul className="mt-3 space-y-2 text-sm">
-              <li>info@appbridgeai.in</li>
-              <li>Pune, India</li>
-              <li>For Recruiters</li>
-            </ul>
-          </div>
-        </div>
-        <div className="mx-auto mt-10 w-full max-w-[1200px] border-t border-white/10 pt-5 text-center text-xs">
-          © 2026 BridgeAI · Crafted with intent in India
         </div>
       </footer>
     </div>

@@ -222,166 +222,122 @@ export default function GDPage() {
 
   // Topics view content
   const topicsView = (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-10">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Group Discussion Practice</h1>
-          <p className="text-gray-600">Join live GD sessions and improve your communication skills</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900" style={{fontFamily:'Syne,sans-serif'}}>GD Practice Arena</h1>
+          <p className="text-gray-500 mt-1 text-sm">Join live battle rooms and sharpen your arguments</p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 bg-[#0D9488] text-white px-4 py-3 rounded-xl hover:bg-[#0F766E] transition-colors font-medium"
-        >
-          <Plus className="w-5 h-5" />
-          Create Custom GD
+        <button onClick={() => setShowCreateModal(true)}
+          className="flex items-center gap-2 bg-gradient-to-r from-[#0D9488] to-[#14B8A6] text-white px-5 py-2.5 rounded-full font-semibold text-sm shadow-md hover:opacity-90 transition-opacity">
+          <Plus className="w-4 h-4" /> Create Custom Room
         </button>
       </div>
 
-      {/* Default Topics */}
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Popular Topics</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Popular Topics */}
+      <div className="mb-10">
+        <h2 className="text-lg font-bold text-gray-700 mb-5 flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
+          <Zap className="w-5 h-5 text-[#0D9488]" /> Popular Battles
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {defaultTopics.map((topic) => (
-            <div key={topic.id} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 mb-2">{topic.title}</h3>
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <Users className="w-4 h-4" />
-                      {topic.participants} participants
-                    </span>
-                    <span className="bg-[#F0FDFA] text-[#0D9488] px-2 py-1 rounded text-xs">
-                      {topic.category}
-                    </span>
+            <div key={topic.id}
+              className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] hover:shadow-[0_4px_20px_rgba(13,148,136,0.14)] hover:border-[#CCFBF1] transition-all overflow-hidden group">
+              <div className="h-1.5 bg-gradient-to-r from-[#0D9488] to-[#14B8A6] w-0 group-hover:w-full transition-all duration-500 rounded-t-2xl" />
+              <div className="p-6">
+                <span className="inline-block text-[11px] font-bold uppercase tracking-wide text-[#0D9488] bg-[#CCFBF1] px-2 py-0.5 rounded-full mb-3">{topic.category}</span>
+                <h3 className="font-bold text-gray-900 mb-4 leading-snug" style={{fontFamily:'Syne,sans-serif'}}>{topic.title}</h3>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                    <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{topic.participants}</span>
+                    <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />15 min</span>
                   </div>
+                  <button onClick={() => handleJoinDiscussion(topic)}
+                    className="bg-[#0D9488] text-white px-4 py-1.5 rounded-full text-xs font-bold hover:bg-[#0F766E] transition-colors">
+                    Join Battle
+                  </button>
                 </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <Clock className="w-4 h-4" />
-                  <span>15 mins</span>
-                </div>
-                <button
-                  onClick={() => handleJoinDiscussion(topic)}
-                  className="bg-[#0D9488] text-white px-4 py-2 rounded-lg hover:bg-[#0F766E] transition-colors text-sm font-medium"
-                >
-                  Join Discussion
-                </button>
               </div>
             </div>
           ))}
         </div>
       </div>
-      
-      {/* Custom Rooms Section */}
+
+      {/* Custom Rooms */}
       {customRooms.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Custom Rooms</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="mb-10">
+          <h2 className="text-lg font-bold text-gray-700 mb-5 flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
+            <Target className="w-5 h-5 text-[#0D9488]" /> Custom Rooms
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {customRooms.map((room) => (
-              <div key={room.id} className="bg-white rounded-xl border border-[#E8E8F0] p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 mb-2">{room.topic}</h3>
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        {room.participants || 0} participants
-                      </span>
-                      <span className="bg-[#F0FDFA] text-[#0D9488] px-2 py-1 rounded text-xs">
-                        {room.difficulty}
-                      </span>
+              <div key={room.id}
+                className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] hover:shadow-[0_4px_20px_rgba(13,148,136,0.14)] hover:border-[#CCFBF1] transition-all overflow-hidden group">
+                <div className="h-1.5 bg-gradient-to-r from-purple-500 to-[#0D9488] w-0 group-hover:w-full transition-all duration-500" />
+                <div className="p-6">
+                  <span className="inline-block text-[11px] font-bold uppercase tracking-wide text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full mb-3">{room.difficulty}</span>
+                  <h3 className="font-bold text-gray-900 mb-4 leading-snug" style={{fontFamily:'Syne,sans-serif'}}>{room.topic}</h3>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 text-xs text-gray-400">
+                      <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{room.participants || 0}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{room.duration} min</span>
                     </div>
+                    <button onClick={() => handleJoinCustomRoom(room)}
+                      className="bg-[#0D9488] text-white px-4 py-1.5 rounded-full text-xs font-bold hover:bg-[#0F766E] transition-colors">
+                      Join Battle
+                    </button>
                   </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Clock className="w-4 h-4" />
-                    <span>{room.duration} mins</span>
-                  </div>
-                  <button
-                    onClick={() => handleJoinCustomRoom(room)}
-                    className="bg-[#0D9488] text-white px-4 py-2 rounded-lg hover:bg-[#0F766E] transition-colors text-sm font-medium"
-                  >
-                    Join Discussion
-                  </button>
                 </div>
               </div>
             ))}
           </div>
         </div>
       )}
-      
+
       {/* Create Room Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Create Custom GD Room</h2>
-              <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <h2 className="text-xl font-bold text-gray-900" style={{fontFamily:'Syne,sans-serif'}}>Create Custom GD Room</h2>
+              <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Topic</label>
-                <input
-                  type="text"
-                  value={customTopic}
-                  onChange={(e) => setCustomTopic(e.target.value)}
-                  placeholder="Enter your GD topic..."
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0D9488]"
-                />
+                <label className="block text-sm font-bold text-gray-700 mb-2">Topic</label>
+                <input type="text" value={customTopic} onChange={(e) => setCustomTopic(e.target.value)}
+                  placeholder="Enter your GD topic…"
+                  className="w-full bg-gray-50 border-2 border-[#CCFBF1] focus:border-[#0D9488] rounded-xl px-4 py-3 outline-none text-sm placeholder:text-gray-400 transition-colors" />
               </div>
-              
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Difficulty</label>
                 <div className="flex gap-2">
-                  {['Easy', 'Medium', 'Hard'].map((level) => (
-                    <button
-                      key={level}
-                      onClick={() => setCustomDifficulty(level)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        customDifficulty === level
-                          ? 'bg-[#0D9488] text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
+                  {['Easy','Medium','Hard'].map((level) => (
+                    <button key={level} onClick={() => setCustomDifficulty(level)}
+                      className={`flex-1 py-2 rounded-full text-sm font-bold transition-colors ${customDifficulty===level ? 'bg-[#0D9488] text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#CCFBF1]'}`}>
                       {level}
                     </button>
                   ))}
                 </div>
               </div>
-              
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Duration</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Duration</label>
                 <div className="flex gap-2">
-                  {[5, 10, 15, 20].map((time) => (
-                    <button
-                      key={time}
-                      onClick={() => setCustomDuration(time)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        customDuration === time
-                          ? 'bg-[#0D9488] text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
+                  {[5,10,15,20].map((time) => (
+                    <button key={time} onClick={() => setCustomDuration(time)}
+                      className={`flex-1 py-2 rounded-full text-sm font-bold transition-colors ${customDuration===time ? 'bg-[#0D9488] text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#CCFBF1]'}`}>
                       {time}m
                     </button>
                   ))}
                 </div>
               </div>
-              
-              <button
-                onClick={createCustomRoom}
-                disabled={isCreating || !customTopic.trim()}
-                className="w-full bg-[#0D9488] text-white py-3 rounded-xl font-medium hover:bg-[#0F766E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isCreating ? 'Creating...' : 'Create Room'}
+              <button onClick={createCustomRoom} disabled={isCreating || !customTopic.trim()}
+                className="w-full bg-gradient-to-r from-[#0D9488] to-[#14B8A6] text-white py-3.5 rounded-2xl font-bold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">
+                {isCreating ? 'Creating…' : 'Create Room'}
               </button>
             </div>
           </div>

@@ -144,8 +144,8 @@ export default function LeaderboardPage() {
       <AppShell>
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
-            <div className="w-8 h-8 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent mx-auto mb-4"></div>
-            <div className="text-gray-600">Loading leaderboard...</div>
+            <div className="w-8 h-8 animate-spin rounded-full border-2 border-[#0D9488] border-t-transparent mx-auto mb-4"></div>
+            <p className="text-gray-500 text-sm">Loading leaderboard…</p>
           </div>
         </div>
       </AppShell>
@@ -154,162 +154,125 @@ export default function LeaderboardPage() {
 
   const top3 = students.slice(0, 3);
   const restOfStudents = students.slice(3);
+  const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
+
+  const podiumConfig = [
+    { heightClass: 'h-44', avatarSize: 'w-16 h-16 md:w-20 md:h-20', nameSize: 'text-sm', scoreSize: 'text-lg' },
+    { heightClass: 'h-56', avatarSize: 'w-20 h-20 md:w-24 md:h-24', nameSize: 'text-base', scoreSize: 'text-2xl' },
+    { heightClass: 'h-36', avatarSize: 'w-14 h-14 md:w-18 md:h-18', nameSize: 'text-sm', scoreSize: 'text-base' },
+  ];
 
   return (
     <AppShell>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10">
+
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Trophy className="w-8 h-8 text-yellow-500" />
-            <h1 className="text-3xl font-bold text-gray-900">Leaderboard</h1>
-            <Trophy className="w-8 h-8 text-yellow-500" />
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-[#0D9488]" style={{fontFamily:'Syne,sans-serif'}}>Leaderboard</h1>
+            <p className="text-gray-500 text-sm mt-1">See how you stack up against top performers.</p>
           </div>
-          <p className="text-gray-600">India's brightest placement prep stars</p>
+          <div className="flex bg-gray-100 rounded-full p-1 shadow-inner">
+            {['Weekly','Monthly','All Time'].map((f) => (
+              <button key={f} onClick={() => setTimeFilter(f.toLowerCase().replace(' ','-'))}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+                  timeFilter === f.toLowerCase().replace(' ','-') || (f === 'All Time' && timeFilter === 'all')
+                    ? 'bg-[#0D9488] text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-800'
+                }`}>{f}</button>
+            ))}
+          </div>
         </div>
 
-        {/* Top 3 Podium */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {top3.map((student, index) => {
-            const badge = getBadge(student.rank);
-            const BadgeIcon = badge.icon;
-            
+        {/* Podium */}
+        <div className="flex items-end justify-center gap-3 md:gap-6 mb-12 mt-16 md:mt-24 px-4">
+          {podiumOrder.map((student, i) => {
+            if (!student) return null;
+            const isFirst = student.rank === 1;
+            const cfg = podiumConfig[i];
             return (
-              <div
-                key={student.uid || `placeholder-${index}`}
-                className={`relative bg-white rounded-2xl border-2 ${
-                  student.isCurrentUser ? 'border-cyan-500 shadow-lg' : 'border-gray-200'
-                } p-6 text-center ${
-                  index === 0 ? 'md:transform md:-translate-y-4' : index === 2 ? 'md:transform md:translate-y-2' : ''
-                }`}
-              >
-                {student.isCurrentUser && (
-                  <div className="absolute -top-2 -right-2 bg-cyan-500 text-white text-xs px-2 py-1 rounded-full">
-                    YOU
+              <div key={student.uid || i} className="flex flex-col items-center relative flex-1 max-w-[160px]">
+                {/* Avatar above */}
+                <div className="absolute -top-16 md:-top-20 flex flex-col items-center">
+                  {isFirst && <Crown className="w-6 h-6 text-yellow-500 mb-1 drop-shadow" />}
+                  <div className={`${cfg.avatarSize} rounded-full border-4 ${isFirst ? 'border-[#0D9488] shadow-lg' : 'border-white shadow-md'} bg-gradient-to-br from-[#0D9488] to-[#14B8A6] flex items-center justify-center text-white font-bold text-xl overflow-hidden`}>
+                    {student.photo && !student.isPlaceholder
+                      ? <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
+                      : <span>{student.isPlaceholder ? '🚀' : student.name?.charAt(0)?.toUpperCase()}</span>
+                    }
                   </div>
-                )}
-                
-                <div className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                  student.isPlaceholder ? 'bg-gray-100' : 'bg-gradient-to-r from-[#0891B2] to-[#0D9488]'
-                }`}>
-                  {student.photo && !student.isPlaceholder ? (
-                    <img src={student.photo} alt={student.name} className="w-full h-full rounded-full object-cover" />
-                  ) : (
-                    <span className="text-2xl font-bold text-white">
-                      {student.isPlaceholder ? '🚀' : student.name?.charAt(0)?.toUpperCase()}
-                    </span>
-                  )}
+                  <span className={`text-xs font-bold px-3 py-0.5 rounded-full -mt-3 z-10 border-2 border-white shadow-sm ${isFirst ? 'bg-[#0D9488] text-white' : 'bg-gray-100 text-gray-600'}`}>
+                    #{student.rank}
+                  </span>
                 </div>
-                
-                <div className="mb-2">
-                  <BadgeIcon className={`w-6 h-6 mx-auto ${badge.color.split(' ')[0]}`} />
-                </div>
-                
-                <h3 className="font-bold text-gray-900 mb-1">{student.name}</h3>
-                <p className="text-sm text-gray-600 mb-3">{student.college}</p>
-                
-                <div className="space-y-2">
-                  <div className={`text-3xl font-bold ${getScoreColor(student.score)}`}>
-                    {student.score}
-                  </div>
-                  <div className="text-xs text-gray-500">BRIDGE Score</div>
-                  
-                  <div className="flex justify-center gap-4 text-xs text-gray-500">
-                    <span>{student.interviewsDone} interviews</span>
-                    <span>{student.streak} day streak</span>
-                  </div>
+                {/* Podium block */}
+                <div className={`w-full ${cfg.heightClass} rounded-t-xl ${isFirst ? 'bg-gradient-to-b from-[#CCFBF1] to-white shadow-[0_4px_20px_rgba(13,148,136,0.15)] border border-[#0D9488]/20' : 'bg-gray-100 border border-gray-200'} flex flex-col items-center justify-end pb-4 pt-12`}>
+                  <p className={`font-bold text-gray-800 text-center px-2 truncate w-full ${cfg.nameSize}`}>{student.name}</p>
+                  <p className="text-xs text-gray-400 mb-2">{student.college}</p>
+                  <p className={`font-bold text-[#0D9488] ${cfg.scoreSize}`}>{student.score}</p>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Rest of Students */}
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">All Rankings</h2>
-            <div className="space-y-2">
-              {restOfStudents.map((student) => (
-                <div
-                  key={student.uid || `placeholder-${student.rank}`}
-                  className={`flex items-center gap-4 p-4 rounded-lg ${
-                    student.isCurrentUser ? 'bg-cyan-50 border border-cyan-200' : 'hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="w-8 text-center">
-                    <span className={`font-bold ${
-                      student.rank <= 3 ? 'text-lg' : 'text-sm'
-                    } ${
-                      student.rank === 1 ? 'text-yellow-600' :
-                      student.rank === 2 ? 'text-gray-600' :
-                      student.rank === 3 ? 'text-orange-600' :
-                      'text-gray-500'
-                    }`}>
-                      {student.rank}
-                    </span>
+        {/* Ranked List */}
+        <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(13,148,136,0.06)] border border-gray-100 overflow-hidden">
+          <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wide">
+            <div className="col-span-1 text-center">Rank</div>
+            <div className="col-span-4">Student</div>
+            <div className="col-span-3">College</div>
+            <div className="col-span-2 text-center">Interviews</div>
+            <div className="col-span-2 text-right">BRIDGE Score</div>
+          </div>
+
+          <div className="divide-y divide-gray-50">
+            {restOfStudents.map((student) => (
+              <div key={student.uid || `ph-${student.rank}`}
+                className={`grid grid-cols-12 gap-4 px-6 py-4 items-center transition-colors ${
+                  student.isCurrentUser
+                    ? 'bg-[#CCFBF1] border-l-4 border-[#0D9488]'
+                    : 'hover:bg-gray-50'
+                }`}>
+                <div className="col-span-2 md:col-span-1 text-center font-bold text-gray-500 text-sm">{student.rank}</div>
+                <div className="col-span-7 md:col-span-4 flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 ${student.isPlaceholder ? 'bg-gray-200 text-gray-500' : 'bg-gradient-to-br from-[#0D9488] to-[#14B8A6]'}`}>
+                    {student.photo && !student.isPlaceholder
+                      ? <img src={student.photo} alt={student.name} className="w-full h-full rounded-full object-cover" />
+                      : <span>{student.isPlaceholder ? '🚀' : student.name?.charAt(0)?.toUpperCase()}</span>
+                    }
                   </div>
-                  
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100">
-                    {student.photo && !student.isPlaceholder ? (
-                      <img src={student.photo} alt={student.name} className="w-full h-full rounded-full object-cover" />
-                    ) : (
-                      <span className="text-sm font-bold text-gray-600">
-                        {student.isPlaceholder ? '🚀' : student.name?.charAt(0)?.toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-gray-900">{student.name}</h4>
-                      {student.isCurrentUser && (
-                        <span className="bg-cyan-500 text-white text-xs px-2 py-1 rounded-full">YOU</span>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-600">{student.college}</p>
-                  </div>
-                  
-                  <div className="text-right">
-                    <div className={`font-bold ${getScoreColor(student.score)}`}>
-                      {student.score}
-                    </div>
-                    <div className="text-xs text-gray-500">Score</div>
+                  <div>
+                    <p className="font-semibold text-gray-800 text-sm">{student.name} {student.isCurrentUser && <span className="text-[10px] bg-[#0D9488] text-white px-2 py-0.5 rounded-full ml-1">YOU</span>}</p>
+                    <p className="text-xs text-gray-400 md:hidden">{student.college}</p>
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="hidden md:block col-span-3 text-sm text-gray-500">{student.college}</div>
+                <div className="hidden md:flex col-span-2 justify-center items-center gap-1 text-sm text-gray-500">
+                  <span>{student.interviewsDone}</span>
+                  <Flame className="w-3 h-3 text-orange-400" />
+                </div>
+                <div className="col-span-3 md:col-span-2 text-right font-bold text-[#0D9488]">{student.score}</div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
-            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Crown className="w-6 h-6 text-yellow-600" />
+        {/* Bottom Stats */}
+        <div className="grid grid-cols-3 gap-4 md:gap-6 mt-8">
+          {[
+            { icon: Crown, label: 'Highest Score', value: students[0]?.score || 0, bg: 'bg-yellow-50', color: 'text-yellow-600' },
+            { icon: Users, label: 'Active Students', value: students.filter(s => !s.isPlaceholder).length, bg: 'bg-[#CCFBF1]', color: 'text-[#0D9488]' },
+            { icon: Flame, label: 'Longest Streak', value: Math.max(...students.filter(s => !s.isPlaceholder).map(s => s.streak || 0), 0), bg: 'bg-orange-50', color: 'text-orange-500' },
+          ].map(({icon:Icon,label,value,bg,color}) => (
+            <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.05)] p-5 text-center">
+              <div className={`w-11 h-11 ${bg} rounded-full flex items-center justify-center mx-auto mb-3`}>
+                <Icon className={`w-5 h-5 ${color}`} />
+              </div>
+              <p className="text-xl font-bold text-gray-900 mb-1" style={{fontFamily:'Syne,sans-serif'}}>{value}</p>
+              <p className="text-xs text-gray-400">{label}</p>
             </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">{students[0]?.score || 0}</div>
-            <div className="text-sm text-gray-600">Highest Score</div>
-          </div>
-          
-          <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
-            <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Users className="w-6 h-6 text-cyan-600" />
-            </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">
-              {students.filter(s => !s.isPlaceholder).length}
-            </div>
-            <div className="text-sm text-gray-600">Active Students</div>
-          </div>
-          
-          <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Flame className="w-6 h-6 text-green-600" />
-            </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">
-              {Math.max(...students.filter(s => !s.isPlaceholder).map(s => s.streak), 0)}
-            </div>
-            <div className="text-sm text-gray-600">Longest Streak</div>
-          </div>
+          ))}
         </div>
       </div>
     </AppShell>

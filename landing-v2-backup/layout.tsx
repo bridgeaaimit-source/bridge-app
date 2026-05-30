@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Syne, DM_Sans } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import AppShell from "@/components/AppShell";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,18 +13,6 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-});
-
-const syne = Syne({
-  variable: "--font-syne",
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "800"],
-});
-
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -70,7 +58,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${syne.variable} ${dmSans.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
@@ -79,8 +68,12 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="512x512" href="/images/logo_favicon_512.png" />
         <link rel="icon" href="/images/logo_favicon_512.png" />
       </head>
-      <body className="min-h-full flex flex-col bg-white dark:bg-gray-900 transition-colors">
-        <ThemeProvider>
+      <body className="min-h-full flex flex-col bg-white dark:bg-gray-900 transition-colors" suppressHydrationWarning>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+        >
           {children}
         </ThemeProvider>
         <Toaster

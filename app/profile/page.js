@@ -143,8 +143,7 @@ export default function ProfilePage() {
   const handleResumeChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    if (!validTypes.includes(file.type)) { toast.error('Please upload a PDF, DOC, or DOCX file'); return; }
+    if (file.type !== 'application/pdf') { toast.error('Please upload a PDF file for accurate reading. Convert to PDF and try again.'); return; }
     if (file.size > 5 * 1024 * 1024) { toast.error('File too large (max 5MB)'); return; }
     setResumeUploading(true);
     const toastId = toast.loading('Uploading and analysing resume...');
@@ -254,8 +253,8 @@ export default function ProfilePage() {
       <AppShell>
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
-            <div className="w-8 h-8 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent mx-auto mb-4"></div>
-            <div className="text-gray-600">Loading profile...</div>
+            <div className="w-8 h-8 animate-spin rounded-full border-2 border-[#0D9488]/30 border-t-[#0D9488] mx-auto mb-4"></div>
+            <div className="text-gray-500 text-sm">Loading profile...</div>
           </div>
         </div>
       </AppShell>
@@ -264,173 +263,143 @@ export default function ProfilePage() {
 
   return (
     <AppShell>
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-[#0891B2] to-[#0D9488] p-8">
-            <div className="flex items-center gap-6">
-              {userData.photo ? (
-                <img src={userData.photo} alt={userData.name} className="w-24 h-24 rounded-full object-cover border-4 border-white" />
-              ) : (
-                <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                  <User className="w-12 h-12 text-white" />
-                </div>
-              )}
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold text-white mb-2">{userData.name || 'User'}</h1>
-                <p className="text-cyan-100 mb-1">{userData.email}</p>
-                <div className="flex items-center gap-4 text-cyan-100 text-sm">
-                  <span className="flex items-center gap-1">
-                    <GraduationCap className="w-4 h-4" />
-                    {userData.college || 'Add College'}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Briefcase className="w-4 h-4" />
-                    {userData.domain || 'Add Domain'}
-                  </span>
-                </div>
+      <div className="max-w-[1000px] mx-auto px-4 md:px-8 py-8">
+
+        {/* Hero Header */}
+        <div className="bg-gradient-to-br from-[#0D9488] to-[#14B8A6] rounded-3xl p-8 mb-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+          <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            {userData.photo ? (
+              <img src={userData.photo} alt={userData.name} className="w-24 h-24 rounded-2xl object-cover border-4 border-white/30 shadow-xl flex-shrink-0" />
+            ) : (
+              <div className="w-24 h-24 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <User className="w-12 h-12 text-white" />
               </div>
-              <button
-                onClick={() => setIsEditing(!isEditing)}
-                className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-lg hover:bg-white/30 transition-colors flex items-center gap-2"
-              >
-                <Edit3 className="w-4 h-4" />
-                {isEditing ? 'Cancel' : 'Edit Profile'}
-              </button>
+            )}
+            <div className="flex-1 text-center sm:text-left">
+              <h1 className="text-3xl font-bold text-white mb-1" style={{fontFamily:'Syne,sans-serif'}}>{userData.name || 'User'}</h1>
+              <p className="text-[#CCFBF1] text-sm mb-3">{userData.email}</p>
+              <div className="flex flex-wrap justify-center sm:justify-start gap-2 text-sm">
+                <span className="flex items-center gap-1.5 bg-white/15 text-white px-3 py-1 rounded-full text-xs">
+                  <GraduationCap className="w-3.5 h-3.5" />{userData.college || 'Add College'}
+                </span>
+                <span className="flex items-center gap-1.5 bg-white/15 text-white px-3 py-1 rounded-full text-xs">
+                  <Briefcase className="w-3.5 h-3.5" />{userData.domain || 'Add Domain'}
+                </span>
+                {userData.location && (
+                  <span className="flex items-center gap-1.5 bg-white/15 text-white px-3 py-1 rounded-full text-xs">
+                    <MapPin className="w-3.5 h-3.5" />{userData.location}
+                  </span>
+                )}
+              </div>
             </div>
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className="bg-white text-[#0D9488] px-5 py-2.5 rounded-full font-bold text-sm shadow-lg hover:shadow-xl transition-all flex items-center gap-2 flex-shrink-0"
+            >
+              <Edit3 className="w-4 h-4" />
+              {isEditing ? 'Cancel' : 'Edit Profile'}
+            </button>
           </div>
+        </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 border-b border-gray-200">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-cyan-600 mb-1">{userData.bridgeScore}</div>
-              <div className="text-sm text-gray-600">BRIDGE Score</div>
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[
+            {label:'BRIDGE Score', value:userData.bridgeScore, color:'text-[#0D9488]'},
+            {label:'Interviews', value:userData.interviewsDone, color:'text-[#0D9488]'},
+            {label:'Avg Score', value:userData.avgScore?.toFixed(1), color:'text-green-600'},
+            {label:'Day Streak', value:userData.streak, color:'text-orange-500'},
+          ].map((s,i) => (
+            <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] text-center">
+              <div className={`text-3xl font-bold mb-1 ${s.color}`} style={{fontFamily:'Syne,sans-serif'}}>{s.value}</div>
+              <div className="text-xs text-gray-500">{s.label}</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-cyan-600 mb-1">{userData.interviewsDone}</div>
-              <div className="text-sm text-gray-600">Interviews</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-600 mb-1">{userData.avgScore.toFixed(1)}</div>
-              <div className="text-sm text-gray-600">Avg Score</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-orange-600 mb-1">{userData.streak}</div>
-              <div className="text-sm text-gray-600">Day Streak</div>
-            </div>
+          ))}
+        </div>
+
+        {/* Form Card */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h2 className="font-bold text-gray-900" style={{fontFamily:'Syne,sans-serif'}}>Profile Details</h2>
           </div>
-
-          {/* Form */}
           <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {[
+                {label:'College', key:'college', type:'text', placeholder:'Enter your college'},
+                {label:'Degree', key:'degree', type:'text', placeholder:'Enter your degree'},
+                {label:'Phone', key:'phone', type:'tel', placeholder:'Enter your phone number'},
+                {label:'Location', key:'location', type:'text', placeholder:'Enter your location'},
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{f.label}</label>
+                  <input
+                    type={f.type}
+                    value={userData[f.key]}
+                    onChange={(e) => setUserData({...userData, [f.key]: e.target.value})}
+                    disabled={!isEditing}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488] disabled:bg-gray-50 disabled:text-gray-500 text-sm transition-colors"
+                    placeholder={f.placeholder}
+                  />
+                </div>
+              ))}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">College</label>
-                <input
-                  type="text"
-                  value={userData.college}
-                  onChange={(e) => setUserData({...userData, college: e.target.value})}
-                  disabled={!isEditing}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                  placeholder="Enter your college"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Degree</label>
-                <input
-                  type="text"
-                  value={userData.degree}
-                  onChange={(e) => setUserData({...userData, degree: e.target.value})}
-                  disabled={!isEditing}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                  placeholder="Enter your degree"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Domain</label>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Domain</label>
                 <select
                   value={userData.domain}
                   onChange={(e) => setUserData({...userData, domain: e.target.value})}
                   disabled={!isEditing}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488] disabled:bg-gray-50 disabled:text-gray-500 text-sm transition-colors"
                 >
                   <option value="">Select Domain</option>
-                  {domainOptions.map(domain => (
-                    <option key={domain} value={domain}>{domain}</option>
-                  ))}
+                  {domainOptions.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                <input
-                  type="text"
-                  value={userData.location}
-                  onChange={(e) => setUserData({...userData, location: e.target.value})}
-                  disabled={!isEditing}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                  placeholder="Enter your location"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Looking For</label>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Looking For</label>
                 <select
                   value={userData.lookingFor}
                   onChange={(e) => setUserData({...userData, lookingFor: e.target.value})}
                   disabled={!isEditing}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488] disabled:bg-gray-50 disabled:text-gray-500 text-sm transition-colors"
                 >
-                  {lookingForOptions.map(option => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
+                  {lookingForOptions.map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                <input
-                  type="tel"
-                  value={userData.phone}
-                  onChange={(e) => setUserData({...userData, phone: e.target.value})}
-                  disabled={!isEditing}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                  placeholder="Enter your phone number"
-                />
               </div>
             </div>
 
-            <div className="mt-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+            <div className="mt-5">
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Bio</label>
               <textarea
                 value={userData.bio}
                 onChange={(e) => setUserData({...userData, bio: e.target.value})}
                 disabled={!isEditing}
                 rows={4}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488] disabled:bg-gray-50 disabled:text-gray-500 text-sm transition-colors resize-none"
                 placeholder="Tell us about yourself..."
               />
             </div>
 
-            {/* Resume section — always visible */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+            {/* Resume */}
+            <div className="mt-5 p-4 bg-[#F0FDFA] rounded-xl border border-[#CCFBF1]">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-[#0D9488]" />
+                  <div className="w-10 h-10 bg-[#CCFBF1] rounded-xl flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-[#0D9488]" />
+                  </div>
                   <div>
-                    <div className="text-sm font-medium text-gray-900">Resume</div>
+                    <div className="text-sm font-semibold text-gray-900">Resume</div>
                     <div className="text-xs text-gray-500">{resumeFileName || 'No resume uploaded'}</div>
                   </div>
                   {resumeFileName && <CheckCircle className="w-4 h-4 text-green-500" />}
                 </div>
-                <label className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${
+                <label className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold cursor-pointer transition-all ${
                   resumeUploading ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#0D9488] text-white hover:bg-[#0F766E]'
                 }`}>
                   {resumeUploading ? (
                     <><div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> Analysing...</>
                   ) : (
-                    <><Upload className="w-4 h-4" /> {resumeFileName ? 'Change Resume' : 'Upload Resume'}</>
+                    <><Upload className="w-4 h-4" />{resumeFileName ? 'Change Resume' : 'Upload Resume'}</>
                   )}
                   <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleResumeChange} disabled={resumeUploading} />
                 </label>
@@ -438,17 +407,17 @@ export default function ProfilePage() {
             </div>
 
             {isEditing && (
-              <div className="mt-6 flex justify-end gap-4">
+              <div className="mt-6 flex justify-end gap-3">
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-6 py-2.5 border border-gray-200 text-gray-600 rounded-full text-sm font-semibold hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-2.5 bg-gradient-to-r from-[#0D9488] to-[#14B8A6] text-white rounded-full text-sm font-semibold shadow hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
                 >
                   {saving ? (
                     <>
@@ -463,30 +432,45 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* Achievements */}
-          <div className="p-6 border-t border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Achievements</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {achievements.map(achievement => (
-                <div
-                  key={achievement.id}
-                  className={`p-4 rounded-lg border text-center ${
-                    achievement.earned
-                      ? 'bg-cyan-50 border-cyan-200'
-                      : 'bg-gray-50 border-gray-200 opacity-60'
-                  }`}
-                >
-                  <div className="text-2xl mb-2">{achievement.icon}</div>
-                  <div className={`text-sm font-medium ${
-                    achievement.earned ? 'text-cyan-700' : 'text-gray-500'
-                  }`}>
-                    {achievement.name}
-                  </div>
+        </div>
+
+        {/* Achievements */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h2 className="font-bold text-gray-900" style={{fontFamily:'Syne,sans-serif'}}>Achievements</h2>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+              {achievements.map(a => (
+                <div key={a.id} className={`flex flex-col items-center p-3 rounded-2xl border transition-all ${
+                  a.earned ? 'bg-[#F0FDFA] border-[#CCFBF1]' : 'bg-gray-50 border-gray-100 opacity-40 grayscale'
+                }`}>
+                  <div className="text-3xl mb-2">{a.icon}</div>
+                  <div className={`text-xs font-semibold text-center leading-tight ${a.earned ? 'text-[#0D9488]' : 'text-gray-400'}`}>{a.name}</div>
                 </div>
               ))}
             </div>
           </div>
         </div>
+
+        {/* Restart Tour */}
+        <div className="pb-8 text-center">
+          <button
+            onClick={async () => {
+              const user = auth.currentUser;
+              if (user) {
+                try { await updateDoc(doc(db, 'users', user.uid), { tourCompleted: false }); } catch (e) { console.error(e); }
+              } else {
+                typeof window !== 'undefined' && localStorage.removeItem('bridge_tour_done');
+              }
+              window.location.href = '/dashboard';
+            }}
+            className="text-sm text-[#0D9488] underline underline-offset-2 hover:text-[#0F766E] transition-colors"
+          >
+            🎯 Restart Product Tour
+          </button>
+        </div>
+
       </div>
     </AppShell>
   );
