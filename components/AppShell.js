@@ -19,7 +19,8 @@ import {
   Newspaper,
   Navigation,
   BarChart2,
-  Sparkles
+  Sparkles,
+  Brain
 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -184,6 +185,7 @@ export default function AppShell({ children }) {
     { href: '/smart-interview', icon: Mic,    label: 'Smart Interview',group: ['/smart-interview', '/interview', '/device-test'], tour: 'smart-interview' },
     { href: '/pulse',       icon: Users,      label: 'GD Pulse',       group: ['/pulse', '/gd', '/coach'], tour: 'gd-practice' },
     { href: '/skillpulse',  icon: BarChart2,  label: 'SkillPulse',     group: ['/skillpulse'], tour: 'pulse' },
+    { href: '/aptitude',    icon: Brain,      label: 'Aptitude Arena', group: ['/aptitude'] },
     { href: '/career-gps',  icon: Navigation, label: 'Career GPS',     group: ['/career-gps'] },
     { href: '/career-intelligence', icon: Sparkles, label: 'Career Intelligence', group: ['/career-intelligence'] },
     { href: '/jobs',        icon: Briefcase,  label: 'Jobs',           group: ['/jobs'], tour: 'jobs' },
