@@ -66,16 +66,27 @@ export default function JobsPage() {
     }
   }, []);
 
-  // Load jobs on mount
+  // Load cached jobs on mount (only fetch if no cache)
   useEffect(() => {
     if (resumeUploaded && profile) {
-      fetchJobs();
+      const cachedJobs = localStorage.getItem('bridge_cached_jobs');
+      if (cachedJobs) {
+        try {
+          const parsed = JSON.parse(cachedJobs);
+          setJobs(parsed);
+        } catch (e) {
+          console.error('Error loading cached jobs:', e);
+          fetchJobs();
+        }
+      } else {
+        fetchJobs();
+      }
     }
   }, [resumeUploaded, profile]);
 
   const fetchJobs = async () => {
     if (!profile) return;
-    fetchJobsWithProfile(profile);
+    return fetchJobsWithProfile(profile);
   };
 
   const fetchJobsWithProfile = async (profileData) => {
@@ -105,6 +116,8 @@ export default function JobsPage() {
       const relevantJobs = (data.jobs || []).filter(job => job.match_percent >= 40);
 
       setJobs(relevantJobs);
+      // Cache jobs in localStorage
+      localStorage.setItem('bridge_cached_jobs', JSON.stringify(relevantJobs));
 
       if (relevantJobs.length > 0) {
         const avgMatch = relevantJobs.reduce((sum, job) => sum + job.match_percent, 0) / relevantJobs.length;
@@ -114,8 +127,20 @@ export default function JobsPage() {
       }
     } catch (error) {
       console.error('Error fetching jobs:', error);
-      toast.error('Failed to load jobs. Please try again.');
-      setJobs([]);
+      // If we have cached jobs, show them instead of error
+      const cachedJobs = localStorage.getItem('bridge_cached_jobs');
+      if (cachedJobs) {
+        try {
+          setJobs(JSON.parse(cachedJobs));
+          toast.error('Could not refresh jobs. Showing cached results.');
+        } catch(e) {
+          toast.error('Failed to load jobs. Please try again.');
+          setJobs([]);
+        }
+      } else {
+        toast.error('Failed to load jobs. Please try again.');
+        setJobs([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -299,11 +324,15 @@ export default function JobsPage() {
             <p className="text-gray-500 mt-1 text-sm">Opportunities matched to your resume profile</p>
           </div>
           <button
-            onClick={() => window.location.reload()}
-            className="flex items-center gap-2 bg-[#CCFBF1] text-[#0D9488] px-4 py-2 rounded-full font-semibold text-sm hover:bg-[#99F6E4] transition-colors"
+            onClick={() => {
+              setRefreshing(true);
+              fetchJobs().finally(() => setRefreshing(false));
+            }}
+            disabled={refreshing || loading}
+            className="flex items-center gap-2 bg-[#CCFBF1] text-[#0D9488] px-4 py-2 rounded-full font-semibold text-sm hover:bg-[#99F6E4] transition-colors disabled:opacity-50"
           >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
 
