@@ -1,43 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
-import * as admin from 'firebase-admin';
+import { adminDb, trackTokens } from '@/lib/firebase-admin';
 
-// Initialize Firebase Admin for token tracking
-let adminDb = null;
-try {
-  if (!admin.apps.length && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-      })
-    });
-  }
-  adminDb = admin.firestore();
-} catch (error) {
-  console.warn('Firebase Admin init failed:', error.message);
-}
 
-// Track token usage
-async function trackTokens(userId, feature, inputTokens, outputTokens) {
-  if (!adminDb || !userId) return;
-  const total = (inputTokens || 0) + (outputTokens || 0);
-  const today = new Date().toISOString().split('T')[0];
-  
-  try {
-    // Daily user tracking
-    await adminDb.collection('tokenUsage').doc('daily').collection(today).doc(userId).set({
-      userId,
-      [feature]: admin.firestore.FieldValue.increment(total),
-      total: admin.firestore.FieldValue.increment(total),
-      lastUsed: admin.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-    
-    console.log(`📊 ${userId} | ${feature}: ${total} tokens`);
-  } catch (e) {
-    console.error('Token tracking failed:', e);
-  }
-}
+
+
 
 // Retry helper function
 async function retryClaudeCall(callFunction, maxRetries = 3, delay = 1000) {

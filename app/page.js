@@ -40,7 +40,7 @@ const floatVariants = {
 
 export default function Home() {
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative landing-theme">
       <AnimatedBackground />
 
       {/* Navbar overlay */}

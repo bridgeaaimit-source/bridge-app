@@ -1,26 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
-import * as admin from 'firebase-admin';
+import { adminDb, trackTokens } from '@/lib/firebase-admin';
 
-// Initialize Firebase Admin only if credentials are available
-let db = null;
-try {
-  if (!admin.apps.length && 
-      process.env.FIREBASE_CLIENT_EMAIL && 
-      process.env.FIREBASE_PRIVATE_KEY && 
-      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY
-          ?.replace(/\\n/g, '\n')
-      })
-    });
-  }
-  db = admin.firestore();
-} catch (error) {
-  console.warn('Firebase Admin initialization failed:', error.message);
-}
+
 
 export async function POST(request) {
   const { article_title, article_description, 
@@ -35,7 +16,7 @@ export async function POST(request) {
   try {
     // Check if GD already exists for this article (only if Firebase is available)
     if (db) {
-      const docRef = db.collection('gd_from_articles')
+      const docRef = adminDb.collection('gd_from_articles')
         .doc(cacheKey);
       const doc = await docRef.get();
 
@@ -112,7 +93,7 @@ Return ONLY valid JSON, no markdown:
 
     // Cache in Firestore permanently (only if Firebase is available)
     if (db) {
-      const docRef = db.collection('gd_from_articles')
+      const docRef = adminDb.collection('gd_from_articles')
         .doc(cacheKey);
       await docRef.set({
         ...gdContent,
