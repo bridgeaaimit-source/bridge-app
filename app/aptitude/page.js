@@ -18,67 +18,67 @@ import {
   Play, RotateCcw, Shield, AlertTriangle
 } from "lucide-react";
 
-// ΓöÇΓöÇΓöÇ Question Bank (60 questions) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Question Bank (60 questions) ─────────────────────────────
 const QUESTIONS = [
-  // ΓöÇΓöÇ Quantitative Aptitude (15) ΓöÇΓöÇ
-  { q: "A train 150m long passes a pole in 15 seconds. What is its speed in km/h?", opts: ["36 km/h", "32 km/h", "40 km/h", "45 km/h"], ans: 0, exp: "Speed = 150/15 = 10 m/s = 10 ├ù 3.6 = 36 km/h.", diff: 1, sec: "quant" },
+  // ── Quantitative Aptitude (15) ──
+  { q: "A train 150m long passes a pole in 15 seconds. What is its speed in km/h?", opts: ["36 km/h", "32 km/h", "40 km/h", "45 km/h"], ans: 0, exp: "Speed = 150/15 = 10 m/s = 10 × 3.6 = 36 km/h.", diff: 1, sec: "quant" },
   { q: "If the cost price of 20 articles equals the selling price of 16 articles, what is the profit %?", opts: ["20%", "25%", "30%", "16%"], ans: 1, exp: "Let CP of 1 article = 1, SP of 16 = 20, so SP of 1 = 20/16 = 1.25. Profit = 25%.", diff: 1, sec: "quant" },
   { q: "The average of 5 numbers is 40. If one number is excluded, the average becomes 35. What is the excluded number?", opts: ["50", "55", "60", "45"], ans: 2, exp: "Sum = 200. Sum of 4 = 140. Excluded = 200 - 140 = 60.", diff: 1, sec: "quant" },
   { q: "A can do a work in 12 days and B in 18 days. How many days will they take together?", opts: ["6.2", "7.2", "8.0", "5.5"], ans: 1, exp: "Combined rate = 1/12 + 1/18 = 5/36. Days = 36/5 = 7.2 days.", diff: 1, sec: "quant" },
   { q: "What is 15% of 15% of 1500?", opts: ["33.75", "22.5", "45", "37.5"], ans: 0, exp: "15% of 1500 = 225. 15% of 225 = 33.75.", diff: 1, sec: "quant" },
   { q: "A boat goes 24 km upstream in 6 hours and 24 km downstream in 4 hours. Find speed of the stream.", opts: ["1 km/h", "2 km/h", "3 km/h", "1.5 km/h"], ans: 0, exp: "Upstream speed = 4 km/h, downstream = 6 km/h. Stream = (6-4)/2 = 1 km/h.", diff: 2, sec: "quant" },
-  { q: "A sum of Γé╣5000 is invested at 10% p.a. compound interest. What is the amount after 2 years?", opts: ["Γé╣6050", "Γé╣6000", "Γé╣5500", "Γé╣6100"], ans: 0, exp: "A = 5000 ├ù (1.1)┬▓ = 5000 ├ù 1.21 = Γé╣6050.", diff: 2, sec: "quant" },
+  { q: "A sum of ₹5000 is invested at 10% p.a. compound interest. What is the amount after 2 years?", opts: ["₹6050", "₹6000", "₹5500", "₹6100"], ans: 0, exp: "A = 5000 × (1.1)² = 5000 × 1.21 = ₹6050.", diff: 2, sec: "quant" },
   { q: "In how many ways can 5 people be seated in a row?", opts: ["60", "120", "24", "720"], ans: 1, exp: "5! = 120 ways.", diff: 2, sec: "quant" },
-  { q: "If logΓéüΓéÇ 2 = 0.301, find logΓéüΓéÇ 50.", opts: ["1.699", "1.602", "1.301", "1.799"], ans: 0, exp: "log 50 = log(100/2) = log 100 - log 2 = 2 - 0.301 = 1.699.", diff: 2, sec: "quant" },
+  { q: "If log₁₀ 2 = 0.301, find log₁₀ 50.", opts: ["1.699", "1.602", "1.301", "1.799"], ans: 0, exp: "log 50 = log(100/2) = log 100 - log 2 = 2 - 0.301 = 1.699.", diff: 2, sec: "quant" },
   { q: "Two dice are thrown. Probability of getting a sum of 7?", opts: ["1/6", "5/36", "1/4", "7/36"], ans: 0, exp: "Favorable: (1,6)(2,5)(3,4)(4,3)(5,2)(6,1) = 6 outcomes. P = 6/36 = 1/6.", diff: 2, sec: "quant" },
-  { q: "The HCF and LCM of two numbers are 12 and 180. If one number is 36, find the other.", opts: ["60", "48", "72", "90"], ans: 0, exp: "Product = HCF ├ù LCM = 12 ├ù 180 = 2160. Other = 2160/36 = 60.", diff: 3, sec: "quant" },
-  { q: "A shopkeeper marks goods 40% above CP and gives 20% discount. Find profit %.", opts: ["10%", "12%", "15%", "8%"], ans: 1, exp: "Let CP = 100. MP = 140. SP = 140 ├ù 0.8 = 112. Profit = 12%.", diff: 3, sec: "quant" },
+  { q: "The HCF and LCM of two numbers are 12 and 180. If one number is 36, find the other.", opts: ["60", "48", "72", "90"], ans: 0, exp: "Product = HCF × LCM = 12 × 180 = 2160. Other = 2160/36 = 60.", diff: 3, sec: "quant" },
+  { q: "A shopkeeper marks goods 40% above CP and gives 20% discount. Find profit %.", opts: ["10%", "12%", "15%", "8%"], ans: 1, exp: "Let CP = 100. MP = 140. SP = 140 × 0.8 = 112. Profit = 12%.", diff: 3, sec: "quant" },
   { q: "Pipes A and B fill a tank in 12 and 16 hours. Pipe C empties it in 24 hours. All open, how long to fill?", opts: ["12.8 hrs", "10.5 hrs", "9.6 hrs", "14.4 hrs"], ans: 2, exp: "Net rate = 1/12 + 1/16 - 1/24 = (4+3-2)/48 = 5/48. Time = 48/5 = 9.6 hrs.", diff: 3, sec: "quant" },
-  { q: "A mixture of 40 litres has milk:water = 3:1. How much water to add for ratio 3:2?", opts: ["8 litres", "10 litres", "12 litres", "6 litres"], ans: 0, exp: "Milk = 30L, Water = 10L. Need 30:x = 3:2 ΓåÆ x = 20. Add 20-10 = 10L... Wait, let me recalc: 30/(10+w) = 3/2 ΓåÆ 60 = 30+3w ΓåÆ w = 10. Hmm, 30/(10+10) = 30/20 = 3/2. So add 10L. Actually the answer is 10 litres.", diff: 3, sec: "quant" },
-  { q: "A clock shows 3:15. What is the angle between the hour and minute hands?", opts: ["7.5┬░", "0┬░", "15┬░", "22.5┬░"], ans: 0, exp: "Hour hand at 3:15 = 90 + 7.5 = 97.5┬░. Minute hand at 15 min = 90┬░. Angle = 7.5┬░.", diff: 3, sec: "quant" },
+  { q: "A mixture of 40 litres has milk:water = 3:1. How much water to add for ratio 3:2?", opts: ["8 litres", "10 litres", "12 litres", "6 litres"], ans: 0, exp: "Milk = 30L, Water = 10L. Need 30:x = 3:2 → x = 20. Add 20-10 = 10L... Wait, let me recalc: 30/(10+w) = 3/2 → 60 = 30+3w → w = 10. Hmm, 30/(10+10) = 30/20 = 3/2. So add 10L. Actually the answer is 10 litres.", diff: 3, sec: "quant" },
+  { q: "A clock shows 3:15. What is the angle between the hour and minute hands?", opts: ["7.5°", "0°", "15°", "22.5°"], ans: 0, exp: "Hour hand at 3:15 = 90 + 7.5 = 97.5°. Minute hand at 15 min = 90°. Angle = 7.5°.", diff: 3, sec: "quant" },
 
-  // ΓöÇΓöÇ Logical Reasoning (15) ΓöÇΓöÇ
-  { q: "If APPLE is coded as 50, what is MANGO coded as?", opts: ["52", "57", "47", "60"], ans: 1, exp: "A=1,P=16,P=16,L=12,E=5 ΓåÆ 50. M=13,A=1,N=14,G=7,O=15 ΓåÆ 50. Actually: recalculate M(13)+A(1)+N(14)+G(7)+O(15)=50. Hmm, let me use the same scheme. APPLE: 1+16+16+12+5=50. MANGO: 13+1+14+7+15=50. Wait that's also 50. Let me adjust: If coding adds position values then multiplies ΓÇö MANGO = 13+1+14+7+15 = 50. But the answer says 57, so the coding likely uses A=2 scheme. With A=2: 2+17+17+13+6=55 for APPLE doesn't work either. Using ordinal sum: MANGO simply = 57 by the given encoding.", diff: 1, sec: "lr" },
-  { q: "Find the missing number: 2, 6, 12, 20, 30, ?", opts: ["40", "42", "36", "38"], ans: 1, exp: "Differences: 4, 6, 8, 10, 12. Next = 30 + 12 = 42. Pattern: n(n+1) ΓåÆ 6├ù7 = 42.", diff: 1, sec: "lr" },
-  { q: "If 'FRIEND' is written as 'GSJFOE', how is 'CANDLE' written?", opts: ["DBOEMF", "DBOEFM", "DBOELM", "DCOEMF"], ans: 0, exp: "Each letter shifts +1: CΓåÆD, AΓåÆB, NΓåÆO, DΓåÆE, LΓåÆM, EΓåÆF = DBOEMF.", diff: 1, sec: "lr" },
+  // ── Logical Reasoning (15) ──
+  { q: "If APPLE is coded as 50, what is MANGO coded as?", opts: ["52", "57", "47", "60"], ans: 1, exp: "A=1,P=16,P=16,L=12,E=5 → 50. M=13,A=1,N=14,G=7,O=15 → 50. Actually: recalculate M(13)+A(1)+N(14)+G(7)+O(15)=50. Hmm, let me use the same scheme. APPLE: 1+16+16+12+5=50. MANGO: 13+1+14+7+15=50. Wait that's also 50. Let me adjust: If coding adds position values then multiplies — MANGO = 13+1+14+7+15 = 50. But the answer says 57, so the coding likely uses A=2 scheme. With A=2: 2+17+17+13+6=55 for APPLE doesn't work either. Using ordinal sum: MANGO simply = 57 by the given encoding.", diff: 1, sec: "lr" },
+  { q: "Find the missing number: 2, 6, 12, 20, 30, ?", opts: ["40", "42", "36", "38"], ans: 1, exp: "Differences: 4, 6, 8, 10, 12. Next = 30 + 12 = 42. Pattern: n(n+1) → 6×7 = 42.", diff: 1, sec: "lr" },
+  { q: "If 'FRIEND' is written as 'GSJFOE', how is 'CANDLE' written?", opts: ["DBOEMF", "DBOEFM", "DBOELM", "DCOEMF"], ans: 0, exp: "Each letter shifts +1: C→D, A→B, N→O, D→E, L→M, E→F = DBOEMF.", diff: 1, sec: "lr" },
   { q: "Pointing to a man, a woman said 'His mother is the only daughter of my mother.' How is the woman related to the man?", opts: ["Mother", "Aunt", "Sister", "Grandmother"], ans: 0, exp: "Only daughter of my mother = the woman herself. So she is the man's mother.", diff: 1, sec: "lr" },
-  { q: "Which number replaces '?': 3, 5, 9, 17, ?", opts: ["33", "31", "35", "29"], ans: 0, exp: "Pattern: ├ù2 - 1. 3ΓåÆ5(├ù2-1), 5ΓåÆ9, 9ΓåÆ17, 17ΓåÆ33.", diff: 1, sec: "lr" },
+  { q: "Which number replaces '?': 3, 5, 9, 17, ?", opts: ["33", "31", "35", "29"], ans: 0, exp: "Pattern: ×2 - 1. 3→5(×2-1), 5→9, 9→17, 17→33.", diff: 1, sec: "lr" },
   { q: "A is B's father. C is B's brother. D is C's father. How is A related to D?", opts: ["Same person", "Brother", "Father", "Son"], ans: 0, exp: "A is B's father. D is C's father. B and C are brothers, so they have the same father. A = D.", diff: 2, sec: "lr" },
-  { q: "Complete: SCD, TEF, UGH, __?", opts: ["__(VIJ)", "__(WKL)", "__(VJK)", "__(UIJ)"], ans: 0, exp: "Pattern: S+1=T+1=U+1=V. CDΓåÆEFΓåÆGHΓåÆIJ. Answer: VIJ.", diff: 2, sec: "lr" },
-  { q: "If all Bloops are Razzies and all Razzies are Lazzies, which is true?", opts: ["All Bloops are Lazzies", "All Lazzies are Bloops", "Some Lazzies are Razzies", "Both A and C"], ans: 3, exp: "Bloops Γèé Razzies Γèé Lazzies. So all Bloops are Lazzies, and some Lazzies are Razzies.", diff: 2, sec: "lr" },
-  { q: "A man walks 5 km North, turns right walks 3 km, turns right walks 5 km. How far from start?", opts: ["3 km", "5 km", "8 km", "2 km"], ans: 0, exp: "North 5km ΓåÆ East 3km ΓåÆ South 5km. He's 3 km East of start.", diff: 2, sec: "lr" },
-  { q: "Odd one out: 41, 43, 47, 51, 53", opts: ["41", "51", "43", "53"], ans: 1, exp: "51 = 3 ├ù 17, not prime. All others are prime numbers.", diff: 2, sec: "lr" },
+  { q: "Complete: SCD, TEF, UGH, __?", opts: ["__(VIJ)", "__(WKL)", "__(VJK)", "__(UIJ)"], ans: 0, exp: "Pattern: S+1=T+1=U+1=V. CD→EF→GH→IJ. Answer: VIJ.", diff: 2, sec: "lr" },
+  { q: "If all Bloops are Razzies and all Razzies are Lazzies, which is true?", opts: ["All Bloops are Lazzies", "All Lazzies are Bloops", "Some Lazzies are Razzies", "Both A and C"], ans: 3, exp: "Bloops ⊂ Razzies ⊂ Lazzies. So all Bloops are Lazzies, and some Lazzies are Razzies.", diff: 2, sec: "lr" },
+  { q: "A man walks 5 km North, turns right walks 3 km, turns right walks 5 km. How far from start?", opts: ["3 km", "5 km", "8 km", "2 km"], ans: 0, exp: "North 5km → East 3km → South 5km. He's 3 km East of start.", diff: 2, sec: "lr" },
+  { q: "Odd one out: 41, 43, 47, 51, 53", opts: ["41", "51", "43", "53"], ans: 1, exp: "51 = 3 × 17, not prime. All others are prime numbers.", diff: 2, sec: "lr" },
   { q: "In a row of 40 students, P is 10th from left. Q is 20th from right. How many students between them?", opts: ["10", "11", "9", "12"], ans: 0, exp: "P is 10th from left. Q is 20th from right = 21st from left. Between them: 21-10-1 = 10.", diff: 3, sec: "lr" },
-  { q: "Statement: Some dogs are cats. All cats are birds. Conclusion: I. Some dogs are birds. II. All birds are dogs.", opts: ["Only I follows", "Only II follows", "Both follow", "Neither follows"], ans: 0, exp: "Some dogs are cats + All cats are birds ΓåÆ Some dogs are birds (I follows). But not all birds are dogs.", diff: 3, sec: "lr" },
-  { q: "If '+' means '├ù', 'ΓÇô' means '├╖', '├ù' means '+', '├╖' means 'ΓÇô': 8 + 6 ΓÇô 3 ├ù 5 ├╖ 2 = ?", opts: ["19", "21", "17", "15"], ans: 0, exp: "Replace: 8 ├ù 6 ├╖ 3 + 5 - 2 = 48/3 + 5 - 2 = 16 + 5 - 2 = 19.", diff: 3, sec: "lr" },
+  { q: "Statement: Some dogs are cats. All cats are birds. Conclusion: I. Some dogs are birds. II. All birds are dogs.", opts: ["Only I follows", "Only II follows", "Both follow", "Neither follows"], ans: 0, exp: "Some dogs are cats + All cats are birds → Some dogs are birds (I follows). But not all birds are dogs.", diff: 3, sec: "lr" },
+  { q: "If '+' means '×', 'ΓÇô' means '÷', '×' means '+', '÷' means 'ΓÇô': 8 + 6 ΓÇô 3 × 5 ÷ 2 = ?", opts: ["19", "21", "17", "15"], ans: 0, exp: "Replace: 8 × 6 ÷ 3 + 5 - 2 = 48/3 + 5 - 2 = 16 + 5 - 2 = 19.", diff: 3, sec: "lr" },
   { q: "How many triangles are in a pentagon with all diagonals drawn?", opts: ["35", "10", "15", "20"], ans: 0, exp: "A complete pentagon with all diagonals creates 35 triangles.", diff: 3, sec: "lr" },
-  { q: "Arrange: (1)Sentence (2)Word (3)Letter (4)Paragraph (5)Book", opts: ["3,2,1,4,5", "5,4,3,2,1", "3,2,4,1,5", "2,3,1,4,5"], ans: 0, exp: "Smallest to largest: Letter ΓåÆ Word ΓåÆ Sentence ΓåÆ Paragraph ΓåÆ Book = 3,2,1,4,5.", diff: 3, sec: "lr" },
+  { q: "Arrange: (1)Sentence (2)Word (3)Letter (4)Paragraph (5)Book", opts: ["3,2,1,4,5", "5,4,3,2,1", "3,2,4,1,5", "2,3,1,4,5"], ans: 0, exp: "Smallest to largest: Letter → Word → Sentence → Paragraph → Book = 3,2,1,4,5.", diff: 3, sec: "lr" },
 
-  // ΓöÇΓöÇ Verbal / English (10) ΓöÇΓöÇ
+  // ── Verbal / English (10) ──
   { q: "Choose the synonym of 'BENEVOLENT':", opts: ["Cruel", "Kind", "Hostile", "Greedy"], ans: 1, exp: "Benevolent means well-meaning, kind, generous.", diff: 1, sec: "verbal" },
   { q: "Choose the antonym of 'LETHARGIC':", opts: ["Sleepy", "Energetic", "Dull", "Lazy"], ans: 1, exp: "Lethargic means sluggish. The antonym is energetic.", diff: 1, sec: "verbal" },
   { q: "Fill in the blank: She has been working here ___ 2015.", opts: ["from", "since", "for", "by"], ans: 1, exp: "'Since' is used with a specific point in time.", diff: 1, sec: "verbal" },
   { q: "Identify the error: 'Each of the boys have completed their homework.'", opts: ["Each of", "the boys", "have completed", "their homework"], ans: 2, exp: "'Each' is singular, so it should be 'has completed'.", diff: 2, sec: "verbal" },
-  { q: "Choose the correctly spelled word:", opts: ["Accomodate", "Accommodate", "Acomodate", "Acommodate"], ans: 1, exp: "Accommodate ΓÇö double 'c' and double 'm'.", diff: 2, sec: "verbal" },
+  { q: "Choose the correctly spelled word:", opts: ["Accomodate", "Accommodate", "Acomodate", "Acommodate"], ans: 1, exp: "Accommodate — double 'c' and double 'm'.", diff: 2, sec: "verbal" },
   { q: "The idiom 'to burn the midnight oil' means:", opts: ["To waste fuel", "To work late at night", "To set fire", "To sleep early"], ans: 1, exp: "To burn the midnight oil = to study or work late into the night.", diff: 2, sec: "verbal" },
   { q: "Select the word that best completes: The company's profits showed a ___ increase this quarter.", opts: ["marginal", "magnanimous", "marital", "martial"], ans: 0, exp: "Marginal = slight, small. It fits the context of a modest increase.", diff: 2, sec: "verbal" },
   { q: "Choose the correct passive voice: 'The manager will sign the contract.'", opts: ["The contract will signed by the manager", "The contract will be signed by the manager", "The contract would be signed by the manager", "The contract was signed by the manager"], ans: 1, exp: "Future tense passive: will be + past participle = will be signed.", diff: 3, sec: "verbal" },
   { q: "One-word substitute for 'a person who speaks many languages':", opts: ["Linguist", "Polyglot", "Translator", "Interpreter"], ans: 1, exp: "Polyglot specifically means a person who knows several languages.", diff: 3, sec: "verbal" },
-  { q: "Read: 'Despite the heavy rain, the match continued.' The sentence implies:", opts: ["Rain stopped the match", "The match was unaffected by rain", "Players wanted to stop", "The match was cancelled"], ans: 1, exp: "'Despite' shows contrast ΓÇö the rain didn't stop the match.", diff: 3, sec: "verbal" },
+  { q: "Read: 'Despite the heavy rain, the match continued.' The sentence implies:", opts: ["Rain stopped the match", "The match was unaffected by rain", "Players wanted to stop", "The match was cancelled"], ans: 1, exp: "'Despite' shows contrast — the rain didn't stop the match.", diff: 3, sec: "verbal" },
 
-  // ΓöÇΓöÇ Data Interpretation (10) ΓöÇΓöÇ
-  { q: "Company revenue: 2020=Γé╣40L, 2021=Γé╣50L, 2022=Γé╣65L, 2023=Γé╣80L. What is the % growth from 2020 to 2023?", opts: ["100%", "80%", "50%", "120%"], ans: 0, exp: "Growth = (80-40)/40 ├ù 100 = 100%.", diff: 1, sec: "di" },
-  { q: "A pie chart shows: Food 30%, Rent 25%, Transport 15%, Savings 20%, Others 10%. If total income is Γé╣50,000, how much is spent on Rent?", opts: ["Γé╣10,000", "Γé╣12,500", "Γé╣15,000", "Γé╣7,500"], ans: 1, exp: "25% of 50,000 = Γé╣12,500.", diff: 1, sec: "di" },
+  // ── Data Interpretation (10) ──
+  { q: "Company revenue: 2020=₹40L, 2021=₹50L, 2022=₹65L, 2023=₹80L. What is the % growth from 2020 to 2023?", opts: ["100%", "80%", "50%", "120%"], ans: 0, exp: "Growth = (80-40)/40 × 100 = 100%.", diff: 1, sec: "di" },
+  { q: "A pie chart shows: Food 30%, Rent 25%, Transport 15%, Savings 20%, Others 10%. If total income is ₹50,000, how much is spent on Rent?", opts: ["₹10,000", "₹12,500", "₹15,000", "₹7,500"], ans: 1, exp: "25% of 50,000 = ₹12,500.", diff: 1, sec: "di" },
   { q: "Bar graph: Mon=20, Tue=35, Wed=25, Thu=40, Fri=30. Average daily sales?", opts: ["30", "28", "32", "25"], ans: 0, exp: "Total = 150. Average = 150/5 = 30.", diff: 1, sec: "di" },
-  { q: "Students in CS: 2019=200, 2020=240, 2021=300, 2022=360. CAGR over 3 years (approx)?", opts: ["22%", "18%", "25%", "20%"], ans: 0, exp: "CAGR = (360/200)^(1/3) - 1 Γëê 1.8^0.333 - 1 Γëê 21.6% Γëê 22%.", diff: 2, sec: "di" },
+  { q: "Students in CS: 2019=200, 2020=240, 2021=300, 2022=360. CAGR over 3 years (approx)?", opts: ["22%", "18%", "25%", "20%"], ans: 0, exp: "CAGR = (360/200)^(1/3) - 1 ≈ 1.8^0.333 - 1 ≈ 21.6% ≈ 22%.", diff: 2, sec: "di" },
   { q: "Table: Product A sales Q1=100, Q2=120, Q3=90, Q4=150. Product B: Q1=80, Q2=100, Q3=130, Q4=110. In which quarter was the combined sales highest?", opts: ["Q1", "Q2", "Q3", "Q4"], ans: 3, exp: "Q1=180, Q2=220, Q3=220, Q4=260. Q4 is highest.", diff: 2, sec: "di" },
-  { q: "Line graph: Jan=10%, Feb=12%, Mar=8%, Apr=15%, May=11%. Highest month-on-month drop?", opts: ["Feb to Mar", "Mar to Apr", "Apr to May", "Jan to Feb"], ans: 0, exp: "FebΓåÆMar: 12%ΓåÆ8% = -4%. AprΓåÆMay: 15%ΓåÆ11% = -4%. Both 4% drop, but FebΓåÆMar came first.", diff: 2, sec: "di" },
-  { q: "If exports in 2022 were Γé╣500Cr (40% of total production), what was total production?", opts: ["Γé╣1000Cr", "Γé╣1250Cr", "Γé╣1500Cr", "Γé╣2000Cr"], ans: 1, exp: "40% of X = 500. X = 500/0.4 = Γé╣1250Cr.", diff: 2, sec: "di" },
+  { q: "Line graph: Jan=10%, Feb=12%, Mar=8%, Apr=15%, May=11%. Highest month-on-month drop?", opts: ["Feb to Mar", "Mar to Apr", "Apr to May", "Jan to Feb"], ans: 0, exp: "Feb→Mar: 12%→8% = -4%. Apr→May: 15%→11% = -4%. Both 4% drop, but Feb→Mar came first.", diff: 2, sec: "di" },
+  { q: "If exports in 2022 were ₹500Cr (40% of total production), what was total production?", opts: ["₹1000Cr", "₹1250Cr", "₹1500Cr", "₹2000Cr"], ans: 1, exp: "40% of X = 500. X = 500/0.4 = ₹1250Cr.", diff: 2, sec: "di" },
   { q: "Stacked bar: Dept A has 30 male, 20 female. Dept B has 25 male, 35 female. What % of total are female?", opts: ["50%", "45%", "55%", "40%"], ans: 0, exp: "Total female = 20+35 = 55. Total = 110. 55/110 = 50%.", diff: 3, sec: "di" },
-  { q: "Growth rates: Year 1=10%, Year 2=20%, Year 3=-5%. If base=Γé╣1000, value after 3 years?", opts: ["Γé╣1254", "Γé╣1250", "Γé╣1200", "Γé╣1260"], ans: 0, exp: "1000 ├ù 1.1 ├ù 1.2 ├ù 0.95 = 1000 ├ù 1.254 = Γé╣1254.", diff: 3, sec: "di" },
-  { q: "Ratio of A:B:C expenditure = 3:4:5. If total = Γé╣2.4L, what is B's expenditure?", opts: ["Γé╣60,000", "Γé╣80,000", "Γé╣1,00,000", "Γé╣70,000"], ans: 1, exp: "B's share = 4/12 ├ù 2,40,000 = Γé╣80,000.", diff: 3, sec: "di" },
+  { q: "Growth rates: Year 1=10%, Year 2=20%, Year 3=-5%. If base=₹1000, value after 3 years?", opts: ["₹1254", "₹1250", "₹1200", "₹1260"], ans: 0, exp: "1000 × 1.1 × 1.2 × 0.95 = 1000 × 1.254 = ₹1254.", diff: 3, sec: "di" },
+  { q: "Ratio of A:B:C expenditure = 3:4:5. If total = ₹2.4L, what is B's expenditure?", opts: ["₹60,000", "₹80,000", "₹1,00,000", "₹70,000"], ans: 1, exp: "B's share = 4/12 × 2,40,000 = ₹80,000.", diff: 3, sec: "di" },
 
-  // ΓöÇΓöÇ General Awareness (10) ΓöÇΓöÇ
+  // ── General Awareness (10) ──
   { q: "Which Indian company acquired Jaguar Land Rover?", opts: ["Mahindra", "Tata Motors", "Reliance", "Birla"], ans: 1, exp: "Tata Motors acquired Jaguar Land Rover from Ford in 2008.", diff: 1, sec: "ga" },
   { q: "What does GDP stand for?", opts: ["Gross Domestic Product", "General Domestic Price", "Gross Demand Product", "General Development Plan"], ans: 0, exp: "GDP = Gross Domestic Product.", diff: 1, sec: "ga" },
   { q: "RBI is the central bank of India. Who is NOT a function of RBI?", opts: ["Monetary policy", "Issuing currency", "Collecting income tax", "Banking regulation"], ans: 2, exp: "Income tax collection is done by the Income Tax Department, not RBI.", diff: 1, sec: "ga" },
@@ -214,7 +214,7 @@ export default function AptitudePage() {
     return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
   };
 
-  // ΓöÇΓöÇΓöÇ Start Test ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ─── Start Test ─────────────────────────────────────────────
   const startTest = () => {
     if (selectedSections.length === 0) {
       toast.error("Select at least one section!");
@@ -239,7 +239,7 @@ export default function AptitudePage() {
     setStage("test");
   };
 
-  // ΓöÇΓöÇΓöÇ Answer ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ─── Answer ─────────────────────────────────────────────────
   const handleAnswer = (optIdx) => {
     if (selectedOption !== null) return; // already answered
     const q = testQuestions[currentIndex];
@@ -258,9 +258,9 @@ export default function AptitudePage() {
       const newStreak = streak + 1;
       setStreak(newStreak);
       let bonusXP = 0;
-      if (newStreak === 3) { bonusXP = 5; toast.success("≡ƒöÑ 3 Streak! +5 bonus XP"); }
-      if (newStreak === 5) { bonusXP = 10; toast.success("≡ƒöÑ≡ƒöÑ 5 Streak! +10 bonus XP"); }
-      if (newStreak === 10) { bonusXP = 20; toast.success("≡ƒöÑ≡ƒöÑ≡ƒöÑ 10 Streak! +20 bonus XP"); }
+      if (newStreak === 3) { bonusXP = 5; toast.success("🔥 3 Streak! +5 bonus XP"); }
+      if (newStreak === 5) { bonusXP = 10; toast.success("🔥🔥 5 Streak! +10 bonus XP"); }
+      if (newStreak === 10) { bonusXP = 20; toast.success("🔥🔥🔥 10 Streak! +20 bonus XP"); }
       setXp((prev) => prev + xpGain + bonusXP);
       // Adaptive difficulty
       const newConsec = consecutiveCorrect + 1;
@@ -268,7 +268,7 @@ export default function AptitudePage() {
       if (newConsec >= 3 && currentDifficulty < 3) {
         setCurrentDifficulty((d) => d + 1);
         setConsecutiveCorrect(0);
-        toast("≡ƒôê Difficulty increased!", { icon: "Γ¼å∩╕Å" });
+        toast("📈 Difficulty increased!", { icon: "⬆️" });
       }
     } else {
       setScore((prev) => prev - 1);
@@ -298,7 +298,7 @@ export default function AptitudePage() {
     }
   };
 
-  // ΓöÇΓöÇΓöÇ End Test ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ─── End Test ───────────────────────────────────────────────
   const endTest = useCallback(async (terminated = false) => {
     clearInterval(timerRef.current);
     const totalAnswered = answers.filter((a) => !a.skipped).length;
@@ -387,7 +387,7 @@ export default function AptitudePage() {
       const data = await res.json();
       setAiInsight(data.insight);
     } catch (e) {
-      setAiInsight("Keep practicing daily ΓÇö consistency is the key to cracking placements!");
+      setAiInsight("Keep practicing daily — consistency is the key to cracking placements!");
     } finally {
       setLoadingInsight(false);
     }
@@ -402,7 +402,7 @@ export default function AptitudePage() {
   const totalFilteredQuestions = QUESTIONS.filter((q) => selectedSections.includes(q.sec)).length;
 
   // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ RENDER ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-  // ΓöÇΓöÇ HOME SCREEN ΓöÇΓöÇ
+  // ── HOME SCREEN ──
   if (stage === "home") {
     return (
       <AppShell>
@@ -538,7 +538,7 @@ export default function AptitudePage() {
     );
   }
 
-  // ΓöÇΓöÇ TEST SCREEN ΓöÇΓöÇ
+  // ── TEST SCREEN ──
   if (stage === "test" && testQuestions.length > 0) {
     const q = testQuestions[currentIndex];
     const progress = ((currentIndex + 1) / testQuestions.length) * 100;
@@ -552,7 +552,7 @@ export default function AptitudePage() {
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="w-8 h-8 text-red-600" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">ΓÜá∩╕Å Warning!</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">⚠️ Warning!</h3>
               <p className="text-sm text-gray-600 mb-1">
                 {warningReason === "tab_switch"
                   ? "Tab switch detected! Stay in the test window."
@@ -701,7 +701,7 @@ export default function AptitudePage() {
     );
   }
 
-  // ΓöÇΓöÇ RESULTS SCREEN ΓöÇΓöÇ
+  // ── RESULTS SCREEN ──
   if (stage === "results" && results) {
     const { score: finalScore, maxScore, correct, wrong, skipped, accuracy, timeTaken, xpEarned, sectionScores, level, terminated } = results;
     return (
@@ -709,7 +709,7 @@ export default function AptitudePage() {
         <div className="p-4 md:p-8 max-w-3xl mx-auto">
           {terminated && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-5 text-center">
-              <p className="text-sm text-red-700 font-semibold">ΓÜá∩╕Å Test was terminated due to violations</p>
+              <p className="text-sm text-red-700 font-semibold">⚠️ Test was terminated due to violations</p>
             </div>
           )}
 
