@@ -14,10 +14,9 @@ import {
 import AppShell from '@/components/AppShell';
 import toast from 'react-hot-toast';
 
-// Anthropic Claude pricing per token (approx)
-// Haiku input: $0.25/1M, output: $1.25/1M → avg ~$0.75/1M = $0.00000075
-// Sonnet input: $3/1M, output: $15/1M → avg ~$9/1M = $0.000009
-const COST_PER_TOKEN = 0.000009;
+// Anthropic Claude pricing per token in Rupees (approx)
+// Blend average ₹750 per 1M tokens = 0.00075 INR per token
+const COST_PER_TOKEN = 0.00075;
 
 const FEATURE_META = {
   interview:        { label: 'Mock Interview',      icon: Mic,          color: 'bg-purple-500',  light: 'bg-purple-50 text-purple-700' },
@@ -145,15 +144,15 @@ export default function TokenDashboard() {
   }
 
   const fmt = (n) => n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + 'M' : n >= 1_000 ? (n / 1_000).toFixed(1) + 'K' : String(n);
-  const cost = (n) => '$' + (n * COST_PER_TOKEN).toFixed(3);
+  const cost = (n) => '₹' + (n * COST_PER_TOKEN).toLocaleString('en-IN', { maximumFractionDigits: 2 });
   const pct = (n, total) => total > 0 ? ((n / total) * 100).toFixed(1) : '0.0';
   const fmtDate = (s) => new Date(s).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
 
   const exportCSV = () => {
     const rows = [
-      ['User', 'Email', 'Total Tokens', 'Cost (USD)', 'Active Days', ...Object.keys(featureStats)],
+      ['User', 'Email', 'Total Tokens', 'Cost (INR)', 'Active Days', ...Object.keys(featureStats)],
       ...userStats.map(u => [
-        u.name, u.email, u.total, (u.total * COST_PER_TOKEN).toFixed(4), u.days,
+        u.name, u.email, u.total, (u.total * COST_PER_TOKEN).toFixed(2), u.days,
         ...Object.keys(featureStats).map(f => u.features[f] || 0)
       ])
     ];

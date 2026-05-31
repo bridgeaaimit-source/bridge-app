@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { adminDb, trackTokens } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 
 
@@ -8,6 +9,7 @@ import { adminDb, trackTokens } from '@/lib/firebase-admin';
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get('category') || 'All';
+  const userId = searchParams.get('userId') || searchParams.get('uid');
   
   console.log('NEWS_API_KEY exists:', !!process.env.NEWS_API_KEY);
   console.log('ANTHROPIC_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
@@ -65,14 +67,14 @@ export async function GET(request) {
         
         if (fallbackArticles.length > 0) {
           // Use fallback articles
-          return processArticles(fallbackArticles, category, 'india career');
+          return processArticles(fallbackArticles, category, 'india career', userId);
         }
       }
       
       throw new Error(`No articles found for query: "${query}" and fallback: "india career"`);
     }
 
-    return processArticles(articles, category, query);
+    return processArticles(articles, category, query, userId);
 
   } catch (error) {
     console.error('=== NEWS API ERROR ===');
@@ -91,7 +93,7 @@ export async function GET(request) {
   }
 }
 
-async function processArticles(articles, category, query) {
+async function processArticles(articles, category, query, userId) {
   console.log('7. Processing articles with Claude...');
   
   // Step 2: Use Claude to filter and add insights
@@ -141,7 +143,7 @@ Return ONLY valid JSON, no markdown:
   });
 
   // Track token usage
-  await trackTokens('system', 'news-curation', message.usage?.input_tokens, message.usage?.output_tokens);
+  await trackTokensServer(userId || 'anonymous', 'news', message.usage?.input_tokens, message.usage?.output_tokens);
 
   const text = message.content[0].text
     .replace(/```json/g, '')

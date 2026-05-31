@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { adminDb, trackTokens } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 
 
@@ -19,7 +20,7 @@ export async function POST(request) {
       );
     }
 
-    if (!db) {
+    if (!adminDb) {
       return Response.json(
         { error: 'Database not available' },
         { status: 503 }
@@ -141,7 +142,7 @@ IMPORTANT:
     });
 
     // Track token usage
-    await trackTokens(user_id, 'recruiter-match', message.usage?.input_tokens, message.usage?.output_tokens);
+    await trackTokensServer(user_id || 'anonymous', 'recruiter', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const text = message.content[0].text
       .replace(/```json/g, '')

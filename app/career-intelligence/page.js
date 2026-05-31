@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { auth } from '@/lib/firebase';
 import AppShell from "@/components/AppShell";
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -109,6 +110,7 @@ export default function CareerIntelligencePage() {
       
       formData.append('jobRole', jobRole);
       formData.append('jobDescription', jobDescription);
+      formData.append('userId', auth.currentUser?.uid || '');
 
       const response = await fetch('/api/career-intelligence', {
         method: 'POST',
