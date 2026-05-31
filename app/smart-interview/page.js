@@ -75,7 +75,13 @@ function CameraTest({ onResult }) {
     }
   }, [onResult, selectedDevice]);
 
-  useEffect(() => { startCamera(); return () => stopStream(); }, []);
+  useEffect(() => {
+    const t = setTimeout(() => { startCamera(); }, 0);
+    return () => {
+      clearTimeout(t);
+      stopStream();
+    };
+  }, [startCamera]);
 
   const handleDeviceChange = (e) => {
     setSelectedDevice(e.target.value);
@@ -178,7 +184,13 @@ function MicTest({ onResult }) {
     }
   }, [onResult]);
 
-  useEffect(() => { startMic(); return () => stopAll(); }, []);
+  useEffect(() => {
+    const t = setTimeout(() => { startMic(); }, 0);
+    return () => {
+      clearTimeout(t);
+      stopAll();
+    };
+  }, [startMic]);
 
   return (
     <div className="bg-white rounded-2xl border border-teal-100 shadow-sm overflow-hidden">
@@ -281,7 +293,7 @@ function VoiceTest({ onResult, selectedLang, onLangChange }) {
       </div>
       <div className="p-5 space-y-3">
         <div className="bg-teal-50/50 border border-teal-100 rounded-xl p-3 text-xs font-medium text-teal-800">
-          "{TEST_SENTENCE}"
+          {"\"" + TEST_SENTENCE + "\""}
         </div>
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 min-h-[50px] text-xs">
           {heard || interimText ? (
@@ -797,6 +809,7 @@ export default function SmartInterviewPage() {
         clearInterval(speakingIntervalRef.current);
         speakingIntervalRef.current = null;
       }
+      setSpeakingTime(0);
     }
     return () => {
       if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
@@ -805,7 +818,7 @@ export default function SmartInterviewPage() {
 
   // Invisible silence detector: triggers after 7 seconds of speech silence
   useEffect(() => {
-    if (stage !== 'interviewing' || !isRecording || showCompletionModal || isThinking) return;
+    if (stage !== 'interviewing' || !isRecording || showCompletionModal || isThinking || isTyping) return;
 
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
 
@@ -821,7 +834,7 @@ export default function SmartInterviewPage() {
     return () => {
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     };
-  }, [transcript, interimTranscript, isRecording, stage, wordCount, showCompletionModal, isThinking]);
+  }, [transcript, interimTranscript, isRecording, stage, wordCount, showCompletionModal, isThinking, isTyping]);
 
   // Auto-submit countdown (5 seconds, hidden from UI)
   useEffect(() => {
@@ -1040,6 +1053,10 @@ export default function SmartInterviewPage() {
     if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
     setShowCompletionModal(false);
       
+    const updatedHistory = answer.trim()
+      ? [...conversationHistory, { role: 'user', message: answer }]
+      : conversationHistory;
+
     if (answer.trim()) {
       setConversationHistory(prev => [
         ...prev,
@@ -1052,7 +1069,7 @@ export default function SmartInterviewPage() {
       setCurrentAnswer('');
       clearTranscript();
       toast.success('Interview finished! Generating feedback...');
-      await getFeedback(sessionMemory);
+      await getFeedback(sessionMemory, updatedHistory);
       return;
     }
 
@@ -1102,7 +1119,7 @@ export default function SmartInterviewPage() {
 
       if (data.interview_complete) {
         toast.success('Interview completed! Generating feedback...');
-        await getFeedback(updatedMemory);
+        await getFeedback(updatedMemory, updatedHistory);
       } else if (data.question) {
         setCurrentQuestion(data.question);
         setInterviewerThought(data.interviewer_thought || '');
@@ -1122,7 +1139,7 @@ export default function SmartInterviewPage() {
           setThinkingTimeLeft(5);
         }
       } else {
-        await getFeedback(updatedMemory);
+        await getFeedback(updatedMemory, updatedHistory);
       }
       
     } catch (error) {
@@ -1140,8 +1157,9 @@ export default function SmartInterviewPage() {
     }
   };
 
-  const getFeedback = async (memoryObj) => {
+  const getFeedback = async (memoryObj, historyOverride) => {
     setIsEvaluating(true);
+    const historyToUse = historyOverride || conversationHistory;
 
     try {
       const response = await fetch('/api/smart-interview', {
@@ -1155,7 +1173,7 @@ export default function SmartInterviewPage() {
           jd: jobDescription,
           round,
           session_memory: memoryObj,
-          conversation_history: conversationHistory,
+          conversation_history: historyToUse,
           user_id: auth.currentUser?.uid || 'test-user-123'
         }),
       });
@@ -1198,7 +1216,7 @@ export default function SmartInterviewPage() {
                 integrityScore,
                 violations
               },
-              conversationHistory: conversationHistory,
+              conversationHistory: historyToUse,
               timestamp: new Date().toISOString(),
               createdAt: Date.now()
             });
@@ -1215,7 +1233,7 @@ export default function SmartInterviewPage() {
                 integrityScore,
                 violations
               },
-              conversationHistory: conversationHistory,
+              conversationHistory: historyToUse,
               timestamp: new Date().toISOString(),
               createdAt: Date.now()
             });
@@ -1368,7 +1386,7 @@ export default function SmartInterviewPage() {
                     ) : (
                       <>
                         <p className="font-bold text-gray-700 mb-1">Upload your Resume</p>
-                        <p className="text-sm text-gray-400 max-w-xs">Drag & drop your PDF or DOCX here. We'll tailor questions to your experience.</p>
+                        <p className="text-sm text-gray-400 max-w-xs">Drag & drop your PDF or DOCX here. {"We'll"} tailor questions to your experience.</p>
                       </>
                     )}
                     <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} className="hidden" id="resume-upload" />
@@ -1501,7 +1519,7 @@ export default function SmartInterviewPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-green-950 text-lg">Setup Verified!</h3>
-                  <p className="text-xs text-green-700">Everything is working correctly. You're ready to start!</p>
+                  <p className="text-xs text-green-700">Everything is working correctly. {"You're"} ready to start!</p>
                 </div>
                 <button
                   onClick={() => {

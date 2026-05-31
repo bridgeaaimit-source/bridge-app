@@ -89,7 +89,6 @@ Return ONLY valid JSON format:
       "culture_fit": { "score": 0, "covered": false, "question_count": 0 }
     },
     "asked_questions": ["First question text here"],
-    "question_analysis": [],
     "current_competency": "resume_validation"
   }
 }`;
@@ -164,7 +163,6 @@ Return ONLY valid JSON format:
             culture_fit: { score: 0, covered: false, question_count: 0 }
           },
           asked_questions: ["Tell me about yourself and your background based on your resume."],
-          question_analysis: [],
           current_competency: "resume_validation"
         }
       });
@@ -186,8 +184,7 @@ Return ONLY valid JSON format:
         behavioral: { score: 0, covered: false, question_count: 0 },
         culture_fit: { score: 0, covered: false, question_count: 0 }
       },
-      asked_questions: [],
-      question_analysis: []
+      asked_questions: []
     };
 
     // ── Server-side deduplication guard ────────────────────────────────────
@@ -325,11 +322,8 @@ Return ONLY valid JSON:
       }
     }
 
-    // Check if question was appended correctly
-    if (result.session_memory && result.question) {
-      console.log('📋 Asked so far:', result.session_memory?.asked_questions?.length, 'questions');
-      return Response.json(result);
-    }
+    console.log('📋 Asked so far:', result.session_memory?.asked_questions?.length, 'questions');
+    return Response.json(result);
   }
 
   // ACTION 3: Final evaluation
@@ -337,8 +331,7 @@ Return ONLY valid JSON:
     const memory = session_memory || {
       interview_summary: "Interview completed.",
       competencies: {},
-      asked_questions: [],
-      question_analysis: []
+      asked_questions: []
     };
 
     console.log('Final evaluation requested. Memory keys:', Object.keys(memory));
@@ -422,8 +415,14 @@ Provide evaluation strictly in JSON format:
       
       // Clean final scores
       parsed.overall_score = safeInt(parsed.overall_score);
-      parsed.placement_chance = safeInt(parsed.placement_chance, 60);
-      if (parsed.placement_chance <= 10) parsed.placement_chance = parsed.placement_chance * 10; // calibration check
+      let rawChance = parseInt(parsed.placement_chance, 10);
+      if (isNaN(rawChance)) {
+        rawChance = 60;
+      }
+      if (rawChance <= 10) {
+        rawChance = rawChance * 10;
+      }
+      parsed.placement_chance = Math.max(0, Math.min(100, rawChance));
       
       if (parsed.scores) {
         Object.keys(parsed.scores).forEach(k => {
