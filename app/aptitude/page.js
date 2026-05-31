@@ -244,6 +244,7 @@ export default function AptitudePage() {
       }
     } catch (e) {
       console.error("Failed to check question count:", e);
+      setDbQuestionCount(0); // Show seeder banner on error as fallback
     }
   };
 
@@ -797,7 +798,16 @@ export default function AptitudePage() {
                 <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
                   Aptitude <span className="text-teal-400">Arena</span>
                 </h1>
-                <p className="text-gray-400 text-sm mt-1">Crushing Indian placement rounds, gamified & adaptive.</p>
+                <p className="text-gray-400 text-sm mt-1 flex flex-wrap items-center gap-x-2">
+                  <span>Crushing Indian placement rounds, gamified & adaptive.</span>
+                  <button
+                    id="btn-force-seed-db"
+                    onClick={handleSeedDatabase}
+                    className="text-xs text-teal-400 hover:text-teal-300 underline font-semibold focus:outline-none cursor-pointer"
+                  >
+                    (Force Seed DB)
+                  </button>
+                </p>
               </div>
               
               <div className="flex items-center gap-4 self-stretch md:self-auto bg-[#121E21] border border-teal-500/10 p-3 px-5 rounded-2xl shadow-lg">
