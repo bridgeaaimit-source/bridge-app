@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 const INSTITUTIONS = [
   "IIT Bombay", "IIM Ahmedabad", "BITS Pilani", "ISB", "NMIMS", "FMS",
@@ -20,7 +20,7 @@ export default function SocialProof() {
         <div className="pointer-events-none absolute left-0 top-0 h-full w-32 bg-gradient-to-r from-[#F8FAFC] dark:from-[#030908] to-transparent z-10 transition-colors" />
         <div className="pointer-events-none absolute right-0 top-0 h-full w-32 bg-gradient-to-l from-[#F8FAFC] dark:from-[#030908] to-transparent z-10 transition-colors" />
         
-        <motion.div 
+        <m.div 
           className="whitespace-nowrap inline-flex items-center opacity-80 hover:opacity-100 transition-opacity duration-500"
           animate={{ x: ["0%", "-33.33%"] }}
           transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
@@ -33,7 +33,7 @@ export default function SocialProof() {
               {name}
             </span>
           ))}
-        </motion.div>
+        </m.div>
       </div>
 
       <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 text-center mt-12">
@@ -44,3 +44,6 @@ export default function SocialProof() {
     </section>
   );
 }
+
+
+

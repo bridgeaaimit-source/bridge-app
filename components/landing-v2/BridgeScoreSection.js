@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
+import { m, useScroll, useTransform, useMotionValueEvent  } from "framer-motion";
 import { ArrowRight, Info, Check, Unlock, Lock } from "lucide-react";
 
 const SIGNALS = [
@@ -111,7 +111,7 @@ export default function BridgeScoreSection() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           
           {/* Gauge Column */}
-          <motion.div 
+          <m.div 
             className="lg:col-span-5 flex flex-col items-center justify-center bg-white dark:bg-white/5 backdrop-blur-md border border-gray-200 dark:border-white/10 rounded-3xl p-8 transition-colors shadow-sm dark:shadow-none"
             animate={{ 
               y: [0, -14, 0, -7, 0],
@@ -155,7 +155,7 @@ export default function BridgeScoreSection() {
             <div className="relative h-48 w-48 sm:h-56 sm:w-56">
               <svg className="w-full h-full" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="40" fill="none" stroke="#E5E7EB" strokeWidth="8" />
-                <motion.circle
+                <m.circle
                   cx="50"
                   cy="50"
                   r="40"
@@ -209,7 +209,7 @@ export default function BridgeScoreSection() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </m.div>
 
           {/* Sliders Column */}
           <div className="lg:col-span-7 space-y-6">
@@ -303,7 +303,7 @@ export default function BridgeScoreSection() {
             </div>
 
             {/* Historical Progress */}
-            <motion.div 
+            <m.div 
               variants={{ hidden: { opacity: 0, scale: 0.98 }, visible: { opacity: 1, scale: 1, transition: { type: "spring", stiffness: 120, damping: 22 } } }}
               className="rounded-2xl bg-teal-50 dark:bg-[#0D9488]/5 border border-teal-100 dark:border-teal-500/20 backdrop-blur-md p-5 mt-8 transition-colors"
             >
@@ -318,7 +318,7 @@ export default function BridgeScoreSection() {
                 <ArrowRight className="h-3 w-3 text-gray-400 dark:text-gray-600" />
                 <span>Week 8: <strong className="text-[#0D9488] dark:text-[#2DD4BF]">820+</strong></span>
               </div>
-            </motion.div>
+            </m.div>
 
           </div>
 
@@ -328,3 +328,5 @@ export default function BridgeScoreSection() {
     </section>
   );
 }
+
+

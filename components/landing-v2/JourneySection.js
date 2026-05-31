@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import { m, useScroll, useMotionValueEvent  } from "framer-motion";
 import { 
   Video, 
   Mic, 
@@ -260,7 +260,7 @@ function StepVisual04() {
           <div className="relative w-40 h-40 mx-auto mb-6">
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="46" fill="none" className="stroke-gray-100 dark:stroke-[#112a27]" strokeWidth="6" />
-              <motion.circle 
+              <m.circle 
                 cx="50" cy="50" r="46" fill="none" stroke="#2DD4BF" strokeWidth="6" 
                 strokeDasharray="289" strokeDashoffset="289"
                 animate={{ strokeDashoffset: 289 - (289 * 0.85) }}
@@ -576,3 +576,5 @@ export default function JourneySection() {
     </section>
   );
 }
+
+
