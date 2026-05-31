@@ -20,7 +20,8 @@ import {
   Navigation,
   BarChart2,
   Sparkles,
-  Brain
+  Brain,
+  Shield
 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -193,6 +194,7 @@ export default function AppShell({ children }) {
     { href: '/leaderboard', icon: Trophy,     label: 'Leaderboard',    group: ['/leaderboard'], tour: 'leaderboard' },
     { href: '/profile',     icon: User,       label: 'Profile',        group: ['/profile'], tour: 'profile' },
     ...(isRecruiter ? [{ href: '/recruiter', icon: User, label: 'Recruiter', group: ['/recruiter'] }] : []),
+    ...(isAdmin ? [{ href: '/admin', icon: Shield, label: 'Admin Dashboard', group: ['/admin'] }] : []),
   ];
 
   const mobileNav = [

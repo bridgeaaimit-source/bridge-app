@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
+import { auth } from "@/lib/firebase";
 
 const CATEGORIES = ["All", "Marketing", "Finance", "HR", "Analytics", "Tech", "MBA"];
 
@@ -70,7 +71,7 @@ export default function PulsePage() {
     }
     setGdLoading(true);
     try {
-      const res = await fetch(`/api/gd-insights?category=${encodeURIComponent(category)}`);
+      const res = await fetch(`/api/gd-insights?category=${encodeURIComponent(category)}&userId=${auth.currentUser?.uid || ''}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (!data?.gd_topic) throw new Error('Bad response');
@@ -95,7 +96,7 @@ export default function PulsePage() {
     }
     setNewsLoading(true);
     try {
-      const res = await fetch(`/api/news?category=${encodeURIComponent(category)}`);
+      const res = await fetch(`/api/news?category=${encodeURIComponent(category)}&userId=${auth.currentUser?.uid || ''}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (!data?.articles) throw new Error('Bad response');

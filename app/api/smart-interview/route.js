@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { adminDb, trackTokens } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 
 
@@ -125,7 +126,7 @@ Return ONLY valid JSON:
     }
 
     // Track token usage
-    await trackTokens(user_id, 'smart-interview-init', message.usage?.input_tokens, message.usage?.output_tokens);
+    await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const text = message.content[0].text
       .replace(/```json/g, '').replace(/```/g, '').trim();
@@ -221,7 +222,7 @@ Return ONLY valid JSON:
     );
 
     // Track token usage
-    await trackTokens(user_id, 'smart-interview-continue', message.usage?.input_tokens, message.usage?.output_tokens);
+    await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const text = message.content[0].text
       .replace(/```json/g, '').replace(/```/g, '').trim();
@@ -360,7 +361,7 @@ Return ONLY the JSON, no other text. Be FAIR and ENCOURAGING. Only penalize for 
     );
 
     // Track token usage
-    await trackTokens(user_id, 'smart-interview-evaluate', message.usage?.input_tokens, message.usage?.output_tokens);
+    await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
     console.log('✅ Claude API call successful');
     console.log('Raw Claude response:', message.content[0].text);

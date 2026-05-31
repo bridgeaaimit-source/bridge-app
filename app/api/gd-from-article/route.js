@@ -1,11 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { adminDb, trackTokens } from '@/lib/firebase-admin';
-
-
+import { adminDb } from '@/lib/firebase-admin';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 export async function POST(request) {
   const { article_title, article_description, 
-    placement_insight } = await request.json();
+    placement_insight, userId, uid } = await request.json();
 
   // Create unique key from article title
   const cacheKey = article_title
@@ -15,7 +14,7 @@ export async function POST(request) {
 
   try {
     // Check if GD already exists for this article (only if Firebase is available)
-    if (db) {
+    if (adminDb) {
       const docRef = adminDb.collection('gd_from_articles')
         .doc(cacheKey);
       const doc = await docRef.get();
@@ -84,6 +83,9 @@ Return ONLY valid JSON, no markdown:
       messages: [{ role: 'user', content: prompt }]
     });
 
+    // Track token usage
+    await trackTokensServer(uid || userId || 'anonymous', 'gd', message.usage?.input_tokens, message.usage?.output_tokens);
+
     const text = message.content[0].text
       .replace(/```json/g, '')
       .replace(/```/g, '')
@@ -92,7 +94,7 @@ Return ONLY valid JSON, no markdown:
     const gdContent = JSON.parse(text);
 
     // Cache in Firestore permanently (only if Firebase is available)
-    if (db) {
+    if (adminDb) {
       const docRef = adminDb.collection('gd_from_articles')
         .doc(cacheKey);
       await docRef.set({

@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 // Simple in-memory daily cache
 // Format: { date: "2026-03-25", data: {...} }
@@ -7,6 +8,7 @@ let dailyCache = {};
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get('category') || 'All';
+  const userId = searchParams.get('userId');
   
   // Check if we have today's cache
   const today = new Date().toISOString().split('T')[0];
@@ -68,6 +70,9 @@ Return ONLY valid JSON, no markdown:
       max_tokens: 1000,
       messages: [{ role: 'user', content: prompt }]
     });
+
+    // Track token usage
+    await trackTokensServer(userId || 'anonymous', 'gd', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const text = message.content[0].text
       .replace(/```json/g, '')
