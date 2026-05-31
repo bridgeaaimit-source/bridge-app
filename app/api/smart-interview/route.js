@@ -2,342 +2,536 @@ import Anthropic from '@anthropic-ai/sdk';
 import { adminDb } from '@/lib/firebase-admin';
 import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
-// Helper to ensure values are safe integers between 1 and 10
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function safeInt(val, fallback = 7) {
   const parsed = parseInt(val, 10);
   if (isNaN(parsed)) return fallback;
   return Math.max(1, Math.min(10, parsed));
 }
 
-// Retry helper function
 async function retryClaudeCall(callFunction, maxRetries = 3, delay = 1000) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const result = await callFunction();
-      return result;
+      return await callFunction();
     } catch (error) {
-      console.error(`Claude API call attempt ${attempt} failed:`, error.message);
-      
-      // If it's not an overload error or we've maxed out retries, throw
-      if (error.status !== 529 || attempt === maxRetries) {
-        throw error;
-      }
-      
-      // Wait before retrying (exponential backoff)
+      console.error(`Claude API attempt ${attempt} failed:`, error.message);
+      if (error.status !== 529 || attempt === maxRetries) throw error;
       const waitTime = delay * Math.pow(2, attempt - 1);
       console.log(`Waiting ${waitTime}ms before retry...`);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
+      await new Promise(r => setTimeout(r, waitTime));
     }
   }
 }
 
+// ─── Context Window Management ────────────────────────────────────────────────
+// Keep only the last N turns verbatim. Older turns are already summarized
+// in session_memory.interview_summary by Claude on each prior turn.
+const RECENT_TURNS_LIMIT = 6;
+
+function buildPromptHistory(conversation_history, olderTurnCount) {
+  if (!conversation_history || conversation_history.length === 0) {
+    return 'No conversation yet.';
+  }
+  const recent = conversation_history.slice(-RECENT_TURNS_LIMIT);
+  let result = '';
+  if (olderTurnCount > 0) {
+    result += `[${olderTurnCount} earlier turn(s) already summarized in Session Memory above — do not re-ask those topics]\n\n`;
+  }
+  result += recent
+    .map(h => `${h.role === 'interviewer' ? 'INTERVIEWER' : 'CANDIDATE'}: ${h.message}`)
+    .join('\n\n');
+  return result;
+}
+
+// ─── Competency Path Randomization ────────────────────────────────────────────
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const BASE_COMPETENCIES = [
+  'communication',
+  'resume_validation',
+  'technical_knowledge',
+  'problem_solving',
+  'behavioral',
+  'culture_fit',
+];
+
+// ─── Default session_memory factory ───────────────────────────────────────────
+function defaultMemory(job_role) {
+  return {
+    interview_summary: `Interview initialized for ${job_role}.`,
+    competencies: {
+      communication:       { score: 0, covered: false, question_count: 0 },
+      resume_validation:   { score: 0, covered: true,  question_count: 1 },
+      technical_knowledge: { score: 0, covered: false, question_count: 0 },
+      problem_solving:     { score: 0, covered: false, question_count: 0 },
+      behavioral:          { score: 0, covered: false, question_count: 0 },
+      culture_fit:         { score: 0, covered: false, question_count: 0 },
+    },
+    professionalism:           { score: 10, deductions: 0 },
+    asked_questions:           [],
+    covered_topics:            [],
+    resume_claims:             [],
+    contradictions_detected:   [],
+    candidate_behavior_flags:  [],
+    competency_path:           ['communication', 'technical_knowledge', 'problem_solving', 'behavioral', 'culture_fit'],
+    session_seed:              1,
+    current_competency:        'resume_validation',
+    last_question_type:        'new_topic',
+    needs_followup:            false,
+  };
+}
+
+// ─── Score variance server-side guard ─────────────────────────────────────────
+function checkScoreVariance(scores) {
+  const vals = Object.values(scores).filter(v => typeof v === 'number');
+  if (vals.length < 2) return;
+  const range = Math.max(...vals) - Math.min(...vals);
+  if (range < 2) {
+    console.warn(`⚠️ Low score variance detected (range: ${range}). All scores: ${JSON.stringify(scores)}`);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 export async function POST(request) {
   const body = await request.json();
-  const { 
-    action, 
-    resume_text, 
-    resume_base64, 
-    job_role, 
-    jd, 
-    round, 
-    conversation_history, 
+  const {
+    action,
+    resume_base64,
+    job_role,
+    jd,
+    round,
+    conversation_history,
     last_question,
-    last_answer, 
+    last_answer,
     session_memory,
-    user_id 
+    user_id,
   } = body;
-  
+
   console.log('👤 User ID:', user_id || 'unknown');
-  console.log('⚙️ Action:', action);
+  console.log('⚙️  Action:', action);
 
   let client = null;
   if (process.env.ANTHROPIC_API_KEY) {
     try {
-      client = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY
-      });
+      client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     } catch (e) {
       console.warn('Failed to initialize Anthropic client:', e.message);
     }
   }
 
-  // ACTION 1: Initialize - read resume+JD, ask first question
+  // ══════════════════════════════════════════════════════════════════════════
+  // ACTION 1: INIT
+  // ══════════════════════════════════════════════════════════════════════════
   if (action === 'init') {
+    // Allow client to force a seed (for testing / retry UX). Otherwise random.
+    const sessionSeed = (body.session_seed && body.session_seed >= 1 && body.session_seed <= 5)
+      ? body.session_seed
+      : Math.floor(Math.random() * 5) + 1;
+    const competencyPath = shuffleArray(
+      BASE_COMPETENCIES.filter(c => c !== 'resume_validation')
+    );
+
+    const OPENING_STRATEGIES = {
+      1: `Start with a specific project from their resume most relevant to the JD. Ask about their exact contribution and one technical challenge they overcame.`,
+      2: `Identify something the JD explicitly requires that is NOT clearly on the resume. Open by probing how they would address that gap or handle that requirement from scratch.`,
+      3: `Start with their most recent internship, job, or final-year project. Ask what they specifically did day-to-day and what their biggest learning was.`,
+      4: `Start behavioral: "Imagine it's your first week in this ${job_role} role. Walk me through how you would approach your first two weeks to get up to speed." Make it role-specific.`,
+      5: `Start with a lightweight technical hypothetical directly tied to the role's core responsibility. A problem they would realistically face week-1 on the job.`,
+    };
+
     const prompt = `You are a professional campus recruiter conducting a ${round} interview for: ${job_role}
 
-You have the candidate's resume. Read it carefully before asking.
+You have the candidate's resume. Read it carefully before generating your first question.
 
 JOB DESCRIPTION:
-${jd}
+${jd || 'Not provided'}
 
 ROUND: ${round}
 
+OPENING STRATEGY FOR THIS SESSION (session_seed = ${sessionSeed}):
+${OPENING_STRATEGIES[sessionSeed]}
+
 CRITICAL INSTRUCTIONS:
-1. Read the resume carefully. Note specific projects, technologies, achievements.
-2. Your first question MUST reference something SPECIFIC from their resume — a project, a skill, or an achievement.
-3. Do NOT open with generic questions like "tell me about yourself".
-4. Probe what is most interesting or most relevant to the JD.
+1. Follow the opening strategy above exactly — do NOT default to "tell me about yourself."
+2. Your question MUST feel like it was written by a real recruiter who read this specific resume.
+3. Question length: 2 to 3 sentences maximum. Conversational. No bullet points, no sub-questions.
 
-QUESTION LENGTH RULE (MANDATORY):
-Each question must be 2 to 3 sentences maximum. Conversational tone — like a real recruiter speaking, not reading from a form. Avoid bullet points, sub-questions, or lengthy context-setting preambles.
+INITIAL RESUME CLAIMS:
+After reading the resume, extract up to 5 factual claims the candidate has made on their resume (e.g., "Built React app", "Led team of 4", "Intern at TCS", "Knows Python"). These will be used later to detect contradictions.
 
-Return ONLY valid JSON format:
+Return ONLY valid JSON:
 {
-  "question": "2-3 sentence question referencing something specific from the resume",
-  "interviewer_thought": "What I noticed in the resume that led to this question (shown to student as brief context)",
+  "question": "2-3 sentence opening question based on opening strategy",
+  "interviewer_thought": "What I saw in the resume/JD that led to this specific question",
   "session_memory": {
-    "interview_summary": "Interview initialized for target role ${job_role}.",
+    "interview_summary": "Interview initialized for ${job_role}. Opening strategy: ${sessionSeed}.",
     "competencies": {
-      "communication": { "score": 0, "covered": false, "question_count": 0 },
-      "resume_validation": { "score": 0, "covered": true, "question_count": 1 },
+      "communication":       { "score": 0, "covered": false, "question_count": 0 },
+      "resume_validation":   { "score": 0, "covered": true,  "question_count": 1 },
       "technical_knowledge": { "score": 0, "covered": false, "question_count": 0 },
-      "problem_solving": { "score": 0, "covered": false, "question_count": 0 },
-      "behavioral": { "score": 0, "covered": false, "question_count": 0 },
-      "culture_fit": { "score": 0, "covered": false, "question_count": 0 }
+      "problem_solving":     { "score": 0, "covered": false, "question_count": 0 },
+      "behavioral":          { "score": 0, "covered": false, "question_count": 0 },
+      "culture_fit":         { "score": 0, "covered": false, "question_count": 0 }
     },
-    "asked_questions": ["First question text here"],
-    "current_competency": "resume_validation"
+    "professionalism":          { "score": 10, "deductions": 0 },
+    "asked_questions":          ["<paste your generated question here>"],
+    "covered_topics":           ["<1-3 word topic of your opening question, e.g. 'resume project'>"],
+    "resume_claims":            ["<up to 5 factual claims from the resume>"],
+    "contradictions_detected":  [],
+    "candidate_behavior_flags": [],
+    "competency_path":          ${JSON.stringify(competencyPath)},
+    "session_seed":             ${sessionSeed},
+    "current_competency":       "resume_validation",
+    "last_question_type":       "new_topic",
+    "needs_followup":           false
   }
 }`;
 
     try {
-      if (!client) {
-        throw new Error('Anthropic client is not initialized (missing API key)');
-      }
+      if (!client) throw new Error('Anthropic client not initialized');
+
       let message;
-      if (resume_base64) {
-        if (!resume_base64 || resume_base64.length < 100) {
-          console.error('Invalid base64 data detected');
-          return Response.json({ error: 'Invalid resume data provided' }, { status: 400 });
-        }
-        
-        console.log('Base64 data length:', resume_base64.length);
-        
-        message = await retryClaudeCall(() => 
+      if (resume_base64 && resume_base64.length > 100) {
+        message = await retryClaudeCall(() =>
           client.messages.create({
             model: 'claude-haiku-4-5-20251001',
-            max_tokens: 1200,
+            max_tokens: 1400,
             messages: [{
               role: 'user',
-              content: [{
-                type: 'text',
-                text: prompt
-              }, {
-                type: 'document',
-                source: {
-                  type: 'base64',
-                  media_type: 'application/pdf',
-                  data: resume_base64
-                }
-              }]
-            }]
+              content: [
+                { type: 'text', text: prompt },
+                { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: resume_base64 } },
+              ],
+            }],
           })
         );
       } else {
         message = await retryClaudeCall(() =>
           client.messages.create({
             model: 'claude-haiku-4-5-20251001',
-            max_tokens: 1200,
-            messages: [{ role: 'user', content: prompt }]
+            max_tokens: 1400,
+            messages: [{ role: 'user', content: prompt }],
           })
         );
       }
 
-      // Track token usage
       await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
-      const text = message.content[0].text
-        .replace(/```json/g, '')
-        .replace(/```/g, '')
-        .trim();
+      const text = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       const cleanText = jsonMatch ? jsonMatch[0] : text;
 
       try {
         const parsed = JSON.parse(cleanText);
-        // Ensure asked_questions is synced with the first question text
         if (parsed.session_memory && parsed.question) {
           parsed.session_memory.asked_questions = [parsed.question];
         }
         return Response.json(parsed);
-      } catch (parseError) {
-        console.error('JSON parse error in smart-interview init:', parseError);
-        console.error('Raw text:', text);
-        
-        return Response.json({
-          question: "Tell me about yourself and your background based on your resume.",
-          interviewer_thought: "Let's start with a general introduction based on your profile.",
-          session_memory: {
-            interview_summary: `Interview initialized for ${job_role}.`,
-            competencies: {
-              communication: { score: 0, covered: false, question_count: 0 },
-              resume_validation: { score: 0, covered: true, question_count: 1 },
-              technical_knowledge: { score: 0, covered: false, question_count: 0 },
-              problem_solving: { score: 0, covered: false, question_count: 0 },
-              behavioral: { score: 0, covered: false, question_count: 0 },
-              culture_fit: { score: 0, covered: false, question_count: 0 }
-            },
-            asked_questions: ["Tell me about yourself and your background based on your resume."],
-            current_competency: "resume_validation"
-          }
-        });
+      } catch {
+        console.error('JSON parse error in init. Raw:', text);
+        const fallback = defaultMemory(job_role);
+        const seedFallbackQs = {
+          1: `I noticed your resume mentions some interesting projects. Can you walk me through the one most relevant to this ${job_role} role and explain your exact contribution?`,
+          2: `The JD mentions ${(jd || '').split(' ').slice(0, 6).join(' ')} as a key requirement. How have you built experience in that area?`,
+          3: `Starting with your most recent experience — what did you actually do day-to-day and what was the most important thing you built or contributed?`,
+          4: `Imagine it is your first week as a ${job_role} here. Walk me through how you would approach getting up to speed and making your first meaningful contribution.`,
+          5: `Here is a quick hypothetical for a ${job_role}: a user reports the page is loading slowly. Walk me through your step-by-step debugging approach.`,
+        };
+        const fallbackQ = seedFallbackQs[sessionSeed] || seedFallbackQs[1];
+        fallback.asked_questions = [fallbackQ];
+        fallback.covered_topics = ['resume project'];
+        fallback.resume_claims = [];
+        fallback.competency_path = competencyPath;
+        fallback.session_seed = sessionSeed;
+        return Response.json({ question: fallbackQ, interviewer_thought: 'Starting with resume exploration.', session_memory: fallback });
       }
-    } catch (claudeError) {
-      console.warn('⚠️ smart-interview init Claude API failed, using mock init fallback:', claudeError.message);
-      let question = "Can you walk me through one of the technical projects listed on your resume? What technologies did you use and what was your specific contribution?";
-      let thought = "Starting the interview by asking about a specific project from their resume/experience to assess practical coding and design skills.";
-      
-      const roleLower = (job_role || '').toLowerCase();
-      if (roleLower.includes('marketing')) {
-        question = "Can you describe a marketing project or campaign you worked on? What channels did you use, and how did you measure its success?";
-        thought = "Probing marketing project experience to evaluate understanding of audience, strategy, and ROI measurement.";
-      } else if (roleLower.includes('finance')) {
-        question = "Could you walk me through a financial analysis or class project you completed? What financial concepts did you apply?";
-        thought = "Assessing financial literacy and analytical thinking through a project explanation.";
-      } else if (roleLower.includes('data')) {
-        question = "I see you have worked with data/analytics. Can you describe a data analysis project you built and what insights you derived?";
-        thought = "Probing data project experience to evaluate tools, insights generation, and business communication.";
-      }
-      
-      return Response.json({
-        question,
-        interviewer_thought: thought,
-        session_memory: {
-          interview_summary: `Interview initialized for ${job_role}.`,
-          competencies: {
-            communication: { score: 0, covered: false, question_count: 0 },
-            resume_validation: { score: 0, covered: true, question_count: 1 },
-            technical_knowledge: { score: 0, covered: false, question_count: 0 },
-            problem_solving: { score: 0, covered: false, question_count: 0 },
-            behavioral: { score: 0, covered: false, question_count: 0 },
-            culture_fit: { score: 0, covered: false, question_count: 0 }
-          },
-          asked_questions: [question],
-          current_competency: "resume_validation"
-        }
-      });
+    } catch (err) {
+      console.warn('Init Claude call failed:', err.message);
+      const fallback = defaultMemory(job_role);
+      const seedFallbackQs = {
+        1: `Can you walk me through the project or experience on your resume that you are most proud of and what your specific contribution was?`,
+        2: `Looking at your background, I want to understand how it connects to what we need. What is one requirement in this ${job_role} role that you feel most confident about, and why?`,
+        3: `Starting with your most recent experience — tell me what you worked on day-to-day and what the most impactful thing you shipped or contributed was.`,
+        4: `Imagine it is your first week as a ${job_role} here. How would you approach the first two weeks to get up to speed and make your first meaningful contribution?`,
+        5: `Quick hypothetical for a ${job_role}: a user reports the page is loading very slowly. Walk me through your debugging approach from first principles.`,
+      };
+      const fallbackQ = seedFallbackQs[sessionSeed] || seedFallbackQs[1];
+      fallback.asked_questions = [fallbackQ];
+      fallback.covered_topics = ['resume project'];
+      fallback.resume_claims = [];
+      fallback.competency_path = shuffleArray(BASE_COMPETENCIES.filter(c => c !== 'resume_validation'));
+      fallback.session_seed = sessionSeed;
+      return Response.json({ question: fallbackQ, interviewer_thought: 'Exploring resume experience.', session_memory: fallback });
     }
   }
 
-  // ACTION 2: Continue - dynamic follow-up based on answer
+  // ══════════════════════════════════════════════════════════════════════════
+  // ACTION 2: CONTINUE
+  // ══════════════════════════════════════════════════════════════════════════
   if (action === 'continue') {
     console.log('=== SMART INTERVIEW CONTINUE ===');
-    console.log('Last answer:', last_answer);
 
-    const memory = session_memory || {
-      interview_summary: "Interview ongoing.",
-      competencies: {
-        communication: { score: 0, covered: false, question_count: 0 },
-        resume_validation: { score: 0, covered: false, question_count: 0 },
-        technical_knowledge: { score: 0, covered: false, question_count: 0 },
-        problem_solving: { score: 0, covered: false, question_count: 0 },
-        behavioral: { score: 0, covered: false, question_count: 0 },
-        culture_fit: { score: 0, covered: false, question_count: 0 }
-      },
-      asked_questions: []
-    };
+    const memory = session_memory || defaultMemory(job_role);
 
-    // ── Server-side deduplication guard ────────────────────────────────────
-    // Always ensure last_question is in asked_questions before building prompt
-    // This prevents loops even if client sends stale session_memory
-    const canonicalAskedQuestions = Array.isArray(memory.asked_questions)
-      ? memory.asked_questions
-      : [];
+    // Ensure professionalism exists (backwards compatibility)
+    if (!memory.professionalism) memory.professionalism = { score: 10, deductions: 0 };
+    if (!memory.covered_topics) memory.covered_topics = [];
+    if (!memory.resume_claims) memory.resume_claims = [];
+    if (!memory.contradictions_detected) memory.contradictions_detected = [];
+    if (!memory.candidate_behavior_flags) memory.candidate_behavior_flags = [];
+    if (!memory.competency_path) memory.competency_path = shuffleArray(BASE_COMPETENCIES.filter(c => c !== 'resume_validation'));
+
+    // Server-side deduplication guard
+    const canonicalAskedQuestions = Array.isArray(memory.asked_questions) ? memory.asked_questions : [];
     if (last_question && !canonicalAskedQuestions.includes(last_question)) {
       canonicalAskedQuestions.push(last_question);
     }
     memory.asked_questions = canonicalAskedQuestions;
-    // ────────────────────────────────────────────────────────────────────────
 
-    // Figure out which competencies still need coverage
+    // Context window management
+    const totalTurns = (conversation_history || []).length;
+    const olderTurnCount = Math.max(0, totalTurns - RECENT_TURNS_LIMIT);
+    const promptHistory = buildPromptHistory(conversation_history, olderTurnCount);
+
     const uncoveredCompetencies = Object.entries(memory.competencies || {})
       .filter(([, v]) => !v.covered)
       .map(([k]) => k);
 
-    const prompt = `You are a professional campus recruiter conducting a ${round} for the role: ${job_role}.
-Generate the NEXT unique question based on the candidate's previous answer. DO NOT generate detailed answer analysis to save processing time.
+    // Determine next competency from competency_path (prefer path order over random)
+    const nextCompetency = memory.competency_path.find(c =>
+      memory.competencies[c] && !memory.competencies[c].covered
+    ) || uncoveredCompetencies[0] || 'behavioral';
 
-CANDIDATE PROFILE:
-- Tier 2/3 college student or fresher — reward effort, clarity, logic, and learning potential.
-- Do NOT penalize minor grammar slips or accent.
+    const prompt = `You are a professional campus recruiter conducting a ${round} for: ${job_role}.
+You are currently on question ${canonicalAskedQuestions.length + 1} of max 15 (target 10).
 
-ACTIVE REDIRECTION & REAL RECRUITER BEHAVIOR (CRITICAL):
-- If the candidate's answer is completely off-topic or unprofessional, your next question MUST firmly but politely redirect them back to the interview focus (e.g., "Let's bring this back to your experience with X...").
-- If their answer was incredibly brief or lacked detail, ask a specific follow-up probing for the missing depth before moving to a new topic.
-- You are a real recruiter. Respond dynamically to what they just said.
+━━ SESSION MEMORY (your running notes) ━━
+Interview Summary (older turns already captured here):
+${memory.interview_summary}
 
-COMPETENCY BLUEPRINT — cover at least 1 question per competency:
-1. communication
-2. resume_validation
-3. technical_knowledge
-4. problem_solving
-5. behavioral
-6. culture_fit
+Covered Topics (1-3 word topics — DO NOT revisit any of these):
+${JSON.stringify(memory.covered_topics)}
 
-Uncovered competencies remaining: ${JSON.stringify(uncoveredCompetencies)}
+Resume Claims (what candidate claims from their resume):
+${JSON.stringify(memory.resume_claims)}
 
-STRICT ANTI-REPETITION RULE (most important):
-The following questions have ALREADY been asked — your next question MUST be completely different in topic, angle, and wording:
-${canonicalAskedQuestions.map((q, i) => `  Q${i + 1}: "${q}"`).join('\n')}
-If the next question sounds similar to ANY of the above, discard it and move to a different competency instead.
-Track insights in "interview_summary" to avoid revisiting the same topics.
+Contradictions Detected So Far:
+${JSON.stringify(memory.contradictions_detected)}
 
-QUESTION LENGTH RULE (MANDATORY):
-Write 2 to 3 sentences maximum. Conversational — like a real recruiter speaking. No bullet points, no multi-part questions, no lengthy preamble.
+Candidate Behavior Flags:
+${JSON.stringify(memory.candidate_behavior_flags)}
 
-Question count: ${canonicalAskedQuestions.length + 1} of max 15 (target 10)
-End interview ("interview_complete": true) when: all competencies covered AND ≥8 questions asked, OR ≥15 questions asked.
+Professionalism Score: ${memory.professionalism.score}/10
 
-Job Role: ${job_role}
+Competencies Status:
+${JSON.stringify(memory.competencies, null, 2)}
+
+Competency Path (intended order): ${JSON.stringify(memory.competency_path)}
+Next Target Competency: ${nextCompetency}
+
+━━ RECENT CONVERSATION (verbatim) ━━
+${promptHistory}
+
+━━ CURRENT EXCHANGE ━━
+LAST QUESTION ASKED: "${last_question || 'None'}"
+CANDIDATE'S LAST ANSWER: "${last_answer || '(no answer provided)'}"
+
 JD Requirements: ${jd || 'Not provided'}
-Last Question: "${last_question || 'None'}"
-Last Answer: "${last_answer || '(no answer)'}"
 
-Session Memory:
-${JSON.stringify({ interview_summary: memory.interview_summary, competencies: memory.competencies, current_competency: memory.current_competency })}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 1 — CLASSIFY CANDIDATE'S LAST ANSWER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Return ONLY valid JSON:
+Choose exactly one classification:
+
+  A) OFF_TOPIC     — answer is completely unrelated to what was asked
+  B) EVASIVE       — candidate acknowledged the question but gave no real answer
+  C) INAPPROPRIATE — vulgar, abusive, offensive, or deeply unprofessional language
+  D) TOO_SHORT     — 20 words or fewer; no example, no specifics, no explanation
+  E) RAMBLING      — 200+ words that lose focus and don't answer the core question
+  F) ADEQUATE      — acceptable answer; may proceed to next topic
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 2 — CONTRADICTION CHECK (run even if ADEQUATE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Compare the candidate's last answer against:
+  a) Resume claims listed above
+  b) Everything said in the conversation above
+
+A contradiction exists when the candidate says something factually inconsistent with a prior claim.
+Examples:
+  - Earlier: "I have never used AWS" → Now: "I deployed our app on AWS EC2"
+  - Resume claims "led a team of 5" → Now: "I worked alone on that project"
+  - Earlier: "My final year project was in Python" → Now: "I only know JavaScript"
+
+If you find a clear contradiction: override your Step 1 classification to CONTRADICTION.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 3 — VAGUE CLAIM SCAN (only if ADEQUATE, no contradiction)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If the answer is classified ADEQUATE, scan for unquantified boasts:
+  - "I improved performance" → unquantified → VAGUE_CLAIM
+  - "I led a team" (without size or context) → VAGUE_CLAIM
+  - "I built [project]" (without specifying their contribution) → VAGUE_CLAIM
+  - "I know/use [technology]" (with no concrete example attached) → VAGUE_CLAIM
+
+If found: override classification to VAGUE_CLAIM.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 4 — GENERATE YOUR RESPONSE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Based on classification, respond EXACTLY as follows:
+
+OFF_TOPIC / EVASIVE:
+  - Politely redirect: "I appreciate that, but I'd like to bring us back to [topic of last question]. Could you specifically address [core of what was asked]?"
+  - Do NOT ask a new topic.
+  - "last_question_type": "redirect", "needs_followup": true
+
+INAPPROPRIATE:
+  - Professionally call it out: "I'd ask that we keep our conversation professional. Let's continue — [rephrase the original question calmly]."
+  - Deduct 2 from professionalism.score (floor = 0). Add { "type": "inappropriate_language", "question_number": ${canonicalAskedQuestions.length}, "note": "brief factual note" } to candidate_behavior_flags.
+  - "last_question_type": "professionalism_callout", "needs_followup": true
+
+TOO_SHORT:
+  - Ask a follow-up probe: "Could you give me a specific example of that?" or "Can you walk me through that in more detail?"
+  - Do NOT move to new topic.
+  - "last_question_type": "followup_probe", "needs_followup": true
+
+RAMBLING:
+  - Redirect: "Thanks for all that context — to make the most of our time, could you specifically tell me [the core of the original question, in 1 sentence]?"
+  - "last_question_type": "redirect", "needs_followup": true
+
+VAGUE_CLAIM:
+  - Challenge the specific vague claim directly. Be precise about WHICH claim is vague.
+  - "last_question_type": "challenge", "needs_followup": true
+
+CONTRADICTION:
+  - Challenge directly: "I want to make sure I understand correctly — earlier you mentioned [X], but just now you said [Y]. Can you help me reconcile that?"
+  - Add entry to contradictions_detected: { "prior_claim": "X", "new_statement": "Y", "question_number": ${canonicalAskedQuestions.length} }
+  - "last_question_type": "contradiction_challenge", "needs_followup": true
+
+ADEQUATE:
+  - Score the current competency (1-10) based on answer quality.
+    Use these anchors:
+      1-3: Irrelevant, refused, or no knowledge shown.
+      4-5: Generic, surface-level, no examples.
+      6-7: Adequate with some specifics but limited depth.
+      8-9: Specific, structured, quantified, excellent example.
+      10: Exceptional — rare, only for truly outstanding answers.
+  - Set "covered": true for this competency ONLY if score >= 5.
+  - Increment question_count for this competency.
+  - Extract any new project/technology/skill claims and add to resume_claims (avoid duplicates).
+  - Extract the 1-3 word topic of this exchange and add to covered_topics (avoid duplicates).
+  - Append 1-2 bullet points summarizing new facts to interview_summary. Do NOT delete existing bullets.
+  - Move to NEXT uncovered competency in competency_path: ${nextCompetency}
+  - Ask a fresh, specific question on that competency. Do NOT revisit any topic in covered_topics.
+  - "last_question_type": "new_topic", "needs_followup": false
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ANTI-REPETITION — ABSOLUTE RULE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Questions already asked (do NOT ask anything similar):
+${canonicalAskedQuestions.map((q, i) => `  Q${i + 1}: "${q}"`).join('\n')}
+
+Topics already covered (do NOT revisit at topic level):
+${JSON.stringify(memory.covered_topics)}
+
+QUESTION RULES:
+- 2 to 3 sentences maximum
+- Conversational — like a real recruiter speaking, not reading a form
+- No bullet points, no multi-part questions, no lengthy preamble
+
+INTERVIEW COMPLETION:
+Set "interview_complete": true ONLY when:
+  - All 6 competencies have "covered": true AND >= 8 questions asked
+  - OR >= 15 questions asked
+  - Do NOT end interview when "needs_followup": true (always resolve follow-ups first)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Return ONLY valid JSON (no markdown, no explanation):
 {
-  "question": "2-3 sentence question on a NEW topic not covered above",
-  "interviewer_thought": "Brief reason for asking this (shown to candidate as context)",
+  "question": "your 2-3 sentence response/question",
+  "interviewer_thought": "1 sentence: why you chose this response",
+  "answer_classification": "ADEQUATE|OFF_TOPIC|EVASIVE|INAPPROPRIATE|TOO_SHORT|RAMBLING|VAGUE_CLAIM|CONTRADICTION",
   "session_memory": {
-    "interview_summary": "Update this running summary with 1-2 new bullet points capturing specific facts or technical concepts the candidate just mentioned, so you don't ask about them again.",
-    "competencies": { "communication": { "score": 0, "covered": false, "question_count": 0 }, "resume_validation": { "score": 0, "covered": false, "question_count": 0 }, "technical_knowledge": { "score": 0, "covered": false, "question_count": 0 }, "problem_solving": { "score": 0, "covered": false, "question_count": 0 }, "behavioral": { "score": 0, "covered": false, "question_count": 0 }, "culture_fit": { "score": 0, "covered": false, "question_count": 0 } },
-    "asked_questions": ${JSON.stringify([...canonicalAskedQuestions, "<your_next_question_text>"])},
-    "current_competency": "next_competency_name"
+    "interview_summary": "Updated summary — append new bullet points from this turn only",
+    "competencies": {
+      "communication":       { "score": 0, "covered": false, "question_count": 0 },
+      "resume_validation":   { "score": 0, "covered": true,  "question_count": 1 },
+      "technical_knowledge": { "score": 0, "covered": false, "question_count": 0 },
+      "problem_solving":     { "score": 0, "covered": false, "question_count": 0 },
+      "behavioral":          { "score": 0, "covered": false, "question_count": 0 },
+      "culture_fit":         { "score": 0, "covered": false, "question_count": 0 }
+    },
+    "professionalism":          { "score": ${memory.professionalism.score}, "deductions": ${memory.professionalism.deductions} },
+    "asked_questions":          ${JSON.stringify([...canonicalAskedQuestions, "<your_question_text>"])},
+    "covered_topics":           ${JSON.stringify(memory.covered_topics)},
+    "resume_claims":            ${JSON.stringify(memory.resume_claims)},
+    "contradictions_detected":  ${JSON.stringify(memory.contradictions_detected)},
+    "candidate_behavior_flags": ${JSON.stringify(memory.candidate_behavior_flags)},
+    "competency_path":          ${JSON.stringify(memory.competency_path)},
+    "session_seed":             ${memory.session_seed || 1},
+    "current_competency":       "${nextCompetency}",
+    "last_question_type":       "new_topic",
+    "needs_followup":           false
   },
   "interview_complete": false
 }`;
 
     let result;
     try {
-      if (!client) {
-        throw new Error('Anthropic client is not initialized (missing API key)');
-      }
-      const message = await retryClaudeCall(() =>
-        client.messages.create({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1200,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      );
+      if (!client) throw new Error('Anthropic client not initialized');
 
-      // Track token usage
+      let message;
+      if (resume_base64 && resume_base64.length > 100) {
+        message = await retryClaudeCall(() =>
+          client.messages.create({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 1400,
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'text', text: prompt },
+                { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: resume_base64 } },
+              ],
+            }],
+          })
+        );
+      } else {
+        message = await retryClaudeCall(() =>
+          client.messages.create({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 1400,
+            messages: [{ role: 'user', content: prompt }],
+          })
+        );
+      }
+
       await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
-      const text = message.content[0].text
-        .replace(/```json/g, '')
-        .replace(/```/g, '')
-        .trim();
+      const text = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       const cleanText = jsonMatch ? jsonMatch[0] : text;
-      
-      console.log('Claude response:', text);
-      
+
+      console.log('Claude continue response:', text.substring(0, 500));
+
       try {
         result = JSON.parse(cleanText);
-        
-        if (result.session_memory && result.session_memory.competencies) {
+
+        // Normalize competency scores
+        if (result.session_memory?.competencies) {
           Object.keys(result.session_memory.competencies).forEach(key => {
             const comp = result.session_memory.competencies[key];
             comp.score = safeInt(comp.score, 0);
@@ -346,64 +540,64 @@ Return ONLY valid JSON:
           });
         }
 
+        // Normalize professionalism (ensure Claude didn't go below 0 or above 10)
+        if (result.session_memory?.professionalism) {
+          result.session_memory.professionalism.score = Math.max(0, Math.min(10, result.session_memory.professionalism.score || 0));
+        }
+
       } catch (parseError) {
-        console.error('JSON parse error in smart-interview continue:', parseError);
-        console.error('Raw text:', text);
-
-        // Rotating fallback questions per uncovered competency to avoid loops
+        console.error('JSON parse error in continue:', parseError, 'Raw:', text);
+        // Rotating fallback per uncovered competency
         const fallbackByCompetency = {
-          technical_knowledge: `Can you walk me through a technical problem you solved recently and how you approached it?`,
-          problem_solving: `If you had to design a simple URL shortener service, what components would you include and why?`,
-          behavioral: `Tell me about a time you had to meet a tight deadline. How did you manage your work?`,
-          culture_fit: `What kind of work environment helps you do your best, and why?`,
-          communication: `How do you usually explain a complex technical concept to someone who isn't technical?`,
-          resume_validation: `Which project on your resume are you most proud of, and what was your specific contribution?`
+          technical_knowledge: `Can you walk me through a technical problem you solved recently and describe your thought process?`,
+          problem_solving:     `If you had to design a simple caching system for a web application, what approach would you take?`,
+          behavioral:          `Tell me about a time you had a tight deadline. How did you manage your time to deliver on time?`,
+          culture_fit:         `What kind of work environment brings out your best work, and why?`,
+          communication:       `How do you typically explain a complex technical concept to a non-technical stakeholder?`,
+          resume_validation:   `Which project on your resume are you most proud of, and what was your specific contribution?`,
         };
-
-        const nextCompetency = uncoveredCompetencies[0] || 'behavioral';
-        const fallbackQ = fallbackByCompetency[nextCompetency] ||
-          `What interests you most about the ${job_role} role and why did you apply?`;
-
-        const newQuestionsList = [...canonicalAskedQuestions, fallbackQ];
+        const fb = fallbackByCompetency[nextCompetency] || `What interests you most about the ${job_role} role?`;
         result = {
-          question: fallbackQ,
-          interviewer_thought: `Exploring ${nextCompetency.replace('_', ' ')} competency.`,
+          question: fb,
+          interviewer_thought: `Exploring ${nextCompetency.replace(/_/g, ' ')} competency.`,
+          answer_classification: 'ADEQUATE',
           session_memory: {
             ...memory,
-            asked_questions: newQuestionsList,
-            current_competency: nextCompetency
+            asked_questions: [...canonicalAskedQuestions, fb],
+            current_competency: nextCompetency,
+            last_question_type: 'new_topic',
+            needs_followup: false,
           },
-          interview_complete: canonicalAskedQuestions.length >= 10
+          interview_complete: canonicalAskedQuestions.length >= 14,
         };
       }
     } catch (claudeError) {
-      console.warn('⚠️ smart-interview continue Claude API failed, using mock continue fallback:', claudeError.message);
-      const currentCount = memory.asked_questions ? memory.asked_questions.length : 0;
+      console.warn('Continue Claude call failed:', claudeError.message);
+      const currentCount = canonicalAskedQuestions.length;
       const fallbackQuestions = [
-        "That's interesting. Can you tell me about a time you had to learn a new tool or technology quickly to solve a problem?",
-        "How do you handle working in a team when there is a disagreement on the technical approach or implementation details?",
-        "Could you describe a situation where you had a tight deadline and how you managed your time to deliver on time?",
-        "If you were given a completely unfamiliar codebase, what steps would you take to understand it and start contributing?",
-        "What are your long-term career goals, and how do you see this specific role helping you achieve them?",
-        "Do you have any questions for me about the company or the role?"
+        `That's helpful context. Can you describe a time you had to learn a new skill quickly under pressure?`,
+        `How do you handle technical disagreements with teammates on implementation decisions?`,
+        `Could you walk me through how you approach debugging a problem you've never seen before?`,
+        `What long-term goals do you have, and how does this ${job_role} role fit into them?`,
+        `Do you have any questions for me about the team or the role?`,
       ];
       const nextQ = fallbackQuestions[currentCount % fallbackQuestions.length];
-      const isComplete = currentCount >= 9;
-
-      const newQuestionsList = [...canonicalAskedQuestions, nextQ];
       result = {
         question: nextQ,
-        interviewer_thought: "Assessing behavioral traits, team collaboration, and adaptability to new tasks.",
+        interviewer_thought: 'Continuing interview with behavioral question.',
+        answer_classification: 'ADEQUATE',
         session_memory: {
           ...memory,
-          asked_questions: newQuestionsList,
-          current_competency: "behavioral"
+          asked_questions: [...canonicalAskedQuestions, nextQ],
+          current_competency: nextCompetency,
+          last_question_type: 'new_topic',
+          needs_followup: false,
         },
-        interview_complete: isComplete
+        interview_complete: currentCount >= 9,
       };
     }
 
-    // Server-side: ensure the new question was actually appended to asked_questions
+    // Server-side: ensure question is in asked_questions
     if (result.session_memory && result.question) {
       const existing = result.session_memory.asked_questions || canonicalAskedQuestions;
       if (!existing.includes(result.question)) {
@@ -411,206 +605,199 @@ Return ONLY valid JSON:
       }
     }
 
-    console.log('📋 Asked so far:', result.session_memory?.asked_questions?.length, 'questions');
+    console.log(`📋 Asked: ${result.session_memory?.asked_questions?.length} | Classification: ${result.answer_classification} | Needs followup: ${result.session_memory?.needs_followup}`);
     return Response.json(result);
   }
 
-  // ACTION 3: Final evaluation
+  // ══════════════════════════════════════════════════════════════════════════
+  // ACTION 3: EVALUATE
+  // ══════════════════════════════════════════════════════════════════════════
   if (action === 'evaluate') {
-    const memory = session_memory || {
-      interview_summary: "Interview completed.",
-      competencies: {},
-      asked_questions: []
-    };
+    const memory = session_memory || { interview_summary: 'Interview completed.', competencies: {}, asked_questions: [], candidate_behavior_flags: [], contradictions_detected: [] };
 
-    console.log('Final evaluation requested. Memory keys:', Object.keys(memory));
+    console.log('Final evaluation. Memory keys:', Object.keys(memory));
 
-    // Since we no longer generate per-question analysis, we rely entirely on conversation_history
+    // Context window management: use full history for evaluation (it's final, latency is acceptable)
     const historyText = conversation_history && conversation_history.length > 0
-      ? conversation_history.map((h, i) => `${h.role === 'interviewer' ? 'Q' : 'A'}: ${h.message}`).join('\n\n')
-      : "No conversation history available.";
+      ? conversation_history.map(h => `${h.role === 'interviewer' ? 'INTERVIEWER' : 'CANDIDATE'}: ${h.message}`).join('\n\n')
+      : 'No conversation history available.';
 
-    const prompt = `You are an expert hiring manager and technical interviewer evaluating a candidate for the role: ${job_role}.
+    const behaviorFlags = memory.candidate_behavior_flags || [];
+    const contradictions = memory.contradictions_detected || [];
+
+    const prompt = `You are an expert hiring manager evaluating a candidate for the role: ${job_role}.
 
 FULL INTERVIEW TRANSCRIPT:
 ${historyText}
 
-SESSION SUMMARY (AI Notes):
-${JSON.stringify(memory.interview_summary || "None")}
+SESSION NOTES (AI observations):
+Interview Summary: ${JSON.stringify(memory.interview_summary || 'None')}
+Contradictions Detected: ${JSON.stringify(contradictions)}
+Candidate Behavior Flags: ${JSON.stringify(behaviorFlags)}
 
-TARGET AUDIENCE CALIBRATION (CRITICAL):
-- Candidates are Tier 2/3 college students, freshers, or early career applicants. DO NOT compare them to senior engineers.
-- Reward logical reasoning, effort, fundamental understanding, and coachability.
-- Evaluate the ACTUAL content of their answers. If the answers are short, generic, or lack detail, they MUST receive low scores (e.g., 3-5). If the answers are structured, specific, and demonstrate clear understanding, they should receive high scores (e.g., 7-9).
-- Differentiate strongly between weak, average, and strong candidates. Do not default to giving everyone a 7.
+TARGET CALIBRATION (CRITICAL):
+- Candidates are Tier 2/3 college students, freshers, or early-career applicants. Do NOT benchmark against senior engineers.
+- Reward logical reasoning, effort, fundamentals, and coachability.
+- Evaluate ACTUAL answer content from the transcript. Short, generic, or vague answers MUST receive low scores.
+- You MUST differentiate: do not cluster scores — if performance varied, scores must vary.
 
-SCORING DIMENSIONS (Evaluate each INDEPENDENTLY from 1-10):
-1. communication: Clarity, structure, and ability to articulate thoughts (don't penalize accents heavily).
-2. technical_knowledge: Accuracy, depth, and correctness of technical concepts mentioned.
-3. resume_jd_fit: How well their experiences align with the role ${job_role}.
-4. confidence: Certainty and delivery tone.
-5. answer_quality: Depth of detail, use of examples (e.g., STAR method).
-6. problem_solving: Logical approach to answering hypothetical or structural questions.
+SCORE ANCHOR DEFINITIONS — use these precisely, do not deviate:
+  1-3 (Poor):       Answer was irrelevant, refused, or demonstrated no knowledge.
+  4-5 (Weak):       Generic, surface-level. No examples, no specifics, no structure.
+  6-7 (Average):    Adequate, some specifics, reasonable structure but limited depth.
+  8-9 (Strong):     Specific, structured (STAR or equivalent), quantified where applicable.
+  10 (Exceptional): Rare. Only for genuinely outstanding, professional-grade responses.
+
+SCORING DIMENSIONS (evaluate each dimension INDEPENDENTLY from 1-10):
+1. communication:       Clarity, structure, and ability to articulate thoughts. Do not penalize accent. Do penalize incoherence or constant off-topic rambling.
+2. technical_knowledge: Accuracy, depth, and correctness of technical concepts demonstrated.
+3. resume_jd_fit:       How well their stated experiences align with JD requirements for ${job_role}.
+4. confidence:          Certainty and conviction in delivery. Evasiveness = low confidence.
+5. answer_quality:      Depth of detail, use of concrete examples, structure (STAR method encouraged).
+6. problem_solving:     Logical, structured approach to hypothetical or analytical questions.
+7. professionalism:     Start at 10. Deduct for: off-topic answers (−1 each), inappropriate language (−2 each), repeated question avoidance (−1 each), contradictions caught (−1 each).
+   Behavior flags to consider: ${JSON.stringify(behaviorFlags)}
+   Contradictions: ${JSON.stringify(contradictions)}
+
+For each score, include a brief "justification": one sentence quoting or paraphrasing what specifically in the transcript drove this score.
 
 FEEDBACK GUIDELINES:
-- Identify recurring patterns. Don't just summarize what they said. Instead, write e.g., "You consistently struggled to provide concrete examples when asked about past projects."
-- Strengths and Weaknesses must be highly specific to what was said in the transcript.
+- Strengths and Weaknesses must be specific to what was said in the transcript.
+- Identify RECURRING patterns, not one-off moments. Example: "You consistently gave vague answers when asked about your project contributions."
+- key_takeaways: 3-4 sentences on overall readiness, main pattern of mistakes, and the single most important thing to practice.
 
-Provide evaluation strictly in JSON format:
+Return ONLY valid JSON:
 {
   "placement_chance": 75,
   "verdict": "Strong Hire / Hire / Strong Maybe / Weak Maybe / Not Hire",
   "overall_score": 7,
   "scores": {
-    "communication": 7,
-    "technical_knowledge": 7,
-    "resume_jd_fit": 7,
-    "confidence": 7,
-    "answer_quality": 7,
-    "problem_solving": 7
+    "communication":       { "score": 7, "justification": "..." },
+    "technical_knowledge": { "score": 7, "justification": "..." },
+    "resume_jd_fit":       { "score": 7, "justification": "..." },
+    "confidence":          { "score": 7, "justification": "..." },
+    "answer_quality":      { "score": 7, "justification": "..." },
+    "problem_solving":     { "score": 7, "justification": "..." },
+    "professionalism":     { "score": 10, "justification": "..." }
   },
   "summary": {
-    "strengths": ["specific strength 1 based on transcript", "specific strength 2"],
+    "strengths": ["specific strength 1 from transcript", "specific strength 2"],
     "weaknesses": ["specific recurring weakness or knowledge gap"],
-    "key_takeaways": "3-4 sentences highlighting their overall readiness, main pattern of mistakes, and the most critical thing to practice."
+    "key_takeaways": "3-4 sentences on readiness, main patterns, and what to practice."
   },
   "career_insights": {
     "market_fit": "High/Medium/Low",
-    "salary_range": "estimated fresher salary range in Indian Rupees (₹), e.g. ₹4-7 LPA",
+    "salary_range": "₹X-Y LPA (fresher estimate for ${job_role})",
     "growth_potential": "High/Medium/Low",
     "recommended_roles": ["role 1", "role 2"]
   }
-}
-
-Return ONLY the JSON, no other text. Be FAIR and ENCOURAGING. Only penalize for gaps relevant to THIS JD. Focus on POTENTIAL. Use Indian Rupees (₹) for salary range.`;
-
-    console.log('📝 Prompt length:', prompt.length);
-    console.log('📝 History length:', historyText.length);
-    console.log('📝 Number of Q&A pairs:', conversation_history.length);
+}`;
 
     try {
-      if (!client) {
-        throw new Error('Anthropic client is not initialized (missing API key)');
-      }
-      if (prompt.length > 15000) {
-        console.error('⚠️ Prompt too long, truncating...');
-        // Truncate history if too long
-        const truncatedHistory = historyText.substring(0, 8000);
-        const truncatedPrompt = prompt.replace(historyText, truncatedHistory);
-        console.log('📝 Truncated prompt length:', truncatedPrompt.length);
-      }
+      if (!client) throw new Error('Anthropic client not initialized');
 
       const message = await retryClaudeCall(() =>
         client.messages.create({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1500,
-          messages: [{ role: 'user', content: prompt }]
+          max_tokens: 1800,
+          messages: [{ role: 'user', content: prompt }],
         })
       );
 
-      // Track token usage
       await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
-      console.log('✅ Claude API final evaluation call successful');
-      
-      const text = message.content[0].text
-        .replace(/```json/g, '')
-        .replace(/```/g, '')
-        .trim();
+      const text = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       const cleanText = jsonMatch ? jsonMatch[0] : text;
-      
-      console.log('Cleaned text:', cleanText);
-      
+
+      console.log('Evaluate response:', cleanText.substring(0, 400));
+
       try {
         const parsed = JSON.parse(cleanText);
-        
-        // Clean final scores
+
+        // Normalize scores — handle both {score, justification} objects and plain numbers
         parsed.overall_score = safeInt(parsed.overall_score);
         let rawChance = parseInt(parsed.placement_chance, 10);
-        if (isNaN(rawChance)) {
-          rawChance = 60;
-        }
-        if (rawChance <= 10) {
-          rawChance = rawChance * 10;
-        }
+        if (isNaN(rawChance)) rawChance = 60;
+        if (rawChance <= 10) rawChance = rawChance * 10;
         parsed.placement_chance = Math.max(0, Math.min(100, rawChance));
-        
+
         if (parsed.scores) {
-          Object.keys(parsed.scores).forEach(k => {
-            parsed.scores[k] = safeInt(parsed.scores[k]);
+          const flatScores = {};
+          Object.entries(parsed.scores).forEach(([k, v]) => {
+            if (typeof v === 'object' && v !== null && 'score' in v) {
+              flatScores[k] = safeInt(v.score);
+            } else {
+              flatScores[k] = safeInt(v);
+            }
           });
+
+          // Server-side score variance check
+          checkScoreVariance(flatScores);
+
+          // Re-attach justifications
+          if (typeof Object.values(parsed.scores)[0] === 'object') {
+            Object.keys(parsed.scores).forEach(k => {
+              if (typeof parsed.scores[k] === 'object') {
+                parsed.scores[k].score = flatScores[k];
+              } else {
+                parsed.scores[k] = flatScores[k];
+              }
+            });
+          } else {
+            parsed.scores = flatScores;
+          }
         }
-        
-        // Re-attach the question-by-question analysis from memory
-        // We removed question_analysis to save tokens, so it will be an empty array
+
         parsed.question_analysis = [];
-        
         return Response.json(parsed);
+
       } catch (parseError) {
-        console.error('JSON parse error in smart-interview evaluate:', parseError);
-        console.error('Raw text that failed to parse:', text);
-        
-        // Fallback evaluation object
+        console.error('JSON parse error in evaluate:', parseError, 'Raw:', text);
         return Response.json({
           placement_chance: 65,
-          verdict: "Hire",
-          overall_score: 7,
+          verdict: 'Hire',
+          overall_score: 6,
           scores: {
-            communication: 7,
-            technical_knowledge: 7,
-            resume_jd_fit: 7,
-            confidence: 7,
-            answer_quality: 7,
-            problem_solving: 7
+            communication: 6, technical_knowledge: 6, resume_jd_fit: 6,
+            confidence: 6, answer_quality: 6, problem_solving: 6, professionalism: 8,
           },
           summary: {
-            strengths: ["Completed the mock interview", "Showed interest and effort"],
-            weaknesses: ["Analysis report generated with minor errors"],
-            key_takeaways: "Good effort shown. The detailed evaluation has been parsed."
+            strengths: ['Completed the mock interview', 'Showed interest and effort'],
+            weaknesses: ['Evaluation report encountered a minor parsing issue'],
+            key_takeaways: 'Good effort shown. Re-run the interview for a more detailed breakdown.',
           },
           question_analysis: [],
           career_insights: {
-            market_fit: "Medium",
-            salary_range: "₹3.5-6 LPA (Entry level)",
-            growth_potential: "High",
-            recommended_roles: [job_role]
-          }
+            market_fit: 'Medium',
+            salary_range: '₹3.5-6 LPA (Entry level)',
+            growth_potential: 'High',
+            recommended_roles: [job_role],
+          },
         });
       }
     } catch (claudeError) {
-      console.warn('⚠️ smart-interview evaluate Claude API failed, using mock evaluate fallback:', claudeError.message);
+      console.warn('Evaluate Claude call failed:', claudeError.message);
       return Response.json({
-        placement_chance: 70,
-        verdict: "Hire",
-        overall_score: 7,
+        placement_chance: 65,
+        verdict: 'Hire',
+        overall_score: 6,
         scores: {
-          communication: 7,
-          technical_knowledge: 7,
-          resume_jd_fit: 7,
-          confidence: 7,
-          answer_quality: 7,
-          problem_solving: 7
+          communication: 7, technical_knowledge: 6, resume_jd_fit: 6,
+          confidence: 7, answer_quality: 5, problem_solving: 6, professionalism: 8,
         },
         summary: {
-          strengths: ["Completed the full interview", "Showed structured communication and professional approach"],
-          weaknesses: ["Some answers could be more detailed", "AI detailed analysis is temporarily offline"],
-          key_takeaways: "Good overall performance. Focus on providing specific STAR-method examples in your future interviews."
+          strengths: ['Completed the full interview', 'Demonstrated structured communication'],
+          weaknesses: ['Some answers lacked depth and concrete examples'],
+          key_takeaways: 'Good overall participation. Practice using the STAR method when answering behavioral questions.',
         },
-        question_analysis: (conversation_history || []).map((h, i) => ({
-          question_number: i + 1,
-          question: h.question || "Interview Question",
-          answer_quality: "Answer was relevant. AI evaluation was completed.",
-          score: 7,
-          what_did_well: ["Relevant answer structure"],
-          what_to_improve: ["Provide more quantitative examples"]
-        })),
+        question_analysis: [],
         career_insights: {
-          market_fit: "High",
-          salary_range: "₹4 - 8 LPA",
-          growth_potential: "High",
-          recommended_roles: [job_role || "Software Engineer"]
-        }
+          market_fit: 'Medium',
+          salary_range: '₹4-7 LPA',
+          growth_potential: 'High',
+          recommended_roles: [job_role || 'Software Engineer'],
+        },
       });
     }
   }

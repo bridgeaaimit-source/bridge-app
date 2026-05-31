@@ -188,7 +188,6 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
           const msg = JSON.parse(e.data);
           if (msg.message_type === 'PartialTranscript' && msg.text) {
             setInterimTranscript(msg.text);
-            updateStats((finalRef.current + ' ' + msg.text).trim());
             clearTimeout(silenceTimer.current);
             silenceTimer.current = setTimeout(() => {
               if (isRecordingRef.current && finalRef.current.length > 20) {
@@ -286,7 +285,6 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
         }, 6000);
       } else if (interimText) {
         setInterimTranscript(interimText);
-        updateStats((finalRef.current + ' ' + interimText).trim());
       }
     };
 
@@ -442,7 +440,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
     isConnecting,
     transcript,
     interimTranscript,
-    fullTranscript: transcript || interimTranscript,
+    fullTranscript: (transcript + (transcript && interimTranscript ? ' ' : '') + interimTranscript).trim(),
     wordCount,
     fillerWords,
     fillerWordCounts,
