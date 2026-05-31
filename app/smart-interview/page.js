@@ -75,7 +75,13 @@ function CameraTest({ onResult }) {
     }
   }, [onResult, selectedDevice]);
 
-  useEffect(() => { startCamera(); return () => stopStream(); }, []);
+  useEffect(() => {
+    const t = setTimeout(() => { startCamera(); }, 0);
+    return () => {
+      clearTimeout(t);
+      stopStream();
+    };
+  }, [startCamera]);
 
   const handleDeviceChange = (e) => {
     setSelectedDevice(e.target.value);
@@ -178,7 +184,13 @@ function MicTest({ onResult }) {
     }
   }, [onResult]);
 
-  useEffect(() => { startMic(); return () => stopAll(); }, []);
+  useEffect(() => {
+    const t = setTimeout(() => { startMic(); }, 0);
+    return () => {
+      clearTimeout(t);
+      stopAll();
+    };
+  }, [startMic]);
 
   return (
     <div className="bg-white rounded-2xl border border-teal-100 shadow-sm overflow-hidden">
@@ -281,7 +293,7 @@ function VoiceTest({ onResult, selectedLang, onLangChange }) {
       </div>
       <div className="p-5 space-y-3">
         <div className="bg-teal-50/50 border border-teal-100 rounded-xl p-3 text-xs font-medium text-teal-800">
-          "{TEST_SENTENCE}"
+          {"\"" + TEST_SENTENCE + "\""}
         </div>
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 min-h-[50px] text-xs">
           {heard || interimText ? (
@@ -822,6 +834,7 @@ export default function SmartInterviewPage() {
         clearInterval(speakingIntervalRef.current);
         speakingIntervalRef.current = null;
       }
+      setSpeakingTime(0);
     }
     return () => {
       if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
@@ -830,7 +843,7 @@ export default function SmartInterviewPage() {
 
   // Invisible silence detector: triggers after 7 seconds of speech silence
   useEffect(() => {
-    if (stage !== 'interviewing' || !isRecording || showCompletionModal || isThinking) return;
+    if (stage !== 'interviewing' || !isRecording || showCompletionModal || isThinking || isTyping) return;
 
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
 
@@ -846,7 +859,7 @@ export default function SmartInterviewPage() {
     return () => {
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     };
-  }, [transcript, interimTranscript, isRecording, stage, wordCount, showCompletionModal, isThinking]);
+  }, [transcript, interimTranscript, isRecording, stage, wordCount, showCompletionModal, isThinking, isTyping]);
 
   // Auto-submit countdown (5 seconds, hidden from UI)
   useEffect(() => {
@@ -882,7 +895,9 @@ export default function SmartInterviewPage() {
 
   const handleNextQuestionManual = () => {
     if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     setShowCompletionModal(false);
+    stopRecordingState();
     submitAnswer(fullTranscript || interimTranscript || currentAnswer);
   };
 
@@ -1052,12 +1067,21 @@ export default function SmartInterviewPage() {
     }
 
     setIsTyping(true);
+    stopRecordingState(); // Ensure recording stops immediately
 
     if (speakingIntervalRef.current) {
       clearInterval(speakingIntervalRef.current);
       speakingIntervalRef.current = null;
     }
+    
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
+    setShowCompletionModal(false);
       
+    const updatedHistory = answer.trim()
+      ? [...conversationHistory, { role: 'user', message: answer }]
+      : conversationHistory;
+
     if (answer.trim()) {
       setConversationHistory(prev => [
         ...prev,
@@ -1070,7 +1094,7 @@ export default function SmartInterviewPage() {
       setCurrentAnswer('');
       clearTranscript();
       toast.success('Interview finished! Generating feedback...');
-      await getFeedback(sessionMemory);
+      await getFeedback(sessionMemory, updatedHistory);
       return;
     }
 
@@ -1120,7 +1144,7 @@ export default function SmartInterviewPage() {
 
       if (data.interview_complete) {
         toast.success('Interview completed! Generating feedback...');
-        await getFeedback(updatedMemory);
+        await getFeedback(updatedMemory, updatedHistory);
       } else if (data.question) {
         setCurrentQuestion(data.question);
         setInterviewerThought(data.interviewer_thought || '');
@@ -1140,7 +1164,7 @@ export default function SmartInterviewPage() {
           setThinkingTimeLeft(5);
         }
       } else {
-        await getFeedback(updatedMemory);
+        await getFeedback(updatedMemory, updatedHistory);
       }
       
     } catch (error) {
@@ -1158,8 +1182,9 @@ export default function SmartInterviewPage() {
     }
   };
 
-  const getFeedback = async (memoryObj) => {
+  const getFeedback = async (memoryObj, historyOverride) => {
     setIsEvaluating(true);
+    const historyToUse = historyOverride || conversationHistory;
 
     try {
       const response = await fetch('/api/smart-interview', {
@@ -1173,6 +1198,7 @@ export default function SmartInterviewPage() {
           jd: jobDescription,
           round,
           session_memory: memoryObj,
+          conversation_history: historyToUse,
           user_id: auth.currentUser?.uid || 'test-user-123'
         }),
       });
@@ -1215,7 +1241,7 @@ export default function SmartInterviewPage() {
                 integrityScore,
                 violations
               },
-              conversationHistory: conversationHistory,
+              conversationHistory: historyToUse,
               timestamp: new Date().toISOString(),
               createdAt: Date.now()
             });
@@ -1232,7 +1258,7 @@ export default function SmartInterviewPage() {
                 integrityScore,
                 violations
               },
-              conversationHistory: conversationHistory,
+              conversationHistory: historyToUse,
               timestamp: new Date().toISOString(),
               createdAt: Date.now()
             });
@@ -1385,7 +1411,7 @@ export default function SmartInterviewPage() {
                     ) : (
                       <>
                         <p className="font-bold text-gray-700 mb-1">Upload your Resume</p>
-                        <p className="text-sm text-gray-400 max-w-xs">Drag & drop your PDF or DOCX here. We'll tailor questions to your experience.</p>
+                        <p className="text-sm text-gray-400 max-w-xs">Drag & drop your PDF or DOCX here. {"We'll"} tailor questions to your experience.</p>
                       </>
                     )}
                     <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} className="hidden" id="resume-upload" />
@@ -1518,7 +1544,7 @@ export default function SmartInterviewPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-green-950 text-lg">Setup Verified!</h3>
-                  <p className="text-xs text-green-700">Everything is working correctly. You're ready to start!</p>
+                  <p className="text-xs text-green-700">Everything is working correctly. {"You're"} ready to start!</p>
                 </div>
                 <button
                   onClick={() => {
@@ -1946,93 +1972,7 @@ export default function SmartInterviewPage() {
                 </div>
               )}
 
-              {/* Question-by-Question Analysis */}
-              {feedback.question_analysis && feedback.question_analysis.length > 0 && (
-                <div className="bg-white rounded-2xl p-6 shadow-[0_4px_20px_rgba(13,148,136,0.06)] border border-gray-100">
-                  <h3 className="font-bold text-[#0D9488] mb-6 text-lg flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
-                    <History className="w-5 h-5" />
-                    Question-by-Question Analysis
-                  </h3>
-                  <div className="space-y-6">
-                    {feedback.question_analysis.map((qa, index) => (
-                      <div key={index} className="border border-teal-100 bg-[#F0FDFA]/20 rounded-xl p-5 md:p-6 space-y-4 animate-fade-in">
-                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3 border-b border-teal-100/50">
-                          <div>
-                            <span className="text-[10px] font-bold text-[#0D9488] uppercase tracking-wide">Question Asked</span>
-                            <h4 className="text-sm font-semibold text-gray-800 mt-0.5 leading-relaxed">{qa.question}</h4>
-                          </div>
-                          <div className="bg-white border border-[#CCFBF1] rounded-xl px-4 py-2 text-center shadow-sm self-start sm:self-auto min-w-[70px]">
-                            <span className="text-[9px] text-gray-400 font-medium uppercase">Score</span>
-                            <p className="text-xl font-bold text-[#0D9488] leading-none mt-0.5">{qa.score}<span className="text-xs text-gray-400">/10</span></p>
-                          </div>
-                        </div>
-
-                        <div>
-                          <span className="text-[10px] font-bold text-[#0D9488] uppercase tracking-wide">Candidate Response</span>
-                          <p className="text-xs text-gray-700 mt-1 italic bg-white p-3 rounded-lg border border-gray-100 leading-relaxed">
-                            {qa.answer ? `"${qa.answer}"` : "[No response recorded]"}
-                          </p>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {qa.what_did_well && qa.what_did_well.length > 0 && (
-                            <div className="bg-green-50/50 border border-green-100 rounded-xl p-4">
-                              <span className="text-[10px] font-bold text-green-700 uppercase tracking-wide flex items-center gap-1.5 mb-2">
-                                <CheckCircle className="w-3.5 h-3.5" /> What You Did Well
-                              </span>
-                              <ul className="space-y-1.5">
-                                {qa.what_did_well.map((item, i) => (
-                                  <li key={i} className="text-xs text-green-700 leading-relaxed">• {item}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {qa.what_to_improve && qa.what_to_improve.length > 0 && (
-                            <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-4">
-                              <span className="text-[10px] font-bold text-orange-700 uppercase tracking-wide flex items-center gap-1.5 mb-2">
-                                <Target className="w-3.5 h-3.5" /> What to Improve
-                              </span>
-                              <ul className="space-y-1.5">
-                                {qa.what_to_improve.map((item, i) => (
-                                  <li key={i} className="text-xs text-orange-700 leading-relaxed">• {item}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-
-                        {qa.better_sample_answer && (
-                          <div className="bg-teal-50/40 border border-teal-100 rounded-xl p-4">
-                            <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wide flex items-center gap-1.5 mb-2">
-                              <Lightbulb className="w-3.5 h-3.5" /> Better Sample Answer
-                            </span>
-                            <p className="text-xs text-teal-900 leading-relaxed bg-white/70 p-3 rounded-lg border border-teal-100/50 font-medium">
-                              {qa.better_sample_answer}
-                            </p>
-                          </div>
-                        )}
-
-                        {qa.dimension_scores && (
-                          <div className="pt-2">
-                            <span className="text-[10px] font-bold text-[#0D9488] uppercase tracking-wide mb-3 block">Dimension Scores</span>
-                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                              {Object.entries(qa.dimension_scores).map(([dim, val]) => (
-                                <div key={dim} className="bg-white rounded-lg p-2.5 border border-gray-100 text-center">
-                                  <span className="text-[9px] text-gray-400 capitalize block mb-1">{dim.replace('_', ' ')}</span>
-                                  <span className="text-xs font-bold text-[#0D9488]">{val}/10</span>
-                                  <div className="w-full bg-gray-100 rounded-full h-1 mt-1.5">
-                                    <div className="bg-[#0D9488] h-1 rounded-full" style={{width: `${val * 10}%`}} />
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Question-by-Question Analysis Removed - Token Optimization */}
 
               {/* Career Insights */}
               {feedback.career_insights && (
