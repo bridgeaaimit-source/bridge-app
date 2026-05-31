@@ -132,6 +132,20 @@ export default function GDPage() {
 
       const docRef = await addDoc(collection(db, 'gdBattles'), roomData);
       
+      const response = await fetch('/api/gd-from-article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: customTopic,
+          category: 'Custom',
+          uid: auth.currentUser?.uid
+        })
+      });
+      let aiContent = null;
+      if (response.ok) {
+        aiContent = await response.json();
+      }
+      
       toast.success('Battle room created!');
       setShowCreateModal(false);
       setCustomTopic('');
