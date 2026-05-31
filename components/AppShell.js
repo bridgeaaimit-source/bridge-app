@@ -32,7 +32,7 @@ import OnboardingModal from '@/components/onboarding/OnboardingModal';
 import ProductTour from '@/components/onboarding/ProductTour';
 import HelpButton from '@/components/onboarding/HelpButton';
 
-export default function AppShell({ children }) {
+export default function AppShell({ children, hideNavigation = false }) {
   const router = useRouter();
   const pathname = usePathname();
   const [userProfile, setUserProfile] = useState(null);
@@ -211,7 +211,8 @@ export default function AppShell({ children }) {
     <div className="min-h-screen bg-[#fcf8ff] flex flex-col md:flex-row">
 
       {/* ── Mobile Top App Bar ── */}
-      <header className="md:hidden flex justify-between items-center w-full px-6 h-16 bg-white shadow-sm fixed top-0 z-40">
+      {!hideNavigation && (
+        <header className="md:hidden flex justify-between items-center w-full px-6 h-16 bg-white shadow-sm fixed top-0 z-40">
         <Link href="/dashboard">
           <img src="/images/logo_navbar_48h.png" alt="BridgeAI" className="h-8 w-auto" />
         </Link>
@@ -241,10 +242,12 @@ export default function AppShell({ children }) {
             )}
           </div>
         </div>
-      </header>
+        </header>
+      )}
 
       {/* ── Desktop Sidebar ── */}
-      <nav className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-[#f5f2ff] shadow-md z-50">
+      {!hideNavigation && (
+        <nav className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-[#f5f2ff] shadow-md z-50">
         <div className="px-5 py-5 bg-white border-b border-gray-100 flex justify-center">
           <Link href="/dashboard" className="flex items-center justify-center">
             <img src="/images/logo_navbar_48h.png" alt="BridgeAI" className="h-9 w-auto" />
@@ -293,7 +296,8 @@ export default function AppShell({ children }) {
             {isBypassed ? 'Reset Bypass' : 'Sign Out'}
           </button>
         </div>
-      </nav>
+        </nav>
+      )}
 
       {/* ── Resume Gate ── */}
       {!isBypassed && resumeUploaded === false && currentUser && (
@@ -334,7 +338,8 @@ export default function AppShell({ children }) {
       )}
 
       {/* ── Desktop Top Right Profile ── */}
-      <div className="hidden md:flex fixed top-4 right-6 z-40 items-center gap-4">
+      {!hideNavigation && (
+        <div className="hidden md:flex fixed top-4 right-6 z-40 items-center gap-4">
         <button className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-500 bg-white shadow-sm border border-gray-200">
           <Bell className="w-5 h-5" />
         </button>
@@ -363,15 +368,21 @@ export default function AppShell({ children }) {
             </div>
           )}
         </div>
-      </div>
+        </div>
+      )}
 
       {/* ── Main Content ── */}
-      <main className="flex-1 md:ml-64 pt-16 md:pt-0 pb-24 md:pb-0 min-h-screen bg-[#fcf8ff]">
+      <main className={`flex-1 min-h-screen bg-[#fcf8ff] ${
+        hideNavigation 
+          ? "w-full pt-0 pb-0 ml-0" 
+          : "md:ml-64 pt-16 md:pt-0 pb-24 md:pb-0"
+      }`}>
         {children}
       </main>
 
       {/* ── Mobile Bottom Nav ── */}
-      <nav className="md:hidden fixed bottom-0 w-full z-50 rounded-t-2xl bg-white shadow-[0_-4px_20px_rgba(0,104,95,0.1)] flex justify-around items-center h-20 px-4 border-t border-gray-100">
+      {!hideNavigation && (
+        <nav className="md:hidden fixed bottom-0 w-full z-50 rounded-t-2xl bg-white shadow-[0_-4px_20px_rgba(0,104,95,0.1)] flex justify-around items-center h-20 px-4 border-t border-gray-100">
         {mobileNav.map((item) => {
           const Icon = item.icon;
           const active = isGroupActive(item.group);
@@ -394,7 +405,8 @@ export default function AppShell({ children }) {
             </Link>
           );
         })}
-      </nav>
+        </nav>
+      )}
 
       {/* ── Onboarding Modal ── */}
       <OnboardingModal
@@ -411,7 +423,9 @@ export default function AppShell({ children }) {
       />
 
       {/* ── Floating Help Button ── */}
-      <HelpButton onStartTour={() => { setShowTour(false); setTimeout(() => setShowTour(true), 100); }} />
+      {!hideNavigation && (
+        <HelpButton onStartTour={() => { setShowTour(false); setTimeout(() => setShowTour(true), 100); }} />
+      )}
     </div>
   );
 }

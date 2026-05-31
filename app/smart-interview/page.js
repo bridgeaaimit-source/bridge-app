@@ -357,6 +357,10 @@ export default function SmartInterviewPage() {
   const [interviewerThought, setInterviewerThought] = useState('');
   const [startError, setStartError] = useState('');
 
+  // Voice command handler — say "finish interview" to end early
+  const handleVoiceCommand = (command) => {
+    if (command === 'finish') {
+      submitAnswer(undefined, true);
   // Redesign state variables:
   const [sessionMemory, setSessionMemory] = useState(null);
   
@@ -393,6 +397,27 @@ export default function SmartInterviewPage() {
 
   // Use Deepgram transcription hook with voice command support
   const {
+    isRecording = false,
+    isConnecting = false,
+    transcript = '',
+    interimTranscript = '',
+    fullTranscript = '',
+    wordCount = 0,
+    fillerWords = [],
+    fillerWordCounts = {},
+    recordingStatus = 'idle',
+    error: transcriptionError = null,
+    speechLang = 'en-IN',
+    setLang = () => {},
+    voiceCommandDetected = null,
+    resetVoiceCommand = () => {},
+    startRecording: startDeepgramRecording = () => {},
+    stopRecording: stopDeepgramRecording = () => {},
+    clearTranscript = () => {},
+    exportTranscript = () => {},
+  } = useDeepgramTranscription({ onVoiceCommand: handleVoiceCommand });
+
+  // submitAnswer uses fullTranscript in video mode too
     isRecording,
     isConnecting,
     transcript,
@@ -1542,7 +1567,7 @@ export default function SmartInterviewPage() {
     const isNextLocked = speakingTime < 10;
 
     return (
-      <AppShell>
+      <AppShell hideNavigation={true}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
             <div className="flex items-center gap-3">
