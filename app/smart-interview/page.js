@@ -369,10 +369,8 @@ export default function SmartInterviewPage() {
   const [interviewerThought, setInterviewerThought] = useState('');
   const [startError, setStartError] = useState('');
 
-  // Voice command handler — say "finish interview" to end early
-  const handleVoiceCommand = (command) => {
-    if (command === 'finish') {
-      submitAnswer(undefined, true);
+
+  
   // Redesign state variables:
   const [sessionMemory, setSessionMemory] = useState(null);
   
@@ -430,26 +428,6 @@ export default function SmartInterviewPage() {
   } = useDeepgramTranscription({ onVoiceCommand: handleVoiceCommand });
 
   // submitAnswer uses fullTranscript in video mode too
-    isRecording,
-    isConnecting,
-    transcript,
-    interimTranscript,
-    fullTranscript,
-    wordCount,
-    fillerWords,
-    fillerWordCounts,
-    recordingStatus,
-    error: transcriptionError,
-    speechLang,
-    setLang,
-    voiceCommandDetected,
-    resetVoiceCommand,
-    startRecording: startDeepgramRecording,
-    stopRecording: stopDeepgramRecording,
-    clearTranscript,
-    exportTranscript,
-  } = useDeepgramTranscription({ onVoiceCommand: handleVoiceCommand });
-
   const startRecordingState = () => {
     if (mode === 'video') {
       startVideoRecording();

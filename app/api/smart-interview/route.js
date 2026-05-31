@@ -106,7 +106,6 @@ Return ONLY valid JSON format:
       }
       let message;
       if (resume_base64) {
-        // Validate base64 data
         if (!resume_base64 || resume_base64.length < 100) {
           console.error('Invalid base64 data detected');
           return Response.json({ error: 'Invalid resume data provided' }, { status: 400 });
@@ -114,11 +113,10 @@ Return ONLY valid JSON format:
         
         console.log('Base64 data length:', resume_base64.length);
         
-        // Handle PDF resume
         message = await retryClaudeCall(() => 
           client.messages.create({
             model: 'claude-haiku-4-5-20251001',
-            max_tokens: 1000,
+            max_tokens: 1200,
             messages: [{
               role: 'user',
               content: [{
@@ -136,72 +134,52 @@ Return ONLY valid JSON format:
           })
         );
       } else {
-        // Handle text resume
         message = await retryClaudeCall(() =>
           client.messages.create({
             model: 'claude-haiku-4-5-20251001',
-            max_tokens: 1000,
+            max_tokens: 1200,
             messages: [{ role: 'user', content: prompt }]
           })
         );
       }
-    let message;
-    if (resume_base64) {
-      if (!resume_base64 || resume_base64.length < 100) {
-        console.error('Invalid base64 data detected');
-        return Response.json({ error: 'Invalid resume data provided' }, { status: 400 });
-      }
-      
-      console.log('Base64 data length:', resume_base64.length);
-      
-      message = await retryClaudeCall(() => 
-        client.messages.create({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1200,
-          messages: [{
-            role: 'user',
-            content: [{
-              type: 'text',
-              text: prompt
-            }, {
-              type: 'document',
-              source: {
-                type: 'base64',
-                media_type: 'application/pdf',
-                data: resume_base64
-              }
-            }]
-          }]
-        })
-      );
-    } else {
-      message = await retryClaudeCall(() =>
-        client.messages.create({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1200,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      );
-    }
 
       // Track token usage
       await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
       const text = message.content[0].text
-        .replace(/```json/g, '').replace(/```/g, '').trim();
-      
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const cleanText = jsonMatch ? jsonMatch[0] : text;
+
       try {
-        return Response.json(JSON.parse(text));
+        const parsed = JSON.parse(cleanText);
+        // Ensure asked_questions is synced with the first question text
+        if (parsed.session_memory && parsed.question) {
+          parsed.session_memory.asked_questions = [parsed.question];
+        }
+        return Response.json(parsed);
       } catch (parseError) {
         console.error('JSON parse error in smart-interview init:', parseError);
         console.error('Raw text:', text);
         
-        // Fallback response
         return Response.json({
-          question: "Can you walk me through one of the technical projects listed on your resume? What technologies did you use and what was your specific contribution?",
-          interviewer_thought: "Starting the interview by asking about a specific project from their resume/experience to assess practical coding and design skills.",
-          resume_highlights: ["Technical projects and practical experience", "Skills alignment with target role"],
-          interview_plan: ["Detailed project walkthrough", "Technical problem solving & concepts", "Behavioral & cultural fit"]
+          question: "Tell me about yourself and your background based on your resume.",
+          interviewer_thought: "Let's start with a general introduction based on your profile.",
+          session_memory: {
+            interview_summary: `Interview initialized for ${job_role}.`,
+            competencies: {
+              communication: { score: 0, covered: false, question_count: 0 },
+              resume_validation: { score: 0, covered: true, question_count: 1 },
+              technical_knowledge: { score: 0, covered: false, question_count: 0 },
+              problem_solving: { score: 0, covered: false, question_count: 0 },
+              behavioral: { score: 0, covered: false, question_count: 0 },
+              culture_fit: { score: 0, covered: false, question_count: 0 }
+            },
+            asked_questions: ["Tell me about yourself and your background based on your resume."],
+            current_competency: "resume_validation"
+          }
         });
       }
     } catch (claudeError) {
@@ -224,25 +202,6 @@ Return ONLY valid JSON format:
       return Response.json({
         question,
         interviewer_thought: thought,
-        resume_highlights: ["Technical projects and practical experience", "Skills alignment with target role"],
-        interview_plan: ["Detailed project walkthrough", "Technical problem solving & concepts", "Behavioral & cultural fit"]
-    const text = message.content[0].text
-      .replace(/```json/g, '').replace(/```/g, '').trim();
-    
-    try {
-      const parsed = JSON.parse(text);
-      // Ensure asked_questions is synced with the first question text
-      if (parsed.session_memory && parsed.question) {
-        parsed.session_memory.asked_questions = [parsed.question];
-      }
-      return Response.json(parsed);
-    } catch (parseError) {
-      console.error('JSON parse error in smart-interview init:', parseError);
-      console.error('Raw text:', text);
-      
-      return Response.json({
-        question: "Tell me about yourself and your background based on your resume.",
-        interviewer_thought: "Let's start with a general introduction based on your profile.",
         session_memory: {
           interview_summary: `Interview initialized for ${job_role}.`,
           competencies: {
@@ -253,7 +212,7 @@ Return ONLY valid JSON format:
             behavioral: { score: 0, covered: false, question_count: 0 },
             culture_fit: { score: 0, covered: false, question_count: 0 }
           },
-          asked_questions: ["Tell me about yourself and your background based on your resume."],
+          asked_questions: [question],
           current_competency: "resume_validation"
         }
       });
@@ -301,6 +260,11 @@ Generate the NEXT unique question based on the candidate's previous answer. DO N
 CANDIDATE PROFILE:
 - Tier 2/3 college student or fresher — reward effort, clarity, logic, and learning potential.
 - Do NOT penalize minor grammar slips or accent.
+
+ACTIVE REDIRECTION & REAL RECRUITER BEHAVIOR (CRITICAL):
+- If the candidate's answer is completely off-topic or unprofessional, your next question MUST firmly but politely redirect them back to the interview focus (e.g., "Let's bring this back to your experience with X...").
+- If their answer was incredibly brief or lacked detail, ask a specific follow-up probing for the missing depth before moving to a new topic.
+- You are a real recruiter. Respond dynamically to what they just said.
 
 COMPETENCY BLUEPRINT — cover at least 1 question per competency:
 1. communication
@@ -353,7 +317,7 @@ Return ONLY valid JSON:
       const message = await retryClaudeCall(() =>
         client.messages.create({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1000,
+          max_tokens: 1200,
           messages: [{ role: 'user', content: prompt }]
         })
       );
@@ -362,32 +326,59 @@ Return ONLY valid JSON:
       await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
       const text = message.content[0].text
-        .replace(/```json/g, '').replace(/```/g, '').trim();
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const cleanText = jsonMatch ? jsonMatch[0] : text;
       
       console.log('Claude response:', text);
       
       try {
-        result = JSON.parse(text);
+        result = JSON.parse(cleanText);
+        
+        if (result.session_memory && result.session_memory.competencies) {
+          Object.keys(result.session_memory.competencies).forEach(key => {
+            const comp = result.session_memory.competencies[key];
+            comp.score = safeInt(comp.score, 0);
+            comp.question_count = parseInt(comp.question_count, 10) || 0;
+            comp.covered = !!comp.covered;
+          });
+        }
+
       } catch (parseError) {
         console.error('JSON parse error in smart-interview continue:', parseError);
         console.error('Raw text:', text);
-        
-        // Fallback response
+
+        // Rotating fallback questions per uncovered competency to avoid loops
+        const fallbackByCompetency = {
+          technical_knowledge: `Can you walk me through a technical problem you solved recently and how you approached it?`,
+          problem_solving: `If you had to design a simple URL shortener service, what components would you include and why?`,
+          behavioral: `Tell me about a time you had to meet a tight deadline. How did you manage your work?`,
+          culture_fit: `What kind of work environment helps you do your best, and why?`,
+          communication: `How do you usually explain a complex technical concept to someone who isn't technical?`,
+          resume_validation: `Which project on your resume are you most proud of, and what was your specific contribution?`
+        };
+
+        const nextCompetency = uncoveredCompetencies[0] || 'behavioral';
+        const fallbackQ = fallbackByCompetency[nextCompetency] ||
+          `What interests you most about the ${job_role} role and why did you apply?`;
+
+        const newQuestionsList = [...canonicalAskedQuestions, fallbackQ];
         result = {
-          question: "Can you tell me more about your experience with this type of work?",
-          interviewer_thought: "Assessing behavioral traits, team collaboration, and adaptability to new tasks.",
-          answer_evaluation: {
-            score: 5,
-            was_specific: false,
-            had_examples: false,
-            quick_feedback: "Answer needs more detail"
+          question: fallbackQ,
+          interviewer_thought: `Exploring ${nextCompetency.replace('_', ' ')} competency.`,
+          session_memory: {
+            ...memory,
+            asked_questions: newQuestionsList,
+            current_competency: nextCompetency
           },
-          interview_complete: false
+          interview_complete: canonicalAskedQuestions.length >= 10
         };
       }
     } catch (claudeError) {
       console.warn('⚠️ smart-interview continue Claude API failed, using mock continue fallback:', claudeError.message);
-      const currentCount = conversation_history ? conversation_history.length : 0;
+      const currentCount = memory.asked_questions ? memory.asked_questions.length : 0;
       const fallbackQuestions = [
         "That's interesting. Can you tell me about a time you had to learn a new tool or technology quickly to solve a problem?",
         "How do you handle working in a team when there is a disagreement on the technical approach or implementation details?",
@@ -399,73 +390,16 @@ Return ONLY valid JSON:
       const nextQ = fallbackQuestions[currentCount % fallbackQuestions.length];
       const isComplete = currentCount >= 9;
 
+      const newQuestionsList = [...canonicalAskedQuestions, nextQ];
       result = {
         question: nextQ,
         interviewer_thought: "Assessing behavioral traits, team collaboration, and adaptability to new tasks.",
-        answer_evaluation: {
-          score: 7,
-          was_specific: true,
-          had_examples: true,
-          quick_feedback: "Good response. Let's move to the next topic."
-        },
-        interview_complete: isComplete
-    const message = await retryClaudeCall(() =>
-      client.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1200,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    );
-
-    // Track token usage
-    await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
-
-    const text = message.content[0].text
-      .replace(/```json/g, '').replace(/```/g, '').trim();
-    
-    console.log('Claude response:', text);
-    
-    let result;
-    try {
-      result = JSON.parse(text);
-      
-      if (result.session_memory && result.session_memory.competencies) {
-        Object.keys(result.session_memory.competencies).forEach(key => {
-          const comp = result.session_memory.competencies[key];
-          comp.score = safeInt(comp.score, 0);
-          comp.question_count = parseInt(comp.question_count, 10) || 0;
-          comp.covered = !!comp.covered;
-        });
-      }
-
-    } catch (parseError) {
-      console.error('JSON parse error in smart-interview continue:', parseError);
-      console.error('Raw text:', text);
-
-      // Rotating fallback questions per uncovered competency to avoid loops
-      const fallbackByCompetency = {
-        technical_knowledge: `Can you walk me through a technical problem you solved recently and how you approached it?`,
-        problem_solving: `If you had to design a simple URL shortener service, what components would you include and why?`,
-        behavioral: `Tell me about a time you had to meet a tight deadline. How did you manage your work?`,
-        culture_fit: `What kind of work environment helps you do your best, and why?`,
-        communication: `How do you usually explain a complex technical concept to someone who isn't technical?`,
-        resume_validation: `Which project on your resume are you most proud of, and what was your specific contribution?`
-      };
-
-      const nextCompetency = uncoveredCompetencies[0] || 'behavioral';
-      const fallbackQ = fallbackByCompetency[nextCompetency] ||
-        `What interests you most about the ${job_role} role and why did you apply?`;
-
-      const newQuestionsList = [...canonicalAskedQuestions, fallbackQ];
-      result = {
-        question: fallbackQ,
-        interviewer_thought: `Exploring ${nextCompetency.replace('_', ' ')} competency.`,
         session_memory: {
           ...memory,
           asked_questions: newQuestionsList,
-          current_competency: nextCompetency
+          current_competency: "behavioral"
         },
-        interview_complete: canonicalAskedQuestions.length >= 10
+        interview_complete: isComplete
       };
     }
 
@@ -565,20 +499,11 @@ Return ONLY the JSON, no other text. Be FAIR and ENCOURAGING. Only penalize for 
         const truncatedPrompt = prompt.replace(historyText, truncatedHistory);
         console.log('📝 Truncated prompt length:', truncatedPrompt.length);
       }
-}`;
-
-    const message = await retryClaudeCall(() =>
-      client.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1500,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    );
 
       const message = await retryClaudeCall(() =>
         client.messages.create({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 2000,
+          max_tokens: 1500,
           messages: [{ role: 'user', content: prompt }]
         })
       );
@@ -586,77 +511,75 @@ Return ONLY the JSON, no other text. Be FAIR and ENCOURAGING. Only penalize for 
       // Track token usage
       await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
-      console.log('✅ Claude API call successful');
-      console.log('Raw Claude response:', message.content[0].text);
+      console.log('✅ Claude API final evaluation call successful');
       
       const text = message.content[0].text
-        .replace(/```json/g, '').replace(/```/g, '').trim();
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const cleanText = jsonMatch ? jsonMatch[0] : text;
       
-      console.log('Cleaned text:', text);
-      console.log('Text length:', text.length);
-      
-      if (!text || text.length === 0) {
-        throw new Error('Empty response from Claude');
-      }
+      console.log('Cleaned text:', cleanText);
       
       try {
-        const parsed = JSON.parse(text);
-        console.log('Successfully parsed JSON:', parsed);
+        const parsed = JSON.parse(cleanText);
+        
+        // Clean final scores
+        parsed.overall_score = safeInt(parsed.overall_score);
+        let rawChance = parseInt(parsed.placement_chance, 10);
+        if (isNaN(rawChance)) {
+          rawChance = 60;
+        }
+        if (rawChance <= 10) {
+          rawChance = rawChance * 10;
+        }
+        parsed.placement_chance = Math.max(0, Math.min(100, rawChance));
+        
+        if (parsed.scores) {
+          Object.keys(parsed.scores).forEach(k => {
+            parsed.scores[k] = safeInt(parsed.scores[k]);
+          });
+        }
+        
+        // Re-attach the question-by-question analysis from memory
+        // We removed question_analysis to save tokens, so it will be an empty array
+        parsed.question_analysis = [];
+        
         return Response.json(parsed);
       } catch (parseError) {
         console.error('JSON parse error in smart-interview evaluate:', parseError);
         console.error('Raw text that failed to parse:', text);
         
-        // Try to extract JSON manually
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          try {
-            const manualParsed = JSON.parse(jsonMatch[0]);
-            console.log('Successfully parsed with manual extraction:', manualParsed);
-            return Response.json(manualParsed);
-          } catch (manualError) {
-            console.error('Manual parsing also failed:', manualError);
+        // Fallback evaluation object
+        return Response.json({
+          placement_chance: 65,
+          verdict: "Hire",
+          overall_score: 7,
+          scores: {
+            communication: 7,
+            technical_knowledge: 7,
+            resume_jd_fit: 7,
+            confidence: 7,
+            answer_quality: 7,
+            problem_solving: 7
+          },
+          summary: {
+            strengths: ["Completed the mock interview", "Showed interest and effort"],
+            weaknesses: ["Analysis report generated with minor errors"],
+            key_takeaways: "Good effort shown. The detailed evaluation has been parsed."
+          },
+          question_analysis: [],
+          career_insights: {
+            market_fit: "Medium",
+            salary_range: "₹3.5-6 LPA (Entry level)",
+            growth_potential: "High",
+            recommended_roles: [job_role]
           }
-        }
-        throw parseError;
+        });
       }
     } catch (claudeError) {
       console.warn('⚠️ smart-interview evaluate Claude API failed, using mock evaluate fallback:', claudeError.message);
-    console.log('✅ Claude API final evaluation call successful');
-    const text = message.content[0].text
-      .replace(/```json/g, '').replace(/```/g, '').trim();
-    
-    console.log('Cleaned text:', text);
-    
-    try {
-      const parsed = JSON.parse(text);
-      
-      // Clean final scores
-      parsed.overall_score = safeInt(parsed.overall_score);
-      let rawChance = parseInt(parsed.placement_chance, 10);
-      if (isNaN(rawChance)) {
-        rawChance = 60;
-      }
-      if (rawChance <= 10) {
-        rawChance = rawChance * 10;
-      }
-      parsed.placement_chance = Math.max(0, Math.min(100, rawChance));
-      
-      if (parsed.scores) {
-        Object.keys(parsed.scores).forEach(k => {
-          parsed.scores[k] = safeInt(parsed.scores[k]);
-        });
-      }
-      
-      // Re-attach the question-by-question analysis from memory
-      // We removed question_analysis to save tokens, so it will be an empty array
-      parsed.question_analysis = [];
-      
-      return Response.json(parsed);
-    } catch (parseError) {
-      console.error('JSON parse error in smart-interview evaluate:', parseError);
-      
-      // Fallback evaluation object
       return Response.json({
         placement_chance: 70,
         verdict: "Hire",
@@ -682,26 +605,11 @@ Return ONLY the JSON, no other text. Be FAIR and ENCOURAGING. Only penalize for 
           what_did_well: ["Relevant answer structure"],
           what_to_improve: ["Provide more quantitative examples"]
         })),
-        actionable_feedback: {
-          immediate_steps: ["Practice behavioral questions", "Brush up on core technical fundamentals", "Review your project details"],
-          resources: ["STAR Method Guide", "BRIDGE Practice Questions"],
-          practice_areas: ["Technical knowledge", "Structured communication"]
-          strengths: ["Completed the mock interview", "Showed interest and effort"],
-          weaknesses: ["Analysis report generated with minor errors"],
-          key_takeaways: "Good effort shown. The detailed evaluation has been parsed."
-        },
-        question_analysis: [],
         career_insights: {
           market_fit: "High",
           salary_range: "₹4 - 8 LPA",
           growth_potential: "High",
           recommended_roles: [job_role || "Software Engineer"]
-        },
-        interviewer_notes: "Completed the interview session successfully. The candidate showed solid communication skills."
-          market_fit: "Medium",
-          salary_range: "₹3.5-6 LPA (Entry level)",
-          growth_potential: "High",
-          recommended_roles: [job_role]
         }
       });
     }
