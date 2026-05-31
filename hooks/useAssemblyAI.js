@@ -126,7 +126,9 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
       streamRef.current = stream;
 
       // Volume analyser
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate });
+      const AudioContextClass = typeof window !== 'undefined' ? (window.AudioContext || window.webkitAudioContext) : null;
+      if (!AudioContextClass) throw new Error('AudioContext not supported');
+      const audioCtx = new AudioContextClass({ sampleRate });
       audioCtxRef.current = audioCtx;
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
@@ -224,7 +226,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
     if (wsSpeechStarted.current) return;
     wsSpeechStarted.current = true;
 
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SR = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
     if (!SR) {
       setError('Speech recognition requires Chrome or Edge browser.');
       setIsConnecting(false);
