@@ -80,7 +80,7 @@ export default function SmartInterviewPage() {
     fillerWords: fillerWords = [],
     fillerWordCounts: fillerWordCounts = {},
     recordingStatus: recordingStatus = 'idle',
-    error: transcriptionError = null,
+    errorMessage: transcriptionError = null,
     speechLang: speechLang = 'en-IN',
     setLang: setLang = () => {},
     voiceCommandDetected: voiceCommandDetected = null,
