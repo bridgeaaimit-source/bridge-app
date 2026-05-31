@@ -5,7 +5,7 @@ import { Users, Clock, Target, Zap, Plus, X, Activity } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { db, auth } from "@/lib/firebase";
-import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, arrayUnion, increment } from "firebase/firestore";
+import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc, arrayUnion, increment } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 const DEFAULT_TOPICS = [
@@ -27,11 +27,10 @@ export default function GDPage() {
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
-    // Listen to live battles
+    // Listen to live battles (no orderBy to avoid requiring a composite index)
     const q = query(
       collection(db, 'gdBattles'),
-      where('status', 'in', ['waiting', 'active']),
-      orderBy('createdAt', 'desc')
+      where('status', 'in', ['waiting', 'active'])
     );
     
     const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -39,6 +38,13 @@ export default function GDPage() {
         id: doc.id,
         ...doc.data()
       }));
+      
+      // Sort client-side by createdAt descending
+      liveBattles.sort((a, b) => {
+        const aTime = a.createdAt?.toMillis?.() || 0;
+        const bTime = b.createdAt?.toMillis?.() || 0;
+        return bTime - aTime;
+      });
       
       // Auto-create defaults if none exist
       if (liveBattles.length === 0 && !loading) {
