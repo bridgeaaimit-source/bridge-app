@@ -1,33 +1,44 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import {
   BarChart3, Users, Clock, AlertCircle, RefreshCw,
   TrendingUp, DollarSign, Download, Calendar, Zap,
-  Mic, MessageSquare, Brain, BookOpen, FileText, Search, Star
+  Mic, MessageSquare, Brain, BookOpen, FileText, Search, Star,
+  ShieldCheck, Activity, PieChart, ArrowUpRight, ArrowDownRight,
+  ChevronDown, Filter, Eye, AlertTriangle
 } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import toast from 'react-hot-toast';
+import Script from 'next/script';
 
-// Anthropic Claude pricing per token in Rupees (approx)
-// Blend average ₹750 per 1M tokens = 0.00075 INR per token
-const COST_PER_TOKEN = 0.00075;
+// ── Cost constants ──
+const COST_PER_TOKEN_INR = 0.00075;
 
 const FEATURE_META = {
-  interview:        { label: 'Mock Interview',      icon: Mic,          color: 'bg-purple-500',  light: 'bg-purple-50 text-purple-700' },
-  'smart-interview':{ label: 'Smart Interview',     icon: Brain,        color: 'bg-blue-500',    light: 'bg-blue-50 text-blue-700' },
-  gd:               { label: 'GD Practice',         icon: MessageSquare,color: 'bg-green-500',   light: 'bg-green-50 text-green-700' },
-  coach:            { label: 'Answer Coach',         icon: Star,         color: 'bg-yellow-500',  light: 'bg-yellow-50 text-yellow-700' },
-  'pdf-chat':       { label: 'PDF Reader',           icon: BookOpen,     color: 'bg-pink-500',    light: 'bg-pink-50 text-pink-700' },
-  'career-intel':   { label: 'Career Intelligence',  icon: Search,       color: 'bg-cyan-500',    light: 'bg-cyan-50 text-cyan-700' },
-  news:             { label: 'News / PULSE',         icon: FileText,     color: 'bg-orange-500',  light: 'bg-orange-50 text-orange-700' },
-  recruiter:        { label: 'Recruiter Match',      icon: Users,        color: 'bg-indigo-500',  light: 'bg-indigo-50 text-indigo-700' },
+  interview:         { label: 'Mock Interview',      icon: Mic,           gradient: 'from-rose-500 to-pink-600',    bg: 'bg-rose-50',    text: 'text-rose-700',    border: 'border-rose-200' },
+  'smart-interview': { label: 'Smart Interview',     icon: Brain,         gradient: 'from-blue-500 to-indigo-600',  bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200' },
+  gd:                { label: 'GD Practice',         icon: MessageSquare, gradient: 'from-emerald-500 to-green-600',bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  coach:             { label: 'Answer Coach',        icon: Star,          gradient: 'from-amber-500 to-yellow-600', bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200' },
+  'pdf-chat':        { label: 'PDF Reader',          icon: BookOpen,      gradient: 'from-pink-500 to-fuchsia-600', bg: 'bg-pink-50',    text: 'text-pink-700',    border: 'border-pink-200' },
+  'career-intel':    { label: 'Career Intel',        icon: Search,        gradient: 'from-cyan-500 to-teal-600',    bg: 'bg-cyan-50',    text: 'text-cyan-700',    border: 'border-cyan-200' },
+  news:              { label: 'PULSE / News',        icon: FileText,      gradient: 'from-orange-500 to-red-500',   bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-200' },
+  recruiter:         { label: 'Recruiter Match',     icon: Users,         gradient: 'from-violet-500 to-purple-600',bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-200' },
+  resume:            { label: 'Resume Parse',        icon: FileText,      gradient: 'from-slate-500 to-gray-600',   bg: 'bg-slate-50',   text: 'text-slate-700',   border: 'border-slate-200' },
+  jobs:              { label: 'Jobs / Internships',  icon: Search,        gradient: 'from-lime-500 to-green-600',   bg: 'bg-lime-50',    text: 'text-lime-700',    border: 'border-lime-200' },
+  aptitude:          { label: 'Aptitude Insight',    icon: Brain,         gradient: 'from-sky-500 to-blue-600',     bg: 'bg-sky-50',     text: 'text-sky-700',     border: 'border-sky-200' },
 };
+
+const CHART_PALETTE = [
+  '#0D9488', '#0891B2', '#2563EB', '#7C3AED', '#DB2777',
+  '#EA580C', '#CA8A04', '#059669', '#4F46E5', '#DC2626',
+  '#8B5CF6', '#06B6D4'
+];
 
 export default function TokenDashboard() {
   const router = useRouter();
@@ -36,15 +47,26 @@ export default function TokenDashboard() {
   const [error, setError] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('7days');
   const [activeTab, setActiveTab] = useState('overview');
+  const [chartReady, setChartReady] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [needsKey, setNeedsKey] = useState(false);
+  const [keyInput, setKeyInput] = useState('');
 
-  // Stats state
-  const [totalTokens, setTotalTokens] = useState(0);
-  const [totalUsers, setTotalUsers] = useState(0);
-  const [avgPerUser, setAvgPerUser] = useState(0);
-  const [todayTokens, setTodayTokens] = useState(0);
-  const [dailyStats, setDailyStats] = useState([]);
-  const [userStats, setUserStats] = useState([]);
-  const [featureStats, setFeatureStats] = useState({});
+  // Data state
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [alerts, setAlerts] = useState([]);
+
+  // Chart refs
+  const dailyChartRef = useRef(null);
+  const featurePieRef = useRef(null);
+  const featureBarRef = useRef(null);
+  const userBarRef = useRef(null);
+  const trendLineRef = useRef(null);
+  const dailyChartInstance = useRef(null);
+  const featurePieInstance = useRef(null);
+  const featureBarInstance = useRef(null);
+  const userBarInstance = useRef(null);
+  const trendLineInstance = useRef(null);
 
   // Admin-only guard
   useEffect(() => {
@@ -54,6 +76,10 @@ export default function TokenDashboard() {
         const snap = await getDoc(doc(db, 'users', user.uid));
         if (snap.exists() && snap.data().role === 'admin') {
           setAuthorized(true);
+          // Check if secret key is stored
+          if (!localStorage.getItem('adminSecretKey')) {
+            setNeedsKey(true);
+          }
         } else {
           toast.error('Access denied — admin only');
           router.replace('/dashboard');
@@ -63,135 +89,458 @@ export default function TokenDashboard() {
     return () => unsub();
   }, [router]);
 
-  useEffect(() => {
-    if (authorized) fetchTokenData();
-  }, [authorized, selectedPeriod]);
-
-  async function fetchTokenData() {
+  const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const days = selectedPeriod === '7days' ? 7 : selectedPeriod === '30days' ? 30 : 90;
-      const dailyData = [];
-      const userMap = new Map();
-      const featureMap = new Map();
-      const today = new Date().toISOString().split('T')[0];
+      const secretKey = localStorage.getItem('adminSecretKey') || '';
 
-      for (let i = 0; i < days; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        const snapshot = await getDocs(collection(db, 'tokenUsage', 'daily', dateStr));
+      const res = await fetch('/api/admin/token-analytics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secretKey, days }),
+      });
 
-        let dayTotal = 0;
-        const dayUsers = new Set();
-
-        snapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          const uid = docSnap.id;
-          dayTotal += data.total || 0;
-          dayUsers.add(uid);
-
-          if (!userMap.has(uid)) userMap.set(uid, { userId: uid, name: uid, email: '', total: 0, features: {}, days: new Set() });
-          const u = userMap.get(uid);
-          u.total += data.total || 0;
-          u.days.add(dateStr);
-
-          Object.entries(data).forEach(([key, val]) => {
-            if (!['userId', 'date', 'total', 'lastUsed'].includes(key) && typeof val === 'number') {
-              u.features[key] = (u.features[key] || 0) + val;
-              featureMap.set(key, (featureMap.get(key) || 0) + val);
-            }
-          });
-        });
-
-        dailyData.push({ date: dateStr, total: dayTotal, users: dayUsers.size, isToday: dateStr === today });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
       }
 
-      // Fetch real names from Firestore users collection
-      const uids = Array.from(userMap.keys());
-      await Promise.all(uids.map(async (uid) => {
-        try {
-          const snap = await getDoc(doc(db, 'users', uid));
-          if (snap.exists()) {
-            const d = snap.data();
-            userMap.get(uid).name = d.name || d.email || uid;
-            userMap.get(uid).email = d.email || '';
-          }
-        } catch {}
-      }));
-
-      const sortedUsers = Array.from(userMap.values())
-        .map(u => ({ ...u, days: u.days.size }))
-        .sort((a, b) => b.total - a.total);
-
-      const reversedDaily = dailyData.reverse();
-      const tot = reversedDaily.reduce((s, d) => s + d.total, 0);
-      const todayEntry = reversedDaily.find(d => d.isToday);
-
-      setDailyStats(reversedDaily);
-      setTotalTokens(tot);
-      setTotalUsers(sortedUsers.length);
-      setAvgPerUser(sortedUsers.length > 0 ? Math.round(tot / sortedUsers.length) : 0);
-      setTodayTokens(todayEntry?.total || 0);
-      setUserStats(sortedUsers);
-      setFeatureStats(Object.fromEntries(featureMap));
+      const data = await res.json();
+      setAnalyticsData(data);
+      setAlerts(data.alerts || []);
     } catch (err) {
+      console.error('Analytics fetch failed:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  }, [selectedPeriod]);
+
+  useEffect(() => {
+    if (authorized && !needsKey) fetchAnalytics();
+  }, [authorized, needsKey, fetchAnalytics]);
+
+  // ── Chart rendering ──
+  useEffect(() => {
+    if (!chartReady || !analyticsData) return;
+    renderCharts();
+    return () => destroyCharts();
+  }, [chartReady, analyticsData, activeTab]);
+
+  function destroyCharts() {
+    [dailyChartInstance, featurePieInstance, featureBarInstance, userBarInstance, trendLineInstance].forEach(ref => {
+      if (ref.current) { ref.current.destroy(); ref.current = null; }
+    });
   }
 
+  function renderCharts() {
+    if (typeof window === 'undefined' || !window.Chart) return;
+    const Chart = window.Chart;
+    destroyCharts();
+
+    const { daily = [], features = [], users = [], summary = {} } = analyticsData;
+
+    // Overview tab — Daily usage bar chart
+    if (activeTab === 'overview' && dailyChartRef.current) {
+      const ctx = dailyChartRef.current.getContext('2d');
+      dailyChartInstance.current = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: daily.map(d => {
+            const dt = new Date(d.date);
+            return dt.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+          }),
+          datasets: [{
+            label: 'Tokens Used',
+            data: daily.map(d => d.total),
+            backgroundColor: daily.map(d => d.isToday ? '#0D9488' : 'rgba(13,148,136,0.45)'),
+            borderColor: daily.map(d => d.isToday ? '#0D9488' : 'rgba(13,148,136,0.7)'),
+            borderWidth: 1,
+            borderRadius: 6,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1f2937',
+              titleFont: { size: 13, weight: '600' },
+              bodyFont: { size: 12 },
+              padding: 12,
+              cornerRadius: 8,
+              callbacks: {
+                label: (ctx) => {
+                  const val = ctx.raw;
+                  return [
+                    `${val.toLocaleString()} tokens`,
+                    `₹${(val * COST_PER_TOKEN_INR).toFixed(2)}`,
+                    `${daily[ctx.dataIndex]?.users || 0} users`
+                  ];
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
+            y: {
+              grid: { color: 'rgba(0,0,0,0.04)' },
+              ticks: { font: { size: 10 }, callback: v => v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'K' : v }
+            }
+          }
+        }
+      });
+    }
+
+    // Overview tab — Trend line (cumulative)
+    if (activeTab === 'overview' && trendLineRef.current) {
+      const ctx = trendLineRef.current.getContext('2d');
+      let cumulative = 0;
+      const cumulativeData = daily.map(d => { cumulative += d.total; return cumulative; });
+      trendLineInstance.current = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: daily.map(d => new Date(d.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })),
+          datasets: [{
+            label: 'Cumulative Tokens',
+            data: cumulativeData,
+            borderColor: '#0D9488',
+            backgroundColor: 'rgba(13,148,136,0.08)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 2,
+            pointHoverRadius: 6,
+            borderWidth: 2.5,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1f2937',
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                label: (ctx) => `${ctx.raw.toLocaleString()} total tokens (₹${(ctx.raw * COST_PER_TOKEN_INR).toFixed(2)})`
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
+            y: {
+              grid: { color: 'rgba(0,0,0,0.04)' },
+              ticks: { font: { size: 10 }, callback: v => v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'K' : v }
+            }
+          }
+        }
+      });
+    }
+
+    // Features tab — Pie chart
+    if (activeTab === 'features' && featurePieRef.current) {
+      const ctx = featurePieRef.current.getContext('2d');
+      featurePieInstance.current = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: features.map(f => FEATURE_META[f.feature]?.label || f.feature),
+          datasets: [{
+            data: features.map(f => f.tokens),
+            backgroundColor: CHART_PALETTE.slice(0, features.length),
+            borderWidth: 2,
+            borderColor: '#fff',
+            hoverOffset: 8,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '55%',
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: { font: { size: 11 }, padding: 14, usePointStyle: true, pointStyleWidth: 12 }
+            },
+            tooltip: {
+              backgroundColor: '#1f2937',
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                label: (ctx) => {
+                  const val = ctx.raw;
+                  const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                  return ` ${val.toLocaleString()} tokens (${((val / total) * 100).toFixed(1)}%) · ₹${(val * COST_PER_TOKEN_INR).toFixed(2)}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Features tab — Horizontal bar
+    if (activeTab === 'features' && featureBarRef.current) {
+      const ctx = featureBarRef.current.getContext('2d');
+      const sortedFeatures = [...features].sort((a, b) => b.tokens - a.tokens);
+      featureBarInstance.current = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: sortedFeatures.map(f => FEATURE_META[f.feature]?.label || f.feature),
+          datasets: [{
+            label: 'Tokens',
+            data: sortedFeatures.map(f => f.tokens),
+            backgroundColor: sortedFeatures.map((_, i) => CHART_PALETTE[i % CHART_PALETTE.length]),
+            borderRadius: 6,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1f2937',
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                label: (ctx) => ` ${ctx.raw.toLocaleString()} tokens · ₹${(ctx.raw * COST_PER_TOKEN_INR).toFixed(2)}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(0,0,0,0.04)' },
+              ticks: { font: { size: 10 }, callback: v => v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'K' : v }
+            },
+            y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+          }
+        }
+      });
+    }
+
+    // Users tab — Top 10 bar chart
+    if (activeTab === 'users' && userBarRef.current) {
+      const ctx = userBarRef.current.getContext('2d');
+      const top10 = users.slice(0, 10);
+      userBarInstance.current = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: top10.map(u => (u.name || u.userId).substring(0, 20)),
+          datasets: [{
+            label: 'Tokens Used',
+            data: top10.map(u => u.total),
+            backgroundColor: CHART_PALETTE.slice(0, top10.length),
+            borderRadius: 6,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1f2937',
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                label: (ctx) => {
+                  const u = top10[ctx.dataIndex];
+                  return [
+                    ` ${ctx.raw.toLocaleString()} tokens`,
+                    ` ₹${(ctx.raw * COST_PER_TOKEN_INR).toFixed(2)}`,
+                    ` ${u.days} active days`
+                  ];
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
+            y: {
+              grid: { color: 'rgba(0,0,0,0.04)' },
+              ticks: { font: { size: 10 }, callback: v => v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? (v / 1e3).toFixed(0) + 'K' : v }
+            }
+          }
+        }
+      });
+    }
+  }
+
+  // ── Helpers ──
   const fmt = (n) => n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + 'M' : n >= 1_000 ? (n / 1_000).toFixed(1) + 'K' : String(n);
-  const cost = (n) => '₹' + (n * COST_PER_TOKEN).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  const cost = (n) => '₹' + (n * COST_PER_TOKEN_INR).toLocaleString('en-IN', { maximumFractionDigits: 2 });
   const pct = (n, total) => total > 0 ? ((n / total) * 100).toFixed(1) : '0.0';
-  const fmtDate = (s) => new Date(s).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
 
   const exportCSV = () => {
+    if (!analyticsData) return;
+    const { users = [], features = [] } = analyticsData;
+    const featureKeys = features.map(f => f.feature);
     const rows = [
-      ['User', 'Email', 'Total Tokens', 'Cost (INR)', 'Active Days', ...Object.keys(featureStats)],
-      ...userStats.map(u => [
-        u.name, u.email, u.total, (u.total * COST_PER_TOKEN).toFixed(2), u.days,
-        ...Object.keys(featureStats).map(f => u.features[f] || 0)
+      ['#', 'Name', 'Email', 'Total Tokens', 'Cost (INR)', 'Active Days', ...featureKeys.map(f => FEATURE_META[f]?.label || f)],
+      ...users.map((u, i) => [
+        i + 1,
+        u.name,
+        u.email,
+        u.total,
+        (u.total * COST_PER_TOKEN_INR).toFixed(2),
+        u.days,
+        ...featureKeys.map(f => u.features?.[f] || 0)
       ])
     ];
     const blob = new Blob([rows.map(r => r.join(',')).join('\n')], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `bridge-tokens-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `bridge-token-analytics-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   };
 
-  const topFeature = Object.entries(featureStats).sort((a, b) => b[1] - a[1])[0];
+  // Computed values from analyticsData
+  const summary = analyticsData?.summary || {};
+  const daily = analyticsData?.daily || [];
+  const users = analyticsData?.users || [];
+  const features = analyticsData?.features || [];
+  const topFeature = features[0] || null;
 
-  if (!authorized) return <div className="flex items-center justify-center h-screen text-gray-400">Checking access...</div>;
+  // Filtered users for search
+  const filteredUsers = users.filter(u =>
+    !searchQuery ||
+    (u.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (u.email || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Trend calculation (compare first vs second half of period)
+  const halfLen = Math.floor(daily.length / 2);
+  const firstHalf = daily.slice(0, halfLen).reduce((s, d) => s + d.total, 0);
+  const secondHalf = daily.slice(halfLen).reduce((s, d) => s + d.total, 0);
+  const trendPct = firstHalf > 0 ? (((secondHalf - firstHalf) / firstHalf) * 100).toFixed(0) : 0;
+  const isUpTrend = secondHalf >= firstHalf;
+
+  if (!authorized) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="w-10 h-10 animate-spin rounded-full border-2 border-[#0D9488]/30 border-t-[#0D9488] mx-auto mb-4" />
+          <p className="text-gray-400 text-sm">Verifying admin access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (needsKey) {
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center min-h-[70vh]">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 w-full max-w-sm">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0D9488] to-[#0891B2] flex items-center justify-center mx-auto mb-4">
+              <ShieldCheck className="w-6 h-6 text-white" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 text-center mb-1">Analytics Access</h2>
+            <p className="text-sm text-gray-500 text-center mb-6">Enter the admin secret key to view token analytics</p>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              localStorage.setItem('adminSecretKey', keyInput);
+              setNeedsKey(false);
+              toast.success('Key saved');
+            }}>
+              <input
+                type="password"
+                value={keyInput}
+                onChange={(e) => setKeyInput(e.target.value)}
+                placeholder="Secret Key"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488] outline-none mb-4"
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={!keyInput}
+                className="w-full py-3 bg-[#0D9488] text-white rounded-xl font-medium hover:bg-[#0F766E] transition-colors disabled:opacity-50"
+              >
+                Unlock Dashboard
+              </button>
+            </form>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
+      {/* Chart.js CDN */}
+      <Script
+        src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"
+        strategy="afterInteractive"
+        onLoad={() => setChartReady(true)}
+      />
+
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
 
-        {/* Header */}
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Token Usage Dashboard</h1>
-            <p className="text-sm text-gray-500 mt-1">Track AI usage, cost, and feature breakdown across all students</p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <select value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm">
-              <option value="7days">Last 7 Days</option>
-              <option value="30days">Last 30 Days</option>
-              <option value="90days">Last 90 Days</option>
-            </select>
-            <button onClick={fetchTokenData} className="flex items-center gap-2 px-4 py-2 bg-[#0D9488] text-white rounded-lg hover:bg-[#0F766E] text-sm">
-              <RefreshCw className="w-4 h-4" /> Refresh
-            </button>
-            <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
-              <Download className="w-4 h-4" /> Export CSV
-            </button>
+        {/* ─── Header ─── */}
+        <div className="mb-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0D9488] to-[#0891B2] flex items-center justify-center shadow-lg shadow-teal-500/20">
+                  <Activity className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Token Analytics</h1>
+                  <p className="text-sm text-gray-500">AI usage intelligence across all students & features</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                value={selectedPeriod}
+                onChange={(e) => setSelectedPeriod(e.target.value)}
+                className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:border-gray-300 focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488] outline-none transition-all cursor-pointer"
+              >
+                <option value="7days">Last 7 Days</option>
+                <option value="30days">Last 30 Days</option>
+                <option value="90days">Last 90 Days</option>
+              </select>
+              <button
+                onClick={fetchAnalytics}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#0D9488] text-white rounded-xl hover:bg-[#0F766E] text-sm font-medium shadow-sm shadow-teal-500/20 transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+              <button
+                onClick={exportCSV}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 text-sm font-medium shadow-sm transition-all"
+              >
+                <Download className="w-4 h-4" />
+                CSV
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* ─── Alerts ─── */}
+        {alerts.length > 0 && (
+          <div className="space-y-2 mb-6">
+            {alerts.map((alert, i) => (
+              <div key={i} className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm ${
+                alert.type === 'caution'
+                  ? 'bg-red-50 border-red-200 text-red-700'
+                  : 'bg-amber-50 border-amber-200 text-amber-700'
+              }`}>
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{alert.message}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-center gap-3">
@@ -202,105 +551,120 @@ export default function TokenDashboard() {
 
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="w-8 h-8 animate-spin rounded-full border-2 border-[#0D9488]/30 border-t-[#0D9488]" />
+            <div className="text-center">
+              <div className="w-10 h-10 animate-spin rounded-full border-2 border-[#0D9488]/30 border-t-[#0D9488] mx-auto mb-4" />
+              <p className="text-sm text-gray-400">Loading analytics...</p>
+            </div>
           </div>
-        ) : (
+        ) : analyticsData ? (
           <>
-            {/* KPI Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {/* ─── KPI Cards ─── */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
               {[
-                { label: 'Total Tokens', value: fmt(totalTokens), sub: cost(totalTokens) + ' est. cost', icon: BarChart3, color: 'bg-purple-100 text-purple-600' },
-                { label: 'Active Users', value: totalUsers, sub: 'in period', icon: Users, color: 'bg-blue-100 text-blue-600' },
-                { label: 'Avg per User', value: fmt(avgPerUser), sub: cost(avgPerUser) + ' / user', icon: TrendingUp, color: 'bg-green-100 text-green-600' },
-                { label: "Today's Tokens", value: fmt(todayTokens), sub: cost(todayTokens) + ' today', icon: Zap, color: 'bg-orange-100 text-orange-600' },
-              ].map(({ label, value, sub, icon: Icon, color }) => (
-                <div key={label} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${color}`}>
+                { label: 'Total Tokens', value: fmt(summary.totalTokens || 0), sub: cost(summary.totalTokens || 0), icon: BarChart3, iconBg: 'bg-teal-100 text-teal-600' },
+                { label: 'Active Users', value: summary.totalUsers || 0, sub: `in ${summary.period || 7}d`, icon: Users, iconBg: 'bg-blue-100 text-blue-600' },
+                { label: 'Avg / User', value: fmt(summary.avgPerUser || 0), sub: cost(summary.avgPerUser || 0), icon: TrendingUp, iconBg: 'bg-emerald-100 text-emerald-600' },
+                { label: "Today", value: fmt(summary.todayTokens || 0), sub: cost(summary.todayTokens || 0), icon: Zap, iconBg: 'bg-orange-100 text-orange-600' },
+                {
+                  label: 'Trend',
+                  value: `${isUpTrend ? '+' : ''}${trendPct}%`,
+                  sub: isUpTrend ? 'vs prev period' : 'vs prev period',
+                  icon: isUpTrend ? ArrowUpRight : ArrowDownRight,
+                  iconBg: isUpTrend ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                },
+              ].map(({ label, value, sub, icon: Icon, iconBg }) => (
+                <div key={label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${iconBg}`}>
                     <Icon className="w-5 h-5" />
                   </div>
                   <div className="text-2xl font-bold text-gray-900">{value}</div>
                   <div className="text-xs text-gray-500 mt-0.5">{label}</div>
-                  <div className="text-xs text-[#0D9488] font-medium mt-1">{sub}</div>
+                  <div className="text-xs text-[#0D9488] font-semibold mt-1">{sub}</div>
                 </div>
               ))}
             </div>
 
-            {/* Top Feature Banner */}
+            {/* ─── Top Feature Banner ─── */}
             {topFeature && (
-              <div className="bg-gradient-to-r from-[#0D9488] to-[#0891b2] rounded-xl p-5 mb-6 text-white flex items-center justify-between flex-wrap gap-4">
+              <div className="bg-gradient-to-r from-[#0D9488] to-[#0891B2] rounded-2xl p-6 mb-6 text-white flex items-center justify-between flex-wrap gap-4 shadow-lg shadow-teal-500/15">
                 <div>
-                  <div className="text-xs uppercase tracking-wide opacity-80 mb-1">Biggest Token Consumer</div>
+                  <div className="text-xs uppercase tracking-widest opacity-70 mb-1 font-medium">🏆 Biggest Token Consumer</div>
                   <div className="text-xl font-bold">
-                    {FEATURE_META[topFeature[0]]?.label || topFeature[0].replace(/-/g, ' ')}
+                    {FEATURE_META[topFeature.feature]?.label || topFeature.feature}
                   </div>
-                  <div className="text-sm opacity-80 mt-1">{pct(topFeature[1], totalTokens)}% of all usage</div>
+                  <div className="text-sm opacity-80 mt-1">{topFeature.percentage}% of all usage</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold">{fmt(topFeature[1])}</div>
-                  <div className="text-sm opacity-80">tokens · {cost(topFeature[1])}</div>
+                  <div className="text-3xl font-bold">{fmt(topFeature.tokens)}</div>
+                  <div className="text-sm opacity-80">tokens · ₹{topFeature.costINR}</div>
                 </div>
               </div>
             )}
 
-            {/* Tabs */}
-            <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
-              {['overview', 'features', 'users', 'daily'].map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all capitalize ${activeTab === tab ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                  {tab}
+            {/* ─── Tabs ─── */}
+            <div className="flex gap-1 bg-gray-100 rounded-2xl p-1.5 mb-8 w-fit">
+              {[
+                { key: 'overview', label: 'Overview', icon: Activity },
+                { key: 'features', label: 'Features', icon: PieChart },
+                { key: 'users', label: 'Users', icon: Users },
+                { key: 'daily', label: 'Daily Log', icon: Calendar },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    activeTab === tab.key
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  {tab.label}
                 </button>
               ))}
             </div>
 
-            {/* OVERVIEW */}
+            {/* ═══════════════ OVERVIEW TAB ═══════════════ */}
             {activeTab === 'overview' && (
               <>
-                {/* Daily chart */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-6">
-                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-[#0D9488]" /> Daily Token Usage
+                {/* Daily bar chart */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-[#0D9488]" />
+                      Daily Token Usage
+                    </h3>
+                    <span className="text-xs text-gray-400">Avg: {fmt(summary.avgDailyTokens || 0)}/day</span>
+                  </div>
+                  <div style={{ height: '280px' }}>
+                    <canvas ref={dailyChartRef} />
+                  </div>
+                </div>
+
+                {/* Cumulative trend */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                    <TrendingUp className="w-4 h-4 text-[#0D9488]" />
+                    Cumulative Usage Trend
                   </h3>
-                  {dailyStats.every(d => d.total === 0) ? (
-                    <div className="text-center py-10 text-gray-400 text-sm">No token data for this period yet</div>
-                  ) : (
-                    <div className="h-48 flex items-end gap-1.5">
-                      {dailyStats.map((day) => {
-                        const max = Math.max(...dailyStats.map(d => d.total), 1);
-                        const h = Math.max((day.total / max) * 100, day.total > 0 ? 3 : 0);
-                        return (
-                          <div key={day.date} className="flex-1 flex flex-col items-center gap-1 group">
-                            <div className="relative w-full" style={{ height: '160px', display: 'flex', alignItems: 'flex-end' }}>
-                              <div
-                                className={`w-full rounded-t-md transition-all cursor-pointer ${day.isToday ? 'bg-[#0D9488]' : 'bg-[#0D9488]/40 group-hover:bg-[#0D9488]/70'}`}
-                                style={{ height: `${h}%`, minHeight: day.total > 0 ? '4px' : '0' }}
-                              >
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 whitespace-nowrap z-10 pointer-events-none">
-                                  <div className="font-semibold">{day.total.toLocaleString()} tokens</div>
-                                  <div className="opacity-70">{cost(day.total)} · {day.users} users</div>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-[10px] text-gray-400">{fmtDate(day.date)}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <div style={{ height: '240px' }}>
+                    <canvas ref={trendLineRef} />
+                  </div>
                 </div>
 
                 {/* Feature mini cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {Object.entries(featureStats).sort((a, b) => b[1] - a[1]).map(([key, tokens]) => {
-                    const meta = FEATURE_META[key] || { label: key.replace(/-/g, ' '), color: 'bg-gray-400', light: 'bg-gray-50 text-gray-700' };
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {features.map(f => {
+                    const meta = FEATURE_META[f.feature] || { label: f.feature, bg: 'bg-gray-50', text: 'text-gray-700', gradient: 'from-gray-500 to-gray-600', border: 'border-gray-200' };
                     return (
-                      <div key={key} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-                        <div className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit mb-2 ${meta.light}`}>
+                      <div key={f.feature} className={`bg-white rounded-2xl p-5 border ${meta.border} shadow-sm hover:shadow-md transition-all`}>
+                        <div className={`text-xs font-bold px-2.5 py-1 rounded-full w-fit mb-3 ${meta.bg} ${meta.text}`}>
                           {meta.label}
                         </div>
-                        <div className="text-xl font-bold text-gray-900">{fmt(tokens)}</div>
-                        <div className="text-xs text-gray-500">{pct(tokens, totalTokens)}% · {cost(tokens)}</div>
-                        <div className="w-full bg-gray-100 rounded-full h-1.5 mt-2">
-                          <div className={`h-1.5 rounded-full ${meta.color}`} style={{ width: `${pct(tokens, totalTokens)}%` }} />
+                        <div className="text-2xl font-bold text-gray-900">{fmt(f.tokens)}</div>
+                        <div className="text-xs text-gray-500 mt-1">{f.percentage}% · ₹{f.costINR}</div>
+                        <div className="w-full bg-gray-100 rounded-full h-2 mt-3">
+                          <div className={`h-2 rounded-full bg-gradient-to-r ${meta.gradient}`} style={{ width: `${Math.max(parseFloat(f.percentage), 2)}%` }} />
                         </div>
                       </div>
                     );
@@ -309,132 +673,206 @@ export default function TokenDashboard() {
               </>
             )}
 
-            {/* FEATURES TAB */}
+            {/* ═══════════════ FEATURES TAB ═══════════════ */}
             {activeTab === 'features' && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-5 border-b border-gray-100">
-                  <h3 className="font-semibold text-gray-900">Feature-by-Feature Breakdown</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Which AI features are consuming the most tokens</p>
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                  {/* Doughnut */}
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                      <PieChart className="w-4 h-4 text-[#0D9488]" />
+                      Feature Distribution
+                    </h3>
+                    <div style={{ height: '320px' }}>
+                      <canvas ref={featurePieRef} />
+                    </div>
+                  </div>
+
+                  {/* Horizontal bar */}
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                      <BarChart3 className="w-4 h-4 text-[#0D9488]" />
+                      Feature Comparison
+                    </h3>
+                    <div style={{ height: '320px' }}>
+                      <canvas ref={featureBarRef} />
+                    </div>
+                  </div>
                 </div>
-                {Object.keys(featureStats).length === 0 ? (
-                  <div className="text-center py-12 text-gray-400 text-sm">No feature data yet</div>
-                ) : (
-                  <div className="divide-y divide-gray-50">
-                    {Object.entries(featureStats).sort((a, b) => b[1] - a[1]).map(([key, tokens], i) => {
-                      const meta = FEATURE_META[key] || { label: key.replace(/-/g, ' '), color: 'bg-gray-400', light: 'bg-gray-50 text-gray-700', icon: Zap };
-                      const Icon = meta.icon;
-                      return (
-                        <div key={key} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50/50">
-                          <div className="w-7 text-center text-sm font-bold text-gray-400">#{i + 1}</div>
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${meta.light}`}>
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 text-sm capitalize">{meta.label}</div>
-                            <div className="w-full bg-gray-100 rounded-full h-2 mt-1.5">
-                              <div className={`h-2 rounded-full ${meta.color}`} style={{ width: `${pct(tokens, totalTokens)}%` }} />
+
+                {/* Detailed feature table */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="p-5 border-b border-gray-100">
+                    <h3 className="font-semibold text-gray-900">Feature-by-Feature Breakdown</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Which AI features are consuming the most tokens</p>
+                  </div>
+                  {features.length === 0 ? (
+                    <div className="text-center py-12 text-gray-400 text-sm">No feature data yet</div>
+                  ) : (
+                    <div className="divide-y divide-gray-50">
+                      {features.map((f, i) => {
+                        const meta = FEATURE_META[f.feature] || { label: f.feature, bg: 'bg-gray-50', text: 'text-gray-700', gradient: 'from-gray-500 to-gray-600', icon: Zap };
+                        const Icon = meta.icon;
+                        return (
+                          <div key={f.feature} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50/50 transition-colors">
+                            <div className="w-7 text-center text-sm font-bold text-gray-400">#{i + 1}</div>
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${meta.bg} ${meta.text}`}>
+                              <Icon className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900 text-sm">{meta.label}</div>
+                              <div className="w-full bg-gray-100 rounded-full h-2 mt-2">
+                                <div className={`h-2 rounded-full bg-gradient-to-r ${meta.gradient}`} style={{ width: `${Math.max(parseFloat(f.percentage), 2)}%` }} />
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="text-base font-bold text-gray-900">{fmt(f.tokens)}</div>
+                              <div className="text-xs text-gray-400">{f.percentage}%</div>
+                            </div>
+                            <div className="text-right shrink-0 w-20">
+                              <div className="text-sm font-semibold text-[#0D9488]">₹{f.costINR}</div>
+                              <div className="text-xs text-gray-400">cost</div>
                             </div>
                           </div>
-                          <div className="text-right shrink-0">
-                            <div className="text-base font-bold text-gray-900">{fmt(tokens)}</div>
-                            <div className="text-xs text-gray-400">{pct(tokens, totalTokens)}%</div>
-                          </div>
-                          <div className="text-right shrink-0 w-20">
-                            <div className="text-sm font-semibold text-[#0D9488]">{cost(tokens)}</div>
-                            <div className="text-xs text-gray-400">cost</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* USERS TAB */}
-            {activeTab === 'users' && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-5 border-b border-gray-100">
-                  <h3 className="font-semibold text-gray-900">Per-Student Token Usage</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Who is using what — sorted by total consumption</p>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-                {userStats.length === 0 ? (
-                  <div className="text-center py-12 text-gray-400 text-sm">No user data yet</div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
-                        <tr>
-                          <th className="px-5 py-3 text-left">#</th>
-                          <th className="px-5 py-3 text-left">Student</th>
-                          <th className="px-5 py-3 text-right">Tokens</th>
-                          <th className="px-5 py-3 text-right">Cost</th>
-                          <th className="px-5 py-3 text-right">Active Days</th>
-                          <th className="px-5 py-3 text-left">Features Used</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {userStats.map((user, i) => (
-                          <tr key={user.userId} className="hover:bg-gray-50/50">
-                            <td className="px-5 py-3 text-gray-400 font-medium">{i + 1}</td>
-                            <td className="px-5 py-3">
-                              <div className="font-medium text-gray-900">{user.name}</div>
-                              {user.email && <div className="text-xs text-gray-400">{user.email}</div>}
-                            </td>
-                            <td className="px-5 py-3 text-right font-bold text-gray-900">{fmt(user.total)}</td>
-                            <td className="px-5 py-3 text-right text-[#0D9488] font-semibold">{cost(user.total)}</td>
-                            <td className="px-5 py-3 text-right text-gray-500">{user.days}</td>
-                            <td className="px-5 py-3">
-                              <div className="flex flex-wrap gap-1">
-                                {Object.entries(user.features)
-                                  .sort((a, b) => b[1] - a[1])
-                                  .slice(0, 4)
-                                  .map(([f, t]) => {
-                                    const meta = FEATURE_META[f];
-                                    return (
-                                      <span key={f} className={`text-xs px-2 py-0.5 rounded-full ${meta?.light || 'bg-gray-100 text-gray-600'}`}>
-                                        {meta?.label || f} · {fmt(t)}
-                                      </span>
-                                    );
-                                  })}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
+              </>
             )}
 
-            {/* DAILY TAB */}
+            {/* ═══════════════ USERS TAB ═══════════════ */}
+            {activeTab === 'users' && (
+              <>
+                {/* Top 10 chart */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                    <Users className="w-4 h-4 text-[#0D9488]" />
+                    Top 10 Users by Token Usage
+                  </h3>
+                  <div style={{ height: '300px' }}>
+                    <canvas ref={userBarRef} />
+                  </div>
+                </div>
+
+                {/* Full user table */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="p-5 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Per-Student Token Usage</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">Sorted by total consumption · {users.length} students</p>
+                    </div>
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search student..."
+                        className="pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm w-56 focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488] outline-none"
+                      />
+                    </div>
+                  </div>
+                  {filteredUsers.length === 0 ? (
+                    <div className="text-center py-12 text-gray-400 text-sm">No user data</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50/80 text-xs text-gray-500 uppercase tracking-wide">
+                          <tr>
+                            <th className="px-5 py-3 text-left">#</th>
+                            <th className="px-5 py-3 text-left">Student</th>
+                            <th className="px-5 py-3 text-right">Tokens</th>
+                            <th className="px-5 py-3 text-right">Cost</th>
+                            <th className="px-5 py-3 text-right">Days</th>
+                            <th className="px-5 py-3 text-left">Top Features</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {filteredUsers.map((user, i) => (
+                            <tr key={user.userId} className="hover:bg-gray-50/50 transition-colors">
+                              <td className="px-5 py-3.5 text-gray-400 font-medium">{i + 1}</td>
+                              <td className="px-5 py-3.5">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#0D9488] to-[#0891B2] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                                    {(user.name || '?')[0].toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-gray-900">{user.name}</div>
+                                    {user.email && <div className="text-xs text-gray-400">{user.email}</div>}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-5 py-3.5 text-right font-bold text-gray-900">{fmt(user.total)}</td>
+                              <td className="px-5 py-3.5 text-right text-[#0D9488] font-semibold">{cost(user.total)}</td>
+                              <td className="px-5 py-3.5 text-right text-gray-500">{user.days}</td>
+                              <td className="px-5 py-3.5">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {Object.entries(user.features || {})
+                                    .sort((a, b) => b[1] - a[1])
+                                    .slice(0, 3)
+                                    .map(([f, t]) => {
+                                      const meta = FEATURE_META[f];
+                                      return (
+                                        <span key={f} className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${meta?.bg || 'bg-gray-100'} ${meta?.text || 'text-gray-600'}`}>
+                                          {meta?.label || f} · {fmt(t)}
+                                        </span>
+                                      );
+                                    })}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* ═══════════════ DAILY LOG TAB ═══════════════ */}
             {activeTab === 'daily' && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="p-5 border-b border-gray-100">
-                  <h3 className="font-semibold text-gray-900">Daily Usage Log</h3>
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#0D9488]" />
+                    Daily Usage Log
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">Day-by-day breakdown with cost</p>
                 </div>
                 <div className="divide-y divide-gray-50">
-                  {dailyStats.slice().reverse().map((stat) => (
-                    <div key={stat.date} className={`flex items-center justify-between px-5 py-4 ${stat.isToday ? 'bg-teal-50' : 'hover:bg-gray-50/50'}`}>
-                      <div>
-                        <div className="font-medium text-gray-900 flex items-center gap-2">
-                          {stat.date}
-                          {stat.isToday && <span className="text-xs bg-[#0D9488] text-white px-2 py-0.5 rounded-full">Today</span>}
+                  {[...daily].reverse().map((stat) => {
+                    const dayPct = summary.totalTokens > 0 ? ((stat.total / summary.totalTokens) * 100).toFixed(1) : 0;
+                    return (
+                      <div key={stat.date} className={`flex items-center gap-4 px-5 py-4 transition-colors ${stat.isToday ? 'bg-teal-50/60' : 'hover:bg-gray-50/50'}`}>
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900 flex items-center gap-2">
+                            {new Date(stat.date).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}
+                            {stat.isToday && (
+                              <span className="text-[10px] bg-[#0D9488] text-white px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">Today</span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-0.5">{stat.users} active user{stat.users !== 1 ? 's' : ''}</div>
+                          {/* Mini progress bar */}
+                          <div className="w-full max-w-xs bg-gray-100 rounded-full h-1.5 mt-2">
+                            <div className="h-1.5 rounded-full bg-[#0D9488]" style={{ width: `${Math.max(parseFloat(dayPct), stat.total > 0 ? 2 : 0)}%` }} />
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-400 mt-0.5">{stat.users} active users</div>
+                        <div className="text-right shrink-0">
+                          <div className="font-bold text-gray-900">{fmt(stat.total)} <span className="text-xs font-normal text-gray-400">tokens</span></div>
+                          <div className="text-xs text-[#0D9488] font-semibold mt-0.5">{cost(stat.total)}</div>
+                          <div className="text-[10px] text-gray-400">{dayPct}% of total</div>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-bold text-gray-900">{fmt(stat.total)} tokens</div>
-                        <div className="text-xs text-[#0D9488] font-medium">{cost(stat.total)}</div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
           </>
-        )}
+        ) : null}
       </div>
     </AppShell>
   );
