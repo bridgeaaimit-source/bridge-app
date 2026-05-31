@@ -227,11 +227,42 @@ Be honest and fair. A blank or minimal resume should score 10-30. A strong MBA/e
     console.log('Total real jobs fetched:', realJobs.length);
 
     if (realJobs.length === 0) {
+      console.log('⚠️ Specific queries returned 0 results. Running broad fallback search...');
+      try {
+        const fallbackQuery = `${lookingFor === 'Internship' ? 'Internship' : 'Entry level'} jobs in ${location}`;
+        console.log('Searching fallback JSearch for:', fallbackQuery);
+        
+        const jobRes = await fetch(
+          `https://jsearch.p.rapidapi.com/search?` +
+          `query=${encodeURIComponent(fallbackQuery)}&` +
+          `page=1&num_pages=1&date_posted=month&` +
+          `country=in&language=en&` +
+          `employment_types=${lookingFor === 'Internship' ? 'INTERN' : lookingFor === 'Full-time' ? 'FULLTIME' : 'PARTTIME'}`,
+          {
+            method: 'GET',
+            headers: {
+              'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
+              'X-RapidAPI-Host': 'jsearch.p.rapidapi.com'
+            }
+          }
+        );
+
+        const jobData = await jobRes.json();
+        if (jobData.data?.length > 0) {
+          realJobs = jobData.data;
+          console.log(`Fallback search succeeded, found ${realJobs.length} broad opportunities.`);
+        }
+      } catch (fallbackErr) {
+        console.error('Fallback JSearch error:', fallbackErr.message);
+      }
+    }
+
+    if (realJobs.length === 0) {
       return Response.json({
         jobs: [],
         profile_insights: {
           strongest_match: "No direct match found",
-          improvement_tip: "No active jobs fetched from the external job source. Check your target location or try adding high-demand keywords (e.g., specific libraries, tools, or frameworks) to your resume to expand search options.",
+          improvement_tip: "No active jobs fetched from the external job source. Try adjusting your location parameters or adding target industry keywords to your resume to expand opportunities.",
           market_demand: "Medium",
           avg_match_score: 0,
           total_jobs_found: 0
