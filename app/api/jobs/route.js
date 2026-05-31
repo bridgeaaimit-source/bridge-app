@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 export async function POST(request) {
   let body;
@@ -80,6 +81,9 @@ Return ONLY valid JSON:
       }]
     });
 
+    // Track token usage
+    await trackTokensServer(uid || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens);
+
     const text = message.content[0].text
       .replace(/```json/g, '')
       .replace(/```/g, '')
@@ -123,6 +127,9 @@ Be honest and fair. A blank or minimal resume should score 10-30. A strong MBA/e
         ]
       }]
     });
+
+    // Track token usage
+    await trackTokensServer(uid || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const scoreText = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
     return Response.json(JSON.parse(scoreText));
@@ -318,6 +325,9 @@ IMPORTANT:
       messages: [{ role: 'user', content: matchPrompt }]
     });
 
+    // Track token usage
+    await trackTokensServer(uid || 'anonymous', 'jobs', matchMsg.usage?.input_tokens, matchMsg.usage?.output_tokens);
+
     const matchText = matchMsg.content[0].text
       .replace(/```json/g, '')
       .replace(/```/g, '')
@@ -432,6 +442,9 @@ Return ONLY valid JSON, no markdown:
       max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }]
     });
+
+    // Track token usage
+    await trackTokensServer(uid || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const text = message.content[0].text
       .replace(/```json/g, '')
