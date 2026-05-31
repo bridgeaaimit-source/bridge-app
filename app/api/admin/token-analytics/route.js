@@ -7,8 +7,13 @@ export async function POST(request) {
     const { secretKey, days = 30 } = body;
 
     // Validate admin secret
-    if (secretKey !== process.env.ADMIN_SECRET_KEY) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const envKey = (process.env.ADMIN_SECRET_KEY || '').replace(/^["']|["']$/g, '').trim();
+    const providedKey = (secretKey || '').trim();
+    
+    console.log('[TokenAnalytics] Key check:', { envKeyLen: envKey.length, providedKeyLen: providedKey.length, match: envKey === providedKey });
+    
+    if (!envKey || providedKey !== envKey) {
+      return Response.json({ error: 'Unauthorized — invalid secret key' }, { status: 401 });
     }
 
     if (!adminDb) {
