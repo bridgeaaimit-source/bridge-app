@@ -1091,6 +1091,7 @@ export default function SmartInterviewPage() {
           last_question: currentQuestion,
           last_answer: answer,
           session_memory: sessionMemory,
+          conversation_history: updatedHistory,
           user_id: auth.currentUser?.uid || 'test-user-123'
         }),
       });
@@ -1122,6 +1123,8 @@ export default function SmartInterviewPage() {
 
       if (data.interview_complete) {
         toast.success('Interview completed! Generating feedback...');
+        setCurrentAnswer('');
+        clearTranscript();
         await getFeedback(updatedMemory, updatedHistory);
       } else if (data.question) {
         setCurrentQuestion(data.question);
@@ -1131,6 +1134,8 @@ export default function SmartInterviewPage() {
           { role: 'interviewer', message: data.question }
         ]);
         setQuestionNumber(questionNumber + 1);
+        setCurrentAnswer('');
+        clearTranscript();
 
         if (autoSpeak) {
           speakText(data.question, () => {
@@ -1150,8 +1155,6 @@ export default function SmartInterviewPage() {
       console.error('Answer submission error:', error);
     } finally {
       setIsTyping(false);
-      setCurrentAnswer('');
-      clearTranscript();
       if (mode === 'video') {
         setRecordedVideoUrl('');
         setRecordingState('idle');
