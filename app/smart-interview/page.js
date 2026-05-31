@@ -63,33 +63,34 @@ export default function SmartInterviewPage() {
   const [interviewerThought, setInterviewerThought] = useState('');
   const [startError, setStartError] = useState('');
 
-  // Voice command handler — say "finish interview" to end early (temporarily disabled to fix prerender)
+  // Voice command handler — say "finish interview" to end early
   const handleVoiceCommand = (command) => {
-    // Voice command feature temporarily disabled
+    if (command === 'finish') {
+      submitAnswer(undefined, true);
+    }
   };
 
   // Use Deepgram transcription hook with voice command support
-  // Temporarily disabled entirely to isolate prerender error
   const {
-    isRecording: isRecording = false,
-    isConnecting: isConnecting = false,
-    transcript: transcript = '',
-    interimTranscript: interimTranscript = '',
-    fullTranscript: fullTranscript = '',
-    wordCount: wordCount = 0,
-    fillerWords: fillerWords = [],
-    fillerWordCounts: fillerWordCounts = {},
-    recordingStatus: recordingStatus = 'idle',
+    isRecording = false,
+    isConnecting = false,
+    transcript = '',
+    interimTranscript = '',
+    fullTranscript = '',
+    wordCount = 0,
+    fillerWords = [],
+    fillerWordCounts = {},
+    recordingStatus = 'idle',
     error: transcriptionError = null,
-    speechLang: speechLang = 'en-IN',
-    setLang: setLang = () => {},
-    voiceCommandDetected: voiceCommandDetected = null,
-    resetVoiceCommand: resetVoiceCommand = () => {},
+    speechLang = 'en-IN',
+    setLang = () => {},
+    voiceCommandDetected = null,
+    resetVoiceCommand = () => {},
     startRecording: startDeepgramRecording = () => {},
     stopRecording: stopDeepgramRecording = () => {},
-    clearTranscript: clearTranscript = () => {},
-    exportTranscript: exportTranscript = () => {},
-  } = {};
+    clearTranscript = () => {},
+    exportTranscript = () => {},
+  } = useDeepgramTranscription({ onVoiceCommand: handleVoiceCommand });
 
   // submitAnswer uses fullTranscript in video mode too
   const videoTranscript = fullTranscript || interimTranscript;
@@ -998,7 +999,7 @@ export default function SmartInterviewPage() {
   // INTERVIEW SCREEN
   if (stage === 'interviewing') {
     return (
-      <AppShell>
+      <AppShell hideNavigation={true}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10">
           {/* Header */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-8">

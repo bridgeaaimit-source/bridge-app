@@ -12,6 +12,7 @@ import {
 import { useAuthBypass } from "@/hooks/useAuthBypass";
 import { useScreenLock } from "@/hooks/useScreenLock";
 import toast from "react-hot-toast";
+import { selectQuestions } from "@/lib/questionSelector";
 import confetti from "canvas-confetti";
 import {
   Brain, Clock, Zap, Trophy, ChevronRight, BarChart2,
@@ -99,6 +100,12 @@ const SECTION_LABELS = {
   di: "Data Interpretation",
   ga: "General Awareness",
 };
+
+function formatTime(seconds) {
+  const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+  const ss = String(seconds % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
+}
 
 export default function AptitudePage() {
   const { isBypassed, mockUserData } = useAuthBypass();
@@ -339,18 +346,47 @@ export default function AptitudePage() {
 
       // 1. Fetch or create Daily Challenge
       const challengeRef = doc(db, 'dailyChallenges', todayStr);
-      const challengeSnap = await getDoc(challengeRef);
       let todayChallenge = null;
+      try {
+        const challengeSnap = await getDoc(challengeRef);
+        if (challengeSnap.exists()) {
+          todayChallenge = { id: challengeSnap.id, ...challengeSnap.data() };
+        } else {
+          // Fetch a random question from questionBank
+          const qSnap = await getDocs(query(collection(db, 'questionBank'), limit(30)));
+          if (!qSnap.empty) {
+            const questions = qSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const randomQ = questions[Math.floor(Math.random() * questions.length)];
+            const newChallenge = {
+              question: randomQ.question,
+              options: randomQ.options,
+              correct: randomQ.correct,
+              explanation: randomQ.explanation,
+              topic: randomQ.topic,
+              section: randomQ.section,
+              difficulty: randomQ.difficulty,
+              date: todayStr
+            };
+            try {
+              await setDoc(challengeRef, newChallenge);
+            } catch (writeErr) {
+              console.warn("Firestore setDoc failed for daily challenge:", writeErr.message);
+            }
+            todayChallenge = { id: todayStr, ...newChallenge };
+          }
+        }
+      } catch (e) {
+        console.warn("Firestore error loading daily challenge:", e.message);
+      }
 
-      if (challengeSnap.exists()) {
-        todayChallenge = { id: challengeSnap.id, ...challengeSnap.data() };
-      } else {
-        // Fetch a random question from questionBank
-        const qSnap = await getDocs(query(collection(db, 'questionBank'), limit(30)));
-        if (!qSnap.empty) {
-          const questions = qSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-          const randomQ = questions[Math.floor(Math.random() * questions.length)];
-          const newChallenge = {
+      // Fallback if todayChallenge is still null (database empty or query failed)
+      if (!todayChallenge) {
+        try {
+          const { loadAllStaticQuestions } = await import('@/lib/questionsData');
+          const allStatic = loadAllStaticQuestions();
+          const randomQ = allStatic[Math.floor(Math.random() * allStatic.length)];
+          todayChallenge = {
+            id: `static-daily-${todayStr}`,
             question: randomQ.question,
             options: randomQ.options,
             correct: randomQ.correct,
@@ -360,21 +396,27 @@ export default function AptitudePage() {
             difficulty: randomQ.difficulty,
             date: todayStr
           };
-          await setDoc(challengeRef, newChallenge);
-          todayChallenge = { id: todayStr, ...newChallenge };
+        } catch (staticErr) {
+          console.error("Failed to load static daily challenge fallback:", staticErr);
         }
       }
 
       setDailyChallenge(todayChallenge);
 
       // 2. Fetch User Submission for Today
-      const subRef = doc(db, 'dailyChallengeSubmissions', `${uid}_${todayStr}`);
-      const subSnap = await getDoc(subRef);
-      if (subSnap.exists()) {
-        setDailyStatus(subSnap.data().correct ? "correct" : "incorrect");
-      } else {
-        setDailyStatus("unattempted");
+      let dailySubExists = false;
+      let dailySubCorrect = false;
+      try {
+        const subRef = doc(db, 'dailyChallengeSubmissions', `${uid}_${todayStr}`);
+        const subSnap = await getDoc(subRef);
+        if (subSnap.exists()) {
+          dailySubExists = true;
+          dailySubCorrect = subSnap.data().correct;
+        }
+      } catch (subErr) {
+        console.warn("Firestore error loading user daily submission:", subErr.message);
       }
+      setDailyStatus(dailySubExists ? (dailySubCorrect ? "correct" : "incorrect") : "unattempted");
 
       // 3. Load 7-Day Streak Calendar
       const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -426,7 +468,6 @@ export default function AptitudePage() {
 
       // Load company paper using questionSelector
       const companyConfig = COMPANIES[companyKey];
-      const { selectQuestions } = await import('@/lib/questionSelector');
       
       const loadedQs = [];
       const seenIds = []; // we can retrieve seen IDs from user history if desired, starting empty for now
@@ -737,20 +778,20 @@ export default function AptitudePage() {
   }, [answers, score, xp, testQuestions, timeLeft, user, isBypassed, selectedCompanyKey, isDailyChallengeMode]);
 
   return (
-    <AppShell>
-      <div className="min-h-screen bg-[#0B1315] text-[#F3F4F6] font-sans selection:bg-teal-500 selection:text-white">
+    <AppShell hideNavigation={stage === "test" || stage === "loading-test"}>
+      <div className="min-h-screen text-gray-800 font-sans selection:bg-teal-500 selection:text-white">
         
         {/* Anti-Cheat Warning Modal */}
         {showWarningModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-            <div className="bg-[#121E21] border border-red-500/40 rounded-2xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-200">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4">
+            <div className="bg-white border border-red-200 rounded-2xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-200">
               <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-red-500 to-amber-500"></div>
-              <div className="w-16 h-16 bg-red-500/10 border border-red-500/30 rounded-2xl flex items-center justify-center mb-6">
+              <div className="w-16 h-16 bg-red-50 border border-red-100 rounded-2xl flex items-center justify-center mb-6">
                 <AlertTriangle className="w-8 h-8 text-red-500 animate-pulse" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Tab Switch Detected!</h3>
-              <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-                Warning <span className="text-red-500 font-bold">{violations}</span> of <span className="text-gray-200 font-semibold">{maxViolations}</span>.
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Tab Switch Detected!</h3>
+              <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+                Warning <span className="text-red-500 font-bold">{violations}</span> of <span className="text-gray-800 font-semibold">{maxViolations}</span>.
                 Leaving the screen or changing windows during the placement test is strictly monitored. Reaching {maxViolations} violations will trigger auto-submission!
               </p>
               <button
@@ -770,22 +811,22 @@ export default function AptitudePage() {
             
             {/* Database Empty Seeder Notice */}
             {dbQuestionCount === 0 && (
-              <div className="bg-gradient-to-r from-teal-950/40 to-cyan-950/40 border border-teal-500/30 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
+              <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-md relative overflow-hidden">
                 <div className="absolute -right-16 -top-16 w-36 h-36 bg-teal-500/5 rounded-full blur-3xl"></div>
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-teal-500/10 border border-teal-500/20 rounded-xl flex items-center justify-center shrink-0">
-                    <Sparkles className="w-6 h-6 text-teal-400" />
+                  <div className="w-12 h-12 bg-teal-100 border border-teal-200 rounded-xl flex items-center justify-center shrink-0">
+                    <Sparkles className="w-6 h-6 text-[#0D9488]" />
                   </div>
                   <div>
-                    <h4 className="text-base font-bold text-white">Database Initialization Required</h4>
-                    <p className="text-sm text-teal-300/80">Local question bank is empty. Seed 510 unique placement-style questions to get started.</p>
+                    <h4 className="text-base font-bold text-teal-900">Database Initialization Required</h4>
+                    <p className="text-sm text-teal-700">Local question bank is empty. Seed 510 unique placement-style questions to get started.</p>
                   </div>
                 </div>
                 <button
                   id="btn-seed-db"
                   onClick={handleSeedDatabase}
                   disabled={seeding}
-                  className="px-6 py-3 bg-teal-600 hover:bg-teal-500 active:scale-[0.98] disabled:opacity-50 text-white font-semibold rounded-xl shadow-lg shadow-teal-600/35 transition duration-150 shrink-0 whitespace-nowrap"
+                  className="px-6 py-3 bg-[#0D9488] hover:bg-[#0F766E] active:scale-[0.98] disabled:opacity-50 text-white font-semibold rounded-xl shadow-md transition duration-150 shrink-0 whitespace-nowrap"
                 >
                   {seeding ? "Seeding..." : "Seed 510 Questions"}
                 </button>
@@ -795,10 +836,10 @@ export default function AptitudePage() {
             {/* Header & Stats Dashboard */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div>
-                <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
-                  Aptitude <span className="text-teal-400">Arena</span>
+                <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+                  Aptitude <span className="text-[#0D9488]">Arena</span>
                 </h1>
-                <p className="text-gray-400 text-sm mt-1 flex flex-wrap items-center gap-x-2">
+                <p className="text-gray-500 text-sm mt-1 flex flex-wrap items-center gap-x-2">
                   <span>Crushing Indian placement rounds, gamified & adaptive.</span>
                   <button
                     id="btn-force-seed-db"
@@ -810,26 +851,26 @@ export default function AptitudePage() {
                 </p>
               </div>
               
-              <div className="flex items-center gap-4 self-stretch md:self-auto bg-[#121E21] border border-teal-500/10 p-3 px-5 rounded-2xl shadow-lg">
-                <div className="flex items-center gap-2 border-r border-teal-500/15 pr-4">
+              <div className="flex items-center gap-4 self-stretch md:self-auto bg-white border border-gray-100 p-3 px-5 rounded-2xl shadow-[0_4px_20px_rgba(13,148,136,0.06)]">
+                <div className="flex items-center gap-2 border-r border-gray-100 pr-4">
                   <Flame className="w-5 h-5 text-amber-500 fill-amber-500" />
                   <div>
                     <div className="text-xs text-gray-500">Streak</div>
-                    <div className="text-sm font-bold text-white">{streakCount} Days</div>
+                    <div className="text-sm font-bold text-gray-800">{streakCount} Days</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 border-r border-teal-500/15 pr-4">
-                  <Award className="w-5 h-5 text-teal-400" />
+                <div className="flex items-center gap-2 border-r border-gray-100 pr-4">
+                  <Award className="w-5 h-5 text-[#0D9488]" />
                   <div>
                     <div className="text-xs text-gray-500">Total XP</div>
-                    <div className="text-sm font-bold text-white">{totalXP}</div>
+                    <div className="text-sm font-bold text-gray-800">{totalXP}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Trophy className="w-5 h-5 text-yellow-500" />
                   <div>
                     <div className="text-xs text-gray-500">Best Score</div>
-                    <div className="text-sm font-bold text-white">{bestScore} pts</div>
+                    <div className="text-sm font-bold text-gray-800">{bestScore} pts</div>
                   </div>
                 </div>
               </div>
@@ -839,8 +880,8 @@ export default function AptitudePage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               
               {/* Daily Challenge Card */}
-              <div className="lg:col-span-2 bg-[#121E21] border border-teal-500/10 rounded-3xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between">
-                <div className="absolute right-0 top-0 w-48 h-48 bg-gradient-to-bl from-teal-500/5 to-transparent rounded-full blur-2xl pointer-events-none"></div>
+              <div className="lg:col-span-2 bg-white border border-gray-100 rounded-3xl p-6 shadow-[0_4px_20px_rgba(13,148,136,0.06)] relative overflow-hidden flex flex-col justify-between">
+                <div className="absolute right-0 top-0 w-48 h-48 bg-gradient-to-bl from-teal-500/2 to-transparent rounded-full blur-2xl pointer-events-none"></div>
                 
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -854,8 +895,8 @@ export default function AptitudePage() {
                   </div>
 
                   <div className="space-y-2 mb-6">
-                    <h3 className="text-xl font-bold text-white">Daily Aptitude Challenge</h3>
-                    <p className="text-sm text-gray-400 max-w-xl">
+                    <h3 className="text-xl font-bold text-gray-800">Daily Aptitude Challenge</h3>
+                    <p className="text-sm text-gray-500 max-w-xl">
                       Solve today's adaptive question in 60 seconds to lock in your daily streak and earn a double XP bounty (+100 XP).
                     </p>
                   </div>
@@ -870,10 +911,10 @@ export default function AptitudePage() {
                         <div key={day.date} className="flex flex-col items-center gap-1">
                           <div className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${
                             day.completed 
-                              ? "bg-teal-500/20 border-teal-500 text-teal-400 shadow-md shadow-teal-500/10" 
+                              ? "bg-teal-500/20 border-teal-500 text-[#0d9488] shadow-md shadow-teal-500/10" 
                               : day.date === new Date().toISOString().split('T')[0]
-                                ? "bg-amber-500/15 border-amber-500/50 text-amber-500"
-                                : "bg-[#0B1315] border-gray-800 text-gray-600"
+                                ? "bg-amber-500/15 border-amber-500/50 text-amber-600 font-bold"
+                                : "bg-gray-50 border-gray-200 text-gray-400"
                           }`}>
                             {day.completed ? <Check className="w-4 h-4 stroke-[3px]" /> : <span className="text-xs font-bold">{dayLetter}</span>}
                           </div>
@@ -900,16 +941,16 @@ export default function AptitudePage() {
               </div>
 
               {/* Leaderboard Card */}
-              <div className="bg-[#121E21] border border-teal-500/10 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+              <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-[0_4px_20px_rgba(13,148,136,0.06)] flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+                  <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
                     <Trophy className="w-5 h-5 text-amber-400" /> Leaderboard (Top 5 Today)
                   </h3>
                   
                   <div className="space-y-3.5">
                     {topScorers.length > 0 ? (
                       topScorers.map((scorer, idx) => (
-                        <div key={idx} className="flex items-center justify-between gap-3 p-2 bg-[#0B1315]/40 rounded-xl border border-teal-500/5">
+                        <div key={idx} className="flex items-center justify-between gap-3 p-2 bg-gray-50/50 rounded-xl border border-gray-100">
                           <div className="flex items-center gap-2.5">
                             <span className={`w-5 text-center font-bold text-sm ${idx === 0 ? "text-amber-400" : idx === 1 ? "text-gray-400" : "text-gray-500"}`}>
                               {idx + 1}
@@ -918,7 +959,7 @@ export default function AptitudePage() {
                               {scorer.photo ? <img src={scorer.photo} alt={scorer.name} /> : scorer.name.charAt(0)}
                             </div>
                             <div className="max-w-[120px] md:max-w-none">
-                              <div className="text-sm font-bold text-white truncate">{scorer.name}</div>
+                              <div className="text-sm font-bold text-gray-800 truncate">{scorer.name}</div>
                               <div className="text-xs text-gray-500 truncate">{scorer.college}</div>
                             </div>
                           </div>
@@ -941,11 +982,11 @@ export default function AptitudePage() {
 
             {/* Company selector Mode grid */}
             <div className="space-y-5">
-              <div className="flex justify-between items-center border-b border-teal-500/10 pb-4">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <BuildingIcon className="w-5 h-5 text-teal-400" /> Select Company Test Mode
+              <div className="flex justify-between items-center border-b border-gray-150 pb-4">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <BuildingIcon className="w-5 h-5 text-[#0D9488]" /> Select Company Test Mode
                 </h2>
-                <span className="text-xs text-gray-400 bg-gray-900 border border-gray-800 px-3 py-1 rounded-full">
+                <span className="text-xs text-teal-600 bg-teal-50 border border-teal-200 px-3 py-1 rounded-full">
                   Adaptive Mock Tests
                 </span>
               </div>
@@ -961,8 +1002,8 @@ export default function AptitudePage() {
                       onClick={() => setSelectedCompanyKey(key)}
                       className={`cursor-pointer rounded-2xl p-5 border relative overflow-hidden transition-all duration-200 ${
                         selectedCompanyKey === key 
-                          ? "bg-[#142629] border-teal-400 shadow-teal-500/10 shadow-2xl scale-[1.02]" 
-                          : "bg-[#121E21] border-teal-500/10 hover:border-teal-500/25 hover:scale-[1.01]"
+                          ? "bg-teal-50/40 border-[#0D9488] shadow-lg shadow-teal-500/5 scale-[1.02]" 
+                          : "bg-white border-gray-150 hover:border-teal-500/30 hover:scale-[1.01] shadow-[0_4px_20px_rgba(13,148,136,0.04)]"
                       }`}
                     >
                       {comp.tag && (
@@ -993,32 +1034,32 @@ export default function AptitudePage() {
                         </div>
 
                         <div>
-                          <h4 className="font-bold text-white text-base">{comp.name}</h4>
-                          <span className="text-[10px] text-gray-400 uppercase tracking-widest block">Placement Mock</span>
+                          <h4 className="font-bold text-gray-800 text-base">{comp.name}</h4>
+                          <span className="text-[10px] text-gray-500 uppercase tracking-widest block">Placement Mock</span>
                         </div>
                       </div>
 
                       {/* Test pattern metrics */}
-                      <div className="space-y-3 pt-3 border-t border-teal-500/5">
+                      <div className="space-y-3 pt-3 border-t border-gray-100">
                         <div className="flex justify-between text-xs">
                           <span className="text-gray-400">Questions:</span>
-                          <span className="font-semibold text-white">
+                          <span className="font-semibold text-gray-800">
                             {Object.values(comp.sections).reduce((a, b) => a + b, 0)}
                           </span>
                         </div>
                         <div className="flex justify-between text-xs">
                           <span className="text-gray-400">Duration:</span>
-                          <span className="font-semibold text-white">{comp.duration} Mins</span>
+                          <span className="font-semibold text-gray-800">{comp.duration} Mins</span>
                         </div>
                         <div className="flex justify-between text-xs">
                           <span className="text-gray-400">Difficulty:</span>
-                          <span className="font-semibold text-teal-400">{comp.difficulty}</span>
+                          <span className="font-semibold text-teal-600">{comp.difficulty}</span>
                         </div>
                       </div>
 
                       <div className="mt-4 flex flex-wrap gap-1">
                         {Object.keys(comp.sections).map((sec) => (
-                          <span key={sec} className="text-[9px] font-medium bg-[#0B1315] border border-teal-500/5 text-teal-300 px-2 py-0.5 rounded-md uppercase">
+                          <span key={sec} className="text-[9px] font-bold bg-[#F0FDFA] border border-teal-500/10 text-teal-700 px-2 py-0.5 rounded-md uppercase">
                             {sec}
                           </span>
                         ))}
@@ -1049,11 +1090,11 @@ export default function AptitudePage() {
         {stage === "loading-test" && (
           <div className="min-h-[80vh] flex flex-col items-center justify-center text-center p-6 space-y-6">
             <div className="relative w-24 h-24 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full border-4 border-teal-500/10 border-t-teal-400 animate-spin"></div>
-              <Brain className="w-10 h-10 text-teal-400 animate-bounce" />
+              <div className="absolute inset-0 rounded-full border-4 border-teal-100 border-t-[#0D9488] animate-spin"></div>
+              <Brain className="w-10 h-10 text-[#0D9488] animate-bounce" />
             </div>
             <div className="space-y-2 max-w-sm">
-              <h3 className="text-lg font-bold text-white">Assembling Placement Paper...</h3>
+              <h3 className="text-lg font-bold text-gray-800">Assembling Placement Paper...</h3>
               <p className="text-sm text-gray-500">
                 Fetching matching questions from the {COMPANIES[selectedCompanyKey]?.name || "Daily"} question pool.
               </p>
@@ -1069,18 +1110,18 @@ export default function AptitudePage() {
 
           return (
             <div className={`p-4 md:p-8 max-w-4xl mx-auto space-y-6 min-h-[90vh] transition-all duration-500 ${
-              isBoss ? "bg-gradient-to-b from-[#1E0909] to-[#0B0909]" : ""
+              isBoss ? "bg-gradient-to-b from-red-50/50 to-orange-50/30 rounded-3xl" : ""
             }`}>
               
               {/* HUD Bar */}
-              <div className={`rounded-2xl border p-4 px-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 ${
+              <div className={`rounded-2xl border p-4 px-6 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 ${
                 isBoss 
-                  ? "bg-[#2A1010] border-red-500/40 text-red-100 shadow-red-500/5" 
-                  : "bg-[#121E21] border-teal-500/10 text-white"
+                  ? "bg-red-50 border-red-200 text-red-800 shadow-md shadow-red-500/5" 
+                  : "bg-white border-gray-150 text-gray-800"
               }`}>
                 
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded bg-white flex items-center justify-center overflow-hidden shrink-0">
+                  <div className="w-8 h-8 rounded bg-white flex items-center justify-center overflow-hidden shrink-0 border border-gray-200">
                     {!isDailyChallengeMode && (
                       <img
                         src={`https://logo.clearbit.com/${COMPANIES[selectedCompanyKey].domain}`}
@@ -1091,13 +1132,13 @@ export default function AptitudePage() {
                     )}
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm tracking-tight uppercase">
+                    <h3 className="font-bold text-sm tracking-tight uppercase text-gray-800">
                       {isDailyChallengeMode ? "Daily Challenge" : COMPANIES[selectedCompanyKey].name}
                     </h3>
                     <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-semibold border ${
                       isBoss 
-                        ? "bg-red-500/20 border-red-500/30 text-red-400" 
-                        : "bg-teal-500/10 border-teal-500/20 text-teal-400"
+                        ? "bg-red-100 border-red-200 text-red-600" 
+                        : "bg-teal-50 border-teal-200 text-[#0D9488]"
                     }`}>
                       {isBoss ? "BOSS BATTLE (2x XP)" : `Section: ${SECTION_LABELS[q?.section] || q?.section}`}
                     </span>
@@ -1109,19 +1150,19 @@ export default function AptitudePage() {
                   
                   {/* Streak */}
                   {streak > 1 && !isDailyChallengeMode && (
-                    <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/25 p-1 px-3 rounded-full text-xs font-bold text-amber-400 animate-pulse">
-                      <Flame className="w-3.5 h-3.5 fill-amber-400" /> {streak} Streak
+                    <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/25 p-1 px-3 rounded-full text-xs font-bold text-amber-500 animate-pulse">
+                      <Flame className="w-3.5 h-3.5 fill-amber-500" /> {streak} Streak
                     </div>
                   )}
 
                   {/* XP Counter */}
-                  <div className="text-xs font-bold bg-teal-500/10 border border-teal-500/20 px-3 py-1.5 rounded-full text-teal-400">
+                  <div className="text-xs font-bold bg-teal-50 border border-teal-200 px-3 py-1.5 rounded-full text-[#0D9488]">
                     +{xp} XP
                   </div>
 
                   {/* Power-ups Row */}
                   {!isDailyChallengeMode && (
-                    <div className="flex items-center gap-1.5 border-l border-gray-800 pl-4">
+                    <div className="flex items-center gap-1.5 border-l border-gray-200 pl-4">
                       
                       {/* Fifty Fifty */}
                       <button
@@ -1130,8 +1171,8 @@ export default function AptitudePage() {
                         disabled={powerUps.fiftyFifty || selectedOption !== null}
                         className={`p-2 rounded-lg border transition ${
                           powerUps.fiftyFifty 
-                            ? "bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed" 
-                            : "bg-[#0B1315] border-teal-500/20 hover:border-teal-400 text-teal-400 hover:bg-[#121E21]"
+                            ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed" 
+                            : "bg-white border-gray-200 hover:border-teal-400 text-[#0D9488] hover:bg-teal-50/30"
                         }`}
                         title="🔮 50/50: Hides two incorrect options"
                       >
@@ -1145,14 +1186,14 @@ export default function AptitudePage() {
                         disabled={powerUps.timeFreeze || selectedOption !== null}
                         className={`p-2 rounded-lg border relative transition ${
                           powerUps.timeFreeze 
-                            ? "bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed" 
-                            : "bg-[#0B1315] border-teal-500/20 hover:border-teal-400 text-teal-400 hover:bg-[#121E21]"
+                            ? "bg-gray-150 border-gray-200 text-gray-400 cursor-not-allowed" 
+                            : "bg-white border-gray-200 hover:border-teal-400 text-[#0D9488] hover:bg-teal-50/30"
                         }`}
                         title="❄️ Time Freeze: Stops clock for 60 seconds"
                       >
                         <Clock className="w-4 h-4" />
                         {isTimeFrozen && (
-                          <span className="absolute -top-1 -right-1 bg-cyan-500 text-black text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                          <span className="absolute -top-1 -right-1 bg-cyan-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                             {freezeDurationLeft}
                           </span>
                         )}
@@ -1165,8 +1206,8 @@ export default function AptitudePage() {
                         disabled={powerUps.skip || selectedOption !== null}
                         className={`p-2 rounded-lg border transition ${
                           powerUps.skip 
-                            ? "bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed" 
-                            : "bg-[#0B1315] border-teal-500/20 hover:border-teal-400 text-teal-400 hover:bg-[#121E21]"
+                            ? "bg-gray-150 border-gray-200 text-gray-400 cursor-not-allowed" 
+                            : "bg-white border-gray-200 hover:border-teal-400 text-[#0D9488] hover:bg-teal-50/30"
                         }`}
                         title="⏭️ Skip: Jump to next question instantly"
                       >
@@ -1179,10 +1220,10 @@ export default function AptitudePage() {
                   {/* Section timer */}
                   <div className={`p-2 px-4 rounded-xl font-mono font-bold text-sm tracking-widest border ${
                     isBoss 
-                      ? "bg-red-500/10 border-red-500/40 text-red-500 shadow-md shadow-red-500/10" 
+                      ? "bg-red-100 border-red-300 text-red-700 shadow-sm" 
                       : isTimeFrozen
-                        ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400 animate-pulse"
-                        : "bg-[#0B1315] border-teal-500/20 text-teal-400"
+                        ? "bg-cyan-50 border-cyan-300 text-cyan-600 animate-pulse"
+                        : "bg-teal-50 border-teal-200 text-[#0D9488]"
                   }`}>
                     {isTimeFrozen ? `FROZEN` : formatTime(timeLeft)}
                   </div>
@@ -1192,20 +1233,20 @@ export default function AptitudePage() {
               </div>
 
               {/* Progress Bar */}
-              <div className="w-full bg-gray-900 h-2.5 rounded-full overflow-hidden border border-gray-800 relative">
+              <div className="w-full bg-gray-150 h-2.5 rounded-full overflow-hidden border border-gray-200 relative">
                 <div
                   className={`h-full transition-all duration-300 ${
-                    isBoss ? "bg-gradient-to-r from-red-600 to-rose-500" : "bg-gradient-to-r from-teal-500 to-cyan-400"
+                    isBoss ? "bg-gradient-to-r from-red-600 to-rose-500" : "bg-gradient-to-r from-[#0D9488] to-[#14B8A6]"
                   }`}
                   style={{ width: `${((currentIndex + 1) / testQuestions.length) * 100}%` }}
                 ></div>
               </div>
 
               {/* Question Card */}
-              <div className={`rounded-3xl border p-6 md:p-8 shadow-2xl relative overflow-hidden transition-all duration-300 ${
+              <div className={`rounded-3xl border p-6 md:p-8 shadow-md relative overflow-hidden transition-all duration-300 ${
                 isBoss 
-                  ? "bg-[#1A0E0E] border-red-500/20 shadow-red-950/20" 
-                  : "bg-[#121E21] border-teal-500/10 shadow-black/40"
+                  ? "bg-red-50/30 border-red-150" 
+                  : "bg-white border-gray-150 shadow-[0_4px_20px_rgba(13,148,136,0.06)]"
               }`}>
                 {/* Topic breadcrumb */}
                 <div className="flex items-center justify-between mb-4">
@@ -1213,9 +1254,9 @@ export default function AptitudePage() {
                     Topic: {q?.topic || "General"}
                   </span>
                   <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded ${
-                    q?.difficulty === 1 ? "bg-green-500/10 text-green-400 border border-green-500/20" :
-                    q?.difficulty === 2 ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" :
-                    "bg-red-500/10 text-red-400 border border-red-500/20"
+                    q?.difficulty === 1 ? "bg-green-100 text-green-700 border border-green-200" :
+                    q?.difficulty === 2 ? "bg-yellow-100 text-yellow-700 border border-yellow-200" :
+                    "bg-red-100 text-red-700 border border-red-200"
                   }`}>
                     Diff: {q?.difficulty === 1 ? "Easy" : q?.difficulty === 2 ? "Medium" : "Hard"}
                   </span>
@@ -1223,14 +1264,14 @@ export default function AptitudePage() {
 
                 {/* Boss Battle visual cue */}
                 {isBoss && (
-                  <div className="mb-4 p-3 bg-red-950/40 border border-red-500/30 rounded-xl flex items-center gap-2.5 text-xs text-red-400 animate-pulse">
+                  <div className="mb-4 p-3 bg-red-100/50 border border-red-200 rounded-xl flex items-center gap-2.5 text-xs text-red-700 animate-pulse">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <strong>ELITE CHALLENGE:</strong> Ticking 1.5x speed. Defeat Goliath for a double XP reward!
                   </div>
                 )}
 
                 {/* Question Text */}
-                <h2 className="text-lg md:text-xl font-bold text-white leading-relaxed mb-8 whitespace-pre-line">
+                <h2 className="text-lg md:text-xl font-bold text-gray-800 leading-relaxed mb-8 whitespace-pre-line">
                   {currentIndex + 1}. {q?.question}
                 </h2>
 
@@ -1249,9 +1290,9 @@ export default function AptitudePage() {
                       return (
                         <div
                           key={idx}
-                          className="py-4 px-6 rounded-xl border border-dashed border-gray-800 text-gray-700 bg-transparent text-sm flex items-center gap-2 select-none"
+                          className="py-4 px-6 rounded-xl border border-dashed border-gray-200 text-gray-400 bg-transparent text-sm flex items-center gap-2 select-none"
                         >
-                          <Lock className="w-3.5 h-3.5 text-gray-800" /> Option eliminated by 50/50
+                          <Lock className="w-3.5 h-3.5 text-gray-400" /> Option eliminated by 50/50
                         </div>
                       );
                     }
@@ -1264,12 +1305,12 @@ export default function AptitudePage() {
                         disabled={selectedOption !== null}
                         className={`w-full py-4 px-6 text-left rounded-2xl border text-sm md:text-base transition duration-150 flex items-center justify-between ${
                           showCorrect 
-                            ? "bg-green-500/10 border-green-500 text-green-400 font-semibold" 
+                            ? "bg-green-50 border-green-500 text-green-700 font-semibold" 
                             : showWrong 
-                              ? "bg-red-500/10 border-red-500 text-red-400 font-semibold"
+                              ? "bg-red-50 border-red-500 text-red-700 font-semibold"
                               : selectedOption !== null 
-                                ? "bg-gray-900/40 border-gray-800 text-gray-500 cursor-default" 
-                                : "bg-[#0B1315] border-teal-500/10 hover:border-teal-400 text-gray-200 hover:bg-[#121E21]"
+                                ? "bg-gray-50 border-gray-150 text-gray-400 cursor-default" 
+                                : "bg-white border-gray-150 hover:border-teal-400 text-gray-700 hover:bg-[#F0FDFA]"
                         }`}
                       >
                         <span>{opt}</span>
@@ -1282,19 +1323,18 @@ export default function AptitudePage() {
 
                 {/* Immediate Explanation Drawer */}
                 {showExplanation && (
-                  <div className="mt-8 pt-6 border-t border-teal-500/10 space-y-3 animate-in slide-in-from-bottom duration-300">
-                    <h4 className="text-sm font-bold text-teal-400 flex items-center gap-1.5">
+                  <div className="mt-8 pt-6 border-t border-teal-200 space-y-3 animate-in slide-in-from-bottom duration-300">
+                    <h4 className="text-sm font-bold text-[#0D9488] flex items-center gap-1.5">
                       <HelpCircle className="w-4 h-4" /> Explanation & Methodology
                     </h4>
-                    <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
+                    <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
                       {q?.explanation}
                     </p>
-                    
                     <div className="pt-4 flex justify-end">
                       <button
                         id="btn-next-question"
                         onClick={handleNextQuestion}
-                        className="px-6 py-3 bg-teal-600 hover:bg-teal-500 active:scale-[0.98] text-white font-bold rounded-xl shadow-md shadow-teal-600/25 transition duration-150 flex items-center gap-1.5 text-sm"
+                        className="px-6 py-3 bg-[#0D9488] hover:bg-[#0F766E] active:scale-[0.98] text-white font-bold rounded-xl shadow-md transition duration-150 flex items-center gap-1.5 text-sm"
                       >
                         {isLast ? "Finish Test" : "Next Question"} <ChevronRight className="w-4 h-4" />
                       </button>
@@ -1314,11 +1354,11 @@ export default function AptitudePage() {
             
             {/* Header banner */}
             <div className="text-center space-y-2">
-              <span className="px-3.5 py-1 bg-teal-500/10 border border-teal-500/20 text-teal-400 rounded-full text-xs font-semibold uppercase tracking-wider">
+              <span className="px-3.5 py-1 bg-teal-50 border border-teal-200 text-[#0D9488] rounded-full text-xs font-semibold uppercase tracking-wider">
                 Assessment Complete
               </span>
-              <h2 className="text-3xl font-extrabold text-white">Placement Analysis Report</h2>
-              <p className="text-gray-400 text-sm max-w-md mx-auto">
+              <h2 className="text-3xl font-extrabold text-gray-800">Placement Analysis Report</h2>
+              <p className="text-gray-500 text-sm max-w-md mx-auto">
                 Review your accuracy breakdown, weaknesses, and actionable placement checkpoints.
               </p>
             </div>
@@ -1327,7 +1367,7 @@ export default function AptitudePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               
               {/* score circle */}
-              <div className="bg-[#121E21] border border-teal-500/10 rounded-3xl p-6 shadow-xl flex flex-col items-center justify-center text-center">
+              <div className="bg-white border border-gray-150 rounded-3xl p-6 shadow-md flex flex-col items-center justify-center text-center">
                 
                 <div className="relative w-36 h-36 flex items-center justify-center mb-4">
                   {/* Outer circle track */}
@@ -1336,53 +1376,53 @@ export default function AptitudePage() {
                       cx="72"
                       cy="72"
                       r="60"
-                      className="stroke-[#0B1315] stroke-[10] fill-none"
+                      className="stroke-gray-100 stroke-[10] fill-none"
                     />
                     <circle
                       cx="72"
                       cy="72"
                       r="60"
-                      className="stroke-teal-500 stroke-[10] fill-none transition-all duration-1000"
+                      className="stroke-[#0D9488] stroke-[10] fill-none transition-all duration-1000"
                       strokeDasharray={377}
                       strokeDashoffset={377 - (377 * results.accuracy) / 100}
                     />
                   </svg>
                   
                   <div className="absolute flex flex-col items-center">
-                    <span className="text-4xl font-black text-white">{results.accuracy}%</span>
-                    <span className="text-[10px] text-gray-500 uppercase tracking-widest">Accuracy</span>
+                    <span className="text-4xl font-black text-gray-800">{results.accuracy}%</span>
+                    <span className="text-[10px] text-gray-400 uppercase tracking-widest">Accuracy</span>
                   </div>
                 </div>
 
-                <h3 className="font-extrabold text-lg text-white">Score: {results.score} / {results.maxScore}</h3>
-                <span className="text-xs text-gray-400 mt-1 block">Level Earned: {results.level}</span>
+                <h3 className="font-extrabold text-lg text-gray-800">Score: {results.score} / {results.maxScore}</h3>
+                <span className="text-xs text-gray-500 mt-1 block">Level Earned: {results.level}</span>
               </div>
 
               {/* Stats Summary Panel */}
-              <div className="md:col-span-2 bg-[#121E21] border border-teal-500/10 rounded-3xl p-6 shadow-xl grid grid-cols-2 gap-6 items-center">
+              <div className="md:col-span-2 bg-white border border-gray-150 rounded-3xl p-6 shadow-md grid grid-cols-2 gap-6 items-center">
                 <div className="space-y-1">
-                  <span className="text-xs text-gray-500 block uppercase font-semibold">XP Earned</span>
-                  <div className="text-2xl font-black text-teal-400">+{results.xpEarned} XP</div>
-                  <span className="text-[10px] text-gray-400 block">Total Rating Boost</span>
+                  <span className="text-xs text-gray-400 block uppercase font-semibold">XP Earned</span>
+                  <div className="text-2xl font-black text-[#0D9488]">+{results.xpEarned} XP</div>
+                  <span className="text-[10px] text-gray-500 block">Total Rating Boost</span>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-xs text-gray-500 block uppercase font-semibold">Percentile Rating</span>
-                  <div className="text-2xl font-black text-cyan-400">Top {100 - results.percentile}%</div>
-                  <span className="text-[10px] text-gray-400 block">Better than {results.percentile}% of applicants</span>
+                  <span className="text-xs text-gray-400 block uppercase font-semibold">Percentile Rating</span>
+                  <div className="text-2xl font-black text-cyan-600">Top {100 - results.percentile}%</div>
+                  <span className="text-[10px] text-gray-500 block">Better than {results.percentile}% of applicants</span>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-xs text-gray-500 block uppercase font-semibold">Time Performance</span>
-                  <div className="text-2xl font-black text-white">
+                  <span className="text-xs text-gray-400 block uppercase font-semibold">Time Performance</span>
+                  <div className="text-2xl font-black text-gray-800">
                     {Math.floor(results.timeTaken / 60)}m {results.timeTaken % 60}s
                   </div>
-                  <span className="text-[10px] text-gray-400 block">Total active minutes</span>
+                  <span className="text-[10px] text-gray-500 block">Total active minutes</span>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-xs text-gray-500 block uppercase font-semibold">Correct / Wrong</span>
-                  <div className="text-2xl font-black text-white">
-                    <span className="text-green-400">{results.correct}</span> / <span className="text-red-400">{results.wrong}</span>
+                  <span className="text-xs text-gray-400 block uppercase font-semibold">Correct / Wrong</span>
+                  <div className="text-2xl font-black text-gray-800">
+                    <span className="text-green-600">{results.correct}</span> / <span className="text-red-500">{results.wrong}</span>
                   </div>
-                  <span className="text-[10px] text-gray-400 block">Excludes {results.skipped} skips</span>
+                  <span className="text-[10px] text-gray-500 block">Excludes {results.skipped} skips</span>
                 </div>
               </div>
 
@@ -1392,29 +1432,29 @@ export default function AptitudePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               
               {/* Weakest Topic Drill */}
-              <div className="bg-[#121E21] border border-teal-500/10 rounded-3xl p-6 shadow-xl space-y-4">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <div className="bg-white border border-gray-150 rounded-3xl p-6 shadow-md space-y-4">
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                   <Target className="w-5 h-5 text-red-500" /> Target Weak Area
                 </h3>
 
-                <div className="p-4 bg-red-500/5 border border-red-500/15 rounded-2xl">
-                  <div className="text-xs text-gray-500 block uppercase font-semibold">Weakest Identified Topic</div>
-                  <div className="text-lg font-bold text-red-400 mt-1">{results.weakestTopic}</div>
+                <div className="p-4 bg-red-50 border border-red-100 rounded-2xl">
+                  <div className="text-xs text-gray-550 block uppercase font-semibold">Weakest Identified Topic</div>
+                  <div className="text-lg font-bold text-red-600 mt-1">{results.weakestTopic}</div>
                 </div>
 
                 <div className="space-y-2.5">
-                  <span className="text-xs text-gray-400 block font-bold uppercase">Recommended Drill Checklist:</span>
+                  <span className="text-xs text-gray-500 block font-bold uppercase">Recommended Drill Checklist:</span>
                   <ul className="space-y-2">
-                    <li className="flex items-start gap-2.5 text-xs text-gray-300">
-                      <div className="w-5 h-5 bg-teal-500/10 border border-teal-500/20 text-teal-400 rounded-full flex items-center justify-center shrink-0 font-bold">1</div>
+                    <li className="flex items-start gap-2.5 text-xs text-gray-600">
+                      <div className="w-5 h-5 bg-teal-50 border border-teal-200 text-[#0D9488] rounded-full flex items-center justify-center shrink-0 font-bold">1</div>
                       <span>Revise the fundamental ratios and formulas for <strong>{results.weakestTopic}</strong>.</span>
                     </li>
-                    <li className="flex items-start gap-2.5 text-xs text-gray-300">
-                      <div className="w-5 h-5 bg-teal-500/10 border border-teal-500/20 text-teal-400 rounded-full flex items-center justify-center shrink-0 font-bold">2</div>
+                    <li className="flex items-start gap-2.5 text-xs text-gray-600">
+                      <div className="w-5 h-5 bg-teal-50 border border-teal-200 text-[#0D9488] rounded-full flex items-center justify-center shrink-0 font-bold">2</div>
                       <span>Attempt at least 15 medium-difficulty practice drills.</span>
                     </li>
-                    <li className="flex items-start gap-2.5 text-xs text-gray-300">
-                      <div className="w-5 h-5 bg-teal-500/10 border border-teal-500/20 text-teal-400 rounded-full flex items-center justify-center shrink-0 font-bold">3</div>
+                    <li className="flex items-start gap-2.5 text-xs text-gray-600">
+                      <div className="w-5 h-5 bg-teal-50 border border-teal-200 text-[#0D9488] rounded-full flex items-center justify-center shrink-0 font-bold">3</div>
                       <span>Take a timed section quiz specifically in {SECTION_LABELS[Object.keys(results.sectionScores)[0]] || "Aptitude"}.</span>
                     </li>
                   </ul>
@@ -1422,10 +1462,10 @@ export default function AptitudePage() {
               </div>
 
               {/* AI Coach Insights */}
-              <div className="bg-[#121E21] border border-teal-500/10 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+              <div className="bg-white border border-gray-150 rounded-3xl p-6 shadow-md flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
-                    <Sparkles className="w-5 h-5 text-teal-400" /> AI Coach Assessment
+                  <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
+                    <Sparkles className="w-5 h-5 text-[#0D9488]" /> AI Coach Assessment
                   </h3>
 
                   {loadingInsight ? (
@@ -1434,24 +1474,24 @@ export default function AptitudePage() {
                       <span>Consulting LLM Coach...</span>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-300 leading-relaxed italic bg-[#0B1315]/50 border border-teal-500/5 p-4 rounded-2xl">
+                    <p className="text-sm text-gray-600 leading-relaxed italic bg-[#F0FDFA] border border-teal-150 p-4 rounded-2xl">
                       "{aiInsight}"
                     </p>
                   )}
                 </div>
 
-                <div className="pt-4 border-t border-teal-500/5 flex justify-end gap-3 mt-4">
+                <div className="pt-4 border-t border-gray-100 flex justify-end gap-3 mt-4">
                   <button
                     id="btn-return-home"
                     onClick={() => { setStage("home"); loadDashboardData(); }}
-                    className="px-6 py-3 bg-[#0B1315] hover:bg-[#121E21] border border-teal-500/10 text-white font-bold rounded-xl text-sm transition"
+                    className="px-6 py-3 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold rounded-xl text-sm transition"
                   >
                     Return to Arena
                   </button>
                   <button
                     id="btn-re-attempt"
                     onClick={() => handleStartTest(selectedCompanyKey)}
-                    className="px-6 py-3 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-teal-600/25 transition"
+                    className="px-6 py-3 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl text-sm shadow-md transition"
                   >
                     Re-Attempt Test
                   </button>
@@ -1462,19 +1502,19 @@ export default function AptitudePage() {
 
             {/* Section Breakdown Grid */}
             <div className="space-y-4">
-              <h3 className="text-lg font-bold text-white">Section-wise Performance Breakdown</h3>
+              <h3 className="text-lg font-bold text-gray-800 font-sans">Section-wise Performance Breakdown</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {Object.entries(results.sectionScores).map(([sec, val]) => (
-                  <div key={sec} className="bg-[#121E21] border border-teal-500/10 rounded-2xl p-5 shadow-lg space-y-3">
+                  <div key={sec} className="bg-white border border-gray-150 rounded-2xl p-5 shadow-md space-y-3">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-white uppercase">{SECTION_LABELS[sec]}</span>
-                      <span className="font-extrabold text-teal-400">{val}%</span>
+                      <span className="font-bold text-gray-700 uppercase">{SECTION_LABELS[sec]}</span>
+                      <span className="font-extrabold text-[#0D9488]">{val}%</span>
                     </div>
                     
                     {/* Progress track */}
-                    <div className="w-full bg-[#0B1315] h-2 rounded-full overflow-hidden border border-teal-500/5">
-                      <div className="bg-teal-500 h-full rounded-full" style={{ width: `${val}%` }}></div>
+                    <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden border border-gray-200">
+                      <div className="bg-[#0D9488] h-full rounded-full" style={{ width: `${val}%` }}></div>
                     </div>
                   </div>
                 ))}
