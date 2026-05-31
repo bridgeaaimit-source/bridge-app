@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import AppShell from "@/components/AppShell";
@@ -382,7 +382,7 @@ export default function AptitudePage() {
       const res = await fetch("/api/aptitude-insight", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sectionScores, accuracy, level }),
+        body: JSON.stringify({ sectionScores, accuracy, level, userId: user?.uid }),
       });
       const data = await res.json();
       setAiInsight(data.insight);

@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,6 +11,7 @@ export async function POST(request) {
     const resumeTextInput = formData.get('resumeText');
     const jobRole = formData.get('jobRole');
     const jobDescription = formData.get('jobDescription');
+    const userId = formData.get('userId') || formData.get('uid');
 
     if ((!resumeFile && !resumeTextInput) || !jobRole || !jobDescription) {
       return Response.json(
@@ -138,6 +140,9 @@ IMPORTANT:
       max_tokens: 8000,
       messages: [{ role: 'user', content: messageContent }],
     });
+
+    // Track token usage
+    await trackTokensServer(userId || 'anonymous', 'career-intel', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const responseText = message.content[0].text
       .replace(/```json/g, '')

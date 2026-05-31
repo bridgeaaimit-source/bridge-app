@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { trackTokensServer } from "@/lib/tokenTrackerServer";
 
 export async function POST(request) {
   try {
@@ -29,6 +30,9 @@ Be brutally specific. Mention their actual skills, city, domain. No generic advi
       max_tokens: 1024,
       messages: [{ role: "user", content: prompt }],
     });
+
+    // Track token usage
+    await trackTokensServer(userId || "anonymous", "career-intel", message.usage?.input_tokens, message.usage?.output_tokens);
 
     const raw = message.content[0].text.trim();
     const jsonStart = raw.indexOf("{");

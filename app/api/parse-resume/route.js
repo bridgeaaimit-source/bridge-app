@@ -14,6 +14,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 export const runtime = 'nodejs';
 
@@ -56,7 +57,7 @@ Return ONLY valid JSON with no markdown fences:
 
 export async function POST(request) {
   try {
-    const { resume_base64, file_type, file_name } = await request.json();
+    const { resume_base64, file_type, file_name, userId } = await request.json();
 
     if (!resume_base64) {
       return Response.json({ error: 'resume_base64 is required' }, { status: 400 });
@@ -121,6 +122,9 @@ export async function POST(request) {
       max_tokens: 2000,
       messages: [{ role: 'user', content: messageContent }],
     });
+
+    // Track token usage
+    await trackTokensServer(userId || 'anonymous', 'resume', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const raw = message.content[0].text
       .replace(/```json/gi, '')

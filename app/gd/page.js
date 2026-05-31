@@ -119,7 +119,8 @@ export default function GDPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           topic: customTopic,
-          category: 'Custom'
+          category: 'Custom',
+          uid: user?.uid
         })
       });
 

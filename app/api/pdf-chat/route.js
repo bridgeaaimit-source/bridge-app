@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { adminDb, trackTokens } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 
 
@@ -8,7 +9,7 @@ import { adminDb, trackTokens } from '@/lib/firebase-admin';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { pdf_base64, question, chat_history, user_id } = body;
+    const { pdf_base64, question, chat_history, user_id, userId } = body;
 
     if (!pdf_base64 || !question) {
       return Response.json(
@@ -53,7 +54,7 @@ export async function POST(request) {
     });
 
     // Track token usage
-    await trackTokens(user_id, 'pdf-chat', message.usage?.input_tokens, message.usage?.output_tokens);
+    await trackTokensServer(user_id || userId || 'anonymous', 'pdf-chat', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const answer = message.content[0].text;
 

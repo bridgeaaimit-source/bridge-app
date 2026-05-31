@@ -1,7 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { doc, setDoc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { adminDb, trackTokens } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 
 
@@ -56,7 +57,7 @@ Now generate the questions:`;
       });
 
       // Track token usage
-      await trackTokens(uid || 'anonymous', 'interview-generate', message.usage?.input_tokens, message.usage?.output_tokens);
+      await trackTokensServer(uid || 'anonymous', 'interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
       const text = message.content[0].text
         .replace(/```json/g, '')
@@ -169,6 +170,9 @@ Return ONLY valid JSON, no markdown, no extra text:
         max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }]
       });
+
+      // Track token usage
+      await trackTokensServer(uid || 'anonymous', 'interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
       const text = message.content[0].text
         .replace(/```json/g, '')
