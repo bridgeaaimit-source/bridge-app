@@ -208,7 +208,7 @@ Return ONLY valid JSON format:
       .map(([k]) => k);
 
     const prompt = `You are a professional campus recruiter conducting a ${round} for the role: ${job_role}.
-Evaluate the candidate's last answer and generate the NEXT unique question.
+Generate the NEXT unique question based on the candidate's previous answer. DO NOT generate detailed answer analysis to save processing time.
 
 CANDIDATE PROFILE:
 - Tier 2/3 college student or fresher — reward effort, clarity, logic, and learning potential.
@@ -227,13 +227,11 @@ Uncovered competencies remaining: ${JSON.stringify(uncoveredCompetencies)}
 STRICT ANTI-REPETITION RULE (most important):
 The following questions have ALREADY been asked — your next question MUST be completely different in topic, angle, and wording:
 ${canonicalAskedQuestions.map((q, i) => `  Q${i + 1}: "${q}"`).join('\n')}
-
-If the next question you think of sounds similar to ANY of the above, discard it and move to a different competency instead.
+If the next question sounds similar to ANY of the above, discard it and move to a different competency instead.
+Track insights in "interview_summary" to avoid revisiting the same topics.
 
 QUESTION LENGTH RULE (MANDATORY):
 Write 2 to 3 sentences maximum. Conversational — like a real recruiter speaking. No bullet points, no multi-part questions, no lengthy preamble.
-
-SCORING: Integer scores 1-10 only. No fractions or strings.
 
 Question count: ${canonicalAskedQuestions.length + 1} of max 15 (target 10)
 End interview ("interview_complete": true) when: all competencies covered AND ≥8 questions asked, OR ≥15 questions asked.
@@ -250,21 +248,10 @@ Return ONLY valid JSON:
 {
   "question": "2-3 sentence question on a NEW topic not covered above",
   "interviewer_thought": "Brief reason for asking this (shown to candidate as context)",
-  "answer_analysis": {
-    "question_number": ${canonicalAskedQuestions.length},
-    "question": "${(last_question || '').replace(/"/g, "'")}",
-    "answer": "${(last_answer || '').replace(/"/g, "'")}",
-    "score": 7,
-    "what_did_well": ["one specific strength"],
-    "what_to_improve": ["one constructive suggestion"],
-    "better_sample_answer": "A 2-3 sentence model response for a fresher",
-    "dimension_scores": { "communication": 7, "relevance": 7, "technical_depth": 7, "structure": 7, "confidence": 7 }
-  },
   "session_memory": {
-    "interview_summary": "Running summary including latest response...",
+    "interview_summary": "Update this running summary with 1-2 new bullet points capturing specific facts or technical concepts the candidate just mentioned, so you don't ask about them again.",
     "competencies": { "communication": { "score": 0, "covered": false, "question_count": 0 }, "resume_validation": { "score": 0, "covered": false, "question_count": 0 }, "technical_knowledge": { "score": 0, "covered": false, "question_count": 0 }, "problem_solving": { "score": 0, "covered": false, "question_count": 0 }, "behavioral": { "score": 0, "covered": false, "question_count": 0 }, "culture_fit": { "score": 0, "covered": false, "question_count": 0 } },
     "asked_questions": ${JSON.stringify([...canonicalAskedQuestions, "<your_next_question_text>"])},
-    "question_analysis": [],
     "current_competency": "next_competency_name"
   },
   "interview_complete": false
@@ -289,18 +276,6 @@ Return ONLY valid JSON:
     let result;
     try {
       result = JSON.parse(text);
-      
-      // Calibrate and clean all scores to integers
-      if (result.answer_analysis) {
-        result.answer_analysis.score = safeInt(result.answer_analysis.score);
-        if (result.answer_analysis.dimension_scores) {
-          result.answer_analysis.dimension_scores.communication = safeInt(result.answer_analysis.dimension_scores.communication);
-          result.answer_analysis.dimension_scores.relevance = safeInt(result.answer_analysis.dimension_scores.relevance);
-          result.answer_analysis.dimension_scores.technical_depth = safeInt(result.answer_analysis.dimension_scores.technical_depth);
-          result.answer_analysis.dimension_scores.structure = safeInt(result.answer_analysis.dimension_scores.structure);
-          result.answer_analysis.dimension_scores.confidence = safeInt(result.answer_analysis.dimension_scores.confidence);
-        }
-      }
       
       if (result.session_memory && result.session_memory.competencies) {
         Object.keys(result.session_memory.competencies).forEach(key => {
@@ -333,16 +308,6 @@ Return ONLY valid JSON:
       result = {
         question: fallbackQ,
         interviewer_thought: `Exploring ${nextCompetency.replace('_', ' ')} competency.`,
-        answer_analysis: {
-          question_number: canonicalAskedQuestions.length,
-          question: last_question || "Previous Question",
-          answer: last_answer || "",
-          score: 6,
-          what_did_well: ["Showed willingness to engage with the topic"],
-          what_to_improve: ["Provide more specific examples with measurable outcomes"],
-          better_sample_answer: "I worked on a project where I had to... (describe situation, your action, the result).",
-          dimension_scores: { communication: 6, relevance: 6, technical_depth: 5, structure: 6, confidence: 6 }
-        },
         session_memory: {
           ...memory,
           asked_questions: newQuestionsList,
@@ -360,15 +325,11 @@ Return ONLY valid JSON:
       }
     }
 
-    // Add the current analysis step on client-side or backend
-    if (result.session_memory && result.answer_analysis) {
-      const currentList = memory.question_analysis || [];
-      result.session_memory.question_analysis = [...currentList, result.answer_analysis];
+    // Check if question was appended correctly
+    if (result.session_memory && result.question) {
+      console.log('📋 Asked so far:', result.session_memory?.asked_questions?.length, 'questions');
+      return Response.json(result);
     }
-    
-    console.log('✅ Next question:', result.question);
-    console.log('📋 Asked so far:', result.session_memory?.asked_questions?.length, 'questions');
-    return Response.json(result);
   }
 
   // ACTION 3: Final evaluation
@@ -382,33 +343,40 @@ Return ONLY valid JSON:
 
     console.log('Final evaluation requested. Memory keys:', Object.keys(memory));
 
-    // Fallback if session memory doesn't contain detailed analysis
-    let fallbackHistoryText = "";
-    if ((!memory.question_analysis || memory.question_analysis.length === 0) && conversation_history) {
-      fallbackHistoryText = conversation_history.map((h, i) =>
-        `Q${i+1}: ${h.question}\nA${i+1}: ${h.answer}`
-      ).join('\n\n');
-    }
+    // Since we no longer generate per-question analysis, we rely entirely on conversation_history
+    const historyText = conversation_history && conversation_history.length > 0
+      ? conversation_history.map((h, i) => `${h.role === 'interviewer' ? 'Q' : 'A'}: ${h.message}`).join('\n\n')
+      : "No conversation history available.";
 
-    const prompt = `You are a fair and intelligent hiring manager performing the final evaluation of a candidate for the role: ${job_role}.
+    const prompt = `You are an expert hiring manager and technical interviewer evaluating a candidate for the role: ${job_role}.
 
-Evaluate based on the structured session memory:
-${JSON.stringify(memory)}
-${fallbackHistoryText ? `\nFallback Conversation History:\n${fallbackHistoryText}` : ''}
+FULL INTERVIEW TRANSCRIPT:
+${historyText}
 
-TARGET USERS CALIBRATION:
-- Candidates are Tier 2 or 3 college students, freshers, and early career applicants.
-- Reward logical reasoning, structure, effort, and growth potential.
-- Do not heavily penalize minor communication slips, accents, or nervousness.
+SESSION SUMMARY (AI Notes):
+${JSON.stringify(memory.interview_summary || "None")}
 
-SCORING GUIDELINES:
-- Overall Score should represent the average candidate performance (scale 1-10, integer).
-- Output numeric integer values for all score breakdowns (1-10).
-- Placement Chance (0-100%): start at 60%, calibrate higher for logical clarity, effort, and tech competency.
+TARGET AUDIENCE CALIBRATION (CRITICAL):
+- Candidates are Tier 2/3 college students, freshers, or early career applicants. DO NOT compare them to senior engineers.
+- Reward logical reasoning, effort, fundamental understanding, and coachability.
+- Evaluate the ACTUAL content of their answers. If the answers are short, generic, or lack detail, they MUST receive low scores (e.g., 3-5). If the answers are structured, specific, and demonstrate clear understanding, they should receive high scores (e.g., 7-9).
+- Differentiate strongly between weak, average, and strong candidates. Do not default to giving everyone a 7.
+
+SCORING DIMENSIONS (Evaluate each INDEPENDENTLY from 1-10):
+1. communication: Clarity, structure, and ability to articulate thoughts (don't penalize accents heavily).
+2. technical_knowledge: Accuracy, depth, and correctness of technical concepts mentioned.
+3. resume_jd_fit: How well their experiences align with the role ${job_role}.
+4. confidence: Certainty and delivery tone.
+5. answer_quality: Depth of detail, use of examples (e.g., STAR method).
+6. problem_solving: Logical approach to answering hypothetical or structural questions.
+
+FEEDBACK GUIDELINES:
+- Identify recurring patterns. Don't just summarize what they said. Instead, write e.g., "You consistently struggled to provide concrete examples when asked about past projects."
+- Strengths and Weaknesses must be highly specific to what was said in the transcript.
 
 Provide evaluation strictly in JSON format:
 {
-  "placement_chance": 70,
+  "placement_chance": 75,
   "verdict": "Strong Hire / Hire / Strong Maybe / Weak Maybe / Not Hire",
   "overall_score": 7,
   "scores": {
@@ -420,9 +388,9 @@ Provide evaluation strictly in JSON format:
     "problem_solving": 7
   },
   "summary": {
-    "strengths": ["specific strength 1", "specific strength 2", "specific strength 3"],
-    "weaknesses": ["specific weakness 1"],
-    "key_takeaways": "2-3 sentence encouraging, constructive performance summary."
+    "strengths": ["specific strength 1 based on transcript", "specific strength 2"],
+    "weaknesses": ["specific recurring weakness or knowledge gap"],
+    "key_takeaways": "3-4 sentences highlighting their overall readiness, main pattern of mistakes, and the most critical thing to practice."
   },
   "career_insights": {
     "market_fit": "High/Medium/Low",
@@ -464,7 +432,8 @@ Provide evaluation strictly in JSON format:
       }
       
       // Re-attach the question-by-question analysis from memory
-      parsed.question_analysis = memory.question_analysis || [];
+      // We removed question_analysis to save tokens, so it will be an empty array
+      parsed.question_analysis = [];
       
       return Response.json(parsed);
     } catch (parseError) {
@@ -488,7 +457,7 @@ Provide evaluation strictly in JSON format:
           weaknesses: ["Analysis report generated with minor errors"],
           key_takeaways: "Good effort shown. The detailed evaluation has been parsed."
         },
-        question_analysis: memory.question_analysis || [],
+        question_analysis: [],
         career_insights: {
           market_fit: "Medium",
           salary_range: "₹3.5-6 LPA (Entry level)",
