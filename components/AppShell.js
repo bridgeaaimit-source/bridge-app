@@ -41,6 +41,7 @@ export default function AppShell({ children }) {
   const [notifications, setNotifications] = useState(3);
   const [showModal, setShowModal] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [resumeUploaded, setResumeUploaded] = useState(null); // null = loading
   const [resumeFile, setResumeFile] = useState(null);
@@ -218,13 +219,27 @@ export default function AppShell({ children }) {
           <button className="p-2 rounded-full hover:bg-[#CCFBF1]/30 transition-colors text-gray-500">
             <Bell className="w-5 h-5" />
           </button>
-          {userProfile?.photo ? (
-            <img src={userProfile.photo} alt={userProfile.name} className="w-8 h-8 rounded-full object-cover border-2 border-[#008378]" />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-[#CCFBF1] flex items-center justify-center text-[#00685f] font-bold text-sm">
-              {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
-            </div>
-          )}
+          <div className="relative">
+            <button onClick={() => setShowProfileDropdown(!showProfileDropdown)} className="focus:outline-none flex items-center">
+              {userProfile?.photo ? (
+                <img src={userProfile.photo} alt={userProfile.name} className="w-8 h-8 rounded-full object-cover border-2 border-[#008378]" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-[#CCFBF1] flex items-center justify-center text-[#00685f] font-bold text-sm">
+                  {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+              )}
+            </button>
+            {showProfileDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2">
+                <Link href="/profile" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                  <User className="w-4 h-4" /> Profile
+                </Link>
+                <button onClick={() => { auth.signOut(); router.push('/login'); setShowProfileDropdown(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                  <LogOut className="w-4 h-4" /> Sign Out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -317,6 +332,38 @@ export default function AppShell({ children }) {
           </div>
         </div>
       )}
+
+      {/* ── Desktop Top Right Profile ── */}
+      <div className="hidden md:flex fixed top-4 right-6 z-40 items-center gap-4">
+        <button className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-500 bg-white shadow-sm border border-gray-200">
+          <Bell className="w-5 h-5" />
+        </button>
+        <div className="relative">
+          <button onClick={() => setShowProfileDropdown(!showProfileDropdown)} className="focus:outline-none flex items-center">
+            {userProfile?.photo ? (
+              <img src={userProfile.photo} alt={userProfile.name} className="w-10 h-10 rounded-full object-cover border-2 border-[#008378] shadow-sm" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-[#CCFBF1] flex items-center justify-center text-[#00685f] font-bold text-sm shadow-sm border border-[#008378]">
+                {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+            )}
+          </button>
+          {showProfileDropdown && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2">
+              <div className="px-4 py-2 border-b border-gray-100 mb-1">
+                <p className="text-sm font-bold text-gray-900 truncate">{userProfile?.name || 'User'}</p>
+                <p className="text-xs text-gray-500 truncate">{userProfile?.email || 'Student'}</p>
+              </div>
+              <Link href="/profile" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                <User className="w-4 h-4" /> Profile
+              </Link>
+              <button onClick={() => { auth.signOut(); router.push('/login'); setShowProfileDropdown(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                <LogOut className="w-4 h-4" /> Sign Out
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* ── Main Content ── */}
       <main className="flex-1 md:ml-64 pt-16 md:pt-0 pb-24 md:pb-0 min-h-screen bg-[#fcf8ff]">
