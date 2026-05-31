@@ -56,9 +56,9 @@ export async function POST(request) {
 
   // ACTION 1: Initialize - read resume+JD, ask first question
   if (action === 'init') {
-    const prompt = `You are a strict senior interviewer at a company hiring for: ${job_role}
+    const prompt = `You are a professional campus recruiter conducting a ${round} interview for: ${job_role}
 
-You have the candidate's resume. Read it VERY carefully before asking anything.
+You have the candidate's resume. Read it carefully before asking.
 
 JOB DESCRIPTION:
 ${jd}
@@ -66,17 +66,18 @@ ${jd}
 ROUND: ${round}
 
 CRITICAL INSTRUCTIONS:
-1. Read every detail of the resume.
-2. Note specific projects, technologies, companies, achievements mentioned.
-3. Your first question MUST reference something SPECIFIC from their resume.
-4. Do NOT ask generic questions like "tell me about yourself" first.
-5. Pick the most interesting/relevant project or experience and probe it.
-6. Match the question to the JD requirements.
+1. Read the resume carefully. Note specific projects, technologies, achievements.
+2. Your first question MUST reference something SPECIFIC from their resume — a project, a skill, or an achievement.
+3. Do NOT open with generic questions like "tell me about yourself".
+4. Probe what is most interesting or most relevant to the JD.
+
+QUESTION LENGTH RULE (MANDATORY):
+Each question must be 2 to 3 sentences maximum. Conversational tone — like a real recruiter speaking, not reading from a form. Avoid bullet points, sub-questions, or lengthy context-setting preambles.
 
 Return ONLY valid JSON format:
 {
-  "question": "Specific question referencing something from their ACTUAL resume",
-  "interviewer_thought": "What I noticed in resume that led to this question (shown to student as context)",
+  "question": "2-3 sentence question referencing something specific from the resume",
+  "interviewer_thought": "What I noticed in the resume that led to this question (shown to student as brief context)",
   "session_memory": {
     "interview_summary": "Interview initialized for target role ${job_role}.",
     "competencies": {
@@ -185,82 +186,86 @@ Return ONLY valid JSON format:
         behavioral: { score: 0, covered: false, question_count: 0 },
         culture_fit: { score: 0, covered: false, question_count: 0 }
       },
-      asked_questions: [last_question || "Previous Question"],
+      asked_questions: [],
       question_analysis: []
     };
 
-    const prompt = `You are a senior interviewer conducting a ${round} for the role: ${job_role}.
-We are using a token-efficient rolling memory. Evaluate the candidate's last answer, update the session memory, and generate the next question.
-
-TARGET USERS CALIBRATION:
-- Candidates are Tier 2 or 3 college students, freshers, and early-career applicants.
-- DO NOT penalize heavily for minor grammatical slips, accent differences, or nervousness.
-- Calibrate scoring reasonably: reward genuine effort, structural clarity, logical reasoning, and learning potential.
-
-COMPETENCY BLUEPRINT (Target at least 1-2 questions per competency across the interview):
-1. communication (Ice breaking, structure)
-2. resume_validation (Probing projects/skills mentioned on resume)
-3. technical_knowledge (Core technical concepts relevant to JD)
-4. problem_solving (Coding query, design trade-offs, or analytical scenario)
-5. behavioral (STAR situations: conflict, collaboration, stress)
-6. culture_fit (Company values, flexibility, interests)
-
-PREVENT REPETITION:
-Strictly check the list of questions already asked: ${JSON.stringify(memory.asked_questions)}.
-Do NOT ask any question that is semantically similar to them (e.g. asking about "leadership" twice in different words). Reject repetitions and push the interview forward naturally.
-
-SCORING RULES:
-Generate integer scores strictly on a scale of 1 to 10. Do not output fractions, strings like "7/10", or non-numeric formats.
-
-Current Question Number: ${memory.asked_questions.length + 1}
-Minimum Questions: 8
-Target Questions: 10
-Hard Limit: 15
-
-If all competencies have been covered (at least 1 question count each) AND we have asked at least 8 questions, OR if we have reached the hard limit of 15 questions, set "interview_complete": true.
-
-INPUT DETAILS:
-Job Role: ${job_role}
-JD Requirements: ${jd}
-Last Question Asked: "${last_question || 'None'}"
-Last Answer Received: "${last_answer}"
-
-Current Session Memory:
-${JSON.stringify(memory)}
-
-Return ONLY valid JSON format:
-{
-  "question": "Your next question",
-  "interviewer_thought": "Why you are asking this question (shown as helpful context)",
-  "answer_analysis": {
-    "question_number": ${memory.asked_questions.length},
-    "question": "the last question asked",
-    "answer": "the last answer received",
-    "score": 7,
-    "what_did_well": ["specific strength from their response"],
-    "what_to_improve": ["constructive suggestion for improvement"],
-    "better_sample_answer": "A model response suitable for a fresher candidate to study",
-    "dimension_scores": {
-      "communication": 7,
-      "relevance": 7,
-      "technical_depth": 7,
-      "structure": 7,
-      "confidence": 7
+    // ── Server-side deduplication guard ────────────────────────────────────
+    // Always ensure last_question is in asked_questions before building prompt
+    // This prevents loops even if client sends stale session_memory
+    const canonicalAskedQuestions = Array.isArray(memory.asked_questions)
+      ? memory.asked_questions
+      : [];
+    if (last_question && !canonicalAskedQuestions.includes(last_question)) {
+      canonicalAskedQuestions.push(last_question);
     }
+    memory.asked_questions = canonicalAskedQuestions;
+    // ────────────────────────────────────────────────────────────────────────
+
+    // Figure out which competencies still need coverage
+    const uncoveredCompetencies = Object.entries(memory.competencies || {})
+      .filter(([, v]) => !v.covered)
+      .map(([k]) => k);
+
+    const prompt = `You are a professional campus recruiter conducting a ${round} for the role: ${job_role}.
+Evaluate the candidate's last answer and generate the NEXT unique question.
+
+CANDIDATE PROFILE:
+- Tier 2/3 college student or fresher — reward effort, clarity, logic, and learning potential.
+- Do NOT penalize minor grammar slips or accent.
+
+COMPETENCY BLUEPRINT — cover at least 1 question per competency:
+1. communication
+2. resume_validation
+3. technical_knowledge
+4. problem_solving
+5. behavioral
+6. culture_fit
+
+Uncovered competencies remaining: ${JSON.stringify(uncoveredCompetencies)}
+
+STRICT ANTI-REPETITION RULE (most important):
+The following questions have ALREADY been asked — your next question MUST be completely different in topic, angle, and wording:
+${canonicalAskedQuestions.map((q, i) => `  Q${i + 1}: "${q}"`).join('\n')}
+
+If the next question you think of sounds similar to ANY of the above, discard it and move to a different competency instead.
+
+QUESTION LENGTH RULE (MANDATORY):
+Write 2 to 3 sentences maximum. Conversational — like a real recruiter speaking. No bullet points, no multi-part questions, no lengthy preamble.
+
+SCORING: Integer scores 1-10 only. No fractions or strings.
+
+Question count: ${canonicalAskedQuestions.length + 1} of max 15 (target 10)
+End interview ("interview_complete": true) when: all competencies covered AND ≥8 questions asked, OR ≥15 questions asked.
+
+Job Role: ${job_role}
+JD Requirements: ${jd || 'Not provided'}
+Last Question: "${last_question || 'None'}"
+Last Answer: "${last_answer || '(no answer)'}"
+
+Session Memory:
+${JSON.stringify({ interview_summary: memory.interview_summary, competencies: memory.competencies, current_competency: memory.current_competency })}
+
+Return ONLY valid JSON:
+{
+  "question": "2-3 sentence question on a NEW topic not covered above",
+  "interviewer_thought": "Brief reason for asking this (shown to candidate as context)",
+  "answer_analysis": {
+    "question_number": ${canonicalAskedQuestions.length},
+    "question": "${(last_question || '').replace(/"/g, "'")}",
+    "answer": "${(last_answer || '').replace(/"/g, "'")}",
+    "score": 7,
+    "what_did_well": ["one specific strength"],
+    "what_to_improve": ["one constructive suggestion"],
+    "better_sample_answer": "A 2-3 sentence model response for a fresher",
+    "dimension_scores": { "communication": 7, "relevance": 7, "technical_depth": 7, "structure": 7, "confidence": 7 }
   },
   "session_memory": {
-    "interview_summary": "Append a summary of the latest response to the running paragraph...",
-    "competencies": {
-      "communication": { "score": 8, "covered": true, "question_count": 1 },
-      "resume_validation": { "score": 7, "covered": true, "question_count": 1 },
-      "technical_knowledge": { "score": 0, "covered": false, "question_count": 0 },
-      "problem_solving": { "score": 0, "covered": false, "question_count": 0 },
-      "behavioral": { "score": 0, "covered": false, "question_count": 0 },
-      "culture_fit": { "score": 0, "covered": false, "question_count": 0 }
-    },
-    "asked_questions": ["q1", "q2", "Your next question"],
-    "question_analysis": [ ... ],
-    "current_competency": "technical_knowledge"
+    "interview_summary": "Running summary including latest response...",
+    "competencies": { "communication": { "score": 0, "covered": false, "question_count": 0 }, "resume_validation": { "score": 0, "covered": false, "question_count": 0 }, "technical_knowledge": { "score": 0, "covered": false, "question_count": 0 }, "problem_solving": { "score": 0, "covered": false, "question_count": 0 }, "behavioral": { "score": 0, "covered": false, "question_count": 0 }, "culture_fit": { "score": 0, "covered": false, "question_count": 0 } },
+    "asked_questions": ${JSON.stringify([...canonicalAskedQuestions, "<your_next_question_text>"])},
+    "question_analysis": [],
+    "current_competency": "next_competency_name"
   },
   "interview_complete": false
 }`;
@@ -309,44 +314,60 @@ Return ONLY valid JSON format:
     } catch (parseError) {
       console.error('JSON parse error in smart-interview continue:', parseError);
       console.error('Raw text:', text);
-      
-      // Fallback result
-      const newQuestionsList = [...memory.asked_questions, "Can you tell me more about your experience with this type of work?"];
+
+      // Rotating fallback questions per uncovered competency to avoid loops
+      const fallbackByCompetency = {
+        technical_knowledge: `Can you walk me through a technical problem you solved recently and how you approached it?`,
+        problem_solving: `If you had to design a simple URL shortener service, what components would you include and why?`,
+        behavioral: `Tell me about a time you had to meet a tight deadline. How did you manage your work?`,
+        culture_fit: `What kind of work environment helps you do your best, and why?`,
+        communication: `How do you usually explain a complex technical concept to someone who isn't technical?`,
+        resume_validation: `Which project on your resume are you most proud of, and what was your specific contribution?`
+      };
+
+      const nextCompetency = uncoveredCompetencies[0] || 'behavioral';
+      const fallbackQ = fallbackByCompetency[nextCompetency] ||
+        `What interests you most about the ${job_role} role and why did you apply?`;
+
+      const newQuestionsList = [...canonicalAskedQuestions, fallbackQ];
       result = {
-        question: "Can you tell me more about your experience with this type of work?",
-        interviewer_thought: "Let's explore your background further.",
+        question: fallbackQ,
+        interviewer_thought: `Exploring ${nextCompetency.replace('_', ' ')} competency.`,
         answer_analysis: {
-          question_number: memory.asked_questions.length,
+          question_number: canonicalAskedQuestions.length,
           question: last_question || "Previous Question",
           answer: last_answer || "",
           score: 6,
-          what_did_well: ["Expressed interest in the topic"],
-          what_to_improve: ["Add more details and specific examples"],
-          better_sample_answer: "In my previous project, I solved a similar issue by implementing standard patterns...",
-          dimension_scores: {
-            communication: 6,
-            relevance: 6,
-            technical_depth: 5,
-            structure: 6,
-            confidence: 6
-          }
+          what_did_well: ["Showed willingness to engage with the topic"],
+          what_to_improve: ["Provide more specific examples with measurable outcomes"],
+          better_sample_answer: "I worked on a project where I had to... (describe situation, your action, the result).",
+          dimension_scores: { communication: 6, relevance: 6, technical_depth: 5, structure: 6, confidence: 6 }
         },
         session_memory: {
           ...memory,
           asked_questions: newQuestionsList,
-          current_competency: "communication"
+          current_competency: nextCompetency
         },
-        interview_complete: memory.asked_questions.length >= 10
+        interview_complete: canonicalAskedQuestions.length >= 10
       };
     }
-    
+
+    // Server-side: ensure the new question was actually appended to asked_questions
+    if (result.session_memory && result.question) {
+      const existing = result.session_memory.asked_questions || canonicalAskedQuestions;
+      if (!existing.includes(result.question)) {
+        result.session_memory.asked_questions = [...existing, result.question];
+      }
+    }
+
     // Add the current analysis step on client-side or backend
     if (result.session_memory && result.answer_analysis) {
       const currentList = memory.question_analysis || [];
       result.session_memory.question_analysis = [...currentList, result.answer_analysis];
     }
     
-    console.log('Next question:', result.question);
+    console.log('✅ Next question:', result.question);
+    console.log('📋 Asked so far:', result.session_memory?.asked_questions?.length, 'questions');
     return Response.json(result);
   }
 
