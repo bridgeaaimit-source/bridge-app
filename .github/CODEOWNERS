@@ -1,0 +1,25 @@
+# BRIDGE - Code Ownership Map
+* @bridgeaaimit-source
+
+# Siddhesh owns
+app/dashboard/          @bridgeaaimit-source
+app/aptitude/           @bridgeaaimit-source
+app/page.js             @bridgeaaimit-source
+app/admin/              @bridgeaaimit-source
+app/api/                @bridgeaaimit-source
+vercel.json             @bridgeaaimit-source
+.env.example            @bridgeaaimit-source
+
+# Team member 2 owns
+app/interview/          @bridgeaaimit-source
+app/smart-interview/    @bridgeaaimit-source
+app/coach/              @bridgeaaimit-source
+app/career-gps/         @bridgeaaimit-source
+app/career-intelligence/ @bridgeaaimit-source
+
+# Team member 3 owns
+app/pulse/              @bridgeaaimit-source
+app/skillpulse/         @bridgeaaimit-source
+app/gd/                 @bridgeaaimit-source
+app/jobs/               @bridgeaaimit-source
+app/leaderboard/        @bridgeaaimit-source
