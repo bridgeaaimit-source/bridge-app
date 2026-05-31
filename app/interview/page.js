@@ -8,6 +8,7 @@ import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { useAssemblyAI } from "@/hooks/useAssemblyAI";
 
 const domains = [
   { icon: "💻", label: "Software Engineer" },
@@ -23,9 +24,7 @@ export default function InterviewPage() {
   const [interviewMode, setInterviewMode] = useState("text"); // "text" or "voice"
   const [selectedDomain, setSelectedDomain] = useState("Software Engineer");
   const [answer, setAnswer] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const [recognition, setRecognition] = useState(null);
+  const [voiceAnswer, setVoiceAnswer] = useState("");
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [analyses, setAnalyses] = useState([]);
@@ -40,6 +39,26 @@ export default function InterviewPage() {
   const [browserSupport, setBrowserSupport] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
+
+  const {
+    isRecording,
+    isConnecting,
+    transcript: hookTranscript,
+    interimTranscript: hookInterimTranscript,
+    fullTranscript: hookFullTranscript,
+    error: transcriptionError,
+    speechLang,
+    setLang,
+    startRecording: startAssemblyAIRecording,
+    stopRecording: stopAssemblyAIRecording,
+    clearTranscript: clearAssemblyAITranscript,
+  } = useAssemblyAI();
+
+  useEffect(() => {
+    if (hookFullTranscript) {
+      setVoiceAnswer(hookFullTranscript);
+    }
+  }, [hookFullTranscript]);
 
   useEffect(() => {
     // Get user ID and generate session ID
@@ -83,47 +102,13 @@ export default function InterviewPage() {
   };
 
   const startRecording = () => {
-    if (!browserSupport) return;
-    
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognitionInstance = new SpeechRecognition();
-    
-    recognitionInstance.continuous = false;
-    recognitionInstance.interimResults = true;
-    recognitionInstance.lang = 'en-US';
-    
-    recognitionInstance.onstart = () => {
-      setIsRecording(true);
-      setTranscript("");
-    };
-    
-    recognitionInstance.onresult = (event) => {
-      const current = event.resultIndex;
-      const transcript = event.results[current][0].transcript;
-      setTranscript(transcript);
-    };
-    
-    recognitionInstance.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
-      setIsRecording(false);
-      toast.error('Speech recognition failed. Please try again.');
-    };
-    
-    recognitionInstance.onend = () => {
-      setIsRecording(false);
-      if (transcript.trim()) {
-        submitVoiceAnswer();
-      }
-    };
-    
-    setRecognition(recognitionInstance);
-    recognitionInstance.start();
+    setVoiceAnswer("");
+    clearAssemblyAITranscript();
+    startAssemblyAIRecording();
   };
 
   const stopRecording = () => {
-    if (recognition) {
-      recognition.stop();
-    }
+    stopAssemblyAIRecording();
   };
 
   const generateQuestions = async () => {
@@ -177,8 +162,8 @@ export default function InterviewPage() {
   };
 
   const submitVoiceAnswer = async () => {
-    if (!transcript.trim()) {
-      setErrorMessage("Please speak an answer before submitting.");
+    if (!voiceAnswer.trim()) {
+      setErrorMessage("Please speak or write an answer before submitting.");
       return;
     }
 
@@ -192,14 +177,14 @@ export default function InterviewPage() {
 
     try {
       const currentQuestion = questions[currentQuestionIndex];
-      console.log('Submitting voice answer:', { currentQuestion, transcript: transcript.trim(), domain: selectedDomain, uid, sessionId });
+      console.log('Submitting voice answer:', { currentQuestion, transcript: voiceAnswer.trim(), domain: selectedDomain, uid, sessionId });
       
       const response = await fetch("/api/interview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question: currentQuestion,
-          answer: transcript.trim(),
+          answer: voiceAnswer.trim(),
           domain: selectedDomain,
           uid,
           sessionId
@@ -220,12 +205,13 @@ export default function InterviewPage() {
         ...responses,
         {
           question: currentQuestion,
-          answer: transcript.trim(),
+          answer: voiceAnswer.trim(),
           analysis: data
         }
       ];
       setResponses(updatedResponses);
-      setTranscript("");
+      setVoiceAnswer("");
+      clearAssemblyAITranscript();
       
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -558,44 +544,133 @@ export default function InterviewPage() {
                         </button>
                       </div>
                     </div>
+
                   ) : (
                     <div className="space-y-4">
-                      <div className="bg-gray-50 rounded-xl p-8 text-center">
-                        {isRecording ? (
+                      {/* Language selection similar to smart-interview */}
+                      <div className="flex items-center justify-end gap-2 mb-2">
+                        <span className="text-xs text-gray-500 font-semibold">Language:</span>
+                        {[{code:'en-IN',label:'🇮🇳 India'},{code:'en-GB',label:'🇬🇧 UK'},{code:'en-US',label:'🇺🇸 US'}].map(l => (
+                          <button 
+                            key={l.code} 
+                            onClick={() => setLang(l.code)}
+                            type="button"
+                            className={`text-xs px-2 py-1 rounded-full border font-medium transition-all ${
+                              speechLang === l.code 
+                                ? 'bg-[#0D9488] text-white border-[#0D9488] shadow-sm' 
+                                : 'bg-white text-gray-600 border-gray-200 hover:border-[#0D9488]'
+                            }`}
+                          >
+                            {l.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="bg-gray-50 rounded-xl p-8 text-center border border-gray-100">
+                        {hookIsConnecting ? (
                           <div className="space-y-4">
-                            <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                              <Mic className="w-8 h-8 text-yellow-600" />
+                            </div>
+                            <div className="text-gray-600 font-medium">Starting microphone...</div>
+                          </div>
+                        ) : isRecording ? (
+                          <div className="space-y-4">
+                            <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]">
                               <Mic className="w-8 h-8 text-white" />
                             </div>
-                            <div className="text-gray-900">Recording... Speak now</div>
-                            <button
-                              onClick={stopRecording}
-                              className="bg-red-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors"
-                            >
-                              Stop Recording
-                            </button>
+                            <div className="text-gray-900 font-semibold animate-pulse">Recording... Speak your answer now</div>
+                            
+                            {/* Live transcript during recording */}
+                            <div className="bg-white border border-gray-200 rounded-xl p-4 min-h-[80px] text-left shadow-inner">
+                              {(hookTranscript || hookInterimTranscript) ? (
+                                <p className="text-sm text-gray-800 leading-relaxed">
+                                  <span className="text-gray-900">{hookTranscript}</span>
+                                  {hookInterimTranscript && <span className="text-gray-400 italic"> {hookInterimTranscript}</span>}
+                                </p>
+                              ) : (
+                                <p className="text-sm text-gray-400 italic">Listening... start speaking</p>
+                              )}
+                            </div>
+
+                            <div className="flex gap-4 max-w-md mx-auto">
+                              <button
+                                onClick={stopRecording}
+                                type="button"
+                                className="flex-1 bg-red-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors shadow-sm flex items-center justify-center gap-2"
+                              >
+                                <span className="w-2.5 h-2.5 bg-white rounded-full"></span> Stop
+                              </button>
+                              {(hookTranscript || hookInterimTranscript) && (
+                                <button
+                                  onClick={() => {
+                                    const captured = hookTranscript || hookInterimTranscript;
+                                    stopAssemblyAIRecording();
+                                    setVoiceAnswer(captured);
+                                    setTimeout(() => {
+                                      submitVoiceAnswer();
+                                    }, 100);
+                                  }}
+                                  type="button"
+                                  className="flex-1 bg-[#0D9488] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#0F766E] transition-colors shadow-sm"
+                                >
+                                  Stop &amp; Submit →
+                                </button>
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <div className="space-y-4">
                             <div className="w-16 h-16 bg-[#F0FDFA] rounded-full flex items-center justify-center mx-auto">
                               <Mic className="w-8 h-8 text-[#0D9488]" />
                             </div>
-                            <div className="text-gray-600">Click to start recording</div>
-                            <button
-                              onClick={startRecording}
-                              disabled={!browserSupport}
-                              className="bg-gradient-to-r from-[#0D9488] to-[#0F766E] text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              Start Recording
-                            </button>
+                            
+                            {/* Review and Edit when not recording but transcript exists */}
+                            {voiceAnswer ? (
+                              <div className="space-y-4 text-left max-w-xl mx-auto">
+                                <label className="block text-xs font-bold text-[#0D9488] uppercase tracking-wide">Review &amp; Edit Your Answer:</label>
+                                <textarea
+                                  value={voiceAnswer}
+                                  onChange={(e) => setVoiceAnswer(e.target.value)}
+                                  className="w-full h-32 p-4 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent bg-white text-sm leading-relaxed"
+                                  placeholder="Review transcript..."
+                                />
+                                <div className="flex gap-4">
+                                  <button
+                                    onClick={startRecording}
+                                    type="button"
+                                    className="flex-1 bg-white text-gray-700 border border-gray-300 px-6 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                                  >
+                                    Re-record
+                                  </button>
+                                  <button
+                                    onClick={submitVoiceAnswer}
+                                    disabled={isAnalyzingAnswer || !voiceAnswer.trim()}
+                                    type="button"
+                                    className="flex-1 bg-gradient-to-r from-[#0D9488] to-[#0F766E] text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {isAnalyzingAnswer ? "Analyzing..." : "Submit Answer"}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-4">
+                                <div className="text-gray-600 font-medium">Click to start recording</div>
+                                <button
+                                  onClick={startRecording}
+                                  type="button"
+                                  className="bg-gradient-to-r from-[#0D9488] to-[#0F766E] text-white px-8 py-3.5 rounded-xl font-semibold hover:shadow-lg transition-all duration-300"
+                                >
+                                  Start Recording
+                                </button>
+                                {transcriptionError && (
+                                  <div className="text-xs text-red-600 font-medium bg-red-50 border border-red-100 rounded-lg p-2 max-w-sm mx-auto">{transcriptionError}</div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
-                      {transcript && (
-                        <div className="mt-4 p-4 bg-blue-50 rounded-xl">
-                          <div className="text-sm text-cyan-600 font-medium mb-2">Transcript:</div>
-                          <div className="text-gray-900">{transcript}</div>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
