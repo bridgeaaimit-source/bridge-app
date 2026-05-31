@@ -69,27 +69,28 @@ export default function SmartInterviewPage() {
   };
 
   // Use Deepgram transcription hook with voice command support
-  // Temporarily disabled entirely to isolate prerender error
   const {
-    isRecording: isRecording = false,
-    isConnecting: isConnecting = false,
-    transcript: transcript = '',
-    interimTranscript: interimTranscript = '',
-    fullTranscript: fullTranscript = '',
-    wordCount: wordCount = 0,
-    fillerWords: fillerWords = [],
-    fillerWordCounts: fillerWordCounts = {},
-    recordingStatus: recordingStatus = 'idle',
-    error: transcriptionError = null,
-    speechLang: speechLang = 'en-IN',
-    setLang: setLang = () => {},
-    voiceCommandDetected: voiceCommandDetected = null,
-    resetVoiceCommand: resetVoiceCommand = () => {},
-    startRecording: startDeepgramRecording = () => {},
-    stopRecording: stopDeepgramRecording = () => {},
-    clearTranscript: clearTranscript = () => {},
-    exportTranscript: exportTranscript = () => {},
-  } = {};
+    isRecording,
+    isConnecting,
+    transcript,
+    interimTranscript,
+    fullTranscript,
+    wordCount,
+    fillerWords,
+    fillerWordCounts,
+    recordingStatus,
+    error: transcriptionError,
+    speechLang,
+    setLang,
+    voiceCommandDetected,
+    resetVoiceCommand,
+    startRecording: startDeepgramRecording,
+    stopRecording: stopDeepgramRecording,
+    clearTranscript,
+    exportTranscript,
+  } = useDeepgramTranscription({
+    onVoiceCommand: handleVoiceCommand
+  });
 
   // submitAnswer uses fullTranscript in video mode too
   const videoTranscript = fullTranscript || interimTranscript;
