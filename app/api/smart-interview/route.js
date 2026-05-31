@@ -135,11 +135,12 @@ Return ONLY valid JSON format:
     // Track token usage
     await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
-    const text = message.content[0].text
-      .replace(/```json/g, '').replace(/```/g, '').trim();
+    const text = message.content[0].text;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const cleanText = jsonMatch ? jsonMatch[0] : text;
     
     try {
-      const parsed = JSON.parse(text);
+      const parsed = JSON.parse(cleanText);
       // Ensure asked_questions is synced with the first question text
       if (parsed.session_memory && parsed.question) {
         parsed.session_memory.asked_questions = [parsed.question];
@@ -211,6 +212,11 @@ CANDIDATE PROFILE:
 - Tier 2/3 college student or fresher — reward effort, clarity, logic, and learning potential.
 - Do NOT penalize minor grammar slips or accent.
 
+ACTIVE REDIRECTION & REAL RECRUITER BEHAVIOR (CRITICAL):
+- If the candidate's answer is completely off-topic or unprofessional, your next question MUST firmly but politely redirect them back to the interview focus (e.g., "Let's bring this back to your experience with X...").
+- If their answer was incredibly brief or lacked detail, ask a specific follow-up probing for the missing depth before moving to a new topic.
+- You are a real recruiter. Respond dynamically to what they just said.
+
 COMPETENCY BLUEPRINT — cover at least 1 question per competency:
 1. communication
 2. resume_validation
@@ -265,14 +271,15 @@ Return ONLY valid JSON:
     // Track token usage
     await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
-    const text = message.content[0].text
-      .replace(/```json/g, '').replace(/```/g, '').trim();
+    const text = message.content[0].text;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const cleanText = jsonMatch ? jsonMatch[0] : text;
     
     console.log('Claude response:', text);
     
     let result;
     try {
-      result = JSON.parse(text);
+      result = JSON.parse(cleanText);
       
       if (result.session_memory && result.session_memory.competencies) {
         Object.keys(result.session_memory.competencies).forEach(key => {
@@ -405,13 +412,14 @@ Provide evaluation strictly in JSON format:
     await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
     console.log('✅ Claude API final evaluation call successful');
-    const text = message.content[0].text
-      .replace(/```json/g, '').replace(/```/g, '').trim();
+    const text = message.content[0].text;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const cleanText = jsonMatch ? jsonMatch[0] : text;
     
-    console.log('Cleaned text:', text);
+    console.log('Cleaned text:', cleanText);
     
     try {
-      const parsed = JSON.parse(text);
+      const parsed = JSON.parse(cleanText);
       
       // Clean final scores
       parsed.overall_score = safeInt(parsed.overall_score);
