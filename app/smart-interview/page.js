@@ -473,7 +473,26 @@ export default function SmartInterviewPage() {
 
   const currentAudioRef = useRef(null);
 
-  const speakTextFallback = (text) => {
+  const speakQuickly = (text, onEnd) => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 0.8;
+      utterance.onend = () => {
+        if (onEnd) onEnd();
+      };
+      utterance.onerror = () => {
+        if (onEnd) onEnd();
+      };
+      window.speechSynthesis.speak(utterance);
+    } else {
+      if (onEnd) onEnd();
+    }
+  };
+
+  const speakTextFallback = (text, onEnd) => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
@@ -481,14 +500,25 @@ export default function SmartInterviewPage() {
       utterance.pitch = 1;
       utterance.volume = 1;
       utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
+      
+      const handleEnd = () => {
+        setIsSpeaking(false);
+        if (onEnd) onEnd();
+      };
+      
+      utterance.onend = handleEnd;
+      utterance.onerror = handleEnd;
       window.speechSynthesis.speak(utterance);
+    } else {
+      if (onEnd) onEnd();
     }
   };
 
-  const speakText = async (text) => {
-    if (!text) return;
+  const speakText = async (text, onEnd) => {
+    if (!text) {
+      if (onEnd) onEnd();
+      return;
+    }
 
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
@@ -516,22 +546,24 @@ export default function SmartInterviewPage() {
       const audio = new Audio(audioUrl);
       currentAudioRef.current = audio;
 
-      audio.onended = () => {
+      const handleEnd = () => {
         setIsSpeaking(false);
         URL.revokeObjectURL(audioUrl);
         currentAudioRef.current = null;
+        if (onEnd) onEnd();
       };
+
+      audio.onended = handleEnd;
       audio.onerror = () => {
-        setIsSpeaking(false);
         URL.revokeObjectURL(audioUrl);
         currentAudioRef.current = null;
-        speakTextFallback(text);
+        speakTextFallback(text, onEnd);
       };
 
       await audio.play();
     } catch (err) {
       console.warn('ElevenLabs TTS failed, using browser fallback:', err.message);
-      speakTextFallback(text);
+      speakTextFallback(text, onEnd);
     }
   };
 
@@ -690,7 +722,9 @@ export default function SmartInterviewPage() {
     if (!isThinking) return;
     if (thinkingTimeLeft === 0) {
       setIsThinking(false);
-      startRecordingState();
+      speakQuickly("Start speaking", () => {
+        startRecordingState();
+      });
       return;
     }
     const t = setTimeout(() => {
@@ -890,11 +924,14 @@ export default function SmartInterviewPage() {
       setQuestionNumber(1);
       setStartError('');
 
-      setIsThinking(true);
-      setThinkingTimeLeft(5);
-
       if (autoSpeak) {
-        speakText(data.question);
+        speakText(data.question, () => {
+          setIsThinking(true);
+          setThinkingTimeLeft(5);
+        });
+      } else {
+        setIsThinking(true);
+        setThinkingTimeLeft(5);
       }
 
     } catch (error) {
@@ -999,11 +1036,14 @@ export default function SmartInterviewPage() {
         ]);
         setQuestionNumber(questionNumber + 1);
 
-        setIsThinking(true);
-        setThinkingTimeLeft(5);
-
         if (autoSpeak) {
-          speakText(data.question);
+          speakText(data.question, () => {
+            setIsThinking(true);
+            setThinkingTimeLeft(5);
+          });
+        } else {
+          setIsThinking(true);
+          setThinkingTimeLeft(5);
         }
       } else {
         await getFeedback(updatedMemory);
@@ -1517,7 +1557,40 @@ export default function SmartInterviewPage() {
                 </div>
 
                 <div className="border-t pt-4">
-                  {isThinking ? (
+                  {isSpeaking ? (
+                    <div className="flex flex-col items-center justify-center p-8 bg-[#F0FDFA] rounded-2xl border border-teal-100 text-center space-y-4 animate-fade-in">
+                      <div className="flex items-center gap-1.5 h-8">
+                        {[...Array(6)].map((_, i) => (
+                          <div key={i} className="w-1.5 bg-[#0D9488] rounded-full animate-bounce" style={{
+                            height: '100%',
+                            animationDelay: `${i * 0.15}s`,
+                            animationDuration: '1.2s'
+                          }} />
+                        ))}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800 text-sm">Interviewer is speaking...</p>
+                        <p className="text-xs text-gray-400 mt-1">Please listen carefully to the question.</p>
+                      </div>
+                      <button 
+                        onClick={() => { 
+                          if (currentAudioRef.current) {
+                            currentAudioRef.current.pause();
+                            currentAudioRef.current = null;
+                          }
+                          if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                            window.speechSynthesis.cancel();
+                          }
+                          setIsSpeaking(false);
+                          setIsThinking(true);
+                          setThinkingTimeLeft(5);
+                        }} 
+                        className="text-xs text-[#0D9488] hover:underline font-semibold"
+                      >
+                        Skip voice and start thinking
+                      </button>
+                    </div>
+                  ) : isThinking ? (
                     <div className="flex flex-col items-center justify-center p-8 bg-[#F0FDFA] rounded-2xl border border-teal-100 text-center space-y-4 animate-fade-in">
                       <div className="relative w-20 h-20 flex items-center justify-center">
                         <svg className="absolute w-full h-full -rotate-90" viewBox="0 0 100 100">
