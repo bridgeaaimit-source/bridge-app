@@ -89,7 +89,15 @@ Return ONLY valid JSON:
       .replace(/```/g, '')
       .trim();
 
-    return Response.json(JSON.parse(text));
+    try {
+      return Response.json(JSON.parse(text));
+    } catch (e) {
+      console.error('Error parsing profile JSON:', e.message, text);
+      return Response.json(
+        { error: 'Could not extract profile. Please ensure the PDF is a valid resume containing your details.' },
+        { status: 400 }
+      );
+    }
   }
 
   // ACTION: Score resume quality → initial Bridge Score
@@ -114,7 +122,7 @@ Score this resume across these dimensions and return ONLY valid JSON (no extra t
 Be honest and fair. A blank or minimal resume should score 10-30. A strong MBA/engineering resume with projects and internships should score 70-90.`;
 
     const message = await client.messages.create({
-      model: 'claude-haiku-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 600,
       messages: [{
         role: 'user',
@@ -132,13 +140,19 @@ Be honest and fair. A blank or minimal resume should score 10-30. A strong MBA/e
     await trackTokensServer(uid || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const scoreText = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
-    return Response.json(JSON.parse(scoreText));
+    try {
+      return Response.json(JSON.parse(scoreText));
+    } catch (e) {
+      console.error('Error parsing resume score JSON:', e.message, scoreText);
+      return Response.json(
+        { error: 'Could not score resume. Please ensure the PDF is a valid resume.' },
+        { status: 400 }
+      );
+    }
   }
 
   // ACTION 2: Fetch and match real jobs
   if (action === 'fetch_jobs') {
-    const { profile } = await request.json()
-      .catch(() => ({}));
 
     console.log('=== FETCH JOBS API ===');
     console.log('Profile received:', !!profile);
@@ -228,6 +242,50 @@ Be honest and fair. A blank or minimal resume should score 10-30. A strong MBA/e
 
     console.log('Total real jobs fetched:', realJobs.length);
 
+    if (realJobs.length === 0) {
+      console.log('⚠️ Specific queries returned 0 results. Running broad fallback search...');
+      try {
+        const fallbackQuery = `${lookingFor === 'Internship' ? 'Internship' : 'Entry level'} jobs in ${location}`;
+        console.log('Searching fallback JSearch for:', fallbackQuery);
+        
+        const jobRes = await fetch(
+          `https://jsearch.p.rapidapi.com/search?` +
+          `query=${encodeURIComponent(fallbackQuery)}&` +
+          `page=1&num_pages=1&date_posted=month&` +
+          `country=in&language=en&` +
+          `employment_types=${lookingFor === 'Internship' ? 'INTERN' : lookingFor === 'Full-time' ? 'FULLTIME' : 'PARTTIME'}`,
+          {
+            method: 'GET',
+            headers: {
+              'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
+              'X-RapidAPI-Host': 'jsearch.p.rapidapi.com'
+            }
+          }
+        );
+
+        const jobData = await jobRes.json();
+        if (jobData.data?.length > 0) {
+          realJobs = jobData.data;
+          console.log(`Fallback search succeeded, found ${realJobs.length} broad opportunities.`);
+        }
+      } catch (fallbackErr) {
+        console.error('Fallback JSearch error:', fallbackErr.message);
+      }
+    }
+
+    if (realJobs.length === 0) {
+      return Response.json({
+        jobs: [],
+        profile_insights: {
+          strongest_match: "No direct match found",
+          improvement_tip: "No active jobs fetched from the external job source. Try adjusting your location parameters or adding target industry keywords to your resume to expand opportunities.",
+          market_demand: "Medium",
+          avg_match_score: 0,
+          total_jobs_found: 0
+        }
+      });
+    }
+
     // Format real jobs for Claude to match
     const jobList = realJobs.slice(0, 15).map((j, i) => 
       `${i+1}. 
@@ -255,48 +313,39 @@ Location: ${profile?.location}
 Looking for: ${profile?.looking_for}
 Job Titles Suitable: ${profile?.job_titles_suitable?.join(', ') || 'Not specified'}
 
-${realJobs.length > 0
-  ? `REAL JOBS TO MATCH (use EXACT apply URLs):
+REAL JOBS TO MATCH (use EXACT apply URLs):
 ${jobList}
 
-STRICT MATCHING CRITERIA:
-1. Match score MUST be based on actual skills overlap
-2. Jobs with < 40% match should NOT be included
-3. Experience level MUST match (Fresher should NOT see Senior roles)
-4. Location preference should be considered
-5. Job type (Full-time/Internship) MUST match "Looking for" preference
-6. Domain relevance is CRITICAL - filter out unrelated domains
-7. Only include jobs that have at least 2-3 skills from the candidate's profile
-
-Keep the EXACT apply_url from the job data.`
-  : `No real jobs fetched. Generate 6-8 HIGHLY SPECIFIC 
-Indian job listings that match this exact profile.
-- Use actual company names that hire this profile
-- Make job titles match profile's suitable job titles
-- Use skills from the candidate's skill list
-- Match the experience level (${profile?.experience_level})
-- Match the job type preference (${profile?.looking_for})
-- Use realistic apply URLs (LinkedIn, company sites)`
-}
+STRICT MATCHING CRITERIA (MANDATORY):
+1. You must ONLY match the jobs provided in the REAL JOBS TO MATCH list above.
+2. Do NOT invent, generate, add, or suggest any jobs, companies, locations, or apply URLs that are not present in the provided list.
+3. Match score MUST be based on actual skills overlap.
+4. Jobs with < 40% match should NOT be included.
+5. Experience level MUST match (Fresher should NOT see Senior roles).
+6. Location preference should be considered.
+7. Job type (Full-time/Internship) MUST match "Looking for" preference.
+8. Domain relevance is CRITICAL - filter out unrelated domains.
+9. Only include jobs that have at least 2-3 skills from the candidate's profile.
+10. Keep the EXACT company name, title, location, and apply_url from the job data.
 
 Return ONLY valid JSON with STRICT filtering:
 {
   "jobs": [
     {
       "id": "unique_id",
-      "title": "exact job title (MUST match profile)",
-      "company": "exact company name",
-      "location": "city, state",
-      "type": "Full-time or Internship (MUST match preference)",
+      "title": "exact job title from the provided job list",
+      "company": "exact company name from the provided job list",
+      "location": "location from the provided job list",
+      "type": "Full-time or Internship",
       "salary": "realistic salary/stipend",
-      "skills_required": ["skill1", "skill2", "skill3"],
-      "experience_required": "0-1 years (MUST match profile)",
-      "description": "2-3 line description specific to profile",
+      "skills_required": ["skill1", "skill2"],
+      "experience_required": "experience requirement from the provided job description",
+      "description": "2-3 line description highlighting relevance to the candidate",
       "match_percent": (MUST be realistic 40-95 based on actual skill overlap),
       "match_reasons": ["specific reason why this matches", "another reason"],
       "gap_reasons": ["if any gaps exist"],
       "interview_probability": (realistic 30-85),
-      "apply_url": "EXACT real URL from job data",
+      "apply_url": "EXACT apply_url from the provided job list data",
       "posted_days_ago": (number),
       "is_easy_apply": true/false,
       "company_size": "Startup/Mid-size/MNC",
@@ -313,11 +362,10 @@ Return ONLY valid JSON with STRICT filtering:
   }
 }
 
-IMPORTANT: 
-- Only return jobs with match_percent >= 40
-- If no jobs meet the criteria, return empty jobs array
-- Do NOT include generic/template jobs
-- Every job must be personalized to this specific candidate profile`;
+IMPORTANT:
+- Only return matching jobs from the provided list with match_percent >= 40
+- If no jobs from the list meet the criteria, return empty jobs array
+- Every job returned must be from the REAL JOBS TO MATCH list`;
 
     const matchMsg = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
