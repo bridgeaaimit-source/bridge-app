@@ -16,7 +16,8 @@ async function retryClaudeCall(callFunction, maxRetries = 3, delay = 1000) {
       return await callFunction();
     } catch (error) {
       console.error(`Claude API attempt ${attempt} failed:`, error.message);
-      if (error.status !== 529 || attempt === maxRetries) throw error;
+      const isRetryable = error.status === 529 || error.status >= 500 || !error.status || error.message.includes('Connection');
+      if (!isRetryable || attempt === maxRetries) throw error;
       const waitTime = delay * Math.pow(2, attempt - 1);
       console.log(`Waiting ${waitTime}ms before retry...`);
       await new Promise(r => setTimeout(r, waitTime));
@@ -99,6 +100,23 @@ function checkScoreVariance(scores) {
   }
 }
 
+// ─── Duplicate / similar question guard ───────────────────────────────────────
+// Uses keyword overlap to catch semantically similar questions that slip
+// through Claude's anti-repetition instruction.
+const STOP_WORDS = new Set(['the','a','an','in','on','at','to','for','of','and','or','is','are','was','were','be','been','being','have','has','had','do','does','did','will','would','could','should','may','might','shall','can','you','your','me','my','we','our','they','their','it','its','this','that','these','those','what','how','why','when','where','who','which','tell','me','about','time']);
+
+function questionKeywords(q) {
+  return q.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 3 && !STOP_WORDS.has(w));
+}
+
+function isSimilarQuestion(newQ, existingQ) {
+  const nw = new Set(questionKeywords(newQ));
+  const ew = questionKeywords(existingQ);
+  if (nw.size === 0 || ew.length === 0) return false;
+  const overlap = ew.filter(w => nw.has(w)).length;
+  return (overlap / Math.max(nw.size, ew.length)) > 0.45; // 45% keyword overlap = too similar
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 export async function POST(request) {
   const body = await request.json();
@@ -147,9 +165,14 @@ export async function POST(request) {
       5: `Start with a lightweight technical hypothetical directly tied to the role's core responsibility. A problem they would realistically face week-1 on the job.`,
     };
 
+    const hasResume = resume_base64 && resume_base64.length > 100;
+    const resumeContext = hasResume
+      ? 'You have the candidate\'s resume attached. Read it carefully before generating your first question.'
+      : 'No resume document was provided for this session. Generate your opening question based purely on the JD and the opening strategy below. Do NOT ask the candidate for their resume — just proceed with the opening strategy.';
+
     const prompt = `You are a professional campus recruiter conducting a ${round} interview for: ${job_role}
 
-You have the candidate's resume. Read it carefully before generating your first question.
+${resumeContext}
 
 JOB DESCRIPTION:
 ${jd || 'Not provided'}
@@ -203,7 +226,7 @@ Return ONLY valid JSON:
         message = await retryClaudeCall(() =>
           client.messages.create({
             model: 'claude-haiku-4-5-20251001',
-            max_tokens: 1400,
+            max_tokens: 4000,
             messages: [{
               role: 'user',
               content: [
@@ -217,7 +240,7 @@ Return ONLY valid JSON:
         message = await retryClaudeCall(() =>
           client.messages.create({
             model: 'claude-haiku-4-5-20251001',
-            max_tokens: 1400,
+            max_tokens: 4000,
             messages: [{ role: 'user', content: prompt }],
           })
         );
@@ -499,7 +522,7 @@ Return ONLY valid JSON (no markdown, no explanation):
         message = await retryClaudeCall(() =>
           client.messages.create({
             model: 'claude-haiku-4-5-20251001',
-            max_tokens: 1400,
+            max_tokens: 4000,
             messages: [{
               role: 'user',
               content: [
@@ -513,7 +536,7 @@ Return ONLY valid JSON (no markdown, no explanation):
         message = await retryClaudeCall(() =>
           client.messages.create({
             model: 'claude-haiku-4-5-20251001',
-            max_tokens: 1400,
+            max_tokens: 4000,
             messages: [{ role: 'user', content: prompt }],
           })
         );
@@ -605,9 +628,63 @@ Return ONLY valid JSON (no markdown, no explanation):
       }
     }
 
+    // ── Duplicate / similar question guard ──────────────────────────────────
+    // If Claude generates a question too similar to one already asked, swap it
+    // with a competency-specific fallback to prevent repetition loops.
+    if (result.question && canonicalAskedQuestions.length > 0) {
+      const isDuplicate = canonicalAskedQuestions.some(q => isSimilarQuestion(result.question, q));
+      if (isDuplicate) {
+        const FALLBACK_POOL = {
+          technical_knowledge: [
+            `What is the most important performance optimization technique for React you have applied, and can you give a concrete example?`,
+            `How do you decide between local component state and a global state manager like Redux for a given feature?`,
+            `Walk me through how you handle error boundaries and async error handling in a React app.`,
+          ],
+          problem_solving: [
+            `If you joined our team and found the codebase had zero test coverage, what would your first three steps be?`,
+            `How would you approach optimising a web page a user reports as slow on mobile devices?`,
+            `If a feature you shipped caused a production incident, walk me through your response and team communication.`,
+          ],
+          behavioral: [
+            `Tell me about a project where you learned a completely new technology under pressure. How did you approach it?`,
+            `Describe a situation where you disagreed with a key team decision. How did you handle it and what was the outcome?`,
+            `Give me an example of receiving difficult critical feedback. How did you respond and what changed?`,
+          ],
+          culture_fit: [
+            `What does your ideal engineering team culture look like, and why does that matter to you?`,
+            `How do you stay current with developments in frontend engineering outside of your coursework or job?`,
+            `What kind of projects genuinely excite you, and how does this specific role connect to that?`,
+          ],
+          communication: [
+            `How do you document technical decisions and communicate them to non-technical stakeholders?`,
+            `Describe a time you had to explain a complex technical trade-off to a product manager or designer.`,
+          ],
+          resume_validation: [
+            `What is the gap between where you are now and where you want to be technically in two years?`,
+            `Which skill or technology on your background do you feel least confident about and what have you done to improve it?`,
+          ],
+        };
+        const pool = FALLBACK_POOL[nextCompetency] || FALLBACK_POOL.behavioral;
+        const freshFallback = pool.find(f =>
+          !canonicalAskedQuestions.some(q => isSimilarQuestion(f, q))
+        ) || pool[Math.floor(Math.random() * pool.length)];
+
+        console.warn(`⚠️  Duplicate question detected. Substituting from ${nextCompetency} pool.`);
+        result.question = freshFallback;
+        result.interviewer_thought = `Redirecting to a fresh ${nextCompetency.replace(/_/g, ' ')} question to avoid repetition.`;
+        if (result.session_memory) {
+          const currentList = result.session_memory.asked_questions || canonicalAskedQuestions;
+          if (!currentList.includes(freshFallback)) {
+            result.session_memory.asked_questions = [...currentList, freshFallback];
+          }
+        }
+      }
+    }
+
     console.log(`📋 Asked: ${result.session_memory?.asked_questions?.length} | Classification: ${result.answer_classification} | Needs followup: ${result.session_memory?.needs_followup}`);
     return Response.json(result);
   }
+
 
   // ══════════════════════════════════════════════════════════════════════════
   // ACTION 3: EVALUATE
@@ -699,7 +776,7 @@ Return ONLY valid JSON:
       const message = await retryClaudeCall(() =>
         client.messages.create({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1800,
+          max_tokens: 4000,
           messages: [{ role: 'user', content: prompt }],
         })
       );
