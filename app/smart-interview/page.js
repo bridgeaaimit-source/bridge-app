@@ -222,7 +222,8 @@ function VoiceTest({ onResult, selectedLang, onLangChange }) {
     });
     const acc = Math.round((matches / testWords.length) * 100);
     setAccuracy(acc);
-    onResult(acc >= 60);
+    // Fix 1: lower threshold to 40% — mic works, minor accent differences are fine
+    onResult(acc >= 40);
   }, [onResult, testWords]);
 
   const start = useCallback(() => {
@@ -323,6 +324,12 @@ export default function SmartInterviewPage() {
   const [micOk, setMicOk] = useState(null);
   const [voiceOk, setVoiceOk] = useState(null);
   const [selectedLang, setSelectedLang] = useState("en-IN");
+  // Fix 7: fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  // Fix 8: violation debounce ref
+  const lastViolationTimeRef = useRef(0);
+  // Fix 9: stable video element ref
+  const liveVideoRef = useRef(null);
 
   // Interview state
   const [currentQuestion, setCurrentQuestion] = useState('');
@@ -425,6 +432,22 @@ export default function SmartInterviewPage() {
   const videoTranscript = fullTranscript || interimTranscript;
   const fileInputRef = useRef(null);
 
+  // Fix 9: keep video srcObject in sync with stream state
+  useEffect(() => {
+    if (liveVideoRef.current && videoStream) {
+      liveVideoRef.current.srcObject = videoStream;
+    }
+  }, [videoStream]);
+
+  // Fix 7: listen to fullscreen changes (e.g. user presses Esc)
+  useEffect(() => {
+    const onFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
   // Browser setups
   useEffect(() => {
     if (typeof window !== 'undefined' && !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
@@ -432,10 +455,10 @@ export default function SmartInterviewPage() {
     }
 
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.getVoices();
-      window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices();
-      };
+      // Pre-load voices so TTS works on first call
+      const loadVoices = () => window.speechSynthesis.getVoices();
+      loadVoices();
+      window.speechSynthesis.onvoiceschanged = loadVoices;
     }
 
     if (typeof window !== 'undefined') {
@@ -473,20 +496,41 @@ export default function SmartInterviewPage() {
 
   const currentAudioRef = useRef(null);
 
+  // Fix 2+3: pick an explicit English voice so TTS is never silent
+  const getEnglishVoice = () => {
+    const voices = window.speechSynthesis.getVoices();
+    // Prefer Indian English, then any en-GB/en-US, then any English, then first available
+    return (
+      voices.find(v => v.lang === 'en-IN') ||
+      voices.find(v => v.lang === 'en-GB') ||
+      voices.find(v => v.lang === 'en-US') ||
+      voices.find(v => v.lang.startsWith('en')) ||
+      voices[0] ||
+      null
+    );
+  };
+
   const speakQuickly = (text, onEnd) => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 0.8;
-      utterance.onend = () => {
-        if (onEnd) onEnd();
+      const doSpeak = () => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        const voice = getEnglishVoice();
+        if (voice) utterance.voice = voice;
+        utterance.rate = 1.05;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        utterance.onend = () => { if (onEnd) onEnd(); };
+        utterance.onerror = () => { if (onEnd) onEnd(); };
+        window.speechSynthesis.speak(utterance);
       };
-      utterance.onerror = () => {
-        if (onEnd) onEnd();
-      };
-      window.speechSynthesis.speak(utterance);
+      // Wait for voices to load if not yet ready
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        doSpeak();
+      } else {
+        window.speechSynthesis.onvoiceschanged = () => doSpeak();
+      }
     } else {
       if (onEnd) onEnd();
     }
@@ -495,20 +539,28 @@ export default function SmartInterviewPage() {
   const speakTextFallback = (text, onEnd) => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.95;
-      utterance.pitch = 1;
-      utterance.volume = 1;
-      utterance.onstart = () => setIsSpeaking(true);
-      
-      const handleEnd = () => {
-        setIsSpeaking(false);
-        if (onEnd) onEnd();
+      const doSpeak = () => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        const voice = getEnglishVoice();
+        if (voice) utterance.voice = voice;
+        utterance.rate = 0.95;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        utterance.onstart = () => setIsSpeaking(true);
+        const handleEnd = () => {
+          setIsSpeaking(false);
+          if (onEnd) onEnd();
+        };
+        utterance.onend = handleEnd;
+        utterance.onerror = handleEnd;
+        window.speechSynthesis.speak(utterance);
       };
-      
-      utterance.onend = handleEnd;
-      utterance.onerror = handleEnd;
-      window.speechSynthesis.speak(utterance);
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        doSpeak();
+      } else {
+        window.speechSynthesis.onvoiceschanged = () => doSpeak();
+      }
     } else {
       if (onEnd) onEnd();
     }
@@ -809,11 +861,18 @@ export default function SmartInterviewPage() {
     submitAnswer(fullTranscript || interimTranscript || currentAnswer);
   };
 
-  // Tab switch detection
+  // Fix 8: Tab switch detection — debounced to prevent double-counting
   useEffect(() => {
     if (stage !== 'interviewing') return;
 
+    const DEBOUNCE_MS = 2000; // ignore second event within 2 seconds
+
     const handleViolation = (type) => {
+      const now = Date.now();
+      // Skip if a violation was already recorded within the debounce window
+      if (now - lastViolationTimeRef.current < DEBOUNCE_MS) return;
+      lastViolationTimeRef.current = now;
+
       const timestamp = new Date().toISOString();
       setViolations((prev) => {
         const nextViolations = [...prev, { type, timestamp }];
@@ -826,9 +885,9 @@ export default function SmartInterviewPage() {
         setIntegrityScore(newScore);
 
         if (count === 1) {
-          toast.error("Warning: Please focus on the interview. Tab or window switching detected.", { duration: 5000 });
+          toast.error("Warning: Tab switching detected. Please focus on the interview.", { duration: 5000 });
         } else if (count === 2) {
-          toast.error("Final Warning: Window switching will flag this interview for review.", { duration: 6000 });
+          toast.error("Final Warning: Repeated switching will flag this interview.", { duration: 6000 });
         } else {
           toast.error("Interview Flagged: Multiple window switches detected.", { duration: 6000 });
         }
@@ -837,14 +896,16 @@ export default function SmartInterviewPage() {
       });
     };
 
+    // Only fire on actual tab hide — visibilitychange is reliable
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        handleViolation("Tab switched or window minimized");
-      }
+      if (document.hidden) handleViolation("Tab switched or window minimized");
     };
 
+    // blur fires when user switches to another app/window (not just tab)
+    // visibilitychange already covers tab switching so blur covers the remaining case
     const handleBlur = () => {
-      handleViolation("Window lost focus");
+      // Only count as violation if tab is still visible (e.g. alt+tabbed to another app)
+      if (!document.hidden) handleViolation("Window lost focus");
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -874,6 +935,7 @@ export default function SmartInterviewPage() {
     setLoading(true);
     setViolations([]);
     setIntegrityScore(100);
+    lastViolationTimeRef.current = 0;
     
     try {
       const response = await fetch('/api/smart-interview', {
@@ -923,6 +985,13 @@ export default function SmartInterviewPage() {
       setStage('interviewing');
       setQuestionNumber(1);
       setStartError('');
+
+      // Fix 7: enter fullscreen when interview starts
+      if (typeof document !== 'undefined' && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {
+          // Fullscreen might be refused on some browsers — that's ok
+        });
+      }
 
       if (autoSpeak) {
         speakText(data.question, () => {
@@ -1469,7 +1538,8 @@ export default function SmartInterviewPage() {
 
   // INTERVIEW SCREEN
   if (stage === 'interviewing') {
-    const isNextLocked = speakingTime < 15;
+    // Fix 6: 15s → 10s lock
+    const isNextLocked = speakingTime < 10;
 
     return (
       <AppShell>
@@ -1486,6 +1556,16 @@ export default function SmartInterviewPage() {
                 <span className="text-xs font-bold text-[#0D9488]">Question {questionNumber}</span>
                 <span className="text-xs text-gray-400">• {round}</span>
               </div>
+              {/* Fix 7: Exit fullscreen button */}
+              {isFullscreen && (
+                <button
+                  onClick={() => document.exitFullscreen?.()}
+                  title="Exit fullscreen"
+                  className="flex items-center gap-1.5 bg-gray-800/70 text-white px-3 py-1.5 rounded-full text-xs font-semibold hover:bg-gray-700 transition-colors"
+                >
+                  <XCircle className="w-3.5 h-3.5" /> Exit Fullscreen
+                </button>
+              )}
             </div>
             <button
               onClick={() => {
@@ -1638,7 +1718,7 @@ export default function SmartInterviewPage() {
                         }`}
                       >
                         {isNextLocked ? (
-                          <span>Next Question (Unlocks in {15 - speakingTime}s)</span>
+                          <span>Next Question (Unlocks in {10 - speakingTime}s)</span>
                         ) : (
                           <>Next Question <ArrowRight className="w-4 h-4" /></>
                         )}
@@ -1651,15 +1731,19 @@ export default function SmartInterviewPage() {
             </div>
 
             <div className="flex flex-col gap-5">
-              {/* Mode rendering for Video */}
+              {/* Fix 9: video preview with stable ref */}
               {mode === 'video' && !isThinking && (
                 <div className="bg-gray-900 rounded-2xl p-4 overflow-hidden border border-gray-800 shadow-lg">
                   <div className="aspect-video w-full overflow-hidden rounded-lg bg-black relative">
-                    {videoStream ? (
-                      <video autoPlay muted playsInline
-                        ref={(node) => { if (node && videoStream) node.srcObject = videoStream; }}
-                        className="h-full w-full object-cover" />
-                    ) : (
+                    {/* Always render video element; srcObject kept in sync via useEffect */}
+                    <video
+                      ref={liveVideoRef}
+                      autoPlay
+                      muted
+                      playsInline
+                      className={`h-full w-full object-cover ${videoStream ? '' : 'hidden'}`}
+                    />
+                    {!videoStream && (
                       <div className="flex h-full w-full items-center justify-center text-xs text-gray-500">Camera preview</div>
                     )}
                   </div>
