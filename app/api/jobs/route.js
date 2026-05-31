@@ -137,8 +137,6 @@ Be honest and fair. A blank or minimal resume should score 10-30. A strong MBA/e
 
   // ACTION 2: Fetch and match real jobs
   if (action === 'fetch_jobs') {
-    const { profile } = await request.json()
-      .catch(() => ({}));
 
     console.log('=== FETCH JOBS API ===');
     console.log('Profile received:', !!profile);
