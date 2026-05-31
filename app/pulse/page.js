@@ -4,10 +4,15 @@ import { useState, useEffect } from "react";
 import {
   Search, ArrowUpRight, Bookmark, Star, Newspaper, ArrowRight,
   CheckCircle, AlertCircle, TrendingUp, Zap, Sparkles, Building2,
-  Lightbulb, MessageSquare, Quote, Target, BarChart2, Eye, Clock
+  Lightbulb, MessageSquare, Quote, Target, BarChart2, Eye, Clock,
+  RefreshCw
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
+import { auth, db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import toast from "react-hot-toast";
 
 const CATEGORIES = ["All", "Marketing", "Finance", "HR", "Analytics", "Tech", "MBA"];
 
@@ -55,29 +60,67 @@ export default function PulsePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [savedArticles, setSavedArticles] = useState([]);
   const [gdPracticeLoading, setGdPracticeLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const { isBypassed } = useAuthBypass();
 
-  // Fetch GD insights — client-side daily cache, no repeated AI calls
-  const fetchGDInsights = async (category) => {
+  // Load user role on mount
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const userSnap = await getDoc(doc(db, "users", user.uid));
+          if (userSnap.exists() && userSnap.data().role === "admin") {
+            setIsAdmin(true);
+          } else {
+            setIsAdmin(false);
+          }
+        } catch (e) {
+          console.error("Error loading user role:", e);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  // Fetch GD insights — client-side daily cache, supports manual admin force-refresh
+  const fetchGDInsights = async (category, forceRefresh = false) => {
     const dateKey = getISTDateKey();
     const cacheKey = `pulse_gd_${category}_${dateKey}`;
-    const cached = loadCache(cacheKey);
-    if (cached && cached.gd_topic) {
-      setGdInsights(cached);
-      setGdLoading(false);
-      return;
+    
+    if (!forceRefresh) {
+      const cached = loadCache(cacheKey);
+      if (cached && cached.gd_topic) {
+        setGdInsights(cached);
+        setGdLoading(false);
+        return;
+      }
     }
+    
     setGdLoading(true);
     try {
-      const res = await fetch(`/api/gd-insights?category=${encodeURIComponent(category)}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const url = `/api/gd-insights?category=${encodeURIComponent(category)}&userId=${auth.currentUser?.uid || ''}${forceRefresh ? '&force=true' : ''}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || `HTTP ${res.status}`);
+      }
       const data = await res.json();
       if (!data?.gd_topic) throw new Error('Bad response');
       saveCache(cacheKey, data);
       setGdInsights(data);
-    } catch {
-      setGdInsights(FALLBACK_GD);
+      if (forceRefresh) {
+        toast.success("GD Topic refreshed successfully!");
+      }
+    } catch (err) {
+      console.error("Fetch GD insights failed:", err);
+      if (!forceRefresh) {
+        setGdInsights(FALLBACK_GD);
+      } else {
+        toast.error(err.message?.includes("Unauthorized") ? "Unauthorized: Admin access required." : "Failed to refresh today's GD topic.");
+      }
     } finally {
       setGdLoading(false);
     }
@@ -95,7 +138,7 @@ export default function PulsePage() {
     }
     setNewsLoading(true);
     try {
-      const res = await fetch(`/api/news?category=${encodeURIComponent(category)}`);
+      const res = await fetch(`/api/news?category=${encodeURIComponent(category)}&userId=${auth.currentUser?.uid || ''}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (!data?.articles) throw new Error('Bad response');
@@ -214,6 +257,16 @@ export default function PulsePage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xs font-bold text-teal-100 uppercase tracking-widest">Today's GD Topic</span>
+                      {isAdmin && (
+                        <button
+                          onClick={() => fetchGDInsights(activeCategory, true)}
+                          title="Refresh Topic (Admin Only)"
+                          disabled={gdLoading}
+                          className="p-1 rounded bg-white/10 hover:bg-white/20 text-white transition-colors disabled:opacity-50 flex items-center justify-center cursor-pointer"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${gdLoading ? 'animate-spin' : ''}`} />
+                        </button>
+                      )}
                       {gdInsights.difficulty && (
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white`}>
                           {gdInsights.difficulty}

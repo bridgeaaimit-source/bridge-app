@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { ChevronLeft, Upload, Briefcase, Target, TrendingUp, Users, RefreshCw, ExternalLink, Lock, CheckCircle, XCircle, AlertCircle, Star, MapPin, DollarSign, Clock, Building, Award, Brain, Send, FileText, Search, Filter, Calendar, MessageSquare } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
+import { auth } from "@/lib/firebase";
 
 export default function JobsPage() {
   const [activeTab, setActiveTab] = useState('foryou');
@@ -99,7 +100,8 @@ export default function JobsPage() {
         },
         body: JSON.stringify({
           action: 'fetch_jobs',
-          profile: profileData
+          profile: profileData,
+          uid: auth.currentUser?.uid
         }),
       });
 
@@ -177,6 +179,7 @@ export default function JobsPage() {
           action: 'extract_profile',
           resume_base64: base64.split(',')[1],
           file_type: 'pdf',
+          uid: auth.currentUser?.uid
         }),
       });
 
@@ -242,7 +245,8 @@ export default function JobsPage() {
           action: 'smart_apply',
           job_url: smartApplyMode === 'url' ? input : undefined,
           job_description: smartApplyMode === 'paste' ? input : undefined,
-          profile: profile
+          profile: profile,
+          uid: auth.currentUser?.uid
         }),
       });
 
@@ -974,7 +978,8 @@ export default function JobsPage() {
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
                             action: 'extract_mba_profile',
-                            resume_base64: base64
+                            resume_base64: base64,
+                            userId: auth.currentUser?.uid
                           })
                         });
                         const data = await res.json();
@@ -1056,7 +1061,8 @@ export default function JobsPage() {
                         body: JSON.stringify({
                           action: 'find_internships',
                           profile: mbaProfile,
-                          extra_domains: extraDomains
+                          extra_domains: extraDomains,
+                          userId: auth.currentUser?.uid
                         })
                       });
                       const data = await res.json();
@@ -1187,7 +1193,8 @@ export default function JobsPage() {
                               body: JSON.stringify({
                                 action: 'cover_letter',
                                 internship,
-                                profile: mbaProfile
+                                profile: mbaProfile,
+                                userId: auth.currentUser?.uid
                               })
                             });
                             const data = await res.json();

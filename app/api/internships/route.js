@@ -1,9 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 export async function POST(request) {
   const body = await request.json();
   const { action, resume_base64, profile, 
-    extra_domains } = body;
+    extra_domains, userId, uid } = body;
 
   const client = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY
@@ -60,6 +61,9 @@ Return ONLY valid JSON, no markdown:
         ]
       }]
     });
+
+    // Track token usage
+    await trackTokensServer(uid || userId || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const text = message.content[0].text
       .replace(/```json/g, '')
@@ -200,6 +204,9 @@ Return ONLY valid JSON:
       messages: [{ role: 'user', content: matchPrompt }]
     });
 
+    // Track token usage
+    await trackTokensServer(uid || userId || 'anonymous', 'jobs', matchMsg.usage?.input_tokens, matchMsg.usage?.output_tokens);
+
     const matchText = matchMsg.content[0].text
       .replace(/```json/g, '')
       .replace(/```/g, '')
@@ -248,6 +255,9 @@ no JSON, no extra formatting.`;
       max_tokens: 1000,
       messages: [{ role: 'user', content: prompt }]
     });
+
+    // Track token usage
+    await trackTokensServer(uid || userId || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens);
 
     return Response.json({
       cover_letter: message.content[0].text

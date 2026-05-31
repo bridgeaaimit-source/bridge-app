@@ -561,7 +561,7 @@ export default function SmartInterviewPage() {
       const res = await fetch('/api/parse-resume', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resume_base64: base64, file_type: fileExt, file_name: file.name }),
+        body: JSON.stringify({ resume_base64: base64, file_type: fileExt, file_name: file.name, userId: auth.currentUser?.uid }),
       });
       const data = await res.json();
       if (res.ok && data.resumeText) {

@@ -5,7 +5,9 @@ import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { Users, Trophy, TrendingUp, Calendar, Mail, Phone, MapPin, GraduationCap } from "lucide-react";
+import { Users, Trophy, TrendingUp, Calendar, Mail, Phone, MapPin, GraduationCap, BarChart3 } from "lucide-react";
+import toast from "react-hot-toast";
+import AppShell from "@/components/AppShell";
 
 export default function AdminPage() {
   const [users, setUsers] = useState([]);
@@ -19,12 +21,25 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setCurrentUser(user);
-        fetchData();
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists() && userDoc.data().role === 'admin') {
+            fetchData();
+          } else {
+            toast.error('Access Denied. Admins only.');
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 1000);
+          }
+        } catch (error) {
+          console.error('Error checking admin role:', error);
+          window.location.href = '/dashboard';
+        }
       } else {
-        setLoading(false);
+        window.location.href = '/login';
       }
     });
 
@@ -111,197 +126,206 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5FAFA]">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-6">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900">BRIDGE Admin Dashboard</h1>
-          <p className="text-gray-600 mt-2">View all users and system statistics</p>
-          {currentUser && (
-            <p className="text-sm text-gray-500 mt-1">Logged in as: {currentUser.email}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
-                <Users className="w-6 h-6 text-cyan-600" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-gray-900">{stats.totalUsers}</div>
-            <div className="text-sm text-gray-600">Total Users</div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center">
-                <Trophy className="w-6 h-6 text-purple-500" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-gray-900">{stats.totalInterviews}</div>
-            <div className="text-sm text-gray-600">Total Interviews</div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-gray-900">{stats.avgScore}</div>
-            <div className="text-sm text-gray-600">Average Score</div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-gray-900">{stats.activeToday}</div>
-            <div className="text-sm text-gray-600">Active Today</div>
+    <AppShell>
+      <div className="min-h-screen bg-[#F5FAFA]">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 px-8 py-6">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-3xl font-bold text-gray-900">BRIDGE Admin Dashboard</h1>
+            <p className="text-gray-600 mt-2">View all users and system statistics</p>
+            {currentUser && (
+              <p className="text-sm text-gray-500 mt-1">Logged in as: {currentUser.email}</p>
+            )}
           </div>
         </div>
 
-        {/* Users Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">All Users ({users.length})</h2>
+        <div className="max-w-7xl mx-auto px-8 py-8">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
+                  <Users className="w-6 h-6 text-cyan-600" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-gray-900">{stats.totalUsers}</div>
+              <div className="text-sm text-gray-600">Total Users</div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center">
+                  <Trophy className="w-6 h-6 text-purple-500" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-gray-900">{stats.totalInterviews}</div>
+              <div className="text-sm text-gray-600">Total Interviews</div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-gray-900">{stats.avgScore}</div>
+              <div className="text-sm text-gray-600">Average Score</div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-orange-600" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-gray-900">{stats.activeToday}</div>
+              <div className="text-sm text-gray-600">Active Today</div>
+            </div>
           </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Education</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">BRIDGE Score</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interviews</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {users.map((user) => (
-                  <tr key={user.uid} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        {user.photo ? (
-                          <img src={user.photo} alt={user.name} className="w-8 h-8 rounded-full object-cover mr-3" />
-                        ) : (
-                          <div className="w-8 h-8 bg-gradient-to-r from-[#0891B2] to-[#0D9488] rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
-                            {user.name?.charAt(0)?.toUpperCase() || 'A'}
-                          </div>
-                        )}
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{user.name || 'Anonymous'}</div>
-                          <div className="text-sm text-gray-500">{user.lookingFor || 'Not specified'}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {user.email && (
-                          <div className="flex items-center gap-1">
-                            <Mail className="w-3 h-3 text-gray-400" />
-                            {user.email}
-                          </div>
-                        )}
-                        {user.phone && (
-                          <div className="flex items-center gap-1">
-                            <Phone className="w-3 h-3 text-gray-400" />
-                            {user.phone}
-                          </div>
-                        )}
-                        {user.location && (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-gray-400" />
-                            {user.location}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        <div className="flex items-center gap-1">
-                          <GraduationCap className="w-3 h-3 text-gray-400" />
-                          {user.college || 'Not specified'}
-                        </div>
-                        <div className="text-xs text-gray-500">{user.degree || 'Not specified'}</div>
-                        <div className="text-xs text-gray-500">{user.domain || 'Not specified'}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className={`text-lg font-bold ${getScoreColor(user.bridgeScore || 0)}`}>
-                        {user.bridgeScore || 0}
-                      </div>
-                      <div className="text-xs text-gray-500">Avg: {(user.avgScore || 0).toFixed(1)}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{user.interviewsDone || 0}</div>
-                      <div className="text-xs text-gray-500">Streak: {user.streak || 0}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(user.lastSeen)}
-                    </td>
+
+          {/* Users Table */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">All Users ({users.length})</h2>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Education</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">BRIDGE Score</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interviews</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {users.map((user) => (
+                    <tr key={user.uid} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {user.photo ? (
+                            <img src={user.photo} alt={user.name} className="w-8 h-8 rounded-full object-cover mr-3" />
+                          ) : (
+                            <div className="w-8 h-8 bg-gradient-to-r from-[#0891B2] to-[#0D9488] rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
+                              {user.name?.charAt(0)?.toUpperCase() || 'A'}
+                            </div>
+                          )}
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{user.name || 'Anonymous'}</div>
+                            <div className="text-sm text-gray-500">{user.lookingFor || 'Not specified'}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {user.email && (
+                            <div className="flex items-center gap-1">
+                              <Mail className="w-3 h-3 text-gray-400" />
+                              {user.email}
+                            </div>
+                          )}
+                          {user.phone && (
+                            <div className="flex items-center gap-1">
+                              <Phone className="w-3 h-3 text-gray-400" />
+                              {user.phone}
+                            </div>
+                          )}
+                          {user.location && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-gray-400" />
+                              {user.location}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          <div className="flex items-center gap-1">
+                            <GraduationCap className="w-3 h-3 text-gray-400" />
+                            {user.college || 'Not specified'}
+                          </div>
+                          <div className="text-xs text-gray-500">{user.degree || 'Not specified'}</div>
+                          <div className="text-xs text-gray-500">{user.domain || 'Not specified'}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className={`text-lg font-bold ${getScoreColor(user.bridgeScore || 0)}`}>
+                          {user.bridgeScore || 0}
+                        </div>
+                        <div className="text-xs text-gray-500">Avg: {(user.avgScore || 0).toFixed(1)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{user.interviewsDone || 0}</div>
+                        <div className="text-xs text-gray-500">Streak: {user.streak || 0}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(user.lastSeen)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
-        {/* Quick Actions */}
-        <div className="mt-8 bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button
-              onClick={() => window.open('https://console.firebase.google.com/', '_blank')}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
-            >
-              <Trophy className="w-5 h-5" />
-              Open Firebase Console
-            </button>
-            <button
-              onClick={fetchData}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              <TrendingUp className="w-5 h-5" />
-              Refresh Data
-            </button>
-            <button
-              onClick={() => {
-                const csv = [
-                  ['Name', 'Email', 'College', 'BRIDGE Score', 'Interviews', 'Last Active'],
-                  ...users.map(u => [
-                    u.name || 'Anonymous',
-                    u.email || '',
-                    u.college || '',
-                    u.bridgeScore || 0,
-                    u.interviewsDone || 0,
-                    formatDate(u.lastSeen)
-                  ])
-                ].map(row => row.join(',')).join('\n');
-                
-                const blob = new Blob([csv], { type: 'text/csv' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `bridge_users_${new Date().toISOString().split('T')[0]}.csv`;
-                a.click();
-              }}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <Users className="w-5 h-5" />
-              Export to CSV
-            </button>
+          {/* Quick Actions */}
+          <div className="mt-8 bg-white rounded-xl border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <button
+                onClick={() => window.location.href = '/admin/token-dashboard'}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-[#0D9488] text-white rounded-lg hover:bg-[#0F766E] transition-colors"
+              >
+                <BarChart3 className="w-5 h-5" />
+                Token Usage Dashboard
+              </button>
+              <button
+                onClick={() => window.open('https://console.firebase.google.com/', '_blank')}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
+              >
+                <Trophy className="w-5 h-5" />
+                Open Firebase Console
+              </button>
+              <button
+                onClick={fetchData}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <TrendingUp className="w-5 h-5" />
+                Refresh Data
+              </button>
+              <button
+                onClick={() => {
+                  const csv = [
+                    ['Name', 'Email', 'College', 'BRIDGE Score', 'Interviews', 'Last Active'],
+                    ...users.map(u => [
+                      u.name || 'Anonymous',
+                      u.email || '',
+                      u.college || '',
+                      u.bridgeScore || 0,
+                      u.interviewsDone || 0,
+                      formatDate(u.lastSeen)
+                    ])
+                  ].map(row => row.join(',')).join('\n');
+                  
+                  const blob = new Blob([csv], { type: 'text/csv' });
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `bridge_users_${new Date().toISOString().split('T')[0]}.csv`;
+                  a.click();
+                }}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Users className="w-5 h-5" />
+                Export to CSV
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

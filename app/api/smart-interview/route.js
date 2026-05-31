@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { adminDb, trackTokens } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 // Helper to ensure values are safe integers between 1 and 10
 function safeInt(val, fallback = 7) {
@@ -131,7 +132,8 @@ Return ONLY valid JSON format:
       );
     }
 
-    await trackTokens(user_id, 'smart-interview-init', message.usage?.input_tokens, message.usage?.output_tokens);
+    // Track token usage
+    await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const text = message.content[0].text
       .replace(/```json/g, '').replace(/```/g, '').trim();
@@ -271,7 +273,8 @@ Return ONLY valid JSON format:
       })
     );
 
-    await trackTokens(user_id, 'smart-interview-continue', message.usage?.input_tokens, message.usage?.output_tokens);
+    // Track token usage
+    await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const text = message.content[0].text
       .replace(/```json/g, '').replace(/```/g, '').trim();
@@ -416,7 +419,8 @@ Provide evaluation strictly in JSON format:
       })
     );
 
-    await trackTokens(user_id, 'smart-interview-evaluate', message.usage?.input_tokens, message.usage?.output_tokens);
+    // Track token usage
+    await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
 
     console.log('✅ Claude API final evaluation call successful');
     const text = message.content[0].text
