@@ -89,7 +89,15 @@ Return ONLY valid JSON:
       .replace(/```/g, '')
       .trim();
 
-    return Response.json(JSON.parse(text));
+    try {
+      return Response.json(JSON.parse(text));
+    } catch (e) {
+      console.error('Error parsing profile JSON:', e.message, text);
+      return Response.json(
+        { error: 'Could not extract profile. Please ensure the PDF is a valid resume containing your details.' },
+        { status: 400 }
+      );
+    }
   }
 
   // ACTION: Score resume quality → initial Bridge Score
@@ -114,7 +122,7 @@ Score this resume across these dimensions and return ONLY valid JSON (no extra t
 Be honest and fair. A blank or minimal resume should score 10-30. A strong MBA/engineering resume with projects and internships should score 70-90.`;
 
     const message = await client.messages.create({
-      model: 'claude-haiku-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 600,
       messages: [{
         role: 'user',
@@ -132,7 +140,15 @@ Be honest and fair. A blank or minimal resume should score 10-30. A strong MBA/e
     await trackTokensServer(uid || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens);
 
     const scoreText = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
-    return Response.json(JSON.parse(scoreText));
+    try {
+      return Response.json(JSON.parse(scoreText));
+    } catch (e) {
+      console.error('Error parsing resume score JSON:', e.message, scoreText);
+      return Response.json(
+        { error: 'Could not score resume. Please ensure the PDF is a valid resume.' },
+        { status: 400 }
+      );
+    }
   }
 
   // ACTION 2: Fetch and match real jobs
