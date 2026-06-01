@@ -25,11 +25,6 @@ export default function SupportWidget() {
   const pathname = usePathname();
   const { isBypassed, mockUser } = useAuthBypass();
 
-  // Hide widget on login page and admin panel
-  if (pathname === "/login" || pathname.startsWith("/admin")) {
-    return null;
-  }
-
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("new"); // "new" or "my-tickets"
   const [currentUser, setCurrentUser] = useState(null);
@@ -126,6 +121,11 @@ export default function SupportWidget() {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [expandedTicketId, tickets]);
+
+  // Hide widget on login page and admin panel
+  if (pathname === "/login" || pathname.startsWith("/admin")) {
+    return null;
+  }
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
