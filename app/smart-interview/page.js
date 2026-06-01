@@ -646,17 +646,19 @@ export default function SmartInterviewPage() {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Check file type
     const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     if (!validTypes.includes(file.type)) {
       toast.error('Please upload a PDF, DOC, or DOCX file');
       return;
     }
+
+    // Check file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('File size must be less than 5MB');
       return;
     }
 
-    const toastId = toast.loading('Reading your resume...');
     try {
       const base64 = await fileToBase64(file);
       setResumeBase64(base64);
@@ -679,7 +681,7 @@ export default function SmartInterviewPage() {
 
       toast.success('Resume read successfully!', { id: toastId });
     } catch (error) {
-      toast.error('Failed to read resume. Please try a PDF file.', { id: toastId });
+      toast.error('Failed to upload resume');
       console.error('Resume upload error:', error);
     }
   };
@@ -687,11 +689,16 @@ export default function SmartInterviewPage() {
   const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.readAsDataURL(file);
+      reader.readAsArrayBuffer(file);
       reader.onload = () => {
-        const base64 = reader.result.split(',')[1];
-        if (!base64) reject(new Error('Empty base64'));
-        else resolve(base64);
+        const arrayBuffer = reader.result;
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64 = btoa(binary);
+        resolve(base64);
       };
       reader.onerror = reject;
     });
@@ -1364,12 +1371,15 @@ export default function SmartInterviewPage() {
         <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900" style={{fontFamily:'Syne,sans-serif'}}>Smart Interview</h1>
-              <p className="text-gray-500 mt-1 text-sm">Personalised to your resume & target role</p>
+              <h1 className="text-3xl font-bold text-gray-900">Smart Interview</h1>
+              <p className="text-gray-600 mt-1">Personalized based on your resume & job description</p>
             </div>
-            <button onClick={loadFeedbackHistory}
-              className="self-start sm:self-auto flex items-center gap-2 bg-[#CCFBF1] text-[#0D9488] px-5 py-2 rounded-full font-semibold text-sm hover:bg-[#99F6E4] transition-colors">
-              <History className="w-4 h-4" /> View History
+            <button
+              onClick={loadFeedbackHistory}
+              className="flex items-center gap-2 px-4 py-2 bg-[#0D9488] text-white rounded-lg hover:bg-[#0F766E] transition-colors"
+            >
+              <History className="w-5 h-5" />
+              View History
             </button>
           </div>
 
@@ -1406,7 +1416,6 @@ export default function SmartInterviewPage() {
                     <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} className="hidden" id="resume-upload" />
                   </label>
                 </div>
-              </div>
 
               <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(13,148,136,0.08)] border border-gray-100 overflow-hidden">
                 <div className="bg-[#CCFBF1] px-6 py-4">
@@ -1417,10 +1426,14 @@ export default function SmartInterviewPage() {
                 <div className="p-6 flex flex-col gap-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2">Target Role</label>
-                      <input type="text" value={jobRole} onChange={(e) => setJobRole(e.target.value)}
-                        placeholder="e.g. Software Engineer"
-                        className="w-full bg-gray-50 border-2 border-[#CCFBF1] focus:border-[#0D9488] rounded-xl px-4 py-3 outline-none text-gray-800 text-sm transition-colors placeholder:text-gray-400" />
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Job Role</label>
+                      <input
+                        type="text"
+                        value={jobRole}
+                        onChange={(e) => setJobRole(e.target.value)}
+                        placeholder="e.g. Software Engineer, Product Manager"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent"
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-gray-700 mb-2">Job Description (Optional)</label>
@@ -1429,18 +1442,29 @@ export default function SmartInterviewPage() {
                         className="w-full bg-gray-50 border-2 border-[#CCFBF1] focus:border-[#0D9488] rounded-xl px-4 py-3 outline-none text-gray-800 text-sm transition-colors" />
                     </div>
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-3">Select Round Type</label>
-                    <div className="flex flex-wrap gap-2">
-                      {['HR Round','Technical Round','Managerial Round','Final Round'].map((r) => (
-                        <button key={r} onClick={() => setRound(r)}
-                          className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-                            round === r ? 'bg-[#0D9488] text-white' : 'bg-[#CCFBF1] text-[#0D9488] hover:bg-[#99F6E4]'
-                          }`}>
-                          {r}
-                        </button>
-                      ))}
+                {/* Interview Settings */}
+                <div className="mb-8">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Interview Settings</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Interview Round</label>
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        {['HR Round', 'Technical Round', 'Managerial Round', 'Final Round'].map((r) => (
+                          <button
+                            key={r}
+                            onClick={() => setRound(r)}
+                            className={`px-4 py-2 rounded-lg transition-colors ${
+                              round === r
+                                ? 'bg-[#F0FDFA] text-[#0D9488] font-semibold'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            {r}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
@@ -1455,11 +1479,32 @@ export default function SmartInterviewPage() {
                           <Icon className="w-6 h-6" />
                           <span className="text-xs font-bold">{label}</span>
                         </button>
-                      ))}
+                        <button
+                          onClick={() => setMode('voice')}
+                          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${
+                            mode === 'voice'
+                              ? 'bg-[#F0FDFA] text-[#0D9488] font-semibold'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          <Mic className="w-4 h-4" />
+                          Voice Mode
+                        </button>
+                        <button
+                          onClick={() => setMode('video')}
+                          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${
+                            mode === 'video'
+                              ? 'bg-[#F0FDFA] text-[#0D9488] font-semibold'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          <Play className="w-4 h-4" />
+                          Video Mode
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
               <div className="bg-[#F0FDFA] rounded-2xl p-6 border border-[#CCFBF1]">
                 <p className="font-bold text-[#0D9488] mb-3 flex items-center gap-2 text-sm">
@@ -1471,8 +1516,9 @@ export default function SmartInterviewPage() {
                   <li>• Full scoring analysis and integrity rating provided</li>
                 </ul>
                 {startError && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
                     <p className="text-red-600 text-sm">❌ {startError}</p>
+                    <button onClick={() => setStartError('')} className="text-red-400 text-xs mt-1">Dismiss</button>
                   </div>
                 )}
                 <button onClick={() => startInterview(false)} disabled={!resumeBase64 || !jobRole || loading}
@@ -1497,7 +1543,29 @@ export default function SmartInterviewPage() {
                       <p className="font-bold text-gray-800 text-sm mb-1">{title}</p>
                       <p className="text-xs text-gray-500">{body}</p>
                     </div>
-                  ))}
+                    <div>
+                      <div className="font-medium text-gray-900">Upload Resume</div>
+                      <div className="text-sm text-gray-600">AI analyzes your skills and experience</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-[#F0FDFA] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-[#0D9488]">2</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Provide Job Details</div>
+                      <div className="text-sm text-gray-600">Helps tailor questions to your target role</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-[#F0FDFA] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-[#0D9488]">3</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">AI Interview</div>
+                      <div className="text-sm text-gray-600">Get personalized questions and feedback</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1612,7 +1680,7 @@ export default function SmartInterviewPage() {
                 stopRecordingState();
                 submitAnswer(fullTranscript || interimTranscript || currentAnswer, true);
               }}
-              className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 text-white px-5 py-2.5 rounded-full font-semibold text-sm shadow hover:opacity-90 transition-opacity"
+              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
             >
               <X className="w-4 h-4" />
               Finish &amp; Get Report
@@ -1794,13 +1862,16 @@ export default function SmartInterviewPage() {
                 <h3 className="font-bold text-[#0D9488] mb-4 text-sm flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
                   <TrendingUp className="w-4 h-4" /> Live Progress
                 </h3>
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Questions done</span>
-                    <span className="text-sm font-bold text-[#0D9488]">{questionNumber - 1}</span>
+                <div className="space-y-3">
+                  <div className="p-3 bg-[#F0FDFA] rounded-lg">
+                    <p className="text-sm text-[#14B8A6]">
+                      💡 Be specific and provide examples from your experience
+                    </p>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-1.5">
-                    <div className="bg-[#0D9488] h-1.5 rounded-full transition-all" style={{width:`${Math.min(((questionNumber-1)/10)*100,100)}%`}} />
+                  <div className="p-3 bg-[#F0FDFA] rounded-lg">
+                    <p className="text-sm text-[#14B8A6]">
+                      🎯 Relate your answers to the job requirements
+                    </p>
                   </div>
                   <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-50">
                     <span className="text-gray-500">Integrity Status</span>
@@ -2010,14 +2081,15 @@ export default function SmartInterviewPage() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap justify-center gap-4 pt-4">
-                <button onClick={resetInterview}
-                  className="px-7 py-3 bg-gray-100 text-gray-700 rounded-full font-semibold hover:bg-gray-200 transition-colors">
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={resetInterview}
+                  className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
                   Try Another Interview
                 </button>
-                <button onClick={() => window.location.href='/dashboard'}
-                  className="px-7 py-3 bg-gradient-to-r from-[#0D9488] to-[#14B8A6] text-white rounded-full font-semibold shadow hover:opacity-90 transition-opacity">
-                  Back to Dashboard
+                <button className="px-6 py-3 bg-[#0D9488] text-white rounded-lg hover:bg-[#0D9488] transition-colors">
+                  Share Results
                 </button>
               </div>
             </div>
