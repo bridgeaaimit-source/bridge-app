@@ -91,7 +91,7 @@ export default function CategoryPositioning() {
   const glowOpacity = useTransform(scrollYProgress, [0, 0.5, 1], [0.3, 0.8, 0.3]);
 
   return (
-    <section ref={containerRef} className="relative bg-transparent pt-32 pb-40 overflow-hidden border-b border-gray-200 dark:border-white/10 transition-colors">
+    <section id="features" ref={containerRef} className="relative bg-transparent pt-32 pb-40 overflow-hidden border-b border-gray-200 dark:border-white/10 transition-colors">
 
       <div className="relative z-10 mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
         

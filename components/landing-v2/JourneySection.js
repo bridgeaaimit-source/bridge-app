@@ -482,7 +482,7 @@ export default function JourneySection() {
   const ActiveVisual = VISUALS[activeStep];
 
   return (
-    <section ref={containerRef} id="journey" className="relative bg-transparent border-b border-gray-200 dark:border-white/10 transition-colors" style={{ height: "600vh" }}>
+    <section ref={containerRef} id="how-it-works" className="relative bg-transparent border-b border-gray-200 dark:border-white/10 transition-colors" style={{ height: "600vh" }}>
       <div className="sticky top-0 h-screen w-full flex items-center justify-center">
         <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
