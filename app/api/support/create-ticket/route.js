@@ -42,59 +42,44 @@ export async function POST(request) {
     // Save ticket to Firestore using ticketId as the document ID
     await ticketsCollection.doc(ticketId).set(ticketData);
 
-    // Prepare WhatsApp Message
-    const truncatedDesc = description.length > 100 ? description.substring(0, 100) + '...' : description;
-    const messageText = `🆕 New BRIDGE Support Ticket\nTicket: #${ticketId}\nStudent: ${userName}\nIssue: ${category}\nDescription: ${truncatedDesc}\n👉 appbridgeai.in/admin/support`;
-
-    // Try sending Twilio WhatsApp notifications
-    const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
-    const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
-    const twilioWhatsappFrom = process.env.TWILIO_WHATSAPP_FROM;
-
-    if (twilioAccountSid && twilioAuthToken && twilioWhatsappFrom) {
+    // Prepare Discord Message
+    const truncatedDesc = description.length > 300 ? description.substring(0, 300) + '...' : description;
+    
+    const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    
+    if (discordWebhookUrl) {
       try {
-        const client = twilio(twilioAccountSid, twilioAuthToken);
-        const formattedFrom = twilioWhatsappFrom.startsWith('whatsapp:')
-          ? twilioWhatsappFrom
-          : `whatsapp:${twilioWhatsappFrom}`;
+        const discordPayload = {
+          content: `🚨 **New Support Ticket: #${ticketId}** 🚨`,
+          embeds: [{
+            title: `Ticket Details`,
+            color: 16711680, // Red color
+            fields: [
+              { name: "Student", value: userName, inline: true },
+              { name: "Email", value: userEmail, inline: true },
+              { name: "Category", value: category, inline: false },
+              { name: "Description", value: truncatedDesc, inline: false },
+              { name: "Link", value: "[View Ticket in Admin Dashboard](https://www.appbridgeai.in/admin/support)", inline: false }
+            ]
+          }]
+        };
 
-        const recipients = [
-          process.env.SUPPORT_WHATSAPP_1,
-          process.env.SUPPORT_WHATSAPP_2,
-          process.env.SUPPORT_WHATSAPP_3
-        ].filter(Boolean);
-
-        const sendPromises = recipients.map(to => {
-          const formattedTo = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
-          return client.messages.create({
-            from: formattedFrom,
-            to: formattedTo,
-            contentSid: 'HXb5b62575e6e4ff6129ad7c8efe1f983e',
-            contentVariables: JSON.stringify({
-              "1": `Ticket ${ticketId}`,
-              "2": userName
-            })
-          });
+        const response = await fetch(discordWebhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(discordPayload)
         });
 
-        const results = await Promise.allSettled(sendPromises);
-        
-        // Log successes and failures
-        let successCount = 0;
-        results.forEach((result, index) => {
-          if (result.status === 'rejected') {
-            console.error(`[CreateTicket] Twilio failed for recipient ${recipients[index]}:`, result.reason);
-          } else {
-            successCount++;
-          }
-        });
-        
-        console.log(`[CreateTicket] Twilio notifications sent successfully to ${successCount}/${recipients.length} recipients.`);
-      } catch (twilioError) {
-        console.error('[CreateTicket] Twilio notification failed:', twilioError.message);
+        if (!response.ok) {
+          console.error('[CreateTicket] Discord webhook failed:', await response.text());
+        } else {
+          console.log('[CreateTicket] Discord notification sent successfully.');
+        }
+      } catch (discordError) {
+        console.error('[CreateTicket] Error sending to Discord:', discordError.message);
       }
     } else {
-      console.warn('[CreateTicket] Twilio credentials missing. WhatsApp notifications skipped.');
+      console.warn('[CreateTicket] DISCORD_WEBHOOK_URL missing. Notifications skipped.');
     }
 
     return Response.json({ success: true, ticketId });

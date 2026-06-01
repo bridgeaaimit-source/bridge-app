@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, query, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { collection, query, onSnapshot, doc, updateDoc, getDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import AppShell from "@/components/AppShell";
 import { Users, Clock, CheckCircle2, AlertCircle, Send, MessageSquare, ShieldAlert, Key, UserCheck } from "lucide-react";
@@ -49,19 +49,23 @@ export default function AdminSupportPage() {
         setCurrentUser(user);
         try {
           // Check role in database
-          const { getDoc } = require("firebase/firestore");
           const userDoc = await getDoc(doc(db, "users", user.uid));
-          if (userDoc.exists() && userDoc.data().role === "admin") {
-            setIsAdmin(true);
+          if (userDoc.exists()) {
+            if (userDoc.data().role === "admin") {
+              setIsAdmin(true);
+              toast.success("Admin access granted");
+            } else {
+              toast.error(`Access Denied: Role is '${userDoc.data().role}', not 'admin'`);
+              setTimeout(() => { window.location.href = "/dashboard"; }, 2000);
+            }
           } else {
-            toast.error("Access Denied. Admins only.");
-            setTimeout(() => {
-              window.location.href = "/dashboard";
-            }, 1000);
+            toast.error(`Access Denied: Document for UID ${user.uid} not found`);
+            setTimeout(() => { window.location.href = "/dashboard"; }, 2000);
           }
         } catch (error) {
           console.error("Error verifying admin role:", error);
-          window.location.href = "/dashboard";
+          toast.error(`Firebase Error: ${error.message}`);
+          // removed auto-redirect so we can read the error
         }
       } else {
         window.location.href = "/login";
