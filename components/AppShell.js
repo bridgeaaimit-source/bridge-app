@@ -21,11 +21,12 @@ import {
   BarChart2,
   Sparkles,
   Brain,
-  Shield
+  Shield,
+  MessageSquare
 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthBypass } from '@/hooks/useAuthBypass';
 import OnboardingModal from '@/components/onboarding/OnboardingModal';
@@ -46,6 +47,7 @@ export default function AppShell({ children, hideNavigation = false }) {
   const [resumeUploaded, setResumeUploaded] = useState(null); // null = loading
   const [resumeFile, setResumeFile] = useState(null);
   const [uploadingResume, setUploadingResume] = useState(false);
+  const [openTicketsCount, setOpenTicketsCount] = useState(0);
   
   const { isBypassed, mockUserData } = useAuthBypass();
 
@@ -89,6 +91,17 @@ export default function AppShell({ children, hideNavigation = false }) {
       }
     });
   }, [isBypassed]);
+
+  useEffect(() => {
+    if (userProfile?.role !== 'admin') return;
+
+    const q = query(collection(db, 'tickets'), where('status', '==', 'open'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setOpenTicketsCount(snapshot.size);
+    });
+
+    return () => unsubscribe();
+  }, [userProfile?.role]);
 
   const handleOnboardingComplete = useCallback(async ({ goal, companies }) => {
     if (isBypassed) {
@@ -195,6 +208,7 @@ export default function AppShell({ children, hideNavigation = false }) {
     { href: '/profile',     icon: User,       label: 'Profile',        group: ['/profile'], tour: 'profile' },
     ...(isRecruiter ? [{ href: '/recruiter', icon: User, label: 'Recruiter', group: ['/recruiter'] }] : []),
     ...(isAdmin ? [{ href: '/admin', icon: Shield, label: 'Admin Dashboard', group: ['/admin'] }] : []),
+    ...(isAdmin ? [{ href: '/admin/support', icon: MessageSquare, label: 'Support', group: ['/admin/support'], badge: openTicketsCount }] : []),
   ];
 
   const mobileNav = [
@@ -263,15 +277,21 @@ export default function AppShell({ children, hideNavigation = false }) {
                 key={item.href}
                 href={item.href}
                 data-tour={item.tour}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
                   active
                     ? 'text-[#00685f] bg-[#6df5e1]/30 border-l-4 border-[#00685f]'
                     : 'text-gray-500 opacity-80 hover:bg-[#6df5e1]/20 hover:text-[#00685f]'
                 }`}
-                
               >
-                <Icon className="w-5 h-5 flex-shrink-0" />
-                <span>{item.label}</span>
+                <div className="flex items-center gap-3">
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <span>{item.label}</span>
+                </div>
+                {item.badge !== undefined && item.badge > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}
