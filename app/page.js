@@ -9,11 +9,11 @@ import ScrollReveal from "@/components/landing-v2/ScrollReveal";
 import FloatAnimation from "@/components/landing-v2/FloatAnimation";
 import dynamic from "next/dynamic";
 
-const EcosystemSection = dynamic(() => import("@/components/landing-v2/EcosystemSection"), { ssr: true });
-const EmployerVisibilitySection = dynamic(() => import("@/components/landing-v2/EmployerVisibilitySection"), { ssr: true });
-const TestimonialsSection = dynamic(() => import("@/components/landing-v2/TestimonialsSection"), { ssr: true });
-const PricingSection = dynamic(() => import("@/components/landing-v2/PricingSection"), { ssr: true });
-const FooterCTA = dynamic(() => import("@/components/landing-v2/FooterCTA"), { ssr: true });
+const EcosystemSection = dynamic(() => import("@/components/landing-v2/EcosystemSection"));
+const EmployerVisibilitySection = dynamic(() => import("@/components/landing-v2/EmployerVisibilitySection"));
+const TestimonialsSection = dynamic(() => import("@/components/landing-v2/TestimonialsSection"));
+const PricingSection = dynamic(() => import("@/components/landing-v2/PricingSection"));
+const FooterCTA = dynamic(() => import("@/components/landing-v2/FooterCTA"));
 
 export default function Home() {
   return (
