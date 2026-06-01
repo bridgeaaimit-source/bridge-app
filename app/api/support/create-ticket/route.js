@@ -69,12 +69,27 @@ export async function POST(request) {
           return client.messages.create({
             from: formattedFrom,
             to: formattedTo,
-            body: messageText
+            contentSid: 'HXb5b62575e6e4ff6129ad7c8efe1f983e',
+            contentVariables: JSON.stringify({
+              "1": `Ticket ${ticketId}`,
+              "2": userName
+            })
           });
         });
 
-        await Promise.allSettled(sendPromises);
-        console.log(`[CreateTicket] Twilio notifications triggered for ${recipients.length} recipients.`);
+        const results = await Promise.allSettled(sendPromises);
+        
+        // Log successes and failures
+        let successCount = 0;
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            console.error(`[CreateTicket] Twilio failed for recipient ${recipients[index]}:`, result.reason);
+          } else {
+            successCount++;
+          }
+        });
+        
+        console.log(`[CreateTicket] Twilio notifications sent successfully to ${successCount}/${recipients.length} recipients.`);
       } catch (twilioError) {
         console.error('[CreateTicket] Twilio notification failed:', twilioError.message);
       }
