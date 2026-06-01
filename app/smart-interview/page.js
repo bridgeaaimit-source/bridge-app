@@ -63,13 +63,20 @@ export default function SmartInterviewPage() {
   const [interviewerThought, setInterviewerThought] = useState('');
   const [startError, setStartError] = useState('');
 
-  // Voice command handler — say "finish interview" to end early (temporarily disabled to fix prerender)
+  // Voice command handler — say "finish interview" to end early
   const handleVoiceCommand = (command) => {
-    // Voice command feature temporarily disabled
+    if (command === 'finish') {
+      const hasCurrentAnswer = fullTranscript || interimTranscript || currentAnswer;
+      const hasHistory = conversationHistory.length > 0;
+      if (hasHistory || hasCurrentAnswer) {
+        submitAnswer(fullTranscript || interimTranscript || currentAnswer, true);
+      } else {
+        resetInterview();
+      }
+    }
   };
 
   // Use Deepgram transcription hook with voice command support
-  // Temporarily disabled entirely to isolate prerender error
   const {
     isRecording: isRecording = false,
     isConnecting: isConnecting = false,
@@ -80,7 +87,7 @@ export default function SmartInterviewPage() {
     fillerWords: fillerWords = [],
     fillerWordCounts: fillerWordCounts = {},
     recordingStatus: recordingStatus = 'idle',
-    error: transcriptionError = null,
+    errorMessage: transcriptionError = null,
     speechLang: speechLang = 'en-IN',
     setLang: setLang = () => {},
     voiceCommandDetected: voiceCommandDetected = null,
@@ -89,7 +96,7 @@ export default function SmartInterviewPage() {
     stopRecording: stopDeepgramRecording = () => {},
     clearTranscript: clearTranscript = () => {},
     exportTranscript: exportTranscript = () => {},
-  } = {};
+  } = useDeepgramTranscription({ onVoiceCommand: handleVoiceCommand });
 
   // submitAnswer uses fullTranscript in video mode too
   const videoTranscript = fullTranscript || interimTranscript;
