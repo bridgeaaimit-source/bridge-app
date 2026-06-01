@@ -69,28 +69,27 @@ export default function SmartInterviewPage() {
   };
 
   // Use Deepgram transcription hook with voice command support
+  // Temporarily disabled entirely to isolate prerender error
   const {
-    isRecording,
-    isConnecting,
-    transcript,
-    interimTranscript,
-    fullTranscript,
-    wordCount,
-    fillerWords,
-    fillerWordCounts,
-    recordingStatus,
-    error: transcriptionError,
-    speechLang,
-    setLang,
-    voiceCommandDetected,
-    resetVoiceCommand,
-    startRecording: startDeepgramRecording,
-    stopRecording: stopDeepgramRecording,
-    clearTranscript,
-    exportTranscript,
-  } = useDeepgramTranscription({
-    onVoiceCommand: handleVoiceCommand
-  });
+    isRecording: isRecording = false,
+    isConnecting: isConnecting = false,
+    transcript: transcript = '',
+    interimTranscript: interimTranscript = '',
+    fullTranscript: fullTranscript = '',
+    wordCount: wordCount = 0,
+    fillerWords: fillerWords = [],
+    fillerWordCounts: fillerWordCounts = {},
+    recordingStatus: recordingStatus = 'idle',
+    errorMessage: transcriptionError = null,
+    speechLang: speechLang = 'en-IN',
+    setLang: setLang = () => {},
+    voiceCommandDetected: voiceCommandDetected = null,
+    resetVoiceCommand: resetVoiceCommand = () => {},
+    startRecording: startDeepgramRecording = () => {},
+    stopRecording: stopDeepgramRecording = () => {},
+    clearTranscript: clearTranscript = () => {},
+    exportTranscript: exportTranscript = () => {},
+  } = {};
 
   // submitAnswer uses fullTranscript in video mode too
   const videoTranscript = fullTranscript || interimTranscript;
@@ -236,7 +235,7 @@ export default function SmartInterviewPage() {
       const res = await fetch('/api/parse-resume', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resume_base64: base64, file_type: fileExt, file_name: file.name, userId: auth.currentUser?.uid }),
+        body: JSON.stringify({ resume_base64: base64, file_type: fileExt, file_name: file.name }),
       });
       const data = await res.json();
       if (res.ok && data.resumeText) {
@@ -416,7 +415,6 @@ export default function SmartInterviewPage() {
           jd: jobDescription,
           round,
           mode,
-          user_id: auth.currentUser?.uid,
         }),
       });
 
@@ -546,7 +544,6 @@ export default function SmartInterviewPage() {
           round,
           conversation_history: newHistory,
           last_answer: answer,
-          user_id: auth.currentUser?.uid,
         }),
       });
 
@@ -627,7 +624,6 @@ export default function SmartInterviewPage() {
           jd: jobDescription,
           round,
           conversation_history: formattedHistory,
-          user_id: auth.currentUser?.uid,
         }),
       });
 

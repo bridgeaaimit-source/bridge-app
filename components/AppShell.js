@@ -21,18 +21,19 @@ import {
   BarChart2,
   Sparkles,
   Brain,
-  Shield
+  Shield,
+  MessageSquare
 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthBypass } from '@/hooks/useAuthBypass';
 import OnboardingModal from '@/components/onboarding/OnboardingModal';
 import ProductTour from '@/components/onboarding/ProductTour';
 import HelpButton from '@/components/onboarding/HelpButton';
 
-export default function AppShell({ children }) {
+export default function AppShell({ children, hideNavigation = false }) {
   const router = useRouter();
   const pathname = usePathname();
   const [userProfile, setUserProfile] = useState(null);
@@ -41,10 +42,12 @@ export default function AppShell({ children }) {
   const [notifications, setNotifications] = useState(3);
   const [showModal, setShowModal] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [resumeUploaded, setResumeUploaded] = useState(null); // null = loading
   const [resumeFile, setResumeFile] = useState(null);
   const [uploadingResume, setUploadingResume] = useState(false);
+  const [openTicketsCount, setOpenTicketsCount] = useState(0);
   
   const { isBypassed, mockUserData } = useAuthBypass();
 
@@ -88,6 +91,17 @@ export default function AppShell({ children }) {
       }
     });
   }, [isBypassed]);
+
+  useEffect(() => {
+    if (userProfile?.role !== 'admin') return;
+
+    const q = query(collection(db, 'tickets'), where('status', '==', 'open'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setOpenTicketsCount(snapshot.size);
+    });
+
+    return () => unsubscribe();
+  }, [userProfile?.role]);
 
   const handleOnboardingComplete = useCallback(async ({ goal, companies }) => {
     if (isBypassed) {
@@ -194,6 +208,7 @@ export default function AppShell({ children }) {
     { href: '/profile',     icon: User,       label: 'Profile',        group: ['/profile'], tour: 'profile' },
     ...(isRecruiter ? [{ href: '/recruiter', icon: User, label: 'Recruiter', group: ['/recruiter'] }] : []),
     ...(isAdmin ? [{ href: '/admin', icon: Shield, label: 'Admin Dashboard', group: ['/admin'] }] : []),
+    ...(isAdmin ? [{ href: '/admin/support', icon: MessageSquare, label: 'Support', group: ['/admin/support'], badge: openTicketsCount }] : []),
   ];
 
   const mobileNav = [
@@ -210,7 +225,8 @@ export default function AppShell({ children }) {
     <div className="min-h-screen bg-[#fcf8ff] flex flex-col md:flex-row">
 
       {/* ── Mobile Top App Bar ── */}
-      <header className="md:hidden flex justify-between items-center w-full px-6 h-16 bg-white shadow-sm fixed top-0 z-40">
+      {!hideNavigation && (
+        <header className="md:hidden flex justify-between items-center w-full px-6 h-16 bg-white shadow-sm fixed top-0 z-40">
         <Link href="/dashboard">
           <img src="/images/logo_navbar_48h.png" alt="BridgeAI" className="h-8 w-auto" />
         </Link>
@@ -218,18 +234,34 @@ export default function AppShell({ children }) {
           <button className="p-2 rounded-full hover:bg-[#CCFBF1]/30 transition-colors text-gray-500">
             <Bell className="w-5 h-5" />
           </button>
-          {userProfile?.photo ? (
-            <img src={userProfile.photo} alt={userProfile.name} className="w-8 h-8 rounded-full object-cover border-2 border-[#008378]" />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-[#CCFBF1] flex items-center justify-center text-[#00685f] font-bold text-sm">
-              {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
-            </div>
-          )}
+          <div className="relative">
+            <button onClick={() => setShowProfileDropdown(!showProfileDropdown)} className="focus:outline-none flex items-center">
+              {userProfile?.photo ? (
+                <img src={userProfile.photo} alt={userProfile.name} className="w-8 h-8 rounded-full object-cover border-2 border-[#008378]" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-[#CCFBF1] flex items-center justify-center text-[#00685f] font-bold text-sm">
+                  {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+              )}
+            </button>
+            {showProfileDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2">
+                <Link href="/profile" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                  <User className="w-4 h-4" /> Profile
+                </Link>
+                <button onClick={() => { auth.signOut(); router.push('/login'); setShowProfileDropdown(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                  <LogOut className="w-4 h-4" /> Sign Out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </header>
+        </header>
+      )}
 
       {/* ── Desktop Sidebar ── */}
-      <nav className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-[#f5f2ff] shadow-md z-50">
+      {!hideNavigation && (
+        <nav className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-[#f5f2ff] shadow-md z-50">
         <div className="px-5 py-5 bg-white border-b border-gray-100 flex justify-center">
           <Link href="/dashboard" className="flex items-center justify-center">
             <img src="/images/logo_navbar_48h.png" alt="BridgeAI" className="h-9 w-auto" />
@@ -245,15 +277,21 @@ export default function AppShell({ children }) {
                 key={item.href}
                 href={item.href}
                 data-tour={item.tour}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
                   active
                     ? 'text-[#00685f] bg-[#6df5e1]/30 border-l-4 border-[#00685f]'
                     : 'text-gray-500 opacity-80 hover:bg-[#6df5e1]/20 hover:text-[#00685f]'
                 }`}
-                
               >
-                <Icon className="w-5 h-5 flex-shrink-0" />
-                <span>{item.label}</span>
+                <div className="flex items-center gap-3">
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <span>{item.label}</span>
+                </div>
+                {item.badge !== undefined && item.badge > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -278,7 +316,8 @@ export default function AppShell({ children }) {
             {isBypassed ? 'Reset Bypass' : 'Sign Out'}
           </button>
         </div>
-      </nav>
+        </nav>
+      )}
 
       {/* ── Resume Gate ── */}
       {!isBypassed && resumeUploaded === false && currentUser && (
@@ -318,13 +357,52 @@ export default function AppShell({ children }) {
         </div>
       )}
 
+      {/* ── Desktop Top Right Profile ── */}
+      {!hideNavigation && (
+        <div className="hidden md:flex fixed top-4 right-6 z-40 items-center gap-4">
+        <button className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-500 bg-white shadow-sm border border-gray-200">
+          <Bell className="w-5 h-5" />
+        </button>
+        <div className="relative">
+          <button onClick={() => setShowProfileDropdown(!showProfileDropdown)} className="focus:outline-none flex items-center">
+            {userProfile?.photo ? (
+              <img src={userProfile.photo} alt={userProfile.name} className="w-10 h-10 rounded-full object-cover border-2 border-[#008378] shadow-sm" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-[#CCFBF1] flex items-center justify-center text-[#00685f] font-bold text-sm shadow-sm border border-[#008378]">
+                {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+            )}
+          </button>
+          {showProfileDropdown && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2">
+              <div className="px-4 py-2 border-b border-gray-100 mb-1">
+                <p className="text-sm font-bold text-gray-900 truncate">{userProfile?.name || 'User'}</p>
+                <p className="text-xs text-gray-500 truncate">{userProfile?.email || 'Student'}</p>
+              </div>
+              <Link href="/profile" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                <User className="w-4 h-4" /> Profile
+              </Link>
+              <button onClick={() => { auth.signOut(); router.push('/login'); setShowProfileDropdown(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                <LogOut className="w-4 h-4" /> Sign Out
+              </button>
+            </div>
+          )}
+        </div>
+        </div>
+      )}
+
       {/* ── Main Content ── */}
-      <main className="flex-1 md:ml-64 pt-16 md:pt-0 pb-24 md:pb-0 min-h-screen bg-[#fcf8ff]">
+      <main className={`flex-1 min-h-screen bg-[#fcf8ff] ${
+        hideNavigation 
+          ? "w-full pt-0 pb-0 ml-0" 
+          : "md:ml-64 pt-16 md:pt-0 pb-24 md:pb-0"
+      }`}>
         {children}
       </main>
 
       {/* ── Mobile Bottom Nav ── */}
-      <nav className="md:hidden fixed bottom-0 w-full z-50 rounded-t-2xl bg-white shadow-[0_-4px_20px_rgba(0,104,95,0.1)] flex justify-around items-center h-20 px-4 border-t border-gray-100">
+      {!hideNavigation && (
+        <nav className="md:hidden fixed bottom-0 w-full z-50 rounded-t-2xl bg-white shadow-[0_-4px_20px_rgba(0,104,95,0.1)] flex justify-around items-center h-20 px-4 border-t border-gray-100">
         {mobileNav.map((item) => {
           const Icon = item.icon;
           const active = isGroupActive(item.group);
@@ -347,7 +425,8 @@ export default function AppShell({ children }) {
             </Link>
           );
         })}
-      </nav>
+        </nav>
+      )}
 
       {/* ── Onboarding Modal ── */}
       <OnboardingModal
@@ -364,7 +443,9 @@ export default function AppShell({ children }) {
       />
 
       {/* ── Floating Help Button ── */}
-      <HelpButton onStartTour={() => { setShowTour(false); setTimeout(() => setShowTour(true), 100); }} />
+      {!hideNavigation && (
+        <HelpButton onStartTour={() => { setShowTour(false); setTimeout(() => setShowTour(true), 100); }} />
+      )}
     </div>
   );
 }
