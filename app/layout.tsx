@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import AppShell from "@/components/AppShell";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import SupportWidget from "@/components/SupportWidget";
+import FramerMotionProvider from "@/components/FramerMotionProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -82,7 +83,34 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-white dark:bg-gray-900 transition-colors">
         <ThemeProvider>
-          {children}
+          <FramerMotionProvider>
+            {children}
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#1a1a1a',
+                  color: '#fff',
+                  border: '1px solid #333',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                },
+                success: {
+                  iconTheme: {
+                    primary: '#10b981',
+                    secondary: '#fff',
+                  },
+                },
+                error: {
+                  iconTheme: {
+                    primary: '#ef4444',
+                    secondary: '#fff',
+                  },
+                },
+              }}
+            />
+          </FramerMotionProvider>
         </ThemeProvider>
         <SupportWidget />
         <Toaster
@@ -110,6 +138,7 @@ export default function RootLayout({
             },
           }}
         />
+
         {/* Auth bypass test badge */}
         {process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true' && (
           <div className="fixed bottom-4 right-4 z-50 bg-red-500 text-white text-xs px-3 py-2 rounded-full font-bold shadow-lg animate-pulse">

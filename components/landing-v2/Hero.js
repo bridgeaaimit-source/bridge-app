@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
+import { m, AnimatePresence, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
 import { ArrowRight, Sparkles, MessageSquare, Award } from "lucide-react";
 import Link from "next/link";
 
@@ -114,11 +114,11 @@ export default function Hero() {
       <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-12 lg:gap-16 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
         
         {/* Left Copy Column */}
-        <motion.div 
+        <m.div 
           style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
           className="flex flex-col justify-center lg:col-span-6 text-left"
         >
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
@@ -127,67 +127,67 @@ export default function Hero() {
               <Sparkles className="h-3.5 w-3.5" />
               The operating system for career readiness.
             </span>
-          </motion.div>
+          </m.div>
 
-          <motion.h1
+          <m.h1
             className="mt-6 font-display text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl lg:text-6xl leading-[1.08]"
           >
-            <motion.span
+            <m.span
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: 0.08 }}
               className="block"
             >
               Become
-            </motion.span>
-            <motion.span
+            </m.span>
+            <m.span
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: 0.16 }}
               className="block text-[#0D9488] dark:text-[#2DD4BF]"
             >
               impossible to ignore.
-            </motion.span>
-          </motion.h1>
+            </m.span>
+          </m.h1>
 
-          <motion.p
+          <m.p
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: 0.24 }}
             className="mt-6 max-w-lg text-lg text-gray-600 dark:text-gray-300 leading-relaxed font-medium"
           >
             BridgeAI transforms communication quality, structured thinking, leadership presence, and interview performance into measurable professional credibility recruiters can trust.
-          </motion.p>
+          </m.p>
 
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: 0.32 }}
             className="mt-8 flex flex-wrap gap-4 animate-parent"
           >
             <Link href="/login" className="cursor-pointer">
-              <motion.span
+              <m.span
                 className="inline-flex items-center gap-2 rounded-xl bg-[#0D524C] px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-teal-900/10 hover:bg-[#0A3D36] cursor-pointer"
                 whileHover={{ scale: 1.03, y: -1.5, boxShadow: "0 10px 25px -4px rgba(13, 82, 76, 0.22)" }}
                 whileTap={{ scale: 0.96 }}
                 transition={{ type: "spring", stiffness: 600, damping: 28 }}
               >
                 Unlock Your BRIDGE Score <ArrowRight className="h-5 w-5" />
-              </motion.span>
+              </m.span>
             </Link>
             <Link href="/login" className="cursor-pointer">
-              <motion.span
+              <m.span
                 className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-7 py-3.5 text-base font-semibold text-gray-700 hover:border-[#0D9488] hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:border-[#2DD4BF] dark:hover:bg-white/10 cursor-pointer"
                 whileHover={{ scale: 1.03, y: -1.5 }}
                 whileTap={{ scale: 0.96 }}
                 transition={{ type: "spring", stiffness: 600, damping: 28 }}
               >
                 Explore the Readiness Framework
-              </motion.span>
+              </m.span>
             </Link>
-          </motion.div>
+          </m.div>
 
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.3 }}
@@ -206,11 +206,11 @@ export default function Hero() {
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Trusted by ambitious candidates entering consulting, product, leadership, and technology careers.
             </p>
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
 
         {/* Right Dashboard Mockup Column */}
-        <motion.div 
+        <m.div 
           style={{ scale, y: mockupY, opacity: heroOpacity }}
           className="lg:col-span-6 flex flex-col items-center justify-center relative"
         >
@@ -226,7 +226,7 @@ export default function Hero() {
                 }`}
               >
                 {activeTab === roleKey && (
-                  <motion.div
+                  <m.div
                     layoutId="activeHeroTab"
                     className="absolute inset-0 bg-[#F0FDFA] dark:bg-[#0D9488]/20 rounded-xl border border-teal-100 dark:border-teal-500/20"
                     transition={{ type: "spring", stiffness: 550, damping: 35 }}
@@ -240,7 +240,7 @@ export default function Hero() {
           </div>
 
           {/* Interactive Widget Box */}
-          <motion.div 
+          <m.div 
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
@@ -265,7 +265,7 @@ export default function Hero() {
                 <div className="relative h-28 w-28">
                   <svg className="w-full h-full" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
-                    <motion.circle
+                    <m.circle
                       cx="50"
                       cy="50"
                       r="42"
@@ -295,7 +295,7 @@ export default function Hero() {
               {/* Sub-Metrics list */}
               <div className="sm:col-span-7 space-y-3">
                 <AnimatePresence mode="wait">
-                  <motion.div
+                  <m.div
                     key={activeTab}
                     initial={{ opacity: 0, scale: 0.99 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -303,23 +303,23 @@ export default function Hero() {
                     transition={{ duration: 0.12, ease: "easeOut" }}
                     className="space-y-3"
                   >
-                    {data.metrics.map((m) => (
-                      <div key={m.label}>
+                    {data.metrics.map((metric) => (
+                      <div key={metric.label}>
                         <div className="flex justify-between text-xs mb-1">
-                          <span className="text-gray-600 dark:text-gray-400 font-medium">{m.label}</span>
-                          <span className="font-bold text-gray-900 dark:text-white">{m.value}%</span>
+                          <span className="text-gray-600 dark:text-gray-400 font-medium">{metric.label}</span>
+                          <span className="font-bold text-gray-900 dark:text-white">{metric.value}%</span>
                         </div>
                         <div className="h-1.5 w-full bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
-                          <motion.div
+                          <m.div
                             initial={{ width: 0 }}
-                            animate={{ width: `${m.value}%` }}
+                            animate={{ width: `${metric.value}%` }}
                             transition={{ type: "spring", stiffness: 200, damping: 22 }}
-                            className={`h-full rounded-full ${m.color}`}
+                            className={`h-full rounded-full ${metric.color}`}
                           />
                         </div>
                       </div>
                     ))}
-                  </motion.div>
+                  </m.div>
                 </AnimatePresence>
               </div>
 
@@ -332,7 +332,7 @@ export default function Hero() {
                 <span>LIVE TRANSCRIPT SYNTHESIS</span>
               </div>
               <AnimatePresence mode="wait">
-                <motion.p
+                <m.p
                   key={activeTab}
                   initial={{ opacity: 0, scale: 0.99 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -341,13 +341,13 @@ export default function Hero() {
                   className="text-xs text-gray-600 dark:text-gray-300 italic leading-relaxed"
                 >
                   &ldquo;{data.transcript}&rdquo;
-                </motion.p>
+                </m.p>
               </AnimatePresence>
             </div>
 
-          </motion.div>
+          </m.div>
 
-        </motion.div>
+        </m.div>
 
       </div>
 
@@ -355,7 +355,7 @@ export default function Hero() {
       <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center pointer-events-none">
         <span className="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 opacity-80">Scroll to Explore</span>
         <div className="w-5 h-8 border-2 border-gray-300 dark:border-gray-500 rounded-full flex justify-center p-1">
-          <motion.div 
+          <m.div 
             animate={{ y: [0, 8, 0], opacity: [1, 0, 1] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             className="w-1 h-2 bg-[#0D9488] rounded-full" 
@@ -365,3 +365,5 @@ export default function Hero() {
     </section>
   );
 }
+
+

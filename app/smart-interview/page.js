@@ -24,6 +24,300 @@ const buildHistory = (history) => {
   return pairs;
 };
 
+// Levenshtein helper for voice accuracy check
+function levenshtein(a, b) {
+  const m = [], al = a.length, bl = b.length;
+  for (let i = 0; i <= al; i++) m[i] = [i];
+  for (let j = 0; j <= bl; j++) m[0][j] = j;
+  for (let i = 1; i <= al; i++)
+    for (let j = 1; j <= bl; j++)
+      m[i][j] = a[i-1] === b[j-1] ? m[i-1][j-1] : Math.min(m[i-1][j-1]+1, m[i][j-1]+1, m[i-1][j]+1);
+  return m[al][bl];
+}
+
+// ─── Camera Test Component ──────────────────────────────────────────────────
+function CameraTest({ onResult }) {
+  const videoRef = useRef(null);
+  const [status, setStatus] = useState("idle"); // idle | loading | ok | error
+  const [errorMsg, setErrorMsg] = useState("");
+  const [devices, setDevices] = useState([]);
+  const [selectedDevice, setSelectedDevice] = useState("");
+  const streamRef = useRef(null);
+
+  const stopStream = () => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+  };
+
+  const startCamera = useCallback(async (deviceId) => {
+    stopStream();
+    setStatus("loading");
+    setErrorMsg("");
+    try {
+      const constraints = { video: deviceId ? { deviceId: { exact: deviceId } } : true, audio: false };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+      if (videoRef.current) { videoRef.current.srcObject = stream; }
+      setStatus("ok");
+      onResult(true);
+      const devs = await navigator.mediaDevices.enumerateDevices();
+      const cams = devs.filter(d => d.kind === "videoinput");
+      setDevices(cams);
+      if (!selectedDevice && cams.length > 0) setSelectedDevice(cams[0].deviceId);
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(
+        err.name === "NotAllowedError" ? "Camera permission denied" :
+        err.name === "NotFoundError" ? "No camera found on this device" :
+        "Camera access failed"
+      );
+      onResult(false);
+    }
+  }, [onResult, selectedDevice]);
+
+  useEffect(() => {
+    const t = setTimeout(() => { startCamera(); }, 0);
+    return () => {
+      clearTimeout(t);
+      stopStream();
+    };
+  }, [startCamera]);
+
+  const handleDeviceChange = (e) => {
+    setSelectedDevice(e.target.value);
+    startCamera(e.target.value);
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-teal-100 shadow-sm overflow-hidden">
+      <div className="p-5 border-b border-teal-50 flex items-center gap-3">
+        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${status === "ok" ? "bg-green-50 text-green-600" : status === "error" ? "bg-red-50 text-red-600" : "bg-gray-50 text-gray-500"}`}>
+          <Camera className="w-5 h-5" />
+        </div>
+        <div>
+          <h3 className="font-bold text-gray-900 text-sm">Camera Verification</h3>
+          <p className="text-[10px] text-gray-400">Ensure your face is clearly visible</p>
+        </div>
+        <div className="ml-auto">
+          {status === "ok" && <span className="text-green-600 text-xs font-semibold">Passed</span>}
+          {status === "error" && <span className="text-red-600 text-xs font-semibold">Failed</span>}
+        </div>
+      </div>
+      <div className="p-5 space-y-3">
+        <div className="relative aspect-video bg-gray-900 rounded-xl overflow-hidden max-h-48">
+          <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+          {status === "loading" && <div className="absolute inset-0 flex items-center justify-center"><div className="w-6 h-6 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin" /></div>}
+        </div>
+        {devices.length > 1 && (
+          <select value={selectedDevice} onChange={handleDeviceChange} className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none">
+            {devices.map(d => <option key={d.deviceId} value={d.deviceId}>{d.label || `Camera ${d.deviceId.slice(0,6)}`}</option>)}
+          </select>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Microphone Test Component ──────────────────────────────────────────────
+function MicTest({ onResult }) {
+  const canvasRef = useRef(null);
+  const analyserRef = useRef(null);
+  const animRef = useRef(null);
+  const streamRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  const [status, setStatus] = useState("idle");
+  const [volume, setVolume] = useState(0);
+
+  const stopAll = () => {
+    cancelAnimationFrame(animRef.current);
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    audioCtxRef.current?.close();
+    streamRef.current = null; audioCtxRef.current = null; analyserRef.current = null;
+  };
+
+  const startMic = useCallback(async () => {
+    stopAll();
+    setStatus("loading");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
+      streamRef.current = stream;
+
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioCtxRef.current = audioCtx;
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      setStatus("ok");
+      onResult(true);
+
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      const buf = new Uint8Array(analyser.frequencyBinCount);
+
+      const draw = () => {
+        animRef.current = requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(buf);
+        let sum = 0;
+        for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+        setVolume(Math.sqrt(sum / buf.length));
+
+        ctx.fillStyle = "#f9fafb";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        const barW = (canvas.width / buf.length) * 2;
+        let x = 0;
+        for (let i = 0; i < buf.length; i++) {
+          const h = (buf[i] / 255) * canvas.height * 0.8;
+          ctx.fillStyle = "#0D9488";
+          ctx.fillRect(x, canvas.height - h, barW, h);
+          x += barW + 1;
+        }
+      };
+      draw();
+    } catch (err) {
+      setStatus("error");
+      onResult(false);
+    }
+  }, [onResult]);
+
+  useEffect(() => {
+    const t = setTimeout(() => { startMic(); }, 0);
+    return () => {
+      clearTimeout(t);
+      stopAll();
+    };
+  }, [startMic]);
+
+  return (
+    <div className="bg-white rounded-2xl border border-teal-100 shadow-sm overflow-hidden">
+      <div className="p-5 border-b border-teal-50 flex items-center gap-3">
+        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${status === "ok" ? "bg-green-50 text-green-600" : status === "error" ? "bg-red-50 text-red-600" : "bg-gray-50 text-gray-500"}`}>
+          <Mic className="w-5 h-5" />
+        </div>
+        <div>
+          <h3 className="font-bold text-gray-900 text-sm">Microphone Verification</h3>
+          <p className="text-[10px] text-gray-400">Speak to test input activity</p>
+        </div>
+        <div className="ml-auto">
+          {status === "ok" && volume > 5 && <span className="text-green-600 text-xs font-semibold">Working</span>}
+        </div>
+      </div>
+      <div className="p-5 space-y-3">
+        <canvas ref={canvasRef} width={300} height={50} className="w-full h-12 rounded-lg bg-gray-50 border border-gray-200" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Voice Recognition Test Component ──────────────────────────────────────────
+function VoiceTest({ onResult, selectedLang, onLangChange }) {
+  const [isListening, setIsListening] = useState(false);
+  const [heard, setHeard] = useState("");
+  const [interimText, setInterimText] = useState("");
+  const [accuracy, setAccuracy] = useState(null);
+  const recognitionRef = useRef(null);
+  const finalRef = useRef("");
+
+  const TEST_SENTENCE = "I am ready for my AI placement mock interview today";
+  const testWords = TEST_SENTENCE.toLowerCase().split(" ");
+
+  const calcAccuracy = useCallback((text) => {
+    const heardWords = text.toLowerCase().replace(/[^a-z\s]/g, "").split(/\s+/).filter(Boolean);
+    let matches = 0;
+    testWords.forEach((expected, i) => {
+      const h = heardWords[i] || "";
+      if (expected === h || levenshtein(expected, h) <= 1) matches++;
+    });
+    const acc = Math.round((matches / testWords.length) * 100);
+    setAccuracy(acc);
+    // Fix 1: lower threshold to 40% — mic works, minor accent differences are fine
+    onResult(acc >= 40);
+  }, [onResult, testWords]);
+
+  const start = useCallback(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { toast.error("Speech recognition requires Chrome or Edge"); return; }
+    finalRef.current = "";
+    setHeard(""); setInterimText(""); setAccuracy(null);
+
+    const r = new SR();
+    r.continuous = true;
+    r.interimResults = true;
+    r.lang = selectedLang;
+
+    r.onstart = () => setIsListening(true);
+    r.onresult = (event) => {
+      let interim = "", final = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const best = event.results[i][0];
+        if (event.results[i].isFinal) final += best.transcript + " ";
+        else interim += best.transcript;
+      }
+      if (final.trim()) {
+        finalRef.current = (finalRef.current + " " + final).trim();
+        setHeard(finalRef.current);
+        setInterimText(interim);
+        calcAccuracy(finalRef.current);
+      } else setInterimText(interim);
+    };
+
+    r.onerror = () => {};
+    r.onend = () => setIsListening(false);
+    r.start();
+    recognitionRef.current = r;
+  }, [selectedLang, calcAccuracy]);
+
+  const stop = () => {
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+    setIsListening(false);
+  };
+
+  useEffect(() => () => stop(), []);
+
+  return (
+    <div className="bg-white rounded-2xl border border-teal-100 shadow-sm overflow-hidden">
+      <div className="p-5 border-b border-teal-50 flex items-center gap-3">
+        <div className="w-9 h-9 bg-teal-50 rounded-full flex items-center justify-center text-[#0D9488]">
+          <Volume2 className="w-5 h-5" />
+        </div>
+        <div>
+          <h3 className="font-bold text-gray-900 text-sm">Transcript Validation</h3>
+          <p className="text-[10px] text-gray-400">Speak the text to calibrate</p>
+        </div>
+        {accuracy !== null && <span className="ml-auto text-xs font-bold text-[#0D9488]">{accuracy}% accuracy</span>}
+      </div>
+      <div className="p-5 space-y-3">
+        <div className="bg-teal-50/50 border border-teal-100 rounded-xl p-3 text-xs font-medium text-teal-800">
+          {"\"" + TEST_SENTENCE + "\""}
+        </div>
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 min-h-[50px] text-xs">
+          {heard || interimText ? (
+            <p className="text-gray-900">{heard} {interimText && <span className="text-gray-400 italic">{interimText}</span>}</p>
+          ) : (
+            <p className="text-gray-400 italic">Spoken words will appear here...</p>
+          )}
+        </div>
+        <div className="flex gap-2">
+          {!isListening ? (
+            <button onClick={start} className="flex-1 bg-[#0D9488] text-white py-2 rounded-xl text-xs font-semibold hover:bg-[#0F766E]">
+              Start Speaking Test
+            </button>
+          ) : (
+            <button onClick={stop} className="flex-1 bg-red-500 text-white py-2 rounded-xl text-xs font-semibold hover:bg-red-600">
+              Stop
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SmartInterviewPage() {
   const router = useRouter();
   const [stage, setStage] = useState('setup'); // 'setup' | 'interviewing' | 'feedback' | 'history'
@@ -66,6 +360,40 @@ export default function SmartInterviewPage() {
   // Voice command handler — say "finish interview" to end early (temporarily disabled to fix prerender)
   const handleVoiceCommand = (command) => {
     // Voice command feature temporarily disabled
+
+  
+  // Redesign state variables:
+  const [sessionMemory, setSessionMemory] = useState(null);
+  
+  // 15s Lock for Next Question Button
+  const [speakingTime, setSpeakingTime] = useState(0);
+  const speakingIntervalRef = useRef(null);
+  
+  // Thinking Countdown (5 seconds)
+  const [thinkingTimeLeft, setThinkingTimeLeft] = useState(0);
+  const [isThinking, setIsThinking] = useState(false);
+
+  // Silence Detection & Modal (7s Silence, 5s Auto-Submit)
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [autoSubmitCountdown, setAutoSubmitCountdown] = useState(5);
+  const silenceTimerRef = useRef(null);
+  const autoSubmitTimerRef = useRef(null);
+
+  // Tab switch focus integrity scoring
+  const [violations, setViolations] = useState([]);
+  const [integrityScore, setIntegrityScore] = useState(100);
+
+  // Voice command handler — say "finish interview" to end early
+  const handleVoiceCommand = (command) => {
+    if (command === 'finish') {
+      const hasCurrentAnswer = fullTranscript || interimTranscript || currentAnswer;
+      const hasHistory = conversationHistory.length > 0;
+      if (hasHistory || hasCurrentAnswer) {
+        submitAnswer(fullTranscript || interimTranscript || currentAnswer, true);
+      } else {
+        resetInterview();
+      }
+    }
   };
 
   // Use Deepgram transcription hook with voice command support
@@ -92,6 +420,22 @@ export default function SmartInterviewPage() {
   } = {};
 
   // submitAnswer uses fullTranscript in video mode too
+  const startRecordingState = () => {
+    if (mode === 'video') {
+      startVideoRecording();
+    } else {
+      startDeepgramRecording();
+    }
+  };
+
+  const stopRecordingState = () => {
+    if (mode === 'video') {
+      stopVideoRecording();
+    } else {
+      stopDeepgramRecording();
+    }
+  };
+
   const videoTranscript = fullTranscript || interimTranscript;
   
   const fileInputRef = useRef(null);
@@ -380,6 +724,158 @@ export default function SmartInterviewPage() {
   };
 
   const startInterview = async () => {
+  // Thinking countdown
+  useEffect(() => {
+    if (!isThinking) return;
+    if (thinkingTimeLeft === 0) {
+      setIsThinking(false);
+      speakQuickly("Start speaking", () => {
+        startRecordingState();
+      });
+      return;
+    }
+    const t = setTimeout(() => {
+      setThinkingTimeLeft(prev => prev - 1);
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [isThinking, thinkingTimeLeft]);
+
+  // Speaking time unlock countdown (Next Question button locks for 15s)
+  useEffect(() => {
+    if (isRecording) {
+      setSpeakingTime(0);
+      speakingIntervalRef.current = setInterval(() => {
+        setSpeakingTime(prev => prev + 1);
+      }, 1000);
+    } else {
+      if (speakingIntervalRef.current) {
+        clearInterval(speakingIntervalRef.current);
+        speakingIntervalRef.current = null;
+      }
+      setSpeakingTime(0);
+    }
+    return () => {
+      if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
+    };
+  }, [isRecording]);
+
+  // Invisible silence detector: triggers after 7 seconds of speech silence
+  useEffect(() => {
+    if (stage !== 'interviewing' || !isRecording || showCompletionModal || isThinking || isTyping) return;
+
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+
+    if (wordCount > 2) {
+      silenceTimerRef.current = setTimeout(() => {
+        console.log('🔇 7 seconds of silence detected. Triggering prompt...');
+        stopRecordingState();
+        setShowCompletionModal(true);
+        setAutoSubmitCountdown(5);
+      }, 7000);
+    }
+
+    return () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    };
+  }, [transcript, interimTranscript, isRecording, stage, wordCount, showCompletionModal, isThinking, isTyping]);
+
+  // Auto-submit countdown (5 seconds, hidden from UI)
+  useEffect(() => {
+    if (!showCompletionModal) {
+      if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
+      return;
+    }
+
+    setAutoSubmitCountdown(5);
+    autoSubmitTimerRef.current = setInterval(() => {
+      setAutoSubmitCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(autoSubmitTimerRef.current);
+          setShowCompletionModal(false);
+          console.log('⏰ Auto-submitting due to silence inactivity...');
+          submitAnswer(fullTranscript || interimTranscript || currentAnswer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
+    };
+  }, [showCompletionModal, fullTranscript, interimTranscript, currentAnswer]);
+
+  const handleContinueAnswering = () => {
+    if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
+    setShowCompletionModal(false);
+    startRecordingState();
+  };
+
+  const handleNextQuestionManual = () => {
+    if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    setShowCompletionModal(false);
+    stopRecordingState();
+    submitAnswer(fullTranscript || interimTranscript || currentAnswer);
+  };
+
+  // Fix 8: Tab switch detection — debounced to prevent double-counting
+  useEffect(() => {
+    if (stage !== 'interviewing') return;
+
+    const DEBOUNCE_MS = 2000; // ignore second event within 2 seconds
+
+    const handleViolation = (type) => {
+      const now = Date.now();
+      // Skip if a violation was already recorded within the debounce window
+      if (now - lastViolationTimeRef.current < DEBOUNCE_MS) return;
+      lastViolationTimeRef.current = now;
+
+      const timestamp = new Date().toISOString();
+      setViolations((prev) => {
+        const nextViolations = [...prev, { type, timestamp }];
+        const count = nextViolations.length;
+        
+        let newScore = 100;
+        if (count === 1) newScore = 85;
+        else if (count === 2) newScore = 60;
+        else if (count >= 3) newScore = 30;
+        setIntegrityScore(newScore);
+
+        if (count === 1) {
+          toast.error("Warning: Tab switching detected. Please focus on the interview.", { duration: 5000 });
+        } else if (count === 2) {
+          toast.error("Final Warning: Repeated switching will flag this interview.", { duration: 6000 });
+        } else {
+          toast.error("Interview Flagged: Multiple window switches detected.", { duration: 6000 });
+        }
+
+        return nextViolations;
+      });
+    };
+
+    // Only fire on actual tab hide — visibilitychange is reliable
+    const handleVisibilityChange = () => {
+      if (document.hidden) handleViolation("Tab switched or window minimized");
+    };
+
+    // blur fires when user switches to another app/window (not just tab)
+    // visibilitychange already covers tab switching so blur covers the remaining case
+    const handleBlur = () => {
+      // Only count as violation if tab is still visible (e.g. alt+tabbed to another app)
+      if (!document.hidden) handleViolation("Window lost focus");
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleBlur);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, [stage]);
+
+  const startInterview = async (bypassDeviceCheck = false) => {
     if (!resumeBase64 || !jobRole) {
       toast.error('Please upload resume and enter job role');
       return;
@@ -496,7 +992,21 @@ export default function SmartInterviewPage() {
       : formattedHistory;
     
     console.log('Final history to send:', newHistory);
+    stopRecordingState(); // Ensure recording stops immediately
+
+    if (speakingIntervalRef.current) {
+      clearInterval(speakingIntervalRef.current);
+      speakingIntervalRef.current = null;
+    }
+    
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
+    setShowCompletionModal(false);
       
+    const updatedHistory = answer.trim()
+      ? [...conversationHistory, { role: 'user', message: answer }]
+      : conversationHistory;
+
     if (answer.trim()) {
       setConversationHistory(prev => [
         ...prev,
@@ -527,6 +1037,7 @@ export default function SmartInterviewPage() {
       clearTranscript();
       toast.success('Interview completed! Generating feedback...');
       await getFeedback(newHistory);
+      await getFeedback(sessionMemory, updatedHistory);
       return;
     }
 
@@ -544,6 +1055,9 @@ export default function SmartInterviewPage() {
           round,
           conversation_history: newHistory,
           last_answer: answer,
+          session_memory: sessionMemory,
+          conversation_history: updatedHistory,
+          user_id: auth.currentUser?.uid || 'test-user-123'
         }),
       });
 
@@ -572,6 +1086,15 @@ export default function SmartInterviewPage() {
       }
 
       if (data.question) {
+      const updatedMemory = data.session_memory || sessionMemory;
+      setSessionMemory(updatedMemory);
+
+      if (data.interview_complete) {
+        toast.success('Interview completed! Generating feedback...');
+        setCurrentAnswer('');
+        clearTranscript();
+        await getFeedback(updatedMemory, updatedHistory);
+      } else if (data.question) {
         setCurrentQuestion(data.question);
         setInterviewerThought(data.interviewer_thought || '');
         setConversationHistory([
@@ -579,6 +1102,8 @@ export default function SmartInterviewPage() {
           { role: 'interviewer', message: data.question }
         ]);
         setQuestionNumber(questionNumber + 1);
+        setCurrentAnswer('');
+        clearTranscript();
 
         if (autoSpeak) {
           speakText(data.question);
@@ -586,6 +1111,7 @@ export default function SmartInterviewPage() {
       } else {
         // Interview ended, get feedback
         await getFeedback(newHistory);
+        await getFeedback(updatedMemory, updatedHistory);
       }
       
     } catch (error) {
@@ -593,8 +1119,6 @@ export default function SmartInterviewPage() {
       console.error('Answer submission error:', error);
     } finally {
       setIsTyping(false);
-      setCurrentAnswer('');
-      clearTranscript();
       if (mode === 'video') {
         setRecordedVideoUrl('');
         setRecordingState('idle');
@@ -604,7 +1128,9 @@ export default function SmartInterviewPage() {
   };
 
   const getFeedback = async (formattedHistory) => {
+  const getFeedback = async (memoryObj, historyOverride) => {
     setIsEvaluating(true);
+    const historyToUse = historyOverride || conversationHistory;
 
     // formattedHistory is already in the correct format: [{question, answer}, ...]
     console.log('getFeedback called with history:', formattedHistory);
@@ -624,6 +1150,9 @@ export default function SmartInterviewPage() {
           jd: jobDescription,
           round,
           conversation_history: formattedHistory,
+          session_memory: memoryObj,
+          conversation_history: historyToUse,
+          user_id: auth.currentUser?.uid || 'test-user-123'
         }),
       });
 
@@ -678,6 +1207,38 @@ export default function SmartInterviewPage() {
             createdAt: Date.now()
           });
           console.log('✅ Feedback saved to history');
+          if (!isBypassed) {
+            await addDoc(collection(db, 'users', user.uid, 'interview_feedback'), {
+              jobRole,
+              round,
+              feedback: {
+                ...data,
+                integrityScore,
+                violations
+              },
+              conversationHistory: historyToUse,
+              timestamp: new Date().toISOString(),
+              createdAt: Date.now()
+            });
+            console.log('✅ Feedback saved to history');
+          } else {
+            console.log('🔓 Bypass mode - simulating feedback save to localStorage');
+            const mockHistory = JSON.parse(localStorage.getItem('bridge_mock_interview_history') || '[]');
+            mockHistory.unshift({
+              id: 'mock-feedback-' + Date.now(),
+              jobRole,
+              round,
+              feedback: {
+                ...data,
+                integrityScore,
+                violations
+              },
+              conversationHistory: historyToUse,
+              timestamp: new Date().toISOString(),
+              createdAt: Date.now()
+            });
+            localStorage.setItem('bridge_mock_interview_history', JSON.stringify(mockHistory));
+          }
           
           // Update user stats (interviewsDone, avgScore, bridgeScore)
           if (!isBypassed) {
@@ -864,6 +1425,7 @@ export default function SmartInterviewPage() {
                       <>
                         <p className="font-bold text-gray-700 mb-1">Upload your Resume</p>
                         <p className="text-sm text-gray-400 max-w-xs">Drag & drop your PDF or DOCX here, or click to browse. We'll tailor questions to your experience.</p>
+                        <p className="text-sm text-gray-400 max-w-xs">Drag & drop your PDF or DOCX here. {"We'll"} tailor questions to your experience.</p>
                       </>
                     )}
                     <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} className="hidden" id="resume-upload" />
@@ -983,6 +1545,14 @@ export default function SmartInterviewPage() {
                       <span className="text-[10px] font-bold uppercase tracking-wide bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">{tag}</span>
                     </div>
                   ))}
+            {(mode === 'video' ? allPass : corePass) ? (
+              <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center space-y-4 animate-fade-in">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600">
+                  <CheckCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-green-950 text-lg">Setup Verified!</h3>
+                  <p className="text-xs text-green-700">Everything is working correctly. {"You're"} ready to start!</p>
                 </div>
               </div>
             </div>
@@ -1595,6 +2165,7 @@ export default function SmartInterviewPage() {
                   </div>
                 </div>
               )}
+              {/* Question-by-Question Analysis Removed - Token Optimization */}
 
               {/* Actionable Feedback */}
               {feedback.actionable_feedback && (
