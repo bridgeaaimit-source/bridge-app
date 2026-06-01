@@ -64,16 +64,29 @@ export default function Navbar() {
             ["#how-it-works", "How it Works"],
             ["#pricing", "Pricing"],
             ["#stories", "Stories"],
-          ].map(([href, label]) => (
-            <a
-              key={href}
-              href={href}
-              className="text-sm font-medium transition-colors duration-150 ease-out relative group py-1 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-            >
-              {label}
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-200 ease-out group-hover:w-full bg-[#2DD4BF]" />
-            </a>
-          ))}
+            ["/tpo/login", "For TPO"],
+          ].map(([href, label]) => {
+            const isExternal = href.startsWith('/');
+            return isExternal ? (
+              <Link
+                key={href}
+                href={href}
+                className="text-sm font-medium transition-colors duration-150 ease-out relative group py-1 text-[#0D9488] hover:text-[#0A7467] dark:text-[#2DD4BF] dark:hover:text-[#5EEAD4]"
+              >
+                {label}
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-200 ease-out group-hover:w-full bg-[#2DD4BF]" />
+              </Link>
+            ) : (
+              <a
+                key={href}
+                href={href}
+                className="text-sm font-medium transition-colors duration-150 ease-out relative group py-1 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              >
+                {label}
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-200 ease-out group-hover:w-full bg-[#2DD4BF]" />
+              </a>
+            );
+          })}
         </div>
 
         {/* Action Buttons & Theme */}
@@ -131,16 +144,29 @@ export default function Navbar() {
                 ["#how-it-works", "How it Works"],
                 ["#pricing", "Pricing"],
                 ["#stories", "Stories"],
-              ].map(([href, label]) => (
-                <a
-                  key={href}
-                  href={href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block rounded-xl px-4 py-2.5 text-sm font-medium transition-colors text-gray-700 hover:bg-gray-50 hover:text-[#0D9488] dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-[#2DD4BF]"
-                >
-                  {label}
-                </a>
-              ))}
+                ["/tpo/login", "For TPO"],
+              ].map(([href, label]) => {
+                const isExternal = href.startsWith('/');
+                return isExternal ? (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block rounded-xl px-4 py-2.5 text-sm font-medium transition-colors text-[#0D9488] hover:bg-[#F0FDFA] dark:text-[#2DD4BF] dark:hover:bg-white/5"
+                  >
+                    {label}
+                  </Link>
+                ) : (
+                  <a
+                    key={href}
+                    href={href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block rounded-xl px-4 py-2.5 text-sm font-medium transition-colors text-gray-700 hover:bg-gray-50 hover:text-[#0D9488] dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-[#2DD4BF]"
+                  >
+                    {label}
+                  </a>
+                );
+              })}
               <div className="grid grid-cols-2 gap-3 pt-4 border-t mt-2 border-gray-100 dark:border-white/10">
                 <Link href="/login" passHref legacyBehavior>
                   <m.a
