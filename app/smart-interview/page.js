@@ -596,6 +596,7 @@ export default function SmartInterviewPage() {
     }
 
     setIsSpeaking(true);
+    const startReq = performance.now();
 
     try {
       const response = await fetch('/api/tts', {
@@ -605,8 +606,11 @@ export default function SmartInterviewPage() {
       });
 
       if (!response.ok) {
-        throw new Error('ElevenLabs TTS unavailable');
+        throw new Error('TTS API unavailable');
       }
+
+      const fetchEnd = performance.now();
+      console.log(`[Metrics] TTS API Network Latency: ${Math.round(fetchEnd - startReq)}ms`);
 
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
@@ -621,6 +625,10 @@ export default function SmartInterviewPage() {
       };
 
       audio.onended = handleEnd;
+      audio.onplay = () => {
+        const playStart = performance.now();
+        console.log(`[Metrics] Audio Playback Latency: ${Math.round(playStart - fetchEnd)}ms | Total Perceived Latency: ${Math.round(playStart - startReq)}ms`);
+      };
       audio.onerror = () => {
         URL.revokeObjectURL(audioUrl);
         currentAudioRef.current = null;
@@ -629,7 +637,7 @@ export default function SmartInterviewPage() {
 
       await audio.play();
     } catch (err) {
-      console.warn('ElevenLabs TTS failed, using browser fallback:', err.message);
+      console.warn('Primary TTS failed, using browser fallback:', err.message);
       speakTextFallback(text, onEnd);
     }
   };
