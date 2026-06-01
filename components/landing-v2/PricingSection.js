@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Check, Star } from "lucide-react";
 import Link from "next/link";
 
-const MotionLink = motion(Link);
+
 
 export default function PricingSection() {
   const [spotFree, setSpotFree] = useState({ x: 0, y: 0, active: false });
@@ -54,7 +54,7 @@ export default function PricingSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           
           {/* Card 1: Free Starter */}
-          <motion.div 
+          <m.div 
             onMouseMove={handleMouseMoveFree}
             onMouseLeave={handleMouseLeaveFree}
             style={{
@@ -78,7 +78,7 @@ export default function PricingSection() {
                 ₹0 <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">/ forever</span>
               </p>
               
-              <motion.ul 
+              <m.ul 
                 variants={listContainer} 
                 initial="hidden" 
                 whileInView="show" 
@@ -91,38 +91,39 @@ export default function PricingSection() {
                   "Basic BRIDGE score",
                   "PDF Resume review"
                 ].map((f) => (
-                  <motion.li variants={listItem} key={f} className="flex items-center gap-3">
+                  <m.li variants={listItem} key={f} className="flex items-center gap-3">
                     <span className="h-5 w-5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 flex-shrink-0">
                       <Check className="h-3 w-3" />
                     </span>
                     <span>{f}</span>
-                  </motion.li>
+                  </m.li>
                 ))}
-              </motion.ul>
+              </m.ul>
             </div>
 
             <div className="mt-8 relative z-10">
-              <MotionLink 
-                href="/login" 
-                className="block text-center rounded-xl border border-[#0D9488] dark:border-[#2DD4BF] py-3 text-sm font-bold text-[#0D9488] dark:text-[#2DD4BF] hover:bg-teal-50 dark:hover:bg-[#2DD4BF]/10 transition-colors cursor-pointer"
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.97 }}
-                transition={{ type: "spring", stiffness: 600, damping: 30 }}
-              >
-                Start Free
-              </MotionLink>
+              <Link href="/login" passHref legacyBehavior>
+                <m.a 
+                  className="block text-center rounded-xl border border-[#0D9488] dark:border-[#2DD4BF] py-3 text-sm font-bold text-[#0D9488] dark:text-[#2DD4BF] hover:bg-teal-50 dark:hover:bg-[#2DD4BF]/10 transition-colors cursor-pointer"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: "spring", stiffness: 600, damping: 30 }}
+                >
+                  Start Free
+                </m.a>
+              </Link>
             </div>
-          </motion.div>
+          </m.div>
 
           {/* Card 2: Pro Track */}
-          <motion.div 
+          <m.div 
             className="rounded-3xl border border-[#0D524C] bg-[#0D524C]/80 backdrop-blur-md p-8 sm:p-10 text-white flex flex-col justify-between relative overflow-hidden cursor-default group"
             whileHover={{ y: -4, boxShadow: "0 16px 36px -8px rgba(13, 82, 76, 0.4)" }}
             whileTap={{ scale: 0.995 }}
             transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
           >
             {/* Ambient Shine Effect */}
-            <motion.div
+            <m.div
               className="absolute -inset-full w-[250%] h-[200%] bg-gradient-to-r from-transparent via-white/10 to-transparent -rotate-45 pointer-events-none"
               animate={{ x: ["-100%", "100%"] }}
               transition={{ duration: 7, repeat: Infinity, ease: "linear", repeatDelay: 3 }}
@@ -130,12 +131,12 @@ export default function PricingSection() {
             
             <div className="absolute top-4 right-4 z-10">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1 text-[9px] font-bold tracking-wider uppercase text-[#CCFBF1]">
-                <motion.span
+                <m.span
                   animate={{ opacity: [1, 0.5, 1], scale: [1, 1.1, 1] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 >
                   <Star className="h-3 w-3 fill-current text-[#CCFBF1]" />
-                </motion.span>
+                </m.span>
                 Most popular
               </span>
             </div>
@@ -154,7 +155,7 @@ export default function PricingSection() {
                 Less than 1 day of coaching fees.
               </p>
               
-              <motion.ul 
+              <m.ul 
                 variants={listContainer} 
                 initial="hidden" 
                 whileInView="show" 
@@ -168,28 +169,29 @@ export default function PricingSection() {
                   "Priority question bank",
                   "Personal roadmap updates"
                 ].map((f) => (
-                  <motion.li variants={listItem} key={f} className="flex items-center gap-3">
+                  <m.li variants={listItem} key={f} className="flex items-center gap-3">
                     <span className="h-5 w-5 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-emerald-300 flex-shrink-0 group-hover:bg-white/20 transition-colors">
                       <Check className="h-3 w-3" />
                     </span>
                     <span className="text-slate-100">{f}</span>
-                  </motion.li>
+                  </m.li>
                 ))}
-              </motion.ul>
+              </m.ul>
             </div>
 
             <div className="mt-8 relative z-10">
-              <MotionLink 
-                href="/login" 
-                className="block text-center rounded-xl bg-white py-3 text-sm font-bold text-[#0D524C] hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
-                whileHover={{ scale: 1.01, y: -0.5 }}
-                whileTap={{ scale: 0.97 }}
-                transition={{ type: "spring", stiffness: 600, damping: 30 }}
-              >
-                Go Pro &rarr;
-              </MotionLink>
+              <Link href="/login" passHref legacyBehavior>
+                <m.a 
+                  className="block text-center rounded-xl bg-white py-3 text-sm font-bold text-[#0D524C] hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
+                  whileHover={{ scale: 1.01, y: -0.5 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: "spring", stiffness: 600, damping: 30 }}
+                >
+                  Go Pro &rarr;
+                </m.a>
+              </Link>
             </div>
-          </motion.div>
+          </m.div>
 
         </div>
 
@@ -197,3 +199,6 @@ export default function PricingSection() {
     </section>
   );
 }
+
+
+

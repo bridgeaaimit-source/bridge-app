@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Syne, DM_Sans } from "next/font/google";
+import { Geist, Geist_Mono, Syne, DM_Sans, Inter, Poppins, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import AppShell from "@/components/AppShell";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import SupportWidget from "@/components/SupportWidget";
+import FramerMotionProvider from "@/components/FramerMotionProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,6 +27,24 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
+const poppins = Poppins({
+  variable: "--font-poppins",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+});
+
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -70,7 +90,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${syne.variable} ${dmSans.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${syne.variable} ${dmSans.variable} ${inter.variable} ${poppins.variable} ${jakarta.variable} h-full antialiased`}
     >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
@@ -81,8 +101,36 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-white dark:bg-gray-900 transition-colors">
         <ThemeProvider>
-          {children}
+          <FramerMotionProvider>
+            {children}
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#1a1a1a',
+                  color: '#fff',
+                  border: '1px solid #333',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                },
+                success: {
+                  iconTheme: {
+                    primary: '#10b981',
+                    secondary: '#fff',
+                  },
+                },
+                error: {
+                  iconTheme: {
+                    primary: '#ef4444',
+                    secondary: '#fff',
+                  },
+                },
+              }}
+            />
+          </FramerMotionProvider>
         </ThemeProvider>
+        <SupportWidget />
         <Toaster
           position="top-center"
           toastOptions={{
@@ -108,6 +156,7 @@ export default function RootLayout({
             },
           }}
         />
+
         {/* Auth bypass test badge */}
         {process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true' && (
           <div className="fixed bottom-4 right-4 z-50 bg-red-500 text-white text-xs px-3 py-2 rounded-full font-bold shadow-lg animate-pulse">

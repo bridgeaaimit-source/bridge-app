@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
+import { m, useScroll, useTransform  } from "framer-motion";
 import { Activity, BrainCircuit, Shield } from "lucide-react";
 import { useState, useRef } from "react";
 
@@ -40,7 +40,7 @@ function Card({ card, idx }) {
   };
 
   return (
-    <motion.div
+    <m.div
       ref={cardRef}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
@@ -52,7 +52,7 @@ function Card({ card, idx }) {
       className="relative rounded-3xl bg-white dark:bg-white/5 backdrop-blur-md border border-gray-200 dark:border-white/10 p-8 sm:p-10 flex flex-col group overflow-hidden cursor-default transition-colors shadow-sm dark:shadow-none"
     >
       {/* Dynamic Hover Spotlight */}
-      <motion.div
+      <m.div
         className="absolute inset-0 z-0 pointer-events-none transition-opacity duration-300"
         initial={{ opacity: 0 }}
         animate={{ opacity: isHovered ? 1 : 0 }}
@@ -76,7 +76,7 @@ function Card({ card, idx }) {
           {card.description}
         </p>
       </div>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -91,13 +91,13 @@ export default function CategoryPositioning() {
   const glowOpacity = useTransform(scrollYProgress, [0, 0.5, 1], [0.3, 0.8, 0.3]);
 
   return (
-    <section ref={containerRef} className="relative bg-transparent pt-32 pb-40 overflow-hidden border-b border-gray-200 dark:border-white/10 transition-colors">
+    <section id="features" ref={containerRef} className="relative bg-transparent pt-32 pb-40 overflow-hidden border-b border-gray-200 dark:border-white/10 transition-colors">
 
       <div className="relative z-10 mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
         <div className="max-w-4xl mb-24 text-center mx-auto">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
@@ -106,9 +106,9 @@ export default function CategoryPositioning() {
           >
             <span className="w-2 h-2 rounded-full bg-teal-500 dark:bg-teal-400 animate-pulse" />
             Institutional Grade Analysis
-          </motion.div>
+          </m.div>
           
-          <motion.h2 
+          <m.h2 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -119,9 +119,9 @@ export default function CategoryPositioning() {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0D9488] via-[#14B8A6] to-[#0D9488] dark:from-teal-400 dark:via-emerald-200 dark:to-teal-400 bg-300% animate-gradient">
               Readiness cannot be faked.
             </span>
-          </motion.h2>
+          </m.h2>
           
-          <motion.p 
+          <m.p 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -129,7 +129,7 @@ export default function CategoryPositioning() {
             className="mt-8 text-lg sm:text-xl text-gray-600 dark:text-slate-300 leading-relaxed font-medium max-w-2xl mx-auto"
           >
             BridgeAI creates measurable professional credibility using communication diagnostics, structured reasoning analysis, live case simulations, and recruiter-grade benchmarking.
-          </motion.p>
+          </m.p>
         </div>
 
         {/* Cards Grid */}
@@ -142,3 +142,6 @@ export default function CategoryPositioning() {
     </section>
   );
 }
+
+
+

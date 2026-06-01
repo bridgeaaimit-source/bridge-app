@@ -1,42 +1,19 @@
-"use client";
-
-import { motion } from "framer-motion";
 import AnimatedBackground from "@/components/landing-v2/AnimatedBackground";
 import Navbar from "@/components/landing-v2/Navbar";
 import Hero from "@/components/landing-v2/Hero";
 import SocialProof from "@/components/landing-v2/SocialProof";
 import BridgeScoreSection from "@/components/landing-v2/BridgeScoreSection";
-import EcosystemSection from "@/components/landing-v2/EcosystemSection";
-import EmployerVisibilitySection from "@/components/landing-v2/EmployerVisibilitySection";
-import JourneySection from "@/components/landing-v2/JourneySection";
-import TestimonialsSection from "@/components/landing-v2/TestimonialsSection";
 import CategoryPositioning from "@/components/landing-v2/CategoryPositioning";
-import PricingSection from "@/components/landing-v2/PricingSection";
-import FooterCTA from "@/components/landing-v2/FooterCTA";
-const scrollRevealVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.98 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    scale: 1,
-    transition: { 
-      duration: 0.8, 
-      ease: [0.16, 1, 0.3, 1] 
-    } 
-  }
-};
+import JourneySection from "@/components/landing-v2/JourneySection";
+import ScrollReveal from "@/components/landing-v2/ScrollReveal";
+import FloatAnimation from "@/components/landing-v2/FloatAnimation";
+import dynamic from "next/dynamic";
 
-const floatVariants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: { 
-      duration: 1, 
-      ease: [0.16, 1, 0.3, 1] 
-    } 
-  }
-};
+const EcosystemSection = dynamic(() => import("@/components/landing-v2/EcosystemSection"));
+const EmployerVisibilitySection = dynamic(() => import("@/components/landing-v2/EmployerVisibilitySection"));
+const TestimonialsSection = dynamic(() => import("@/components/landing-v2/TestimonialsSection"));
+const PricingSection = dynamic(() => import("@/components/landing-v2/PricingSection"));
+const FooterCTA = dynamic(() => import("@/components/landing-v2/FooterCTA"));
 
 export default function Home() {
   return (
@@ -50,70 +27,36 @@ export default function Home() {
       <main className="relative z-10">
         <Hero />
         
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-120px" }}
-          variants={scrollRevealVariants}
-        >
+        <ScrollReveal margin="-120px">
           <SocialProof />
-        </motion.div>
+        </ScrollReveal>
 
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-120px" }}
-          variants={scrollRevealVariants}
-        >
+        <ScrollReveal margin="-120px">
           <CategoryPositioning />
-        </motion.div>
+        </ScrollReveal>
 
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={floatVariants}
-        >
+        <FloatAnimation margin="-100px">
           <BridgeScoreSection />
-        </motion.div>
+        </FloatAnimation>
 
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-120px" }}
-          variants={scrollRevealVariants}
-        >
+        <ScrollReveal margin="-120px">
           <EcosystemSection />
-        </motion.div>
+        </ScrollReveal>
 
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-120px" }}
-          variants={scrollRevealVariants}
-        >
+        <ScrollReveal margin="-120px">
           <EmployerVisibilitySection />
-        </motion.div>
+        </ScrollReveal>
 
         {/* Cinematic Career Evolution Journey */}
         <JourneySection />
 
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-120px" }}
-          variants={scrollRevealVariants}
-        >
+        <ScrollReveal margin="-120px">
           <TestimonialsSection />
-        </motion.div>
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-120px" }}
-          variants={scrollRevealVariants}
-        >
+        </ScrollReveal>
+
+        <ScrollReveal margin="-120px">
           <PricingSection />
-        </motion.div>
+        </ScrollReveal>
 
         <FooterCTA />
       </main>

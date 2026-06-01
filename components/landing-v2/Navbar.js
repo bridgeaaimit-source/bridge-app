@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import { m, AnimatePresence } from "framer-motion";
 import ThemeToggle from "./ThemeToggle";
 import { useTheme } from "@/contexts/ThemeContext";
 
-const MotionLink = motion(Link);
+
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -36,15 +37,21 @@ export default function Navbar() {
       <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5">
         <Link href="/" className="flex items-center">
           {mounted && (theme === 'dark') ? (
-            <img
+            <Image
               src="/images/logo_transparent_white_text.png"
               alt="BridgeAI Logo"
+              width={140}
+              height={44}
+              priority
               className="h-10 sm:h-11 w-auto transition-all duration-300"
             />
           ) : (
-            <img
+            <Image
               src="/images/logo_transparent.png"
               alt="BridgeAI Logo"
+              width={140}
+              height={44}
+              priority
               className="h-10 sm:h-11 w-auto transition-all duration-300"
             />
           )}
@@ -57,40 +64,55 @@ export default function Navbar() {
             ["#how-it-works", "How it Works"],
             ["#pricing", "Pricing"],
             ["#stories", "Stories"],
-          ].map(([href, label]) => (
-            <a
-              key={href}
-              href={href}
-              className="text-sm font-medium transition-colors duration-150 ease-out relative group py-1 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-            >
-              {label}
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-200 ease-out group-hover:w-full bg-[#2DD4BF]" />
-            </a>
-          ))}
+            ["/tpo/login", "For TPO"],
+          ].map(([href, label]) => {
+            const isExternal = href.startsWith('/');
+            return isExternal ? (
+              <Link
+                key={href}
+                href={href}
+                className="text-sm font-medium transition-colors duration-150 ease-out relative group py-1 text-[#0D9488] hover:text-[#0A7467] dark:text-[#2DD4BF] dark:hover:text-[#5EEAD4]"
+              >
+                {label}
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-200 ease-out group-hover:w-full bg-[#2DD4BF]" />
+              </Link>
+            ) : (
+              <a
+                key={href}
+                href={href}
+                className="text-sm font-medium transition-colors duration-150 ease-out relative group py-1 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              >
+                {label}
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-200 ease-out group-hover:w-full bg-[#2DD4BF]" />
+              </a>
+            );
+          })}
         </div>
 
         {/* Action Buttons & Theme */}
         <div className="hidden items-center gap-3 md:flex">
           <ThemeToggle />
           
-          <MotionLink
-            href="/login"
-            className="rounded-xl border px-4 py-2 text-sm font-medium transition-all cursor-pointer border-gray-200 bg-white text-gray-700 hover:border-[#0D9488] hover:text-[#0D9488] dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:border-[#2DD4BF] dark:hover:text-[#2DD4BF]"
-            whileHover={{ scale: 1.015, y: -0.5 }}
-            whileTap={{ scale: 0.97 }}
-            transition={{ type: "spring", stiffness: 600, damping: 30 }}
-          >
-            Login
-          </MotionLink>
-          <MotionLink
-            href="/login"
-            className="rounded-xl bg-[#0D524C] px-5 py-2 text-sm font-semibold text-white shadow-md hover:bg-[#0A3D36] transition-all cursor-pointer"
-            whileHover={{ scale: 1.015, y: -0.5, boxShadow: "0 4px 12px rgba(13, 82, 76, 0.12)" }}
-            whileTap={{ scale: 0.97 }}
-            transition={{ type: "spring", stiffness: 600, damping: 30 }}
-          >
-            Start Free
-          </MotionLink>
+          <Link href="/login" passHref legacyBehavior>
+            <m.a
+              className="rounded-xl border px-4 py-2 text-sm font-medium transition-all cursor-pointer border-gray-200 bg-white text-gray-700 hover:border-[#0D9488] hover:text-[#0D9488] dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:border-[#2DD4BF] dark:hover:text-[#2DD4BF]"
+              whileHover={{ scale: 1.015, y: -0.5 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 600, damping: 30 }}
+            >
+              Login
+            </m.a>
+          </Link>
+          <Link href="/login" passHref legacyBehavior>
+            <m.a
+              className="rounded-xl bg-[#0D524C] px-5 py-2 text-sm font-semibold text-white shadow-md hover:bg-[#0A3D36] transition-all cursor-pointer"
+              whileHover={{ scale: 1.015, y: -0.5, boxShadow: "0 4px 12px rgba(13, 82, 76, 0.12)" }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 600, damping: 30 }}
+            >
+              Start Free
+            </m.a>
+          </Link>
         </div>
 
         {/* Mobile Toggle */}
@@ -109,7 +131,7 @@ export default function Navbar() {
       {/* Mobile Menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div
+          <m.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -122,40 +144,57 @@ export default function Navbar() {
                 ["#how-it-works", "How it Works"],
                 ["#pricing", "Pricing"],
                 ["#stories", "Stories"],
-              ].map(([href, label]) => (
-                <a
-                  key={href}
-                  href={href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block rounded-xl px-4 py-2.5 text-sm font-medium transition-colors text-gray-700 hover:bg-gray-50 hover:text-[#0D9488] dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-[#2DD4BF]"
-                >
-                  {label}
-                </a>
-              ))}
+                ["/tpo/login", "For TPO"],
+              ].map(([href, label]) => {
+                const isExternal = href.startsWith('/');
+                return isExternal ? (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block rounded-xl px-4 py-2.5 text-sm font-medium transition-colors text-[#0D9488] hover:bg-[#F0FDFA] dark:text-[#2DD4BF] dark:hover:bg-white/5"
+                  >
+                    {label}
+                  </Link>
+                ) : (
+                  <a
+                    key={href}
+                    href={href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block rounded-xl px-4 py-2.5 text-sm font-medium transition-colors text-gray-700 hover:bg-gray-50 hover:text-[#0D9488] dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-[#2DD4BF]"
+                  >
+                    {label}
+                  </a>
+                );
+              })}
               <div className="grid grid-cols-2 gap-3 pt-4 border-t mt-2 border-gray-100 dark:border-white/10">
-                <MotionLink
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-xl border px-4 py-2.5 text-center text-sm font-medium cursor-pointer border-gray-200 bg-white text-gray-700 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                  whileTap={{ scale: 0.965 }}
-                  transition={{ type: "spring", stiffness: 600, damping: 30 }}
-                >
-                  Login
-                </MotionLink>
-                <MotionLink
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-xl bg-[#0D524C] px-4 py-2.5 text-center text-sm font-semibold text-white shadow-sm cursor-pointer"
-                  whileTap={{ scale: 0.965 }}
-                  transition={{ type: "spring", stiffness: 600, damping: 30 }}
-                >
-                  Start Free
-                </MotionLink>
+                <Link href="/login" passHref legacyBehavior>
+                  <m.a
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-xl border px-4 py-2.5 text-center text-sm font-medium cursor-pointer border-gray-200 bg-white text-gray-700 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                    whileTap={{ scale: 0.965 }}
+                    transition={{ type: "spring", stiffness: 600, damping: 30 }}
+                  >
+                    Login
+                  </m.a>
+                </Link>
+                <Link href="/login" passHref legacyBehavior>
+                  <m.a
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-xl bg-[#0D524C] px-4 py-2.5 text-center text-sm font-semibold text-white shadow-sm cursor-pointer"
+                    whileTap={{ scale: 0.965 }}
+                    transition={{ type: "spring", stiffness: 600, damping: 30 }}
+                  >
+                    Start Free
+                  </m.a>
+                </Link>
               </div>
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </nav>
   );
 }
+
+

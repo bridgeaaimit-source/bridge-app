@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import { m, useScroll, useMotionValueEvent  } from "framer-motion";
 import { 
   Video, 
   Mic, 
@@ -260,7 +260,7 @@ function StepVisual04() {
           <div className="relative w-40 h-40 mx-auto mb-6">
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="46" fill="none" className="stroke-gray-100 dark:stroke-[#112a27]" strokeWidth="6" />
-              <motion.circle 
+              <m.circle 
                 cx="50" cy="50" r="46" fill="none" stroke="#2DD4BF" strokeWidth="6" 
                 strokeDasharray="289" strokeDashoffset="289"
                 animate={{ strokeDashoffset: 289 - (289 * 0.85) }}
@@ -482,7 +482,7 @@ export default function JourneySection() {
   const ActiveVisual = VISUALS[activeStep];
 
   return (
-    <section ref={containerRef} id="journey" className="relative bg-transparent border-b border-gray-200 dark:border-white/10 transition-colors" style={{ height: "600vh" }}>
+    <section ref={containerRef} id="how-it-works" className="relative bg-transparent border-b border-gray-200 dark:border-white/10 transition-colors" style={{ height: "600vh" }}>
       <div className="sticky top-0 h-screen w-full flex items-center justify-center">
         <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
@@ -576,3 +576,5 @@ export default function JourneySection() {
     </section>
   );
 }
+
+
