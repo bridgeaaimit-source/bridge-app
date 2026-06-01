@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, query, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { collection, query, onSnapshot, doc, updateDoc, getDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import AppShell from "@/components/AppShell";
 import { Users, Clock, CheckCircle2, AlertCircle, Send, MessageSquare, ShieldAlert, Key, UserCheck } from "lucide-react";
@@ -49,7 +49,6 @@ export default function AdminSupportPage() {
         setCurrentUser(user);
         try {
           // Check role in database
-          const { getDoc } = require("firebase/firestore");
           const userDoc = await getDoc(doc(db, "users", user.uid));
           if (userDoc.exists() && userDoc.data().role === "admin") {
             setIsAdmin(true);
