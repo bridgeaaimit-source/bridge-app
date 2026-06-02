@@ -1479,28 +1479,7 @@ export default function SmartInterviewPage() {
                           <Icon className="w-6 h-6" />
                           <span className="text-xs font-bold">{label}</span>
                         </button>
-                        <button
-                          onClick={() => setMode('voice')}
-                          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${
-                            mode === 'voice'
-                              ? 'bg-[#F0FDFA] text-[#0D9488] font-semibold'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          <Mic className="w-4 h-4" />
-                          Voice Mode
-                        </button>
-                        <button
-                          onClick={() => setMode('video')}
-                          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${
-                            mode === 'video'
-                              ? 'bg-[#F0FDFA] text-[#0D9488] font-semibold'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          <Play className="w-4 h-4" />
-                          Video Mode
-                        </button>
+                      ))}
                       </div>
                     </div>
                   </div>
