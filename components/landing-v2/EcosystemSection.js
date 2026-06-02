@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { m, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Video, Mic, Activity, TrendingUp, Users, MessageSquare, BookOpen, FileText, Target, LayoutGrid, CheckCircle2, ShieldCheck, ChevronRight, BarChart, Sparkles } from "lucide-react";
 
 export default function EcosystemSection() {
@@ -16,7 +16,7 @@ export default function EcosystemSection() {
       
       {/* 1. Header Section */}
       <div className="pt-32 pb-16 mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 text-center relative z-10">
-        <motion.span 
+        <m.span 
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -24,9 +24,9 @@ export default function EcosystemSection() {
         >
           <Activity className="h-3.5 w-3.5" />
           The Readiness Engine
-        </motion.span>
+        </m.span>
         
-        <motion.h2 
+        <m.h2 
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -35,9 +35,9 @@ export default function EcosystemSection() {
         >
           The operating system for <br className="hidden sm:block" />
           <span className="text-[#0D9488] dark:text-[#2DD4BF]">career readiness.</span>
-        </motion.h2>
+        </m.h2>
 
-        <motion.p 
+        <m.p 
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -45,12 +45,12 @@ export default function EcosystemSection() {
           className="mt-6 text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed"
         >
           Everything between preparation and placement. Practice realistically, improve measurably, and build confidence recruiters can verify.
-        </motion.p>
+        </m.p>
       </div>
 
       <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 pb-32 space-y-32">
         {/* FEATURE BLOCK 1: SMART MOCK INTERVIEW */}
-        <motion.div 
+        <m.div 
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-150px" }}
@@ -117,7 +117,7 @@ export default function EcosystemSection() {
                     <span className="text-[#0D9488] dark:text-[#2DD4BF]">82% (Steady)</span>
                   </div>
                   <div className="h-1.5 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
-                    <motion.div 
+                    <m.div 
                       initial={{ width: "40%" }}
                       whileInView={{ width: "82%" }}
                       transition={{ duration: 1.5, ease: "easeOut" }}
@@ -150,9 +150,9 @@ export default function EcosystemSection() {
 
             </div>
           </div>
-        </motion.div>
+        </m.div>
         {/* FEATURE BLOCK 2: LIVE GD ROOMS */}
-        <motion.div 
+        <m.div 
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-150px" }}
@@ -270,9 +270,9 @@ export default function EcosystemSection() {
             </div>
 
           </div>
-        </motion.div>
+        </m.div>
         {/* FEATURE BLOCK 3: DAILY CAREER INTELLIGENCE */}
-        <motion.div 
+        <m.div 
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-150px" }}
@@ -347,12 +347,12 @@ export default function EcosystemSection() {
             </div>
 
           </div>
-        </motion.div>
+        </m.div>
         {/* FEATURE BLOCKS 4, 5, 6: ROADMAP, RESUME, MATCHING */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Left: AI Profile Builder */}
-          <motion.div 
+          <m.div 
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-150px" }}
@@ -404,10 +404,10 @@ export default function EcosystemSection() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </m.div>
 
           {/* Middle: AI Resume */}
-          <motion.div 
+          <m.div 
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-150px" }}
@@ -438,10 +438,10 @@ export default function EcosystemSection() {
                 Instant keyword suggestions and role-specific improvements.
               </p>
             </div>
-          </motion.div>
+          </m.div>
 
           {/* Right: AI Job Matching */}
-          <motion.div 
+          <m.div 
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-150px" }}
@@ -501,7 +501,7 @@ export default function EcosystemSection() {
               </div>
             </div>
 
-          </motion.div>
+          </m.div>
 
         </div>
 
@@ -510,3 +510,4 @@ export default function EcosystemSection() {
     </section>
   );
 }
+

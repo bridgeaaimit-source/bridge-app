@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence, useInView } from "framer-motion";
+import { m, AnimatePresence, useInView } from "framer-motion";
 import { Search, Sliders, ShieldCheck, Check } from "lucide-react";
 
 const MOCK_CANDIDATES = [
@@ -95,7 +95,7 @@ export default function EmployerVisibilitySection() {
                   <Search className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                   <span className="font-medium">
                     {typedText || <span className="text-gray-400">Search registry...</span>}
-                    <motion.span 
+                    <m.span 
                       animate={{ opacity: [1, 0, 1] }} 
                       transition={{ repeat: Infinity, duration: 0.8 }}
                       className="inline-block w-1 h-3.5 bg-[#0D9488] dark:bg-[#2DD4BF] ml-0.5 align-middle"
@@ -132,10 +132,10 @@ export default function EmployerVisibilitySection() {
               </div>
 
               {/* Candidates Table Mock */}
-              <motion.div layout className="space-y-3 min-h-[190px]">
+              <m.div layout className="space-y-3 min-h-[190px]">
                 <AnimatePresence mode="popLayout">
                   {filteredCandidates.map((cand) => (
-                    <motion.div
+                    <m.div
                       layout
                       initial={{ opacity: 0, scale: 0.97 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -157,10 +157,10 @@ export default function EmployerVisibilitySection() {
                           {cand.score} <span className="text-[9px] font-bold text-[#0D9488] dark:text-teal-400">/ 1000</span>
                         </span>
                       </div>
-                    </motion.div>
+                    </m.div>
                   ))}
                 </AnimatePresence>
-              </motion.div>
+              </m.div>
 
             </div>
           </div>
@@ -171,3 +171,4 @@ export default function EmployerVisibilitySection() {
     </section>
   );
 }
+

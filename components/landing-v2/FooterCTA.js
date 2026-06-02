@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ArrowRight, CheckCircle2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 
@@ -10,7 +10,7 @@ export default function FooterCTA() {
       {/* Final CTA Section */}
       <section className="py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
 
-        <motion.div 
+        <m.div 
           className="relative mx-auto max-w-[800px] rounded-3xl border border-teal-100 dark:border-[#143d38] bg-white dark:bg-[#0A1C1A] p-10 sm:p-12 text-center backdrop-blur-sm text-gray-900 dark:text-white cursor-default shadow-sm dark:shadow-none transition-colors"
           whileHover={{ scale: 1.002, borderColor: "rgba(20, 184, 166, 0.3)", boxShadow: "0 12px 24px -6px rgba(13, 148, 136, 0.06)" }}
           whileTap={{ scale: 0.998 }}
@@ -35,14 +35,14 @@ export default function FooterCTA() {
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4">
             <Link href="/login" className="cursor-pointer w-full sm:w-auto">
-              <motion.span 
+              <m.span 
                 className="inline-flex justify-center items-center gap-2 rounded-xl bg-[#0D9488] px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-teal-950/30 hover:bg-[#14B8A6] cursor-pointer w-full"
                 whileHover={{ scale: 1.02, y: -0.5, boxShadow: "0 8px 25px -4px rgba(13, 148, 136, 0.25)" }}
                 whileTap={{ scale: 0.98, y: 0 }}
                 transition={{ type: "spring", stiffness: 600, damping: 30 }}
               >
                 Take your free mock now <ArrowRight className="h-4 w-4" />
-              </motion.span>
+              </m.span>
             </Link>
           </div>
 
@@ -58,7 +58,7 @@ export default function FooterCTA() {
               </span>
             ))}
           </div>
-        </motion.div>
+        </m.div>
       </section>
 
       {/* Main Footer */}
@@ -66,7 +66,7 @@ export default function FooterCTA() {
         
         {/* Neon Green Laser Animation */}
         <div className="absolute top-0 left-0 w-full h-[1px] overflow-hidden">
-          <motion.div
+          <m.div
             className="w-1/4 h-full bg-gradient-to-r from-transparent via-[#2DD4BF] to-transparent"
             style={{ filter: "drop-shadow(0 0 8px #2DD4BF)" }}
             animate={{ x: ["-100%", "400%"] }}
@@ -151,3 +151,4 @@ export default function FooterCTA() {
     </div>
   );
 }
+

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Star } from "lucide-react";
 
 const TESTIMONIALS = [
@@ -73,7 +73,7 @@ export default function TestimonialsSection() {
         </div>
 
         {/* Testimonials Grid */}
-        <motion.div 
+        <m.div 
           variants={{
             hidden: {},
             visible: { transition: { staggerChildren: 0.1 } }
@@ -84,7 +84,7 @@ export default function TestimonialsSection() {
           className="grid grid-cols-1 md:grid-cols-2 gap-6"
         >
           {TESTIMONIALS.map((t, idx) => (
-            <motion.div
+            <m.div
               key={idx}
               onMouseEnter={() => setHoveredIndex(idx)}
               onMouseLeave={() => setHoveredIndex(null)}
@@ -136,11 +136,12 @@ export default function TestimonialsSection() {
               <p className="text-sm text-gray-700 dark:text-gray-300 italic leading-relaxed">
                 &ldquo;{t.quote}&rdquo;
               </p>
-            </motion.div>
+            </m.div>
           ))}
-        </motion.div>
+        </m.div>
 
       </div>
     </section>
   );
 }
+
