@@ -14,15 +14,14 @@ export async function GET(request) {
   console.log('NEWS_API_KEY exists:', !!process.env.NEWS_API_KEY);
   console.log('ANTHROPIC_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
   
-  // Category to search keywords mapping
   const keywords = {
-    'All': 'india jobs hiring 2026',
-    'Marketing': 'marketing india 2026',
-    'Finance': 'finance india banking 2026',
-    'HR': 'hiring recruitment india 2026',
-    'Analytics': 'data analytics india 2026',
-    'Tech': 'technology software india 2026',
-    'MBA': 'business management india 2026'
+    'All': 'india AND (jobs OR hiring OR careers)',
+    'Marketing': 'india AND (marketing OR advertising) AND (jobs OR hiring)',
+    'Finance': 'india AND (finance OR banking) AND (jobs OR hiring)',
+    'HR': 'india AND (HR OR recruitment OR human resources) AND (jobs OR hiring)',
+    'Analytics': 'india AND (data OR analytics) AND (jobs OR hiring)',
+    'Tech': 'india AND (technology OR software OR IT) AND (jobs OR hiring)',
+    'MBA': 'india AND (business OR management OR MBA) AND (jobs OR hiring)'
   };
 
   const query = keywords[category] || keywords['All'];
@@ -31,7 +30,11 @@ export async function GET(request) {
   try {
     // Step 1: Fetch from NewsAPI
     console.log('2. Calling NewsAPI...');
-    const newsUrl = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&pageSize=20&apiKey=${process.env.NEWS_API_KEY}`;
+    const d = new Date();
+    d.setDate(d.getDate() - 14); // Limit to last 14 days for freshness
+    const fromDate = d.toISOString().split('T')[0];
+
+    const newsUrl = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&from=${fromDate}&pageSize=50&apiKey=${process.env.NEWS_API_KEY}`;
     console.log('NewsAPI URL:', newsUrl);
     
     const newsResponse = await fetch(newsUrl);
@@ -47,27 +50,33 @@ export async function GET(request) {
     const newsData = await newsResponse.json();
     console.log('4. NewsAPI full response:', newsData);
     
-    const articles = newsData.articles || [];
-    console.log('5. Articles count:', articles.length);
+    let articles = newsData.articles || [];
+    console.log('5. Original articles count:', articles.length);
+
+    // Shuffle and pick 15 to ensure daily variety (client caches daily)
+    if (articles.length > 0) {
+      articles = articles.sort(() => Math.random() - 0.5).slice(0, 15);
+    }
 
     if (articles.length === 0) {
       console.log('6. No articles found, trying fallback query...');
       // Try fallback query
-      const fallbackQuery = 'india career';
+      const fallbackQuery = 'india AND (career OR startup OR corporate)';
       console.log('6.1. Trying fallback query:', fallbackQuery);
       
       const fallbackResponse = await fetch(
-        `https://newsapi.org/v2/everything?q=${encodeURIComponent(fallbackQuery)}&sortBy=publishedAt&pageSize=20&apiKey=${process.env.NEWS_API_KEY}`
+        `https://newsapi.org/v2/everything?q=${encodeURIComponent(fallbackQuery)}&sortBy=publishedAt&from=${fromDate}&pageSize=50&apiKey=${process.env.NEWS_API_KEY}`
       );
       
       if (fallbackResponse.ok) {
         const fallbackData = await fallbackResponse.json();
-        const fallbackArticles = fallbackData.articles || [];
+        let fallbackArticles = fallbackData.articles || [];
         console.log('6.2. Fallback articles count:', fallbackArticles.length);
         
         if (fallbackArticles.length > 0) {
+          fallbackArticles = fallbackArticles.sort(() => Math.random() - 0.5).slice(0, 15);
           // Use fallback articles
-          return processArticles(fallbackArticles, category, 'india career', userId);
+          return processArticles(fallbackArticles, category, fallbackQuery, userId);
         }
       }
       
