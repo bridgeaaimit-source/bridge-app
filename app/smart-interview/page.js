@@ -1522,28 +1522,7 @@ export default function SmartInterviewPage() {
                       <p className="font-bold text-gray-800 text-sm mb-1">{title}</p>
                       <p className="text-xs text-gray-500">{body}</p>
                     </div>
-                    <div>
-                      <div className="font-medium text-gray-900">Upload Resume</div>
-                      <div className="text-sm text-gray-600">AI analyzes your skills and experience</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-[#F0FDFA] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-[#0D9488]">2</span>
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-900">Provide Job Details</div>
-                      <div className="text-sm text-gray-600">Helps tailor questions to your target role</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-[#F0FDFA] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-[#0D9488]">3</span>
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-900">AI Interview</div>
-                      <div className="text-sm text-gray-600">Get personalized questions and feedback</div>
-                    </div>
+                  ))}
                   </div>
                 </div>
               </div>
