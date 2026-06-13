@@ -6,6 +6,8 @@ import { Users, Clock, Send, AlertCircle, ChevronLeft, TrendingUp, Target, Messa
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { db, auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { useAuthBypass } from "@/hooks/useAuthBypass";
 import { 
   doc, onSnapshot, updateDoc, collection, 
   addDoc, serverTimestamp, query, orderBy, getDocs
@@ -17,6 +19,8 @@ const LOBBY_COUNTDOWN = 30; // 30 seconds lobby wait
 export default function BattleRoom() {
   const { roomId } = useParams();
   const router = useRouter();
+  const { isBypassed, mockUser } = useAuthBypass();
+  const [authLoading, setAuthLoading] = useState(true);
   const [room, setRoom] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [input, setInput] = useState("");
@@ -50,7 +54,7 @@ export default function BattleRoom() {
     setIsAnalyzing(true);
     clearInterval(gdTimerRef.current);
 
-    const user = auth.currentUser;
+    const user = isBypassed ? mockUser : auth.currentUser;
     if (!user || !room) return;
 
     try {
@@ -107,16 +111,29 @@ export default function BattleRoom() {
     }
   }, [phase, room, roomId]);
 
-  // ─── Listen to Room Document ───
+  // ─── Listen to Room Document & Auth initialization ───
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
-      router.push('/login');
+    if (isBypassed) {
+      setAuthLoading(false);
       return;
     }
 
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setAuthLoading(false);
+      if (!user) {
+        router.push('/login');
+      }
+    });
+    return () => unsubscribeAuth();
+  }, [router, isBypassed]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    const user = isBypassed ? mockUser : auth.currentUser;
+    if (!user) return;
+
     const roomRef = doc(db, 'gdBattles', roomId);
-    const unsubscribe = onSnapshot(roomRef, (docSnap) => {
+    const unsubscribeRoom = onSnapshot(roomRef, (docSnap) => {
       if (docSnap.exists()) {
         setRoom(docSnap.data());
       } else {
@@ -125,8 +142,8 @@ export default function BattleRoom() {
       }
     });
 
-    return () => unsubscribe();
-  }, [roomId, router]);
+    return () => unsubscribeRoom();
+  }, [roomId, router, authLoading, isBypassed, mockUser]);
 
   // ─── Start Lobby Countdown (30s) when room data loads ───
   useEffect(() => {
@@ -201,7 +218,7 @@ export default function BattleRoom() {
   // ─── Submit a Point (NO AI evaluation during GD) ───
   const handleSubmit = async () => {
     if (!input.trim() || isSubmitting || phase !== 'active') return;
-    const user = auth.currentUser;
+    const user = isBypassed ? mockUser : auth.currentUser;
     if (!user) return;
 
     const pointText = input.trim();
@@ -224,7 +241,7 @@ export default function BattleRoom() {
   };
 
   // ─── Loading State ───
-  if (!room) {
+  if (authLoading || !room) {
     return (
       <AppShell>
         <div className="flex justify-center items-center h-screen">
@@ -234,7 +251,7 @@ export default function BattleRoom() {
     );
   }
 
-  const currentUserUid = auth.currentUser?.uid;
+  const currentUserUid = isBypassed ? mockUser?.uid : auth.currentUser?.uid;
 
   // ═══════════════════════════════════════════════════
   //  RESULTS VIEW — After GD ends

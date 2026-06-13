@@ -566,7 +566,7 @@ export default function InterviewPage() {
                       </div>
 
                       <div className="bg-gray-50 rounded-xl p-8 text-center border border-gray-100">
-                        {hookIsConnecting ? (
+                        {isConnecting ? (
                           <div className="space-y-4">
                             <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto animate-pulse">
                               <Mic className="w-8 h-8 text-yellow-600" />
