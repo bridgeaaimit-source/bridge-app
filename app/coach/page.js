@@ -13,6 +13,8 @@ export default function CoachPage() {
   const [isLoadingRewrite, setIsLoadingRewrite] = useState(false);
   const [isLoadingConvert, setIsLoadingConvert] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [scores, setScores] = useState({ clarity: null, fluency: null, structure: null });
+
 
   const improveWithAI = async () => {
     if (!rawAnswer.trim()) return;
@@ -27,6 +29,15 @@ export default function CoachPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to improve answer");
       setImprovedAnswer(data.output || "");
+      
+      if (data.clarity !== undefined) {
+        setScores({
+          clarity: data.clarity,
+          fluency: data.fluency,
+          structure: data.structure
+        });
+      }
+      
       toast.success("Answer improved successfully!");
     } catch (error) {
       const message =
@@ -51,6 +62,15 @@ export default function CoachPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to convert text");
       setEnglishText(data.output || "");
+      
+      if (data.clarity !== undefined) {
+        setScores({
+          clarity: data.clarity,
+          fluency: data.fluency,
+          structure: data.structure
+        });
+      }
+      
       toast.success("Converted to English successfully!");
     } catch (error) {
       const message =
@@ -87,20 +107,31 @@ export default function CoachPage() {
         <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-4 mb-6" style={{ boxShadow: '0 10px 25px rgba(108, 99, 255, 0.3)' }}>
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-semibold">Today's Score</span>
-            <span className="text-2xl font-bold">---/10</span>
+            <span className="text-2xl font-bold">
+              {scores.clarity !== null
+                ? `${Math.round((scores.clarity + scores.fluency + scores.structure) / 3)}/10`
+                : "---/10"
+              }
+            </span>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="text-center">
               <div className="text-xs text-purple-100">Clarity</div>
-              <div className="text-sm font-bold">---/10</div>
+              <div className="text-sm font-bold">
+                {scores.clarity !== null ? `${scores.clarity}/10` : "---/10"}
+              </div>
             </div>
             <div className="text-center">
               <div className="text-xs text-purple-100">Fluency</div>
-              <div className="text-sm font-bold">---/10</div>
+              <div className="text-sm font-bold">
+                {scores.fluency !== null ? `${scores.fluency}/10` : "---/10"}
+              </div>
             </div>
             <div className="text-center">
               <div className="text-xs text-purple-100">Structure</div>
-              <div className="text-sm font-bold">---/10</div>
+              <div className="text-sm font-bold">
+                {scores.structure !== null ? `${scores.structure}/10` : "---/10"}
+              </div>
             </div>
           </div>
         </div>
