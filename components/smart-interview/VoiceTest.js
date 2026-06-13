@@ -5,6 +5,9 @@ import { Volume2 } from 'lucide-react';
 import { levenshtein } from '@/lib/stringUtils';
 import toast from 'react-hot-toast';
 
+const TEST_SENTENCE = "I am ready for my AI placement mock interview today";
+const testWords = TEST_SENTENCE.toLowerCase().split(" ");
+
 export default function VoiceTest({ onResult, selectedLang }) {
   const [isListening, setIsListening] = useState(false);
   const [heard, setHeard] = useState("");
@@ -13,9 +16,6 @@ export default function VoiceTest({ onResult, selectedLang }) {
   const recognitionRef = useRef(null);
   const finalRef = useRef("");
   const isMountedRef = useRef(true);
-
-  const TEST_SENTENCE = "I am ready for my AI placement mock interview today";
-  const testWords = TEST_SENTENCE.toLowerCase().split(" ");
 
   const calcAccuracy = useCallback((text) => {
     if (!isMountedRef.current) return;
@@ -28,7 +28,7 @@ export default function VoiceTest({ onResult, selectedLang }) {
     const acc = Math.round((matches / testWords.length) * 100);
     setAccuracy(acc);
     onResult(acc >= 40);
-  }, [onResult, testWords]);
+  }, [onResult]);
 
   const stop = useCallback(() => {
     if (recognitionRef.current) {
@@ -116,7 +116,8 @@ export default function VoiceTest({ onResult, selectedLang }) {
       isMountedRef.current = false;
       stop();
     };
-  }, [stop]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="bg-white rounded-2xl border border-teal-100 shadow-sm overflow-hidden">

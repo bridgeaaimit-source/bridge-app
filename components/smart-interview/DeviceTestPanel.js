@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { ArrowRight, CheckCircle, ChevronLeft } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import { useInterviewState, useInterviewDispatch } from '@/context/InterviewContext';
@@ -15,10 +15,10 @@ export default function DeviceTestPanel({ startInterview }) {
   const allPass = state.devices.cameraOk && state.devices.micOk && state.devices.voiceOk;
   const corePass = state.devices.micOk && state.devices.voiceOk;
 
-  const setCameraOk = (val) => dispatch({ type: 'SET_DEVICES', payload: { cameraOk: val } });
-  const setMicOk = (val) => dispatch({ type: 'SET_DEVICES', payload: { micOk: val } });
-  const setVoiceOk = (val) => dispatch({ type: 'SET_DEVICES', payload: { voiceOk: val } });
-  const setSelectedLang = (val) => dispatch({ type: 'SET_DEVICES', payload: { selectedLang: val } });
+  const setCameraOk = useCallback((val) => dispatch({ type: 'SET_DEVICES', payload: { cameraOk: val } }), [dispatch]);
+  const setMicOk = useCallback((val) => dispatch({ type: 'SET_DEVICES', payload: { micOk: val } }), [dispatch]);
+  const setVoiceOk = useCallback((val) => dispatch({ type: 'SET_DEVICES', payload: { voiceOk: val } }), [dispatch]);
+  const setSelectedLang = useCallback((val) => dispatch({ type: 'SET_DEVICES', payload: { selectedLang: val } }), [dispatch]);
 
   return (
     <AppShell>

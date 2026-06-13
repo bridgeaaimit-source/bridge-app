@@ -11,6 +11,11 @@ export default function CameraTest({ onResult }) {
   const [selectedDevice, setSelectedDevice] = useState("");
   const streamRef = useRef(null);
   const isMountedRef = useRef(true);
+  const selectedDeviceRef = useRef("");
+
+  useEffect(() => {
+    selectedDeviceRef.current = selectedDevice;
+  }, [selectedDevice]);
 
   const stopStream = () => {
     streamRef.current?.getTracks().forEach(t => t.stop());
@@ -44,7 +49,7 @@ export default function CameraTest({ onResult }) {
       
       const cams = devs.filter(d => d.kind === "videoinput");
       setDevices(cams);
-      if (!selectedDevice && cams.length > 0) {
+      if (!selectedDeviceRef.current && cams.length > 0) {
         setSelectedDevice(cams[0].deviceId);
       }
     } catch (err) {
@@ -57,7 +62,7 @@ export default function CameraTest({ onResult }) {
       );
       onResult(false);
     }
-  }, [onResult, selectedDevice]);
+  }, [onResult]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -67,7 +72,8 @@ export default function CameraTest({ onResult }) {
       clearTimeout(t);
       stopStream();
     };
-  }, [startCamera]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDeviceChange = (e) => {
     setSelectedDevice(e.target.value);
