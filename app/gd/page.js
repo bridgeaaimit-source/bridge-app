@@ -29,6 +29,26 @@ export default function GDPage() {
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
+    // Bypass mode: synthesize mock rooms from DEFAULT_TOPICS, skip Firestore
+    if (isBypassed) {
+      const mockBattles = DEFAULT_TOPICS.map((t, i) => ({
+        id: `mock-room-${i}`,
+        topic: t.topic,
+        category: t.category,
+        difficulty: t.difficulty,
+        participants: [],
+        participantCount: 0,
+        maxParticipants: 6,
+        status: 'waiting',
+        createdAt: { toMillis: () => Date.now() - i * 1000 },
+        startTime: null,
+        isCustom: false
+      }));
+      setBattles(mockBattles);
+      setLoading(false);
+      return;
+    }
+
     // Listen to live battles (no orderBy to avoid requiring a composite index)
     const q = query(
       collection(db, 'gdBattles'),
@@ -50,7 +70,7 @@ export default function GDPage() {
       
       // Auto-create defaults if none exist (only if user is authenticated)
       if (liveBattles.length === 0 && !loading) {
-        const user = isBypassed ? mockUser : auth.currentUser;
+        const user = auth.currentUser;
         if (user) {
           console.log("No active battles found. Creating defaults...");
           try {
@@ -84,7 +104,7 @@ export default function GDPage() {
     });
 
     return () => unsubscribe();
-  }, [loading]);
+  }, [loading, isBypassed]);
 
   const handleJoinBattle = async (room) => {
     const user = isBypassed ? mockUser : auth.currentUser;
@@ -95,6 +115,20 @@ export default function GDPage() {
 
     if (room.participantCount >= room.maxParticipants && !room.participants?.some(p => p.uid === user.uid)) {
       toast.error('This room is full!');
+      return;
+    }
+
+    // Bypass mode: update local state only, skip Firestore
+    if (isBypassed) {
+      const isAlreadyIn = room.participants?.some(p => p.uid === user.uid);
+      if (!isAlreadyIn) {
+        setBattles(prev => prev.map(b => b.id === room.id ? {
+          ...b,
+          participants: [...(b.participants || []), { uid: user.uid, name: user.name || 'Test Student', joinedAt: new Date().toISOString() }],
+          participantCount: (b.participantCount || 0) + 1
+        } : b));
+      }
+      router.push(`/gd/battle/${room.id}`);
       return;
     }
 
@@ -143,12 +177,20 @@ export default function GDPage() {
         participantCount: 0,
         maxParticipants: 6,
         status: 'waiting',
-        createdAt: serverTimestamp(),
+        createdAt: isBypassed ? { toMillis: () => Date.now() } : serverTimestamp(),
         startTime: null,
         isCustom: true
       };
 
-      const docRef = await addDoc(collection(db, 'gdBattles'), roomData);
+      let roomId;
+      if (isBypassed) {
+        // Bypass mode: generate mock ID, add to local state
+        roomId = `mock-room-${Date.now()}`;
+        setBattles(prev => [{ id: roomId, ...roomData }, ...prev]);
+      } else {
+        const docRef = await addDoc(collection(db, 'gdBattles'), roomData);
+        roomId = docRef.id;
+      }
       
       const response = await fetch('/api/gd-from-article', {
         method: 'POST',
@@ -170,7 +212,7 @@ export default function GDPage() {
       setCustomTopic('');
       
       // Auto join
-      handleJoinBattle({ id: docRef.id, ...roomData });
+      handleJoinBattle({ id: roomId, ...roomData });
     } catch (error) {
       console.error('Error creating room:', error);
       toast.error('Failed to create room');

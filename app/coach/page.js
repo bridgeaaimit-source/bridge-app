@@ -46,7 +46,7 @@ export default function CoachPage() {
       const response = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "hinglish", text: hinglishText }),
+        body: JSON.stringify({ mode: "hinglish_to_english", text: hinglishText }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to convert text");

@@ -8,6 +8,7 @@ import {
 import { auth, db } from "@/lib/firebase";
 import TPOShell from "@/components/TPOShell";
 import toast from "react-hot-toast";
+import { useAuthBypass } from "@/hooks/useAuthBypass";
 import {
   Users, TrendingUp, TrendingDown, AlertTriangle, Award, Target,
   ChevronDown, ChevronUp, Send, Download,
@@ -63,6 +64,7 @@ function MiniRing({ value, size = 40, stroke = 4, color = "#0D9488" }) {
 }
 
 export default function TPODashboardPage() {
+  const { isBypassed, mockUser } = useAuthBypass();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -141,6 +143,22 @@ export default function TPODashboardPage() {
 
   // ─── Load data ───
   useEffect(() => {
+    // Bypass mode: use mock TPO data to prevent blank screen
+    if (isBypassed) {
+      const mockTPO = {
+        name: mockUser?.name || "Test TPO",
+        college: mockUser?.college || "Test College",
+        collegeId: "test-college-001",
+        role: "tpo",
+      };
+      setUserData(mockTPO);
+      setLoading(false);
+      fetchBatchStats(mockTPO.collegeId);
+      fetchDrives(mockTPO.collegeId);
+      fetchSkillGap(mockTPO.collegeId);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) return;
       const userDoc = await getDoc(doc(db, "users", user.uid));

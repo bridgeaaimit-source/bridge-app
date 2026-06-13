@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useAssemblyAI } from "@/hooks/useAssemblyAI";
+import { useAuthBypass } from "@/hooks/useAuthBypass";
 
 const domains = [
   { icon: "💻", label: "Software Engineer" },
@@ -19,6 +20,7 @@ const domains = [
 ];
 
 export default function InterviewPage() {
+  const { isBypassed, mockUser } = useAuthBypass();
   const [step, setStep] = useState(1);
   const [interviewMode, setInterviewMode] = useState("text"); // "text" or "voice"
   const [selectedDomain, setSelectedDomain] = useState("Software Engineer");
@@ -60,6 +62,13 @@ export default function InterviewPage() {
   }, [hookFullTranscript]);
 
   useEffect(() => {
+    // Bypass mode: set mock uid and sessionId directly
+    if (isBypassed) {
+      setUid(mockUser.uid);
+      setSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+      return;
+    }
+
     // Get user ID and generate session ID
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
