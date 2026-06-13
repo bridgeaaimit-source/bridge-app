@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Syne, DM_Sans, Inter, Poppins, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
-import AppShell from "@/components/AppShell";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import SupportWidget from "@/components/SupportWidget";
 import FramerMotionProvider from "@/components/FramerMotionProvider";
