@@ -13,14 +13,66 @@ import { auth } from '@/lib/firebase';
 import AppShell from "@/components/AppShell";
 import { Users, Star, Briefcase, Search, Mail, Phone, Award, TrendingUp } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuthBypass } from '@/hooks/useAuthBypass';
+
+const MOCK_STUDENTS = [
+  {
+    uid: 'mock-student-1',
+    name: 'Alice Johnson',
+    college: 'MIT',
+    degree: 'B.Tech CSE',
+    bridgeScore: 920,
+    interviewsDone: 12,
+    avgScore: 8.8,
+    skills: ['React', 'Node.js', 'Python'],
+    domains: ['Tech'],
+    location: 'Bangalore',
+    lookingFor: 'Full-time',
+    photo: null
+  },
+  {
+    uid: 'mock-student-2',
+    name: 'Bob Smith',
+    college: 'Stanford',
+    degree: 'MS CS',
+    bridgeScore: 850,
+    interviewsDone: 9,
+    avgScore: 8.2,
+    skills: ['Python', 'SQL', 'Tableau'],
+    domains: ['Finance', 'Tech'],
+    location: 'Remote',
+    lookingFor: 'Internship',
+    photo: null
+  },
+  {
+    uid: 'mock-student-3',
+    name: 'Carol Davis',
+    college: 'Harvard',
+    degree: 'MBA',
+    bridgeScore: 780,
+    interviewsDone: 6,
+    avgScore: 7.5,
+    skills: ['Marketing', 'Excel', 'SEO'],
+    domains: ['Marketing', 'HR'],
+    location: 'Mumbai',
+    lookingFor: 'Full-time',
+    photo: null
+  }
+];
+
 
 export default function RecruiterPage() {
   const router = useRouter();
+  const { isBypassed } = useAuthBypass();
   const [authorized, setAuthorized] = useState(false);
   const [activeTab, setActiveTab] = useState('browse');
 
   // Auth guard — only admin/recruiter roles
   useEffect(() => {
+    if (isBypassed) {
+      setAuthorized(true);
+      return;
+    }
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) { router.replace('/login'); return; }
       try {
@@ -35,7 +87,7 @@ export default function RecruiterPage() {
       } catch { router.replace('/dashboard'); }
     });
     return () => unsub();
-  }, [router]);
+  }, [router, isBypassed]);
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [shortlisted, setShortlisted] = useState([]);
@@ -63,6 +115,16 @@ export default function RecruiterPage() {
 
   // Fetch real students from Firestore
   useEffect(() => {
+    if (isBypassed) {
+      setStudents(MOCK_STUDENTS);
+      setFilteredStudents(MOCK_STUDENTS);
+      setLoading(false);
+      
+      const saved = localStorage.getItem('bridge_shortlist');
+      if (saved) setShortlisted(JSON.parse(saved));
+      return;
+    }
+
     const fetchStudents = async () => {
       setLoading(true);
       try {

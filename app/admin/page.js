@@ -8,8 +8,56 @@ import { auth } from "@/lib/firebase";
 import { Users, Trophy, TrendingUp, Calendar, Mail, Phone, MapPin, GraduationCap, BarChart3 } from "lucide-react";
 import toast from "react-hot-toast";
 import AppShell from "@/components/AppShell";
+import { useAuthBypass } from "@/hooks/useAuthBypass";
+
+const MOCK_ADMIN_USERS = [
+  {
+    uid: 'mock-student-1',
+    name: 'Alice Johnson',
+    email: 'alice@mit.edu',
+    college: 'MIT',
+    degree: 'B.Tech CSE',
+    domain: 'Tech',
+    bridgeScore: 920,
+    avgScore: 8.8,
+    interviewsDone: 12,
+    streak: 5,
+    lookingFor: 'Full-time',
+    updatedAt: new Date().toISOString()
+  },
+  {
+    uid: 'mock-student-2',
+    name: 'Bob Smith',
+    email: 'bob@stanford.edu',
+    college: 'Stanford',
+    degree: 'MS CS',
+    domain: 'Tech',
+    bridgeScore: 850,
+    avgScore: 8.2,
+    interviewsDone: 9,
+    streak: 2,
+    lookingFor: 'Internship',
+    updatedAt: new Date().toISOString()
+  },
+  {
+    uid: 'mock-admin-user',
+    name: 'Test Admin',
+    email: 'admin@bridge.app',
+    college: 'Bridge Academy',
+    degree: 'Staff',
+    domain: 'Operations',
+    bridgeScore: 0,
+    avgScore: 0,
+    interviewsDone: 0,
+    streak: 0,
+    lookingFor: 'N/A',
+    updatedAt: new Date().toISOString()
+  }
+];
+
 
 export default function AdminPage() {
+  const { isBypassed } = useAuthBypass();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
@@ -21,6 +69,11 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
+    if (isBypassed) {
+      setCurrentUser({ email: 'admin@bridge.app', uid: 'mock-admin-123' });
+      fetchData();
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setCurrentUser(user);
@@ -44,9 +97,20 @@ export default function AdminPage() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isBypassed]);
 
   const fetchData = async () => {
+    if (isBypassed) {
+      setUsers(MOCK_ADMIN_USERS);
+      setStats({
+        totalUsers: MOCK_ADMIN_USERS.length,
+        totalInterviews: 21,
+        avgScore: 590,
+        activeToday: MOCK_ADMIN_USERS.length
+      });
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       
