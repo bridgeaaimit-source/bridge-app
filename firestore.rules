@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (getUserData().role == 'admin' || request.auth.token.admin == true);
+    }
+    
+    function isRecruiter() {
+      return isAuthenticated() && 
+        (getUserData().role == 'recruiter' || request.auth.token.recruiter == true);
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read, update: if isOwner(userId) || isAdmin() || isRecruiter();
+      allow create: if isAuthenticated();
+      allow delete: if isAdmin();
+      
+      // Subcollections (if any)
+      match /{document=**} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+    
+    // GD Battles collection
+    match /gdBattles/{battleId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+      
+      // Subcollections for submissions
+      match /gdSubmissions/{submissionId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+    
+    // Support Tickets collection
+    match /tickets/{ticketId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Fallback rule for any other collection
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
