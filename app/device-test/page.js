@@ -327,6 +327,9 @@ function MicTest({ onResult }) {
 }
 
 // ─── Voice Recognition Test ───────────────────────────────────────────────────
+const DEVICE_TEST_TEST_SENTENCE = "My name is candidate and I am ready for my interview today";
+const deviceTestWords = DEVICE_TEST_TEST_SENTENCE.toLowerCase().split(" ");
+
 function VoiceTest({ onResult, selectedLang, onLangChange }) {
   const [isListening, setIsListening] = useState(false);
   const [heard, setHeard] = useState("");
@@ -337,24 +340,21 @@ function VoiceTest({ onResult, selectedLang, onLangChange }) {
   const recognitionRef = useRef(null);
   const finalRef = useRef("");
 
-  const TEST_SENTENCE = "My name is candidate and I am ready for my interview today";
-  const testWords = TEST_SENTENCE.toLowerCase().split(" ");
-
   const calcAccuracy = useCallback((text) => {
     const heardWords = text.toLowerCase().replace(/[^a-z\s]/g, "").split(/\s+/).filter(Boolean);
     let matches = 0;
-    const comp = testWords.map((expected, i) => {
+    const comp = deviceTestWords.map((expected, i) => {
       const h = heardWords[i] || "";
       const match = expected === h || levenshtein(expected, h) <= 1;
       if (match) matches++;
       return { expected, heard: h, match };
     });
-    const acc = Math.round((matches / testWords.length) * 100);
+    const acc = Math.round((matches / deviceTestWords.length) * 100);
     setComparison(comp);
     setAccuracy(acc);
     onResult(acc >= 65);
     if (acc < 80) setShowTips(true);
-  }, [onResult, testWords]);
+  }, [onResult]);
 
   const start = useCallback(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -446,7 +446,7 @@ function VoiceTest({ onResult, selectedLang, onLangChange }) {
         <div>
           <p className="text-xs text-gray-500 mb-2">Read this sentence aloud:</p>
           <div className="bg-[#F0FDFA] border border-teal-200 rounded-xl p-4">
-            <p className="text-base font-medium text-[#0F766E] leading-relaxed">"{TEST_SENTENCE}"</p>
+            <p className="text-base font-medium text-[#0F766E] leading-relaxed">"{DEVICE_TEST_TEST_SENTENCE}"</p>
           </div>
         </div>
 

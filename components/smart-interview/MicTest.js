@@ -89,7 +89,8 @@ export default function MicTest({ onResult }) {
       clearTimeout(t);
       stopAll();
     };
-  }, [startMic]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="bg-white rounded-2xl border border-teal-100 shadow-sm overflow-hidden">
