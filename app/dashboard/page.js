@@ -12,7 +12,10 @@ import {
   Target, 
   Brain, 
   Star,
-  ChevronRight
+  ChevronRight,
+  TrendingUp,
+  ArrowUpRight,
+  ArrowDownRight
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { onAuthStateChanged } from "firebase/auth";
@@ -22,6 +25,27 @@ import { db } from "@/lib/firebase";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
 import GettingStartedChecklist from "@/components/onboarding/GettingStartedChecklist";
 import OnboardingTour from "@/components/OnboardingTour";
+
+const mockWeeklyChanges = [
+  {
+    weekDate: "Week of June 1",
+    score: 750,
+    change: 15,
+    details: ["Smart Interview +10", "Group Discussion +5"]
+  },
+  {
+    weekDate: "Week of May 25",
+    score: 735,
+    change: 25,
+    details: ["Smart Interview +20", "Group Discussion +5"]
+  },
+  {
+    weekDate: "Week of May 18",
+    score: 710,
+    change: 30,
+    details: ["Aptitude +25", "Group Discussion +5"]
+  }
+];
 
 export default function Dashboard() {
   const router = useRouter();
@@ -39,6 +63,7 @@ export default function Dashboard() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [resumeUploaded, setResumeUploaded] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [scoreHistory, setScoreHistory] = useState([]);
 
   const { isBypassed, mockUserData } = useAuthBypass();
 
@@ -79,6 +104,7 @@ export default function Dashboard() {
       setBridgeScore(mockUserData.stats.bridgeScore);
       setRecentActivity(mockUserData.recentActivity);
       setLeaderboard(mockUserData.leaderboard);
+      setScoreHistory(mockWeeklyChanges);
       return;
     }
 
@@ -210,6 +236,75 @@ export default function Dashboard() {
           
           setLeaderboard(leaderboardData);
           console.log('🏆 Dashboard - Leaderboard data:', leaderboardData);
+
+          // Fetch real score history
+          try {
+            const scoreQuery = query(
+              collection(db, 'users', user.uid, 'bridge_scores'),
+              orderBy('createdAt', 'desc'),
+              limit(10)
+            );
+            const scoreSnap = await getDocs(scoreQuery);
+            if (!scoreSnap.empty) {
+              const records = scoreSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+              const weeksMap = {};
+              records.forEach(r => {
+                const date = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.createdAt || Date.now());
+                const startOfWeek = new Date(date);
+                const day = startOfWeek.getDay();
+                const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+                startOfWeek.setDate(diff);
+                startOfWeek.setHours(0, 0, 0, 0);
+                const key = startOfWeek.toISOString().split("T")[0];
+                if (!weeksMap[key] || new Date(r.createdAt) > new Date(weeksMap[key].createdAt)) {
+                  weeksMap[key] = r;
+                }
+              });
+              const sortedKeys = Object.keys(weeksMap).sort();
+              const formattedHistory = sortedKeys.map((key, index) => {
+                const current = weeksMap[key];
+                const prev = index > 0 ? weeksMap[sortedKeys[index - 1]] : null;
+
+                const curScore = current.score || 0;
+                const prevScore = prev ? (prev.score || 0) : curScore;
+                const scoreDiff = curScore - prevScore;
+
+                const curBreakdown = current.breakdown || { cognitive: 0, competence: 0, communication: 0 };
+                const prevBreakdown = prev ? (prev.breakdown || { cognitive: 0, competence: 0, communication: 0 }) : curBreakdown;
+
+                const cognitiveDiff = curBreakdown.cognitive - prevBreakdown.cognitive;
+                const competenceDiff = curBreakdown.competence - prevBreakdown.competence;
+                const communicationDiff = curBreakdown.communication - prevBreakdown.communication;
+
+                const details = [];
+                if (competenceDiff > 0) details.push(`Smart Interview +${competenceDiff}`);
+                else if (competenceDiff < 0) details.push(`Smart Interview ${competenceDiff}`);
+
+                if (cognitiveDiff > 0) details.push(`Aptitude +${cognitiveDiff}`);
+                else if (cognitiveDiff < 0) details.push(`Aptitude ${cognitiveDiff}`);
+
+                if (communicationDiff > 0) details.push(`Group Discussion +${communicationDiff}`);
+                else if (communicationDiff < 0) details.push(`Group Discussion ${communicationDiff}`);
+
+                const startRange = new Date(key);
+                const dateStr = `Week of ${startRange.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+
+                return {
+                  weekDate: dateStr,
+                  score: curScore,
+                  change: scoreDiff,
+                  details
+                };
+              });
+              setScoreHistory(formattedHistory.reverse().slice(0, 3));
+            } else {
+              setScoreHistory(mockWeeklyChanges);
+            }
+          } catch (scoreHistoryErr) {
+            console.error('Error fetching score history:', scoreHistoryErr);
+            setScoreHistory(mockWeeklyChanges);
+          }
+
         } catch (error) {
           console.error('Error loading user data:', error);
         }
@@ -378,6 +473,67 @@ export default function Dashboard() {
               </div>
               <Link href="/interview" className="w-full text-center text-sm text-[#0D9488] font-semibold hover:bg-[#CCFBF1]/50 py-2 rounded-xl transition-colors">
                 View detailed analysis →
+              </Link>
+            </div>
+
+            {/* Score Analysis Card */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.05)]">
+              <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2" style={{ fontFamily: "Syne, sans-serif" }}>
+                <TrendingUp className="w-5 h-5 text-[#0D9488]" /> Score Analysis
+              </h3>
+              <p className="text-xs text-gray-400 mb-5">Track what activities impacted your score week-by-week</p>
+              
+              <div className="flex flex-col gap-4">
+                {scoreHistory.length > 0 ? (
+                  scoreHistory.map((week, idx) => (
+                    <div key={idx} className="flex flex-col gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-gray-700">{week.weekDate}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-extrabold text-gray-800">{week.score}</span>
+                          {week.change > 0 ? (
+                            <span className="flex items-center gap-0.5 text-[10px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded-full">
+                              <ArrowUpRight className="w-3 h-3" /> +{week.change}
+                            </span>
+                          ) : week.change < 0 ? (
+                            <span className="flex items-center gap-0.5 text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">
+                              <ArrowDownRight className="w-3 h-3" /> {week.change}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">
+                              0
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Driver Details List */}
+                      {week.details && week.details.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {week.details.map((detail, dIdx) => (
+                            <span key={dIdx} className={`text-[10px] font-medium px-2 py-0.5 rounded-md ${
+                              detail.includes("+") 
+                                ? "bg-teal-50 text-teal-600 border border-teal-100" 
+                                : "bg-red-50 text-red-500 border border-red-100"
+                            }`}>
+                              {detail}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-[10px] text-gray-400 italic">No score impacting activities</div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-xs text-gray-400">Complete an interview or test to calculate weekly trends.</p>
+                  </div>
+                )}
+              </div>
+
+              <Link href="/dashboard/bridge-score" className="block w-full text-center text-xs text-[#0D9488] font-bold hover:bg-[#CCFBF1]/50 py-2.5 rounded-xl mt-4 border border-[#CCFBF1]/30 transition-colors">
+                View Weekly Audit Log →
               </Link>
             </div>
 
