@@ -1,0 +1,500 @@
+﻿
+> bridge-app@0.1.0 lint
+> eslint
+
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\admin\page.js
+  210:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\admin\support\page.js
+  666:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\admin\token-dashboard\page.js
+   10:21  warning  'Clock' is defined but never used                                                                                @typescript-eslint/no-unused-vars
+   11:15  warning  'DollarSign' is defined but never used                                                                           @typescript-eslint/no-unused-vars
+   14:3   warning  'ChevronDown' is defined but never used                                                                          @typescript-eslint/no-unused-vars
+   14:16  warning  'Filter' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+   14:24  warning  'Eye' is defined but never used                                                                                  @typescript-eslint/no-unused-vars
+  130:6   warning  React Hook useEffect has a missing dependency: 'renderCharts'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  143:52  warning  'summary' is assigned a value but never used                                                                     @typescript-eslint/no-unused-vars
+  380:9   warning  'pct' is assigned a value but never used                                                                         @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\api\admin\token-analytics\route.js
+  25:11  warning  'hourlyMap' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  38:13  warning  'dayInput' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  39:13  warning  'dayOutput' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\api\gd-analysis\route.js
+  75:14  warning  'parseError' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\api\gd-score\route.js
+  48:14  warning  'parseError' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\api\generate-questions\route.js
+  54:14  warning  'parseError' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\api\jobs\route.js
+   8:11  warning  'e' is defined but never used                   @typescript-eslint/no-unused-vars
+  17:5   warning  'company' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  17:14  warning  'job_title' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\api\parse-resume\route.js
+  107:16  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\api\refresh-daily\route.js
+  25:13  warning  'data' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\api\seed-questions\route.js
+  616:11  warning  'foodPct' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  749:27  warning  'request' is defined but never used           @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\api\test-auth\route.js
+  23:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\api\tpo\drives\route.js
+  41:30  warning  'tpoName' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  41:39  warning  'collegeName' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\api\tpo\nudge\route.js
+  29:16  warning  'e' is defined but never used                     @typescript-eslint/no-unused-vars
+  31:13  warning  'bridgeScore' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  32:13  warning  'readiness' is assigned a value but never used    @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\api\tpo\skill-gap\route.js
+  56:18  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\aptitude\page.js
+     9:22  warning  'orderBy' is defined but never used                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+    10:31  warning  'where' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+    18:17  warning  'Zap' is defined but never used                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+    18:44  warning  'BarChart2' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+    20:9   warning  'RotateCcw' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+    20:20  warning  'Shield' is defined but never used                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+    21:3   warning  'RefreshCw' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+    21:33  warning  'User' is defined but never used                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+    21:39  warning  'AlertCircle' is defined but never used                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+   174:6   warning  React Hook useCallback has a missing dependency: 'endTest'. Either include it or remove the dependency array                                                                                                                                                                             react-hooks/exhaustive-deps
+   179:5   warning  'warningReason' is assigned a value but never used                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   205:6   warning  React Hook useEffect has missing dependencies: 'loadDailyChallenge' and 'loadDashboardData'. Either include them or remove the dependency array                                                                                                                                          react-hooks/exhaustive-deps
+   240:6   warning  React Hook useEffect has a missing dependency: 'endTest'. Either include it or remove the dependency array                                                                                                                                                                               react-hooks/exhaustive-deps
+   773:14  warning  'e' is defined but never used                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+   778:6   warning  React Hook useCallback has missing dependencies: 'loadDailyChallenge' and 'loadDashboardData'. Either include them or remove the dependency array                                                                                                                                        react-hooks/exhaustive-deps
+   900:34  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+   908:47  warning  'idx' is defined but never used                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+   959:47  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  1027:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  1126:23  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  1478:23  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  1478:35  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\career-gps\page.js
+   40:6   warning  React Hook useEffect has a missing dependency: 'circumference'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              react-hooks/exhaustive-deps
+  331:36  warning  'stageData' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+  395:21  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  393 |
+  394 |   useEffect(() => {
+> 395 |     if (isBypass) { setUserId("bypass"); return; }
+      |                     ^^^^^^^^^ Avoid calling setState() directly within an effect
+  396 |     const unsub = onAuthStateChanged(auth, (u) => setUserId(u?.uid || null));
+  397 |     return unsub;
+  398 |   }, []);  react-hooks/set-state-in-effect
+  398:6   warning  React Hook useEffect has a missing dependency: 'isBypass'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   react-hooks/exhaustive-deps
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\career-intelligence\page.js
+   216:60  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+   216:85  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+   772:68  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+   772:93  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+   791:39  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  1044:67  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\coach\page.js
+  89:58  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\dashboard\page.js
+   28:10   warning  'bridgeScore' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+   39:10   warning  'leaderboard' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+   63:7    error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  61 |     const hour = new Date().getHours();
+  62 |     if (hour < 12) {
+> 63 |       setGreeting("Good Morning");
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  64 |     } else if (hour < 17) {
+  65 |       setGreeting("Good Afternoon");
+  66 |     } else {  react-hooks/set-state-in-effect
+  198:45   warning  'index' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+  220:6    warning  React Hook useEffect has missing dependencies: 'isBypassed' and 'mockUserData'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      react-hooks/exhaustive-deps
+  312:177  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         react/no-unescaped-entities
+  314:135  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         react/no-unescaped-entities
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\device-test\page.js
+    7:68  warning  'Video' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+    7:89  warning  'Wifi' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   62:21  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  60 |   }, [onResult, selectedDevice]);
+  61 |
+> 62 |   useEffect(() => { startCamera(); return () => stopStream(); }, []);
+     |                     ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  63 |
+  64 |   const handleDeviceChange = (e) => {
+  65 |     setSelectedDevice(e.target.value);                                                                                                                                                              react-hooks/set-state-in-effect
+   62:66  warning  React Hook useEffect has a missing dependency: 'startCamera'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/exhaustive-deps
+  244:21  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  242 |   }, [onResult]);
+  243 |
+> 244 |   useEffect(() => { startMic(); return () => stopAll(); }, []);
+      |                     ^^^^^^^^ Avoid calling setState() directly within an effect
+  245 |
+  246 |   const volumeLevel = volume < 8 ? { label: "Low ΓÇö speak louder", color: "bg-yellow-500", textColor: "text-yellow-700", bg: "bg-yellow-50" }
+  247 |     : volume < 100 ? { label: "Good", color: "bg-green-500", textColor: "text-green-700", bg: "bg-green-50" }  react-hooks/set-state-in-effect
+  244:60  warning  React Hook useEffect has a missing dependency: 'startMic'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              react-hooks/exhaustive-deps
+  449:81  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+  449:97  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+  590:68  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+  633:71  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+  634:90  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+  669:60  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\drives\page.js
+   14:32  warning  'DollarSign' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+   37:10  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @next/next/no-img-element
+  104:10  warning  'previousReadiness' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+  176:20  error    Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  174 |       const driveDate = drive.driveDate
+  175 |         ? new Date(drive.driveDate.seconds ? drive.driveDate.seconds * 1000 : drive.driveDate)
+> 176 |         : new Date(Date.now() + 14 * 86400000);
+      |                    ^^^^^^^^^^ Cannot call impure function
+  177 |       const daysRemaining = Math.max(1, Math.ceil((driveDate - Date.now()) / 86400000));
+  178 |
+  179 |       const res = await fetch("/api/drives/prep-plan", {                              react-hooks/purity
+  177:64  error    Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  175 |         ? new Date(drive.driveDate.seconds ? drive.driveDate.seconds * 1000 : drive.driveDate)
+  176 |         : new Date(Date.now() + 14 * 86400000);
+> 177 |       const daysRemaining = Math.max(1, Math.ceil((driveDate - Date.now()) / 86400000));
+      |                                                                ^^^^^^^^^^ Cannot call impure function
+  178 |
+  179 |       const res = await fetch("/api/drives/prep-plan", {
+  180 |         method: "POST",  react-hooks/purity
+  337:70  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        react/no-unescaped-entities
+  467:63  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        react/no-unescaped-entities
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\gd\battle\[roomId]\page.js
+  328:135  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  328:154  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\gd\page.js
+  152:9  warning  'aiContent' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\interview\page.js
+   34:10  warning  'selectedFeedbackTab' is assigned a value but never used         @typescript-eslint/no-unused-vars
+   38:10  warning  'browserSupport' is assigned a value but never used              @typescript-eslint/no-unused-vars
+   39:10  warning  'isSpeaking' is assigned a value but never used                  @typescript-eslint/no-unused-vars
+   40:10  warning  'autoSpeak' is assigned a value but never used                   @typescript-eslint/no-unused-vars
+   40:21  warning  'setAutoSpeak' is assigned a value but never used                @typescript-eslint/no-unused-vars
+   44:5   warning  'isConnecting' is assigned a value but never used                @typescript-eslint/no-unused-vars
+  424:55  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  837:71  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  837:74  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  837:77  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  837:82  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  837:85  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  837:94  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\jobs\page.js
+   21:10  warning  'expandedJob' is assigned a value but never used                                                              @typescript-eslint/no-unused-vars
+   21:23  warning  'setExpandedJob' is assigned a value but never used                                                           @typescript-eslint/no-unused-vars
+   22:10  warning  'expandedSection' is assigned a value but never used                                                          @typescript-eslint/no-unused-vars
+   22:27  warning  'setExpandedSection' is assigned a value but never used                                                       @typescript-eslint/no-unused-vars
+   86:6   warning  React Hook useEffect has a missing dependency: 'fetchJobs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  138:17  warning  'e' is defined but never used                                                                                 @typescript-eslint/no-unused-vars
+  750:23  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                               react/no-unescaped-entities
+  750:63  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                               react/no-unescaped-entities
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\join\[collegeId]\page.js
+   13:9   warning  'router' is assigned a value but never used                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+   31:16  warning  'e' is defined but never used                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  110:20  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  134:23  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\leaderboard\page.js
+   14:10  warning  'currentUser' is assigned a value but never used                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   27:66  warning  'index' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  122:6   warning  React Hook useEffect has missing dependencies: 'isBypassed', 'mockLeaderboard', and 'mockUserData'. Either include them or remove the dependency array                                                                                                                                   react-hooks/exhaustive-deps
+  124:9   warning  'getBadge' is assigned a value but never used                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  133:9   warning  'getScoreColor' is assigned a value but never used                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+  200:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  241:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\login\page.js
+  97:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\pdf-reader\page.js
+  24:10  warning  'isUploading' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  62:14  warning  'error' is defined but never used                 @typescript-eslint/no-unused-vars
+  95:14  warning  'error' is defined but never used                 @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\profile\page.js
+  141:6   warning  React Hook useEffect has missing dependencies: 'isBypassed' and 'mockUserData'. Either include them or remove the dependency array                                                                                                                                                       react-hooks/exhaustive-deps
+  173:14  warning  'err' is defined but never used                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+  273:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  464:17  warning  Expected an assignment or function call and instead saw an expression                                                                                                                                                                                                                    @typescript-eslint/no-unused-expressions
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\pulse\page.js
+    6:41   warning  'Zap' is defined but never used                                  @typescript-eslint/no-unused-vars
+    7:29   warning  'Quote' is defined but never used                                @typescript-eslint/no-unused-vars
+    7:55   warning  'Eye' is defined but never used                                  @typescript-eslint/no-unused-vars
+   25:9    warning  'ist' is assigned a value but never used                         @typescript-eslint/no-unused-vars
+  196:9    warning  'difficultyColor' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  247:104  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  337:85   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  337:111  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  359:83   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  359:109  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\recruiter\page.js
+    6:29  warning  'setDoc' is defined but never used                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+    7:3   warning  'deleteDoc' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+    7:14  warning  'addDoc' is defined but never used                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+    7:22  warning  'onSnapshot' is defined but never used                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+    8:3   warning  'query' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+    8:10  warning  'orderBy' is defined but never used                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+    8:19  warning  'serverTimestamp' is defined but never used                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+  396:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  509:27  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  716:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  897:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\skillpulse\page.js
+  169:75  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\smart-interview\page.js
+    16:7   warning  'buildHistory' is assigned a value but never used                                                                                            @typescript-eslint/no-unused-vars
+    33:10  warning  'errorMsg' is assigned a value but never used                                                                                                @typescript-eslint/no-unused-vars
+   172:14  warning  'err' is defined but never used                                                                                                              @typescript-eslint/no-unused-vars
+   208:46  warning  'onLangChange' is defined but never used                                                                                                     @typescript-eslint/no-unused-vars
+   313:9   warning  'router' is assigned a value but never used                                                                                                  @typescript-eslint/no-unused-vars
+   317:10  warning  'resumeText' is assigned a value but never used                                                                                              @typescript-eslint/no-unused-vars
+   323:23  warning  'mockUserData' is assigned a value but never used                                                                                            @typescript-eslint/no-unused-vars
+   345:10  warning  'recordingTimeLeft' is assigned a value but never used                                                                                       @typescript-eslint/no-unused-vars
+   346:10  warning  'recordingState' is assigned a value but never used                                                                                          @typescript-eslint/no-unused-vars
+   347:10  warning  'isVideoRecording' is assigned a value but never used                                                                                        @typescript-eslint/no-unused-vars
+   354:10  warning  'showEndModal' is assigned a value but never used                                                                                            @typescript-eslint/no-unused-vars
+   356:10  warning  'tooFewAnswers' is assigned a value but never used                                                                                           @typescript-eslint/no-unused-vars
+   358:21  warning  'setAutoSpeak' is assigned a value but never used                                                                                            @typescript-eslint/no-unused-vars
+   402:5   warning  'isConnecting' is assigned a value but never used                                                                                            @typescript-eslint/no-unused-vars
+   407:5   warning  'fillerWords' is assigned a value but never used                                                                                             @typescript-eslint/no-unused-vars
+   408:5   warning  'fillerWordCounts' is assigned a value but never used                                                                                        @typescript-eslint/no-unused-vars
+   409:5   warning  'recordingStatus' is assigned a value but never used                                                                                         @typescript-eslint/no-unused-vars
+   410:12  warning  'transcriptionError' is assigned a value but never used                                                                                      @typescript-eslint/no-unused-vars
+   411:5   warning  'speechLang' is assigned a value but never used                                                                                              @typescript-eslint/no-unused-vars
+   412:5   warning  'setLang' is assigned a value but never used                                                                                                 @typescript-eslint/no-unused-vars
+   413:5   warning  'voiceCommandDetected' is assigned a value but never used                                                                                    @typescript-eslint/no-unused-vars
+   414:5   warning  'resetVoiceCommand' is assigned a value but never used                                                                                       @typescript-eslint/no-unused-vars
+   418:5   warning  'exportTranscript' is assigned a value but never used                                                                                        @typescript-eslint/no-unused-vars
+   438:9   warning  'videoTranscript' is assigned a value but never used                                                                                         @typescript-eslint/no-unused-vars
+   808:6   warning  React Hook useEffect has missing dependencies: 'speakQuickly' and 'startRecordingState'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+   847:6   warning  React Hook useEffect has a missing dependency: 'stopRecordingState'. Either include it or remove the dependency array                        react-hooks/exhaustive-deps
+   873:6   warning  React Hook useEffect has a missing dependency: 'submitAnswer'. Either include it or remove the dependency array                              react-hooks/exhaustive-deps
+  1530:11  warning  'allDone' is assigned a value but never used                                                                                                 @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\tpo\onboarding\page.js
+    9:63   warning  'ChevronRight' is defined but never used                         @typescript-eslint/no-unused-vars
+    9:77   warning  'MapPin' is defined but never used                               @typescript-eslint/no-unused-vars
+    9:85   warning  'Calendar' is defined but never used                             @typescript-eslint/no-unused-vars
+    9:95   warning  'DollarSign' is defined but never used                           @typescript-eslint/no-unused-vars
+    9:107  warning  'Users' is defined but never used                                @typescript-eslint/no-unused-vars
+    9:125  warning  'ExternalLink' is defined but never used                         @typescript-eslint/no-unused-vars
+   19:10   warning  'collegeData' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+  252:64   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  253:20   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  439:72   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\app\tpo\page.js
+   36:5   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  211:14  warning  'e' is defined but never used                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  222:14  warning  'e' is defined but never used                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  265:14  warning  'e' is defined but never used                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  301:14  warning  'e' is defined but never used                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  322:14  warning  'e' is defined but never used                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\components\AppShell.js
+    9:3   warning  'Zap' is defined but never used                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+   41:10  warning  'sidebarOpen' is assigned a value but never used                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   41:23  warning  'setSidebarOpen' is assigned a value but never used                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+   42:10  warning  'searchQuery' is assigned a value but never used                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   42:23  warning  'setSearchQuery' is assigned a value but never used                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+   43:10  warning  'notifications' is assigned a value but never used                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   43:25  warning  'setNotifications' is assigned a value but never used                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   95:6   warning  React Hook useEffect has a missing dependency: 'mockUserData'. Either include it or remove the dependency array                                                                                                                                                                          react-hooks/exhaustive-deps
+  123:7   warning  Expected an assignment or function call and instead saw an expression                                                                                                                                                                                                                    @typescript-eslint/no-unused-expressions
+  148:7   warning  Expected an assignment or function call and instead saw an expression                                                                                                                                                                                                                    @typescript-eslint/no-unused-expressions
+  158:10  warning  'resumeScore' is assigned a value but never used                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+  247:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  259:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  286:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  391:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\components\CompanyLogo.js
+  32:5  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\components\OnboardingTour.js
+  20:46  error    Error: Cannot access variable before it is declared
+
+`startTour` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  18 |       const done = typeof window !== 'undefined' && localStorage.getItem('bridge_tour_done') === 'true';
+  19 |       if (!done) {
+> 20 |         setTimeout(() => { setStarted(true); startTour(null); }, 1800);
+     |                                              ^^^^^^^^^ `startTour` accessed before it is declared
+  21 |       }
+  22 |       return;
+  23 |     }
+
+   37 |   }, [isBypassed]);
+   38 |
+>  39 |   const startTour = (uid) => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  40 |     const driverObj = driver({
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  41 |       showProgress: true,
+      ΓÇª
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 138 |     driverObj.drive();
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 139 |   };
+      | ^^^^^ `startTour` is declared here
+  140 |
+  141 |   return null;
+  142 | }  react-hooks/immutability
+  37:6   warning  React Hook useEffect has a missing dependency: 'started'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/exhaustive-deps
+  55:13  warning  Expected an assignment or function call and instead saw an expression                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-expressions
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\components\SupportWidget.js
+  350:31  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                              react/no-unescaped-entities
+  403:31  warning  Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images  jsx-a11y/alt-text
+  481:65  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                              react/no-unescaped-entities
+  481:86  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                              react/no-unescaped-entities
+  489:33  warning  Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images  jsx-a11y/alt-text
+  600:31  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                              react/no-unescaped-entities
+  600:52  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                              react/no-unescaped-entities
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\components\TPOShell.js
+  7:31  warning  'Users' is defined but never used        @typescript-eslint/no-unused-vars
+  7:38  warning  'FileText' is defined but never used     @typescript-eslint/no-unused-vars
+  7:56  warning  'ChevronLeft' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\components\landing-v2\CategoryPositioning.js
+  90:9  warning  'backgroundY' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  91:9  warning  'glowOpacity' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\components\landing-v2\FooterCTA.js
+  81:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\components\landing-v2\Hero.js
+  83:9  warning  'gridY' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\components\landing-v2\Navbar.js
+  21:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  19 |
+  20 |   useEffect(() => {
+> 21 |     setMounted(true);
+     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  22 |     const handleScroll = () => {
+  23 |       setScrolled(window.scrollY > 20);
+  24 |     };  react-hooks/set-state-in-effect
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\components\landing-v2\PricingSection.js
+  12:10  warning  'spotPro' is assigned a value but never used              @typescript-eslint/no-unused-vars
+  20:9   warning  'handleMouseMovePro' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  24:9   warning  'handleMouseLeavePro' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\components\landing-v2\ThemeToggle.js
+  12:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  10 |
+  11 |   useEffect(() => {
+> 12 |     setMounted(true);
+     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  13 |   }, []);
+  14 |
+  15 |   if (!mounted) {  react-hooks/set-state-in-effect
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\components\onboarding\GettingStartedChecklist.js
+  75:59  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\components\onboarding\OnboardingModal.js
+   27:21   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  25 |   const [score, setScore] = useState(0);
+  26 |   useEffect(() => {
+> 27 |     if (!animate) { setScore(0); return; }
+     |                     ^^^^^^^^ Avoid calling setState() directly within an effect
+  28 |     let start = null;
+  29 |     const target = 520;
+  30 |     const duration = 1400;  react-hooks/set-state-in-effect
+  117:22   error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react/no-unescaped-entities
+  117:75   error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react/no-unescaped-entities
+  125:22   error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react/no-unescaped-entities
+  136:135  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react/no-unescaped-entities
+  157:74   error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react/no-unescaped-entities
+  214:74   error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react/no-unescaped-entities
+  215:63   error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react/no-unescaped-entities
+
+C:\Users\lenovo\.gemini\antigravity-ide\scratch\bridge-app\components\onboarding\ProductTour.js
+  2:44  warning  'useRef' is defined but never used  @typescript-eslint/no-unused-vars
+
+Γ£û 246 problems (64 errors, 182 warnings)
+
