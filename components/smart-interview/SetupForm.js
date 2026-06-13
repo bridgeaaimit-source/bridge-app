@@ -2,7 +2,7 @@
 
 import React, { useRef } from 'react';
 import { useInterviewState, useInterviewDispatch } from '@/context/InterviewContext';
-import { Upload, CheckCircle, FileText, Mic, Play, History, Lightbulb } from 'lucide-react';
+import { Upload, CheckCircle, FileText, Mic, Play, History, Lightbulb, Sliders } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 
 export default function SetupForm({ startInterview, loadFeedbackHistory, handleResumeUpload, loading }) {
@@ -35,6 +35,7 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
             <div className="lg:col-span-2 flex flex-col gap-6">
               
               {/* Setup form */}
+              {/* Card 1: Base Material */}
               <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(13,148,136,0.08)] border border-gray-100 overflow-hidden">
                 <div className="bg-[#CCFBF1] px-6 py-4">
                   <h2 className="font-bold text-[#0D9488] flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
@@ -64,7 +65,9 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
                     <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} className="hidden" id="resume-upload" />
                   </label>
                 </div>
+              </div>
 
+              {/* Card 2: Interview Parameters */}
               <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(13,148,136,0.08)] border border-gray-100 overflow-hidden">
                 <div className="bg-[#CCFBF1] px-6 py-4">
                   <h2 className="font-bold text-[#0D9488] flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
@@ -91,28 +94,32 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Interview Settings */}
-                <div className="mb-8">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Interview Settings</h2>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Interview Round</label>
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                        {['HR Round', 'Technical Round', 'Managerial Round', 'Final Round'].map((r) => (
-                          <button
-                            key={r}
-                            onClick={() => dispatch({ type: 'SET_CONFIG', payload: { round: r } })}
-                            className={`px-4 py-2 rounded-lg transition-colors ${
-                              state.config.round === r
-                                ? 'bg-[#F0FDFA] text-[#0D9488] font-semibold'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                          >
-                            {r}
-                          </button>
-                        ))}
-                      </div>
+              {/* Card 3: Interview Settings */}
+              <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(13,148,136,0.08)] border border-gray-100 overflow-hidden">
+                <div className="bg-[#CCFBF1] px-6 py-4">
+                  <h2 className="font-bold text-[#0D9488] flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
+                    <Sliders className="w-5 h-5" /> Interview Settings
+                  </h2>
+                </div>
+                <div className="p-6 flex flex-col gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Interview Round</label>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                      {['HR Round', 'Technical Round', 'Managerial Round', 'Final Round'].map((r) => (
+                        <button
+                          key={r}
+                          onClick={() => dispatch({ type: 'SET_CONFIG', payload: { round: r } })}
+                          className={`px-4 py-2 rounded-lg transition-colors ${
+                            state.config.round === r
+                              ? 'bg-[#F0FDFA] text-[#0D9488] font-semibold'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {r}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
@@ -128,10 +135,10 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
                           <span className="text-xs font-bold">{label}</span>
                         </button>
                       ))}
-                      </div>
                     </div>
                   </div>
                 </div>
+              </div>
 
               <div className="bg-[#F0FDFA] rounded-2xl p-6 border border-[#CCFBF1]">
                 <p className="font-bold text-[#0D9488] mb-3 flex items-center gap-2 text-sm">
@@ -176,7 +183,6 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
               </div>
             </div>
           </div>
-        </div>
       </AppShell>
     );
 }
