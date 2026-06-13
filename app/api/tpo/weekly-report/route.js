@@ -1,10 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 export async function POST(request) {
   try {
     const body = await request.json();
     const {
-      batchStats, topImprovers, upcomingDrives, previousWeekStats, collegeName
+      batchStats, topImprovers, upcomingDrives, previousWeekStats, collegeName, userId
     } = body;
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -47,6 +48,14 @@ Format as clean markdown with headers, bullet points, and bold text for emphasis
       max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }],
     });
+
+    await trackTokensServer(
+      userId || 'system',
+      'tpo',
+      message.usage?.input_tokens,
+      message.usage?.output_tokens,
+      'claude-sonnet-4-20250514'
+    );
 
     const report = message.content[0].text;
 

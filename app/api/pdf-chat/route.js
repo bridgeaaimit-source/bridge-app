@@ -53,7 +53,7 @@ export async function POST(request) {
     });
 
     // Track token usage
-    await trackTokensServer(user_id || userId || 'anonymous', 'pdf-chat', message.usage?.input_tokens, message.usage?.output_tokens);
+    await trackTokensServer(user_id || userId || 'anonymous', 'pdf-chat', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514');
 
     const answer = message.content[0].text;
 

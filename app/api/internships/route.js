@@ -63,7 +63,7 @@ Return ONLY valid JSON, no markdown:
     });
 
     // Track token usage
-    await trackTokensServer(uid || userId || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens);
+    await trackTokensServer(uid || userId || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514');
 
     const text = message.content[0].text
       .replace(/```json/g, '')
@@ -205,7 +205,7 @@ Return ONLY valid JSON:
     });
 
     // Track token usage
-    await trackTokensServer(uid || userId || 'anonymous', 'jobs', matchMsg.usage?.input_tokens, matchMsg.usage?.output_tokens);
+    await trackTokensServer(uid || userId || 'anonymous', 'jobs', matchMsg.usage?.input_tokens, matchMsg.usage?.output_tokens, 'claude-sonnet-4-20250514');
 
     const matchText = matchMsg.content[0].text
       .replace(/```json/g, '')
@@ -257,7 +257,7 @@ no JSON, no extra formatting.`;
     });
 
     // Track token usage
-    await trackTokensServer(uid || userId || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens);
+    await trackTokensServer(uid || userId || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514');
 
     return Response.json({
       cover_letter: message.content[0].text

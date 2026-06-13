@@ -136,7 +136,7 @@ Return ONLY valid JSON:
     });
 
     // Track token usage
-    await trackTokensServer(uid || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens);
+    await trackTokensServer(uid || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514');
 
     const text = message.content[0].text
       .replace(/```json/g, '')
@@ -191,7 +191,7 @@ Be honest and fair. A blank or minimal resume should score 10-30. A strong MBA/e
     });
 
     // Track token usage
-    await trackTokensServer(uid || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens);
+    await trackTokensServer(uid || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-haiku-4-5-20251001');
 
     const scoreText = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
     try {
@@ -420,7 +420,7 @@ IMPORTANT:
     });
 
     // Track token usage
-    await trackTokensServer(uid || 'anonymous', 'jobs', matchMsg.usage?.input_tokens, matchMsg.usage?.output_tokens);
+    await trackTokensServer(uid || 'anonymous', 'jobs', matchMsg.usage?.input_tokens, matchMsg.usage?.output_tokens, 'claude-sonnet-4-20250514');
 
     const matchText = matchMsg.content[0].text
       .replace(/```json/g, '')
@@ -538,7 +538,7 @@ Return ONLY valid JSON, no markdown:
     });
 
     // Track token usage
-    await trackTokensServer(uid || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens);
+    await trackTokensServer(uid || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514');
 
     const text = message.content[0].text
       .replace(/```json/g, '')

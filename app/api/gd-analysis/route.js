@@ -1,9 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 export async function POST(request) {
   try {
-    const { topic, points } = await request.json();
+    const { topic, points, userId, uid } = await request.json();
 
     if (!topic || !points || !Array.isArray(points) || points.length === 0) {
       return NextResponse.json({ error: 'Missing topic or points' }, { status: 400 });
@@ -63,6 +64,9 @@ Return ONLY valid JSON, no markdown:
       max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }]
     });
+
+    // Track token usage
+    trackTokensServer(uid || userId || 'anonymous', 'gd', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-3-5-sonnet-20241022').catch(() => {});
 
     const text = message.content[0].text
       .replace(/```json/g, '')

@@ -4,12 +4,12 @@ import { generateAndCacheTTS } from '@/lib/ttsGenerator';
 
 export async function POST(request) {
   try {
-    const { text } = await request.json();
+    const { text, userId } = await request.json();
     if (!text) {
       return new Response(JSON.stringify({ error: "No text provided" }), { status: 400 });
     }
 
-    const { buffer, contentType } = await generateAndCacheTTS(text);
+    const { buffer, contentType } = await generateAndCacheTTS(text, userId || 'anonymous');
 
     return new Response(buffer, {
       status: 200,

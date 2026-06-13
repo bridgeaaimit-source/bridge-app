@@ -136,7 +136,7 @@ export async function POST(request) {
       });
 
       // Track token usage
-      await trackTokensServer(userId || 'anonymous', 'resume', message.usage?.input_tokens, message.usage?.output_tokens);
+      await trackTokensServer(userId || 'anonymous', 'resume', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-5');
 
       const raw = message.content[0].text
         .replace(/```json/gi, '')

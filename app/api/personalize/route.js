@@ -32,7 +32,7 @@ Be brutally specific. Mention their actual skills, city, domain. No generic advi
     });
 
     // Track token usage
-    await trackTokensServer(userId || "anonymous", "career-intel", message.usage?.input_tokens, message.usage?.output_tokens);
+    await trackTokensServer(userId || "anonymous", "personalize", message.usage?.input_tokens, message.usage?.output_tokens, "claude-haiku-4-5");
 
     const raw = message.content[0].text.trim();
     const jsonStart = raw.indexOf("{");
