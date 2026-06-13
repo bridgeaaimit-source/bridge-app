@@ -1,9 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { studentScores, company, driveDate, daysRemaining } = body;
+    const { studentScores, company, driveDate, daysRemaining, userId, uid } = body;
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -60,6 +61,9 @@ Maximum ${Math.min(daysRemaining, 14)} days. Be specific to ${company}'s known i
       max_tokens: 3000,
       messages: [{ role: 'user', content: prompt }],
     });
+
+    // Track token usage
+    trackTokensServer(uid || userId || 'anonymous', 'coach', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514').catch(() => {});
 
     const text = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
     const jsonMatch = text.match(/\[[\s\S]*\]/);

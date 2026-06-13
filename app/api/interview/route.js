@@ -62,7 +62,7 @@ Now generate the questions:`;
         });
 
         // Track token usage
-        await trackTokensServer(uid || 'anonymous', 'interview', message.usage?.input_tokens, message.usage?.output_tokens);
+        await trackTokensServer(uid || 'anonymous', 'interview', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-haiku-4-5-20251001');
 
         const text = message.content[0].text
           .replace(/```json/g, '')
@@ -227,7 +227,7 @@ Return ONLY valid JSON, no markdown, no extra text:
         });
 
         // Track token usage
-        await trackTokensServer(uid || 'anonymous', 'interview', message.usage?.input_tokens, message.usage?.output_tokens);
+        await trackTokensServer(uid || 'anonymous', 'interview', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-haiku-4-5-20251001');
 
         const text = message.content[0].text
           .replace(/```json/g, '')

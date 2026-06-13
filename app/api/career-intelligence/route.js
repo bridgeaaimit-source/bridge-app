@@ -277,7 +277,7 @@ IMPORTANT:
     });
 
     // Track token usage
-    await trackTokensServer(userId || 'anonymous', 'career-intel', message.usage?.input_tokens, message.usage?.output_tokens);
+    await trackTokensServer(userId || 'anonymous', 'career-intelligence', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514');
 
     const responseText = message.content[0].text
       .replace(/```json/g, '')

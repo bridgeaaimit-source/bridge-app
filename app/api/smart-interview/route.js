@@ -246,7 +246,7 @@ Return ONLY valid JSON:
         );
       }
 
-      await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
+      await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-haiku-4-5-20251001');
 
       const text = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -260,7 +260,7 @@ Return ONLY valid JSON:
         
         // 🚀 PREFETCH: Generate TTS immediately in background
         if (parsed.question) {
-          generateAndCacheTTS(parsed.question).catch(err => console.error("Prefetch TTS failed:", err));
+          generateAndCacheTTS(parsed.question, user_id).catch(err => console.error("Prefetch TTS failed:", err));
         }
 
         return Response.json(parsed);
@@ -548,7 +548,7 @@ Return ONLY valid JSON (no markdown, no explanation):
         );
       }
 
-      await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
+      await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-haiku-4-5-20251001');
 
       const text = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -691,7 +691,7 @@ Return ONLY valid JSON (no markdown, no explanation):
     
     // 🚀 PREFETCH: Generate TTS immediately in background for next question
     if (result.question) {
-      generateAndCacheTTS(result.question).catch(err => console.error("Prefetch TTS failed:", err));
+      generateAndCacheTTS(result.question, user_id).catch(err => console.error("Prefetch TTS failed:", err));
     }
 
     return Response.json(result);
@@ -793,7 +793,7 @@ Return ONLY valid JSON:
         })
       );
 
-      await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens);
+      await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-haiku-4-5-20251001');
 
       const text = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
       const jsonMatch = text.match(/\{[\s\S]*\}/);

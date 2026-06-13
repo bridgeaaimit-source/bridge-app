@@ -17,21 +17,21 @@ import AppShell from '@/components/AppShell';
 import toast from 'react-hot-toast';
 import Script from 'next/script';
 
-// ── Cost constants ──
-const COST_PER_TOKEN_INR = 0.00075;
-
 const FEATURE_META = {
   interview:         { label: 'Mock Interview',      icon: Mic,           gradient: 'from-rose-500 to-pink-600',    bg: 'bg-rose-50',    text: 'text-rose-700',    border: 'border-rose-200' },
   'smart-interview': { label: 'Smart Interview',     icon: Brain,         gradient: 'from-blue-500 to-indigo-600',  bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200' },
   gd:                { label: 'GD Practice',         icon: MessageSquare, gradient: 'from-emerald-500 to-green-600',bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
   coach:             { label: 'Answer Coach',        icon: Star,          gradient: 'from-amber-500 to-yellow-600', bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200' },
   'pdf-chat':        { label: 'PDF Reader',          icon: BookOpen,      gradient: 'from-pink-500 to-fuchsia-600', bg: 'bg-pink-50',    text: 'text-pink-700',    border: 'border-pink-200' },
-  'career-intel':    { label: 'Career Intel',        icon: Search,        gradient: 'from-cyan-500 to-teal-600',    bg: 'bg-cyan-50',    text: 'text-cyan-700',    border: 'border-cyan-200' },
+  personalize:       { label: 'Personalize',         icon: Search,        gradient: 'from-cyan-500 to-teal-600',    bg: 'bg-cyan-50',    text: 'text-cyan-700',    border: 'border-cyan-200' },
+  'career-intelligence': { label: 'Career Intel',    icon: Search,        gradient: 'from-cyan-500 to-teal-600',    bg: 'bg-cyan-50',    text: 'text-cyan-700',    border: 'border-cyan-200' },
   news:              { label: 'PULSE / News',        icon: FileText,      gradient: 'from-orange-500 to-red-500',   bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-200' },
   recruiter:         { label: 'Recruiter Match',     icon: Users,         gradient: 'from-violet-500 to-purple-600',bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-200' },
   resume:            { label: 'Resume Parse',        icon: FileText,      gradient: 'from-slate-500 to-gray-600',   bg: 'bg-slate-50',   text: 'text-slate-700',   border: 'border-slate-200' },
   jobs:              { label: 'Jobs / Internships',  icon: Search,        gradient: 'from-lime-500 to-green-600',   bg: 'bg-lime-50',    text: 'text-lime-700',    border: 'border-lime-200' },
   aptitude:          { label: 'Aptitude Insight',    icon: Brain,         gradient: 'from-sky-500 to-blue-600',     bg: 'bg-sky-50',     text: 'text-sky-700',     border: 'border-sky-200' },
+  tpo:               { label: 'TPO Weekly Report',   icon: ShieldCheck,   gradient: 'from-violet-500 to-purple-600',bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-200' },
+  cron:              { label: 'Cron Refresh',        icon: Activity,      gradient: 'from-slate-500 to-gray-600',   bg: 'bg-slate-50',   text: 'text-slate-700',   border: 'border-slate-200' },
 };
 
 const CHART_PALETTE = [
@@ -176,10 +176,11 @@ export default function TokenDashboard() {
               callbacks: {
                 label: (ctx) => {
                   const val = ctx.raw;
+                  const dayStat = daily[ctx.dataIndex];
                   return [
                     `${val.toLocaleString()} tokens`,
-                    `₹${(val * COST_PER_TOKEN_INR).toFixed(2)}`,
-                    `${daily[ctx.dataIndex]?.users || 0} users`
+                    `₹${(dayStat?.totalCostINR || 0).toFixed(2)}`,
+                    `${dayStat?.users || 0} users`
                   ];
                 }
               }
@@ -200,7 +201,9 @@ export default function TokenDashboard() {
     if (activeTab === 'overview' && trendLineRef.current) {
       const ctx = trendLineRef.current.getContext('2d');
       let cumulative = 0;
+      let cumulativeCost = 0;
       const cumulativeData = daily.map(d => { cumulative += d.total; return cumulative; });
+      const cumulativeCostData = daily.map(d => { cumulativeCost += d.totalCostINR; return cumulativeCost; });
       trendLineInstance.current = new Chart(ctx, {
         type: 'line',
         data: {
@@ -227,7 +230,11 @@ export default function TokenDashboard() {
               padding: 10,
               cornerRadius: 8,
               callbacks: {
-                label: (ctx) => `${ctx.raw.toLocaleString()} total tokens (₹${(ctx.raw * COST_PER_TOKEN_INR).toFixed(2)})`
+                label: (ctx) => {
+                  const val = ctx.raw;
+                  const costVal = cumulativeCostData[ctx.dataIndex];
+                  return `${val.toLocaleString()} total tokens (₹${(costVal || 0).toFixed(2)})`;
+                }
               }
             }
           },
@@ -274,7 +281,8 @@ export default function TokenDashboard() {
                 label: (ctx) => {
                   const val = ctx.raw;
                   const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                  return ` ${val.toLocaleString()} tokens (${((val / total) * 100).toFixed(1)}%) · ₹${(val * COST_PER_TOKEN_INR).toFixed(2)}`;
+                  const feat = features[ctx.dataIndex];
+                  return ` ${val.toLocaleString()} tokens (${((val / total) * 100).toFixed(1)}%) · ₹${feat?.costINR || '0.00'}`;
                 }
               }
             }
@@ -310,7 +318,10 @@ export default function TokenDashboard() {
               padding: 10,
               cornerRadius: 8,
               callbacks: {
-                label: (ctx) => ` ${ctx.raw.toLocaleString()} tokens · ₹${(ctx.raw * COST_PER_TOKEN_INR).toFixed(2)}`
+                label: (ctx) => {
+                  const feat = sortedFeatures[ctx.dataIndex];
+                  return ` ${ctx.raw.toLocaleString()} tokens · ₹${feat?.costINR || '0.00'}`;
+                }
               }
             }
           },
@@ -355,7 +366,7 @@ export default function TokenDashboard() {
                   const u = top10[ctx.dataIndex];
                   return [
                     ` ${ctx.raw.toLocaleString()} tokens`,
-                    ` ₹${(ctx.raw * COST_PER_TOKEN_INR).toFixed(2)}`,
+                    ` ₹${parseFloat(u.totalCostINR).toFixed(2)}`,
                     ` ${u.days} active days`
                   ];
                 }
@@ -376,7 +387,7 @@ export default function TokenDashboard() {
 
   // ── Helpers ──
   const fmt = (n) => n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + 'M' : n >= 1_000 ? (n / 1_000).toFixed(1) + 'K' : String(n);
-  const cost = (n) => '₹' + (n * COST_PER_TOKEN_INR).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  const cost = (n) => '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
   const pct = (n, total) => total > 0 ? ((n / total) * 100).toFixed(1) : '0.0';
 
   const exportCSV = () => {
@@ -390,7 +401,7 @@ export default function TokenDashboard() {
         u.name,
         u.email,
         u.total,
-        (u.total * COST_PER_TOKEN_INR).toFixed(2),
+        u.totalCostINR,
         u.days,
         ...featureKeys.map(f => u.features?.[f] || 0)
       ])
@@ -561,17 +572,11 @@ export default function TokenDashboard() {
             {/* ─── KPI Cards ─── */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
               {[
-                { label: 'Total Tokens', value: fmt(summary.totalTokens || 0), sub: cost(summary.totalTokens || 0), icon: BarChart3, iconBg: 'bg-teal-100 text-teal-600' },
-                { label: 'Active Users', value: summary.totalUsers || 0, sub: `in ${summary.period || 7}d`, icon: Users, iconBg: 'bg-blue-100 text-blue-600' },
-                { label: 'Avg / User', value: fmt(summary.avgPerUser || 0), sub: cost(summary.avgPerUser || 0), icon: TrendingUp, iconBg: 'bg-emerald-100 text-emerald-600' },
-                { label: "Today", value: fmt(summary.todayTokens || 0), sub: cost(summary.todayTokens || 0), icon: Zap, iconBg: 'bg-orange-100 text-orange-600' },
-                {
-                  label: 'Trend',
-                  value: `${isUpTrend ? '+' : ''}${trendPct}%`,
-                  sub: isUpTrend ? 'vs prev period' : 'vs prev period',
-                  icon: isUpTrend ? ArrowUpRight : ArrowDownRight,
-                  iconBg: isUpTrend ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
-                },
+                { label: 'Total AI Cost', value: `₹${parseFloat(summary.totalCostINR || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, sub: `${summary.exactDaysCount}d exact / ${summary.estimatedDaysCount}d est.`, icon: DollarSign, iconBg: 'bg-teal-100 text-teal-600' },
+                { label: 'LLM Cost', value: `₹${parseFloat(summary.totalLLMCostINR || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, sub: `${fmt(summary.totalTokens || 0)} tokens`, icon: BarChart3, iconBg: 'bg-blue-100 text-blue-600' },
+                { label: 'Voice Cost', value: `₹${(parseFloat(summary.totalTTSCostINR || 0) + parseFloat(summary.totalSTTCostINR || 0)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, sub: `${fmt(analyticsData.voiceSummary?.ttsChars || 0)} chars`, icon: Mic, iconBg: 'bg-emerald-100 text-emerald-600' },
+                { label: 'Active Users', value: summary.totalUsers || 0, sub: `in ${summary.period || 7}d`, icon: Users, iconBg: 'bg-orange-100 text-orange-600' },
+                { label: 'Avg / User', value: `₹${(parseFloat(summary.totalCostINR || 0) / Math.max(summary.totalUsers || 1, 1)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, sub: `average cost`, icon: TrendingUp, iconBg: 'bg-indigo-100 text-indigo-600' },
               ].map(({ label, value, sub, icon: Icon, iconBg }) => (
                 <div key={label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${iconBg}`}>
@@ -653,7 +658,7 @@ export default function TokenDashboard() {
                 </div>
 
                 {/* Feature mini cards */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
                   {features.map(f => {
                     const meta = FEATURE_META[f.feature] || { label: f.feature, bg: 'bg-gray-50', text: 'text-gray-700', gradient: 'from-gray-500 to-gray-600', border: 'border-gray-200' };
                     return (
@@ -662,13 +667,61 @@ export default function TokenDashboard() {
                           {meta.label}
                         </div>
                         <div className="text-2xl font-bold text-gray-900">{fmt(f.tokens)}</div>
-                        <div className="text-xs text-gray-500 mt-1">{f.percentage}% · ₹{f.costINR}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {f.percentage}% · ₹{f.costINR}
+                        </div>
                         <div className="w-full bg-gray-100 rounded-full h-2 mt-3">
                           <div className={`h-2 rounded-full bg-gradient-to-r ${meta.gradient}`} style={{ width: `${Math.max(parseFloat(f.percentage), 2)}%` }} />
                         </div>
                       </div>
                     );
                   })}
+                </div>
+
+                {/* Voice Cost Details Section */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                    <Mic className="w-5 h-5 text-[#0D9488]" />
+                    Voice Services Cost Details
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* TTS Card */}
+                    <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700">
+                          Text-to-Speech (TTS)
+                        </span>
+                        <span className="text-xs text-gray-400">Gemini / ElevenLabs</span>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        ₹{parseFloat(analyticsData.voiceSummary?.ttsCostINR || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Total Characters: {(analyticsData.voiceSummary?.ttsChars || 0).toLocaleString('en-IN')} chars
+                      </div>
+                      <div className="text-[11px] text-gray-400 mt-2">
+                        Priced at ₹47.50 / 1 Million characters
+                      </div>
+                    </div>
+                    {/* STT Card */}
+                    <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">
+                          Speech-to-Text (STT)
+                        </span>
+                        <span className="text-xs text-gray-400">AssemblyAI</span>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        ₹{parseFloat(analyticsData.voiceSummary?.sttCostINR || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Total Audio Duration: {(analyticsData.voiceSummary?.sttSeconds || 0).toLocaleString('en-IN')} seconds
+                      </div>
+                      <div className="text-[11px] text-gray-400 mt-2">
+                        Priced dynamically based on provider (Batch vs Real-time)
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </>
             )}
@@ -729,8 +782,17 @@ export default function TokenDashboard() {
                               <div className="text-base font-bold text-gray-900">{fmt(f.tokens)}</div>
                               <div className="text-xs text-gray-400">{f.percentage}%</div>
                             </div>
-                            <div className="text-right shrink-0 w-20">
-                              <div className="text-sm font-semibold text-[#0D9488]">₹{f.costINR}</div>
+                            <div className="text-right shrink-0 w-36 hidden md:block">
+                              <div className="text-xs font-mono font-medium text-gray-600 truncate">{f.modelSlug || '—'}</div>
+                              <div className="text-[10px] text-gray-400 font-semibold uppercase">{f.vendor || 'Anthropic'}</div>
+                            </div>
+                            <div className="text-right shrink-0 w-24">
+                              <div className="text-sm font-semibold text-[#0D9488] flex items-center justify-end gap-1">
+                                {f.isEstimated && (
+                                  <span className="text-[9px] bg-amber-50 text-amber-600 border border-amber-200 px-1 rounded font-medium shrink-0">Est.</span>
+                                )}
+                                ₹{f.costINR}
+                              </div>
                               <div className="text-xs text-gray-400">cost</div>
                             </div>
                           </div>
@@ -805,7 +867,7 @@ export default function TokenDashboard() {
                                 </div>
                               </td>
                               <td className="px-5 py-3.5 text-right font-bold text-gray-900">{fmt(user.total)}</td>
-                              <td className="px-5 py-3.5 text-right text-[#0D9488] font-semibold">{cost(user.total)}</td>
+                              <td className="px-5 py-3.5 text-right text-[#0D9488] font-semibold">{cost(user.totalCostINR)}</td>
                               <td className="px-5 py-3.5 text-right text-gray-500">{user.days}</td>
                               <td className="px-5 py-3.5">
                                 <div className="flex flex-wrap gap-1.5">
@@ -862,7 +924,7 @@ export default function TokenDashboard() {
                         </div>
                         <div className="text-right shrink-0">
                           <div className="font-bold text-gray-900">{fmt(stat.total)} <span className="text-xs font-normal text-gray-400">tokens</span></div>
-                          <div className="text-xs text-[#0D9488] font-semibold mt-0.5">{cost(stat.total)}</div>
+                          <div className="text-xs text-[#0D9488] font-semibold mt-0.5">{cost(stat.totalCostINR)}</div>
                           <div className="text-[10px] text-gray-400">{dayPct}% of total</div>
                         </div>
                       </div>

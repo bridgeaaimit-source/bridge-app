@@ -23,7 +23,7 @@ export async function POST(request) {
     });
 
     // Track token usage
-    await trackTokensServer(uid || userId || 'anonymous', 'aptitude', message.usage?.input_tokens, message.usage?.output_tokens);
+    await trackTokensServer(uid || userId || 'anonymous', 'aptitude', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514');
 
     const insight = message.content[0].text.trim();
     return Response.json({ insight });

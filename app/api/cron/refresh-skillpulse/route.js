@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { trackTokensServer } from "@/lib/tokenTrackerServer";
 
 const WEEKLY_PROMPT = `You are a career market analyst for India's tech job market.
 Based on current hiring trends in May 2026, generate a comprehensive weekly market intelligence report for Indian college students.
@@ -47,6 +48,14 @@ export async function GET(request) {
       max_tokens: 4096,
       messages: [{ role: "user", content: WEEKLY_PROMPT }],
     });
+
+    await trackTokensServer(
+      "system",
+      "cron",
+      message.usage?.input_tokens,
+      message.usage?.output_tokens,
+      "claude-opus-4-5"
+    );
 
     const raw = message.content[0].text.trim();
     const jsonStart = raw.indexOf("{");

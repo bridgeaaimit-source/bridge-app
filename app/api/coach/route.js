@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 const MODEL = "claude-sonnet-4-20250514";
 
 function jsonResponse(data, status = 200) {
@@ -52,7 +53,7 @@ async function callClaudeJSON({ systemPrompt, userPrompt }) {
     console.log('Coach API Cleaned Response:', cleanResponse);
     
     const result = JSON.parse(cleanResponse);
-    return result;
+    return { result, usage: message.usage };
   } catch (error) {
     console.error('Coach API Error:', error);
     throw error;
@@ -122,7 +123,7 @@ export async function POST(request) {
 
   try {
     if (mode === "rewrite") {
-      const result = await callClaudeJSON({
+      const { result, usage } = await callClaudeJSON({
         systemPrompt: "You are an expert interview coach. Rewrite interview answers to be more professional, structured, and impactful. Use clear language, add specific examples where appropriate, and maintain original intent. Evaluate the original answer and return strict JSON with 'output', 'clarity', 'fluency', and 'structure' fields.",
         userPrompt: `Rewrite this interview answer to make it more professional and impactful:
 
@@ -143,7 +144,10 @@ Return JSON:
   "structure": 6 // Score 1-10 on original answer structure
 }`,
       });
-      
+
+      // Track token usage
+      trackTokensServer(body.userId || body.uid || 'anonymous', 'coach', usage?.input_tokens, usage?.output_tokens, MODEL).catch(() => {});
+
       const mockFallback = getMockOutput(mode, text);
       return jsonResponse({
         output: typeof result?.output === "string" ? result.output : mockFallback.output,
@@ -154,7 +158,7 @@ Return JSON:
     }
 
     if (mode === "hinglish_to_english") {
-      const result = await callClaudeJSON({
+      const { result, usage: usage2 } = await callClaudeJSON({
         systemPrompt: "You are a language expert specializing in converting Hinglish (Hindi + English) to professional English. Maintain meaning while improving grammar, vocabulary, and professionalism. Evaluate the original text and return strict JSON with 'output', 'clarity', 'fluency', and 'structure' fields.",
         userPrompt: `Convert this Hinglish text to fluent professional English:
 
@@ -175,7 +179,10 @@ Return JSON:
   "structure": 5 // Score 1-10 on original text structure
 }`,
       });
-      
+
+      // Track token usage
+      trackTokensServer(body.userId || body.uid || 'anonymous', 'coach', usage2?.input_tokens, usage2?.output_tokens, MODEL).catch(() => {});
+
       const mockFallback = getMockOutput(mode, text);
       return jsonResponse({
         output: typeof result?.output === "string" ? result.output : mockFallback.output,

@@ -1,9 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
+import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 export async function POST(request) {
   try {
-    const { section, company, difficulty, exclude = [] } = await request.json();
+    const { section, company, difficulty, exclude = [], userId, uid } = await request.json();
 
     if (!section || !company) {
       return NextResponse.json({ error: 'Missing section or company' }, { status: 400 });
@@ -42,6 +43,9 @@ Return ONLY a valid JSON array of objects (no markdown, no backticks, no comment
       max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }]
     });
+
+    // Track token usage
+    trackTokensServer(uid || userId || 'anonymous', 'aptitude', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-3-5-sonnet-20241022').catch(() => {});
 
     const text = message.content[0].text
       .replace(/```json/g, '')
