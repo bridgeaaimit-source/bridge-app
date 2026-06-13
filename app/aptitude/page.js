@@ -302,8 +302,21 @@ export default function AptitudePage() {
 
   // Dashboard Loader
   const loadDashboardData = async () => {
+    // Bypass mode: use mock dashboard data instead of Firestore
+    if (isBypassed) {
+      setBestScore(80);
+      setTotalXP(500);
+      setStreakCount(3);
+      setTopScorers([
+        { name: "Test Student", college: "Test College", score: 750, xp: 500, photo: null },
+        { name: "Alice Johnson", college: "MIT", score: 920, xp: 800, photo: null },
+        { name: "Bob Smith", college: "Stanford", score: 680, xp: 400, photo: null },
+      ]);
+      return;
+    }
+
     try {
-      const uid = isBypassed ? "bypass-user" : user.uid;
+      const uid = user.uid;
       const userRef = doc(db, "users", uid);
       const snap = await getDoc(userRef);
       if (snap.exists()) {
@@ -342,7 +355,41 @@ export default function AptitudePage() {
   const loadDailyChallenge = async () => {
     try {
       const todayStr = new Date().toISOString().split('T')[0];
-      const uid = isBypassed ? "bypass-user" : user.uid;
+
+      // Bypass mode: load daily challenge from static data only, skip Firestore reads
+      if (isBypassed) {
+        let todayChallenge = null;
+        try {
+          const { loadAllStaticQuestions } = await import('@/lib/questionsData');
+          const allStatic = loadAllStaticQuestions();
+          const randomQ = allStatic[Math.floor(Math.random() * allStatic.length)];
+          todayChallenge = {
+            id: `static-daily-${todayStr}`,
+            question: randomQ.question,
+            options: randomQ.options,
+            correct: randomQ.correct,
+            explanation: randomQ.explanation,
+            topic: randomQ.topic,
+            section: randomQ.section,
+            difficulty: randomQ.difficulty,
+            date: todayStr
+          };
+        } catch (staticErr) {
+          console.error("Failed to load static daily challenge fallback:", staticErr);
+        }
+        setDailyChallenge(todayChallenge);
+        setDailyStatus("unattempted");
+        // Mock streak calendar — show 3 of last 7 days completed
+        const last7Days = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          return d.toISOString().split('T')[0];
+        }).reverse();
+        setStreakCalendar(last7Days.map((date, i) => ({ date, completed: i >= 4 })));
+        return;
+      }
+
+      const uid = user.uid;
 
       // 1. Fetch or create Daily Challenge
       const challengeRef = doc(db, 'dailyChallenges', todayStr);
@@ -636,7 +683,8 @@ export default function AptitudePage() {
       const todayStr = new Date().toISOString().split('T')[0];
       const uid = isBypassed ? "bypass-user" : user?.uid;
       
-      if (uid) {
+      // Skip Firestore writes in bypass mode
+      if (uid && !isBypassed) {
         try {
           const subRef = doc(db, 'dailyChallengeSubmissions', `${uid}_${todayStr}`);
           await setDoc(subRef, {
@@ -717,47 +765,49 @@ export default function AptitudePage() {
       confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
     }
 
-    // Save Score & updates to Firestore
-    try {
-      const uid = isBypassed ? "bypass-user" : user?.uid;
-      if (uid) {
-        await addDoc(collection(db, "aptitudeScores"), {
-          uid,
-          name: user?.displayName || "Test User",
-          company: selectedCompanyKey,
-          score: resultData.score,
-          correct: correctCount,
-          wrong: wrongCount,
-          accuracy,
-          xpEarned: xp,
-          timeTaken,
-          sectionsAttempted: Object.keys(COMPANIES[selectedCompanyKey].sections),
-          completedAt: serverTimestamp(),
-        });
-
-        // Update User Doc Profile
-        const userRef = doc(db, "users", uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          const userData = userSnap.data();
-          const newBest = Math.max(userData.aptitudeBestScore || 0, resultData.score);
-          const newXP = (userData.totalXP || 0) + xp;
-          const interviewAvg = userData.avgScore || 0;
-          const userStreak = userData.streak || 0;
-          const bridgeScore = Math.min(1000, Math.round(newBest * 0.3 + interviewAvg * 0.5 + userStreak * 2));
-          
-          await updateDoc(userRef, {
-            aptitudeBestScore: newBest,
-            totalXP: newXP,
-            bridgeScore,
-            lastAptitudeDate: new Date().toISOString(),
+    // Save Score & updates to Firestore (skip in bypass mode)
+    if (!isBypassed) {
+      try {
+        const uid = user?.uid;
+        if (uid) {
+          await addDoc(collection(db, "aptitudeScores"), {
+            uid,
+            name: user?.displayName || "Test User",
+            company: selectedCompanyKey,
+            score: resultData.score,
+            correct: correctCount,
+            wrong: wrongCount,
+            accuracy,
+            xpEarned: xp,
+            timeTaken,
+            sectionsAttempted: Object.keys(COMPANIES[selectedCompanyKey].sections),
+            completedAt: serverTimestamp(),
           });
-          setBestScore(newBest);
-          setTotalXP(newXP);
+
+          // Update User Doc Profile
+          const userRef = doc(db, "users", uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            const newBest = Math.max(userData.aptitudeBestScore || 0, resultData.score);
+            const newXP = (userData.totalXP || 0) + xp;
+            const interviewAvg = userData.avgScore || 0;
+            const userStreak = userData.streak || 0;
+            const bridgeScore = Math.min(1000, Math.round(newBest * 0.3 + interviewAvg * 0.5 + userStreak * 2));
+            
+            await updateDoc(userRef, {
+              aptitudeBestScore: newBest,
+              totalXP: newXP,
+              bridgeScore,
+              lastAptitudeDate: new Date().toISOString(),
+            });
+            setBestScore(newBest);
+            setTotalXP(newXP);
+          }
         }
+      } catch (e) {
+        console.error("Score save error:", e);
       }
-    } catch (e) {
-      console.error("Score save error:", e);
     }
 
     // Fetch AI insights from Claude API

@@ -1,0 +1,317 @@
+
+=== UNUSED EXPORTED UTILITY FUNCTIONS/VARIABLES IN LIB/ ===
+
+=== UNUSED IMPORTS WITHIN FILES ===
+Unused Import in app/admin/support/page.js: Users
+Unused Import in app/admin/token-dashboard/page.js: Clock
+Unused Import in app/admin/token-dashboard/page.js: DollarSign
+Unused Import in app/admin/token-dashboard/page.js: ChevronDown
+Unused Import in app/admin/token-dashboard/page.js: Filter
+Unused Import in app/admin/token-dashboard/page.js: Eye
+Unused Import in app/api/interview/route.js: arrayUnion
+Unused Import in app/api/interview/route.js: adminDb
+Unused Import in app/api/news/route.js: adminDb
+Unused Import in app/api/pdf-chat/route.js: adminDb
+Unused Import in app/api/smart-interview/route.js: adminDb
+Unused Import in app/api/support/create-ticket/route.js: twilio
+Unused Import in app/aptitude/page.js: orderBy
+Unused Import in app/aptitude/page.js: where
+Unused Import in app/aptitude/page.js: Zap
+Unused Import in app/aptitude/page.js: BarChart2
+Unused Import in app/aptitude/page.js: RotateCcw
+Unused Import in app/aptitude/page.js: Shield
+Unused Import in app/aptitude/page.js: RefreshCw
+Unused Import in app/aptitude/page.js: AlertCircle
+Unused Import in app/career-gps/page.js: useRef
+Unused Import in app/career-gps/page.js: TrendingUp
+Unused Import in app/coach/page.js: useEffect
+Unused Import in app/dashboard/page.js: Home
+Unused Import in app/dashboard/page.js: Bell
+Unused Import in app/dashboard/page.js: Briefcase
+Unused Import in app/dashboard/page.js: TrendingUp
+Unused Import in app/dashboard/page.js: Calendar
+Unused Import in app/dashboard/page.js: ArrowUp
+Unused Import in app/dashboard/page.js: ArrowDown
+Unused Import in app/dashboard/page.js: Clock
+Unused Import in app/dashboard/page.js: Award
+Unused Import in app/dashboard/page.js: toast
+Unused Import in app/dashboard/page.js: where
+Unused Import in app/dashboard/page.js: motion
+Unused Import in app/dashboard/page.js: InfoTooltip
+Unused Import in app/device-test/page.js: Monitor
+Unused Import in app/device-test/page.js: Headphones
+Unused Import in app/drives/page.js: DollarSign
+Unused Import in app/flyer/page.js: useEffect
+Unused Import in app/gd/battle/[roomId]/page.js: Award
+Unused Import in app/gd/page.js: Clock
+Unused Import in app/interview/page.js: useMemo
+Unused Import in app/interview/page.js: ChevronLeft
+Unused Import in app/interview/page.js: Send
+Unused Import in app/interview/page.js: Home
+Unused Import in app/interview/page.js: Zap
+Unused Import in app/interview/page.js: Link
+Unused Import in app/jobs/page.js: ChevronLeft
+Unused Import in app/jobs/page.js: TrendingUp
+Unused Import in app/jobs/page.js: Users
+Unused Import in app/jobs/page.js: Lock
+Unused Import in app/jobs/page.js: XCircle
+Unused Import in app/jobs/page.js: Star
+Unused Import in app/jobs/page.js: Send
+Unused Import in app/jobs/page.js: FileText
+Unused Import in app/jobs/page.js: Calendar
+Unused Import in app/layout.tsx: type { Metadata }
+Unused Import in app/layout.tsx: "./globals.css";
+import { Toaster }
+Unused Import in app/layout.tsx: AppShell
+Unused Import in app/leaderboard/page.js: Home
+Unused Import in app/leaderboard/page.js: Mic
+Unused Import in app/leaderboard/page.js: Zap
+Unused Import in app/leaderboard/page.js: Trophy
+Unused Import in app/leaderboard/page.js: User
+Unused Import in app/login/page.js: Users
+Unused Import in app/profile/page.js: Home
+Unused Import in app/profile/page.js: Mic
+Unused Import in app/profile/page.js: Zap
+Unused Import in app/profile/page.js: Trophy
+Unused Import in app/profile/page.js: Target
+Unused Import in app/profile/page.js: Award
+Unused Import in app/profile/page.js: TrendingUp
+Unused Import in app/profile/page.js: Calendar
+Unused Import in app/profile/page.js: Mail
+Unused Import in app/pulse/page.js: Zap
+Unused Import in app/pulse/page.js: Quote
+Unused Import in app/pulse/page.js: Eye
+Unused Import in app/recruiter/page.js: setDoc
+Unused Import in app/recruiter/page.js: deleteDoc
+Unused Import in app/recruiter/page.js: addDoc
+Unused Import in app/recruiter/page.js: onSnapshot
+Unused Import in app/recruiter/page.js: query
+Unused Import in app/recruiter/page.js: orderBy
+Unused Import in app/recruiter/page.js: serverTimestamp
+Unused Import in app/recruiter/page.js: MessageSquare
+Unused Import in app/recruiter/page.js: ChevronRight
+Unused Import in app/recruiter/page.js: MapPin
+Unused Import in app/skillpulse/page.js: AnimatePresence
+Unused Import in app/skillpulse/page.js: Users
+Unused Import in app/skillpulse/page.js: ArrowUpRight
+Unused Import in app/skillpulse/page.js: ArrowDownRight
+Unused Import in app/skillpulse/page.js: ExternalLink
+Unused Import in app/skillpulse/page.js: RefreshCw
+Unused Import in app/skillpulse/page.js: AlertTriangle
+Unused Import in app/skillpulse/page.js: Briefcase
+Unused Import in app/smart-interview/page.js: Send
+Unused Import in app/smart-interview/page.js: Target
+Unused Import in app/smart-interview/page.js: Pause
+Unused Import in app/smart-interview/page.js: Star
+Unused Import in app/smart-interview/page.js: Download
+Unused Import in app/smart-interview/page.js: DownloadCloud
+Unused Import in app/smart-interview/page.js: Book
+Unused Import in app/smart-interview/page.js: ChevronDown
+Unused Import in app/smart-interview/page.js: ChevronRight
+Unused Import in app/smart-interview/page.js: RefreshCw
+Unused Import in app/smart-interview/page.js: Globe
+Unused Import in app/smart-interview/page.js: SkipForward
+Unused Import in app/smart-interview/page.js: setDoc
+Unused Import in app/test-feedback/page.js: doc
+Unused Import in app/test-feedback/page.js: getDoc
+Unused Import in app/tpo/onboarding/page.js: ChevronRight
+Unused Import in app/tpo/onboarding/page.js: MapPin
+Unused Import in app/tpo/onboarding/page.js: Calendar
+Unused Import in app/tpo/onboarding/page.js: DollarSign
+Unused Import in app/tpo/onboarding/page.js: Users
+Unused Import in app/tpo/onboarding/page.js: ExternalLink
+Unused Import in app/tpo/page.js: useCallback
+Unused Import in app/tpo/page.js: collection
+Unused Import in app/tpo/page.js: query
+Unused Import in app/tpo/page.js: where
+Unused Import in app/tpo/page.js: getDocs
+Unused Import in app/tpo/page.js: orderBy
+Unused Import in app/tpo/page.js: limit
+Unused Import in app/tpo/page.js: deleteDoc
+Unused Import in app/tpo/page.js: addDoc
+Unused Import in app/tpo/page.js: updateDoc
+Unused Import in app/tpo/page.js: serverTimestamp
+Unused Import in app/tpo/page.js: Building2
+Unused Import in app/tpo/page.js: Calendar
+Unused Import in app/tpo/page.js: ExternalLink
+Unused Import in app/tpo/page.js: FileText
+Unused Import in app/tpo/page.js: ArrowRight
+Unused Import in app/tpo/page.js: Clock
+Unused Import in app/tpo/page.js: Minus
+Unused Import in app/tpo/page.js: Briefcase
+Unused Import in components/AppShell.js: Zap
+Unused Import in components/landing-v2/BridgeScoreSection.js: useTransform
+Unused Import in components/landing-v2/BridgeScoreSection.js: Check
+Unused Import in components/landing-v2/EcosystemSection.js: useState
+Unused Import in components/landing-v2/EcosystemSection.js: useEffect
+Unused Import in components/landing-v2/EcosystemSection.js: useTransform
+Unused Import in components/landing-v2/EcosystemSection.js: AnimatePresence
+Unused Import in components/landing-v2/EcosystemSection.js: BookOpen
+Unused Import in components/landing-v2/EcosystemSection.js: ShieldCheck
+Unused Import in components/landing-v2/EcosystemSection.js: ChevronRight
+Unused Import in components/landing-v2/EcosystemSection.js: BarChart
+Unused Import in components/landing-v2/FooterCTA.js: ShieldAlert
+Unused Import in components/landing-v2/JourneySection.js: useEffect
+Unused Import in components/landing-v2/JourneySection.js: Activity
+Unused Import in components/OnboardingTour.js: 'driver.js/dist/driver.css';
+import { auth
+Unused Import in components/TPOShell.js: Users
+Unused Import in components/TPOShell.js: FileText
+Unused Import in components/TPOShell.js: ChevronLeft
+Unused Import in next.config.ts: type { NextConfig }
+
+=== DUPLICATE FUNCTIONS / BLOCKS OF CODE ===
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/admin/token-analytics/route.js (69 chars) AND app/api/aptitude-insight/route.js (57 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/admin/token-analytics/route.js (69 chars) AND app/api/coach/route.js (131 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/admin/token-analytics/route.js (69 chars) AND app/api/drives/prep-plan/route.js (97 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/admin/token-analytics/route.js (69 chars) AND app/api/gd-from-article/route.js (74 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/admin/token-analytics/route.js (69 chars) AND app/api/generate-questions/route.js (56 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/admin/token-analytics/route.js (69 chars) AND app/api/internships/route.js (101 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/admin/token-analytics/route.js (69 chars) AND app/api/parse-resume/route.js (57 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/admin/token-analytics/route.js (69 chars) AND app/api/pdf-chat/route.js (100 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/admin/token-analytics/route.js (69 chars) AND app/api/recruiter-match/route.js (70 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/admin/token-analytics/route.js (69 chars) AND app/api/smart-interview/route.js (161 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/admin/token-analytics/route.js (69 chars) AND app/api/support/create-ticket/route.js (111 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/admin/token-analytics/route.js (69 chars) AND app/api/tpo/drives/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/admin/token-analytics/route.js (69 chars) AND app/api/tpo/nudge/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/admin/token-analytics/route.js (69 chars) AND app/api/tpo/weekly-report/route.js (121 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/admin/token-analytics/route.js (69 chars) AND app/api/transcribe/route.js (137 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/aptitude-insight/route.js (57 chars) AND app/api/coach/route.js (131 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/aptitude-insight/route.js (57 chars) AND app/api/drives/prep-plan/route.js (97 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/aptitude-insight/route.js (57 chars) AND app/api/gd-from-article/route.js (74 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/aptitude-insight/route.js (57 chars) AND app/api/generate-questions/route.js (56 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/aptitude-insight/route.js (57 chars) AND app/api/internships/route.js (101 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/aptitude-insight/route.js (57 chars) AND app/api/parse-resume/route.js (57 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/aptitude-insight/route.js (57 chars) AND app/api/pdf-chat/route.js (100 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/aptitude-insight/route.js (57 chars) AND app/api/recruiter-match/route.js (70 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/aptitude-insight/route.js (57 chars) AND app/api/support/create-ticket/route.js (111 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/aptitude-insight/route.js (57 chars) AND app/api/tpo/drives/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/aptitude-insight/route.js (57 chars) AND app/api/tpo/nudge/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/aptitude-insight/route.js (57 chars) AND app/api/tpo/weekly-report/route.js (121 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/aptitude-insight/route.js (57 chars) AND app/api/transcribe/route.js (137 chars)
+Potential Duplicate function (Same Name & Similar Length): GET in app/api/assemblyai-token/route.js (137 chars) AND app/api/cron/refresh-skillpulse/route.js (109 chars)
+Potential Duplicate function (Same Name & Similar Length): GET in app/api/assemblyai-token/route.js (137 chars) AND app/api/refresh-daily/route.js (185 chars)
+Potential Duplicate function (Same Name & Similar Length): GET in app/api/assemblyai-token/route.js (137 chars) AND app/api/support/get-tickets/route.js (83 chars)
+Exact Duplicate function: GET in app/api/assemblyai-token/route.js AND POST in app/api/transcribe/route.js
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/career-intelligence/route.js (472 chars) AND app/api/support/reply-ticket/route.js (373 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/coach/route.js (131 chars) AND app/api/drives/prep-plan/route.js (97 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/coach/route.js (131 chars) AND app/api/gd-from-article/route.js (74 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/coach/route.js (131 chars) AND app/api/generate-questions/route.js (56 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/coach/route.js (131 chars) AND app/api/internships/route.js (101 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/coach/route.js (131 chars) AND app/api/interview/route.js (176 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/coach/route.js (131 chars) AND app/api/parse-resume/route.js (57 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/coach/route.js (131 chars) AND app/api/pdf-chat/route.js (100 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/coach/route.js (131 chars) AND app/api/recruiter-match/route.js (70 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/coach/route.js (131 chars) AND app/api/smart-interview/route.js (161 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/coach/route.js (131 chars) AND app/api/support/create-ticket/route.js (111 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/coach/route.js (131 chars) AND app/api/tpo/drives/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/coach/route.js (131 chars) AND app/api/tpo/nudge/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/coach/route.js (131 chars) AND app/api/tpo/weekly-report/route.js (121 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/coach/route.js (131 chars) AND app/api/transcribe/route.js (137 chars)
+Potential Duplicate function (Same Name & Similar Length): GET in app/api/cron/refresh-skillpulse/route.js (109 chars) AND app/api/refresh-daily/route.js (185 chars)
+Potential Duplicate function (Same Name & Similar Length): GET in app/api/cron/refresh-skillpulse/route.js (109 chars) AND app/api/support/get-tickets/route.js (83 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/drives/prep-plan/route.js (97 chars) AND app/api/gd-from-article/route.js (74 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/drives/prep-plan/route.js (97 chars) AND app/api/generate-questions/route.js (56 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/drives/prep-plan/route.js (97 chars) AND app/api/internships/route.js (101 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/drives/prep-plan/route.js (97 chars) AND app/api/interview/route.js (176 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/drives/prep-plan/route.js (97 chars) AND app/api/parse-resume/route.js (57 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/drives/prep-plan/route.js (97 chars) AND app/api/pdf-chat/route.js (100 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/drives/prep-plan/route.js (97 chars) AND app/api/recruiter-match/route.js (70 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/drives/prep-plan/route.js (97 chars) AND app/api/smart-interview/route.js (161 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/drives/prep-plan/route.js (97 chars) AND app/api/support/create-ticket/route.js (111 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/drives/prep-plan/route.js (97 chars) AND app/api/tpo/drives/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/drives/prep-plan/route.js (97 chars) AND app/api/tpo/nudge/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/drives/prep-plan/route.js (97 chars) AND app/api/tpo/weekly-report/route.js (121 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/drives/prep-plan/route.js (97 chars) AND app/api/transcribe/route.js (137 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/gd-from-article/route.js (74 chars) AND app/api/generate-questions/route.js (56 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/gd-from-article/route.js (74 chars) AND app/api/internships/route.js (101 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/gd-from-article/route.js (74 chars) AND app/api/parse-resume/route.js (57 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/gd-from-article/route.js (74 chars) AND app/api/pdf-chat/route.js (100 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/gd-from-article/route.js (74 chars) AND app/api/recruiter-match/route.js (70 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/gd-from-article/route.js (74 chars) AND app/api/smart-interview/route.js (161 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/gd-from-article/route.js (74 chars) AND app/api/support/create-ticket/route.js (111 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/gd-from-article/route.js (74 chars) AND app/api/tpo/drives/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/gd-from-article/route.js (74 chars) AND app/api/tpo/nudge/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/gd-from-article/route.js (74 chars) AND app/api/tpo/weekly-report/route.js (121 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/gd-from-article/route.js (74 chars) AND app/api/transcribe/route.js (137 chars)
+Potential Duplicate function (Same Name & Similar Length): getISTDateKey in app/api/gd-insights/route.js (416 chars) AND app/pulse/page.js (472 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/generate-questions/route.js (56 chars) AND app/api/internships/route.js (101 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/generate-questions/route.js (56 chars) AND app/api/parse-resume/route.js (57 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/generate-questions/route.js (56 chars) AND app/api/pdf-chat/route.js (100 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/generate-questions/route.js (56 chars) AND app/api/recruiter-match/route.js (70 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/generate-questions/route.js (56 chars) AND app/api/support/create-ticket/route.js (111 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/generate-questions/route.js (56 chars) AND app/api/tpo/drives/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/generate-questions/route.js (56 chars) AND app/api/tpo/nudge/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/generate-questions/route.js (56 chars) AND app/api/tpo/weekly-report/route.js (121 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/generate-questions/route.js (56 chars) AND app/api/transcribe/route.js (137 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/internships/route.js (101 chars) AND app/api/interview/route.js (176 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/internships/route.js (101 chars) AND app/api/parse-resume/route.js (57 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/internships/route.js (101 chars) AND app/api/pdf-chat/route.js (100 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/internships/route.js (101 chars) AND app/api/recruiter-match/route.js (70 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/internships/route.js (101 chars) AND app/api/smart-interview/route.js (161 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/internships/route.js (101 chars) AND app/api/support/create-ticket/route.js (111 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/internships/route.js (101 chars) AND app/api/tpo/drives/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/internships/route.js (101 chars) AND app/api/tpo/nudge/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/internships/route.js (101 chars) AND app/api/tpo/weekly-report/route.js (121 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/internships/route.js (101 chars) AND app/api/transcribe/route.js (137 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/interview/route.js (176 chars) AND app/api/pdf-chat/route.js (100 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/interview/route.js (176 chars) AND app/api/smart-interview/route.js (161 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/interview/route.js (176 chars) AND app/api/support/create-ticket/route.js (111 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/interview/route.js (176 chars) AND app/api/tpo/drives/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/interview/route.js (176 chars) AND app/api/tpo/nudge/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/interview/route.js (176 chars) AND app/api/tpo/weekly-report/route.js (121 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/interview/route.js (176 chars) AND app/api/transcribe/route.js (137 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/parse-resume/route.js (57 chars) AND app/api/pdf-chat/route.js (100 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/parse-resume/route.js (57 chars) AND app/api/recruiter-match/route.js (70 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/parse-resume/route.js (57 chars) AND app/api/support/create-ticket/route.js (111 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/parse-resume/route.js (57 chars) AND app/api/tpo/drives/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/parse-resume/route.js (57 chars) AND app/api/tpo/nudge/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/parse-resume/route.js (57 chars) AND app/api/tpo/weekly-report/route.js (121 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/parse-resume/route.js (57 chars) AND app/api/transcribe/route.js (137 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/pdf-chat/route.js (100 chars) AND app/api/recruiter-match/route.js (70 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/pdf-chat/route.js (100 chars) AND app/api/smart-interview/route.js (161 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/pdf-chat/route.js (100 chars) AND app/api/support/create-ticket/route.js (111 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/pdf-chat/route.js (100 chars) AND app/api/tpo/drives/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/pdf-chat/route.js (100 chars) AND app/api/tpo/nudge/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/pdf-chat/route.js (100 chars) AND app/api/tpo/weekly-report/route.js (121 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/pdf-chat/route.js (100 chars) AND app/api/transcribe/route.js (137 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/recruiter-match/route.js (70 chars) AND app/api/smart-interview/route.js (161 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/recruiter-match/route.js (70 chars) AND app/api/support/create-ticket/route.js (111 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/recruiter-match/route.js (70 chars) AND app/api/tpo/drives/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/recruiter-match/route.js (70 chars) AND app/api/tpo/nudge/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/recruiter-match/route.js (70 chars) AND app/api/tpo/weekly-report/route.js (121 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/recruiter-match/route.js (70 chars) AND app/api/transcribe/route.js (137 chars)
+Exact Duplicate function: shuffleOptions in app/api/seed-questions/route.js AND shuffleOptions in lib/questionsData.js
+Potential Duplicate function (Same Name & Similar Length): generateQuant in app/api/seed-questions/route.js (97 chars) AND lib/questionsData.js (56 chars)
+Potential Duplicate function (Same Name & Similar Length): generateVerbal in app/api/seed-questions/route.js (309 chars) AND lib/questionsData.js (273 chars)
+Potential Duplicate function (Same Name & Similar Length): generateDI in app/api/seed-questions/route.js (424 chars) AND lib/questionsData.js (366 chars)
+Exact Duplicate function: generateGA in app/api/seed-questions/route.js AND generateGA in lib/questionsData.js
+Potential Duplicate function (Same Name & Similar Length): GET in app/api/seed-questions/route.js (309 chars) AND app/api/test-auth/route.js (319 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/smart-interview/route.js (161 chars) AND app/api/support/create-ticket/route.js (111 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/smart-interview/route.js (161 chars) AND app/api/tpo/drives/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/smart-interview/route.js (161 chars) AND app/api/tpo/nudge/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/smart-interview/route.js (161 chars) AND app/api/tpo/weekly-report/route.js (121 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/smart-interview/route.js (161 chars) AND app/api/transcribe/route.js (137 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/support/create-ticket/route.js (111 chars) AND app/api/tpo/drives/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/support/create-ticket/route.js (111 chars) AND app/api/tpo/nudge/route.js (82 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/support/create-ticket/route.js (111 chars) AND app/api/tpo/weekly-report/route.js (121 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/support/create-ticket/route.js (111 chars) AND app/api/transcribe/route.js (137 chars)
+Exact Duplicate function: POST in app/api/tpo/drives/route.js AND POST in app/api/tpo/nudge/route.js
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/tpo/drives/route.js (82 chars) AND app/api/tpo/weekly-report/route.js (121 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/tpo/drives/route.js (82 chars) AND app/api/transcribe/route.js (137 chars)
+Exact Duplicate function: PUT in app/api/tpo/drives/route.js AND POST in app/api/tpo/nudge/route.js
+Exact Duplicate function: DELETE in app/api/tpo/drives/route.js AND POST in app/api/tpo/nudge/route.js
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/tpo/nudge/route.js (82 chars) AND app/api/tpo/weekly-report/route.js (121 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/tpo/nudge/route.js (82 chars) AND app/api/transcribe/route.js (137 chars)
+Potential Duplicate function (Same Name & Similar Length): POST in app/api/tpo/weekly-report/route.js (121 chars) AND app/api/transcribe/route.js (137 chars)
+Exact Duplicate function: levenshtein in app/device-test/page.js AND levenshtein in app/smart-interview/page.js
+Potential Duplicate function (Same Name & Similar Length): CameraTest in app/device-test/page.js (442 chars) AND app/smart-interview/page.js (395 chars)
+Potential Duplicate function (Same Name & Similar Length): CompanyLogo in app/drives/page.js (317 chars) AND app/tpo/page.js (332 chars)
+Exact Duplicate function: Page in app/migrate-feedback/page.js AND Page in app/reset-data/page.js
+Exact Duplicate function: Page in app/migrate-feedback/page.js AND Page in app/setup-firestore/page.js
+Exact Duplicate function: Page in app/migrate-feedback/page.js AND Page in app/test-firestore/page.js
+Exact Duplicate function: Page in app/reset-data/page.js AND Page in app/setup-firestore/page.js
+Exact Duplicate function: Page in app/reset-data/page.js AND Page in app/test-firestore/page.js
+Exact Duplicate function: Page in app/setup-firestore/page.js AND Page in app/test-firestore/page.js
+Exact Duplicate function: CategoryPositioning in components/landing-v2/CategoryPositioning.js AND EcosystemSection in components/landing-v2/EcosystemSection.js
+Exact Duplicate function: FloatAnimation in components/landing-v2/FloatAnimation.js AND ScrollReveal in components/landing-v2/ScrollReveal.js

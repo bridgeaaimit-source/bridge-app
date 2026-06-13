@@ -59,14 +59,21 @@ export default function BattleRoom() {
 
     try {
       // Get all of THIS user's submissions
-      const subsSnap = await getDocs(
-        query(collection(db, 'gdBattles', roomId, 'gdSubmissions'), orderBy('timestamp', 'asc'))
-      );
-      
-      const myPoints = subsSnap.docs
-        .map(d => d.data())
-        .filter(s => s.uid === user.uid)
-        .map(s => s.point);
+      let myPoints;
+      if (isBypassed) {
+        // Read from local state instead of Firestore
+        myPoints = submissions
+          .filter(s => s.uid === user.uid)
+          .map(s => s.point);
+      } else {
+        const subsSnap = await getDocs(
+          query(collection(db, 'gdBattles', roomId, 'gdSubmissions'), orderBy('timestamp', 'asc'))
+        );
+        myPoints = subsSnap.docs
+          .map(d => d.data())
+          .filter(s => s.uid === user.uid)
+          .map(s => s.point);
+      }
 
       if (myPoints.length === 0) {
         toast.error("You didn't make any points!");
@@ -109,7 +116,7 @@ export default function BattleRoom() {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [phase, room, roomId]);
+  }, [phase, room, roomId, isBypassed, submissions]);
 
   // ─── Listen to Room Document & Auth initialization ───
   useEffect(() => {
@@ -131,6 +138,21 @@ export default function BattleRoom() {
     if (authLoading) return;
     const user = isBypassed ? mockUser : auth.currentUser;
     if (!user) return;
+
+    // Bypass mode: use mock room data instead of Firestore listener
+    if (isBypassed) {
+      setRoom({
+        topic: 'AI in Education: Boon or Risk?',
+        category: 'Technology',
+        difficulty: 'Medium',
+        participants: [{ uid: user.uid, name: user.name || 'Test Student', joinedAt: new Date().toISOString() }],
+        participantCount: 1,
+        maxParticipants: 6,
+        status: 'waiting',
+        isCustom: false
+      });
+      return;
+    }
 
     const roomRef = doc(db, 'gdBattles', roomId);
     const unsubscribeRoom = onSnapshot(roomRef, (docSnap) => {
@@ -181,9 +203,11 @@ export default function BattleRoom() {
       });
     }, 1000);
 
-    // Mark room as active in Firestore
-    const roomRef = doc(db, 'gdBattles', roomId);
-    updateDoc(roomRef, { status: 'active', startTime: Date.now() }).catch(console.error);
+    // Mark room as active in Firestore (skip in bypass mode)
+    if (!isBypassed) {
+      const roomRef = doc(db, 'gdBattles', roomId);
+      updateDoc(roomRef, { status: 'active', startTime: Date.now() }).catch(console.error);
+    }
 
     return () => clearInterval(gdTimerRef.current);
   }, [phase, roomId]);
@@ -197,6 +221,9 @@ export default function BattleRoom() {
 
   // ─── Listen to Submissions (live feed during GD) ───
   useEffect(() => {
+    // Bypass mode: skip Firestore listener, rely on local submissions state
+    if (isBypassed) return;
+
     const q = query(
       collection(db, 'gdBattles', roomId, 'gdSubmissions'),
       orderBy('timestamp', 'asc')
@@ -207,7 +234,7 @@ export default function BattleRoom() {
     });
 
     return () => unsubscribe();
-  }, [roomId]);
+  }, [roomId, isBypassed]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -224,6 +251,19 @@ export default function BattleRoom() {
     const pointText = input.trim();
     setInput("");
     setIsSubmitting(true);
+
+    // Bypass mode: add to local state instead of Firestore
+    if (isBypassed) {
+      setSubmissions(prev => [...prev, {
+        id: `mock-sub-${Date.now()}`,
+        uid: user.uid,
+        userName: user.name || 'Test Student',
+        point: pointText,
+        timestamp: new Date()
+      }]);
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       await addDoc(collection(db, 'gdBattles', roomId, 'gdSubmissions'), {

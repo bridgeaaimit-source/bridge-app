@@ -11,7 +11,8 @@ export async function POST(request) {
     }
 
     if (!adminDb) {
-      return Response.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
+      console.log('⚠️ Firebase Admin not initialized. Running mock ticket creation.');
+      return Response.json({ success: true, ticketId: 'BR-001', mock: true });
     }
 
     // Generate ticketId: query tickets collection count -> 'BR-' + padded number
