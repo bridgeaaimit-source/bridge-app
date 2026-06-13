@@ -5,6 +5,7 @@ import { Users, Target, Zap, Plus, X, Activity } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { db, auth } from "@/lib/firebase";
+import { useAuthBypass } from "@/hooks/useAuthBypass";
 import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc, arrayUnion, increment } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
@@ -16,6 +17,7 @@ const DEFAULT_TOPICS = [
 
 export default function GDPage() {
   const router = useRouter();
+  const { isBypassed, mockUser } = useAuthBypass();
   const [battles, setBattles] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -46,26 +48,31 @@ export default function GDPage() {
         return bTime - aTime;
       });
       
-      // Auto-create defaults if none exist
+      // Auto-create defaults if none exist (only if user is authenticated)
       if (liveBattles.length === 0 && !loading) {
-        console.log("No active battles found. Creating defaults...");
-        try {
-          for (const t of DEFAULT_TOPICS) {
-            await addDoc(collection(db, 'gdBattles'), {
-              topic: t.topic,
-              category: t.category,
-              difficulty: t.difficulty,
-              participants: [],
-              participantCount: 0,
-              maxParticipants: 6,
-              status: 'waiting',
-              createdAt: serverTimestamp(),
-              startTime: null,
-              isCustom: false
-            });
+        const user = isBypassed ? mockUser : auth.currentUser;
+        if (user) {
+          console.log("No active battles found. Creating defaults...");
+          try {
+            for (const t of DEFAULT_TOPICS) {
+              await addDoc(collection(db, 'gdBattles'), {
+                topic: t.topic,
+                category: t.category,
+                difficulty: t.difficulty,
+                participants: [],
+                participantCount: 0,
+                maxParticipants: 6,
+                status: 'waiting',
+                createdAt: serverTimestamp(),
+                startTime: null,
+                isCustom: false
+              });
+            }
+          } catch(e) {
+            console.error("Error creating default battles", e);
           }
-        } catch(e) {
-          console.error("Error creating default battles", e);
+        } else {
+          console.log("No active battles found and no authenticated user; skipping defaults creation.");
         }
       } else {
         setBattles(liveBattles);
@@ -80,7 +87,7 @@ export default function GDPage() {
   }, [loading]);
 
   const handleJoinBattle = async (room) => {
-    const user = auth.currentUser;
+    const user = isBypassed ? mockUser : auth.currentUser;
     if (!user) {
       toast.error('Please login to join a battle!');
       return;
@@ -101,7 +108,7 @@ export default function GDPage() {
         await updateDoc(roomRef, {
           participants: arrayUnion({
             uid: user.uid,
-            name: user.displayName || 'Anonymous User',
+            name: user.displayName || user.name || 'Anonymous User',
             joinedAt: new Date().toISOString()
           }),
           participantCount: increment(1)
@@ -116,6 +123,11 @@ export default function GDPage() {
   };
 
   const createCustomRoom = async () => {
+    const user = isBypassed ? mockUser : auth.currentUser;
+    if (!user) {
+      toast.error('Please login to create a battle room!');
+      return;
+    }
     if (!customTopic.trim()) {
       toast.error('Please enter a topic');
       return;
@@ -142,9 +154,10 @@ export default function GDPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          article_title: customTopic,
           topic: customTopic,
           category: 'Custom',
-          uid: auth.currentUser?.uid
+          uid: user.uid
         })
       });
       let aiContent = null;

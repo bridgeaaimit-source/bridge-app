@@ -3,16 +3,32 @@ import { adminDb } from '@/lib/firebase-admin';
 import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 export async function POST(request) {
-  const { article_title, article_description, 
-    placement_insight, userId, uid } = await request.json();
-
-  // Create unique key from article title
-  const cacheKey = article_title
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '_')
-    .substring(0, 50);
+  let article_title = "";
+  let article_description = "";
+  let placement_insight = "Custom Topic Placement preparation";
+  let userId = "anonymous";
+  let uid = "anonymous";
 
   try {
+    const body = await request.json();
+    article_title = body.article_title || body.topic;
+    article_description = body.article_description || "";
+    placement_insight = body.placement_insight || "Custom Topic Placement preparation";
+    userId = body.userId || body.uid || "anonymous";
+    uid = body.uid || body.userId || "anonymous";
+
+    if (!article_title || typeof article_title !== 'string' || !article_title.trim()) {
+      return Response.json({ error: 'Missing article_title or topic' }, { status: 400 });
+    }
+
+    const cleanTitle = article_title.trim();
+
+    // Create unique key from article title
+    const cacheKey = cleanTitle
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '_')
+      .substring(0, 50);
+
     // Check if GD already exists for this article (only if Firebase is available)
     if (adminDb) {
       const docRef = adminDb.collection('gd_from_articles')
