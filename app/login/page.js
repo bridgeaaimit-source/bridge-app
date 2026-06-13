@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { auth, googleProvider } from "@/lib/firebase";
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Users } from "lucide-react";
+
 
 export default function LoginPage() {
   const router = useRouter();

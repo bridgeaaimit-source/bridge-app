@@ -66,19 +66,21 @@ export function useSkillPulse() {
         if ((Date.now() - timestamp) / 3600000 < 24) {
           setData(d); setLoading(false); return;
         }
-      } catch (_) {}
+      } catch (e) { console.error(e); }
     }
     async function fetch_() {
       try {
         const snap = await getDoc(doc(db, "skillpulse_weekly", "latest"));
         const fresh = snap.exists() ? snap.data() : MOCK_DATA;
         setData(fresh);
-        typeof window !== "undefined" && localStorage.setItem("skillpulse_data", JSON.stringify({ data: fresh, timestamp: Date.now() }));
-      } catch (_) { setData(MOCK_DATA); }
+        if (typeof window !== "undefined") {
+          localStorage.setItem("skillpulse_data", JSON.stringify({ data: fresh, timestamp: Date.now() }));
+        }
+      } catch (e) { console.error(e); setData(MOCK_DATA); }
       finally { setLoading(false); }
     }
     fetch_();
-  }, []);
+  }, [isBypass]);
 
   return { data, loading };
 }

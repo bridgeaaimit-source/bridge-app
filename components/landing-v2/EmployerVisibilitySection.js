@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { m, AnimatePresence, useInView  } from "framer-motion";
+import { m, AnimatePresence, useInView } from "framer-motion";
 import { Search, Sliders, ShieldCheck, Check } from "lucide-react";
 
 const MOCK_CANDIDATES = [
@@ -171,6 +171,4 @@ export default function EmployerVisibilitySection() {
     </section>
   );
 }
-
-
 

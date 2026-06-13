@@ -38,8 +38,6 @@ const TOOLTIP_H = 160;
 function getTooltipStyle(rect, pos, windowW, windowH) {
   if (!rect) return { top: "50%", left: "50%", transform: "translate(-50%,-50%)" };
 
-  // Check if element is in sidebar (left side, narrow width)
-  const isInSidebar = rect.left < 300 && rect.width < 280;
   const isMobile = windowW < 768;
 
   // Calculate available space
@@ -87,7 +85,6 @@ export default function ProductTour({ isOpen, onClose, startStep = 0 }) {
   const [step, setStep] = useState(startStep);
   const [rect, setRect] = useState(null);
   const [windowSize, setWindowSize] = useState({ w: 1200, h: 800 });
-  const rafRef = useRef(null);
 
   const measure = useCallback(() => {
     if (step >= STEPS.length) return;
@@ -97,7 +94,7 @@ export default function ProductTour({ isOpen, onClose, startStep = 0 }) {
   }, [step]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStep(startStep);
   }, [isOpen, startStep]);
 

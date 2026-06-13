@@ -1,5 +1,4 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { adminDb } from '@/lib/firebase-admin';
 import { trackTokensServer } from '@/lib/tokenTrackerServer';
 
 

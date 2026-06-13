@@ -4,11 +4,8 @@ export const dynamic = "force-dynamic";
 
 import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Camera, Mic, Volume2, CheckCircle, XCircle, AlertCircle,
-  ChevronDown, ChevronRight, RefreshCw, ArrowRight, Globe,
-  Monitor, Headphones, SkipForward
-} from "lucide-react";
+import { CheckCircle, AlertCircle, ArrowRight, Globe, SkipForward, Video, Mic, Volume2, Wifi, XCircle, Camera, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
+import { levenshtein } from "@/lib/stringUtils";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 
@@ -18,15 +15,6 @@ const LANGS = [
   { code: "en-US", label: "🇺🇸 English (US)", desc: "" },
 ];
 
-function levenshtein(a, b) {
-  const m = [], al = a.length, bl = b.length;
-  for (let i = 0; i <= al; i++) m[i] = [i];
-  for (let j = 0; j <= bl; j++) m[0][j] = j;
-  for (let i = 1; i <= al; i++)
-    for (let j = 1; j <= bl; j++)
-      m[i][j] = a[i-1] === b[j-1] ? m[i-1][j-1] : Math.min(m[i-1][j-1]+1, m[i][j-1]+1, m[i-1][j]+1);
-  return m[al][bl];
-}
 
 // ─── Camera Test ──────────────────────────────────────────────────────────────
 function CameraTest({ onResult }) {

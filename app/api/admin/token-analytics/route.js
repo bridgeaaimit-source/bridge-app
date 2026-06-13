@@ -1,5 +1,4 @@
 import { adminDb } from '@/lib/firebase-admin';
-import * as admin from 'firebase-admin';
 
 export async function POST(request) {
   try {

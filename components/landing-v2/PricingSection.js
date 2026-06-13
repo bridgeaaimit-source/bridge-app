@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { m } from "framer-motion";
+import { m, motion } from "framer-motion";
 import { Check, Star } from "lucide-react";
 import Link from "next/link";
 
-
+const MotionLink = motion(Link);
 
 export default function PricingSection() {
   const [spotFree, setSpotFree] = useState({ x: 0, y: 0, active: false });
@@ -102,16 +102,15 @@ export default function PricingSection() {
             </div>
 
             <div className="mt-8 relative z-10">
-              <Link href="/login" passHref legacyBehavior>
-                <m.a 
-                  className="block text-center rounded-xl border border-[#0D9488] dark:border-[#2DD4BF] py-3 text-sm font-bold text-[#0D9488] dark:text-[#2DD4BF] hover:bg-teal-50 dark:hover:bg-[#2DD4BF]/10 transition-colors cursor-pointer"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ type: "spring", stiffness: 600, damping: 30 }}
-                >
-                  Start Free
-                </m.a>
-              </Link>
+              <MotionLink 
+                href="/login" 
+                className="block text-center rounded-xl border border-[#0D9488] dark:border-[#2DD4BF] py-3 text-sm font-bold text-[#0D9488] dark:text-[#2DD4BF] hover:bg-teal-50 dark:hover:bg-[#2DD4BF]/10 transition-colors cursor-pointer"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: "spring", stiffness: 600, damping: 30 }}
+              >
+                Start Free
+              </MotionLink>
             </div>
           </m.div>
 
@@ -180,16 +179,15 @@ export default function PricingSection() {
             </div>
 
             <div className="mt-8 relative z-10">
-              <Link href="/login" passHref legacyBehavior>
-                <m.a 
-                  className="block text-center rounded-xl bg-white py-3 text-sm font-bold text-[#0D524C] hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
-                  whileHover={{ scale: 1.01, y: -0.5 }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ type: "spring", stiffness: 600, damping: 30 }}
-                >
-                  Go Pro &rarr;
-                </m.a>
-              </Link>
+              <MotionLink 
+                href="/login" 
+                className="block text-center rounded-xl bg-white py-3 text-sm font-bold text-[#0D524C] hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
+                whileHover={{ scale: 1.01, y: -0.5 }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: "spring", stiffness: 600, damping: 30 }}
+              >
+                Go Pro &rarr;
+              </MotionLink>
             </div>
           </m.div>
 
@@ -199,6 +197,4 @@ export default function PricingSection() {
     </section>
   );
 }
-
-
 

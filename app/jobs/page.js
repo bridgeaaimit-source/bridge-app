@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, Upload, Briefcase, Target, TrendingUp, Users, RefreshCw, ExternalLink, Lock, CheckCircle, XCircle, AlertCircle, Star, MapPin, DollarSign, Clock, Building, Award, Brain, Send, FileText, Search, Filter, Calendar, MessageSquare } from "lucide-react";
+import { Upload, Briefcase, Target, RefreshCw, ExternalLink, CheckCircle, AlertCircle, MapPin, DollarSign, Clock, Building, Award, Brain, Filter, MessageSquare } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { auth } from "@/lib/firebase";

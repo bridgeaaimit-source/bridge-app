@@ -22,7 +22,8 @@ import {
   Sparkles,
   Brain,
   Shield,
-  MessageSquare
+  MessageSquare,
+  Building2
 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -39,7 +40,8 @@ export default function AppShell({ children, hideNavigation = false }) {
   const [userProfile, setUserProfile] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [notifications, setNotifications] = useState(3);
+  const [notifications, setNotifications] = useState(0);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [showTour, setShowTour] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -102,6 +104,19 @@ export default function AppShell({ children, hideNavigation = false }) {
 
     return () => unsubscribe();
   }, [userProfile?.role]);
+
+  // Listen for unread notifications
+  useEffect(() => {
+    if (!currentUser || isBypassed) return;
+    const q = query(
+      collection(db, 'users', currentUser.uid, 'notifications'),
+      where('read', '==', false)
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUnreadNotifCount(snapshot.size);
+    });
+    return () => unsubscribe();
+  }, [currentUser, isBypassed]);
 
   const handleOnboardingComplete = useCallback(async ({ goal, companies }) => {
     if (isBypassed) {
@@ -204,6 +219,7 @@ export default function AppShell({ children, hideNavigation = false }) {
     { href: '/career-gps',  icon: Navigation, label: 'Career GPS',     group: ['/career-gps'] },
     { href: '/career-intelligence', icon: Sparkles, label: 'Career Intelligence', group: ['/career-intelligence'] },
     { href: '/jobs',        icon: Briefcase,  label: 'Jobs',           group: ['/jobs'], tour: 'jobs' },
+    { href: '/drives',      icon: Building2,  label: 'Drives',         group: ['/drives'] },
     { href: '/leaderboard', icon: Trophy,     label: 'Leaderboard',    group: ['/leaderboard'], tour: 'leaderboard' },
     { href: '/profile',     icon: User,       label: 'Profile',        group: ['/profile'], tour: 'profile' },
     ...(isRecruiter ? [{ href: '/recruiter', icon: User, label: 'Recruiter', group: ['/recruiter'] }] : []),
@@ -231,8 +247,11 @@ export default function AppShell({ children, hideNavigation = false }) {
           <img src="/images/logo_navbar_48h.png" alt="BridgeAI" className="h-8 w-auto" />
         </Link>
         <div className="flex items-center gap-2">
-          <button className="p-2 rounded-full hover:bg-[#CCFBF1]/30 transition-colors text-gray-500">
+          <button className="p-2 rounded-full hover:bg-[#CCFBF1]/30 transition-colors text-gray-500 relative">
             <Bell className="w-5 h-5" />
+            {unreadNotifCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{unreadNotifCount > 9 ? '9+' : unreadNotifCount}</span>
+            )}
           </button>
           <div className="relative">
             <button onClick={() => setShowProfileDropdown(!showProfileDropdown)} className="focus:outline-none flex items-center">
@@ -360,8 +379,11 @@ export default function AppShell({ children, hideNavigation = false }) {
       {/* ── Desktop Top Right Profile ── */}
       {!hideNavigation && (
         <div className="hidden md:flex fixed top-4 right-6 z-40 items-center gap-4">
-        <button className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-500 bg-white shadow-sm border border-gray-200">
+        <button className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-500 bg-white shadow-sm border border-gray-200 relative">
           <Bell className="w-5 h-5" />
+          {unreadNotifCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{unreadNotifCount > 9 ? '9+' : unreadNotifCount}</span>
+          )}
         </button>
         <div className="relative">
           <button onClick={() => setShowProfileDropdown(!showProfileDropdown)} className="focus:outline-none flex items-center">

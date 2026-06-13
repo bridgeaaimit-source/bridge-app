@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { adminDb } from '@/lib/firebase-admin';
 import { trackTokensServer } from '@/lib/tokenTrackerServer';
+import { generateAndCacheTTS } from '@/lib/ttsGenerator';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -257,6 +257,12 @@ Return ONLY valid JSON:
         if (parsed.session_memory && parsed.question) {
           parsed.session_memory.asked_questions = [parsed.question];
         }
+        
+        // 🚀 PREFETCH: Generate TTS immediately in background
+        if (parsed.question) {
+          generateAndCacheTTS(parsed.question).catch(err => console.error("Prefetch TTS failed:", err));
+        }
+
         return Response.json(parsed);
       } catch {
         console.error('JSON parse error in init. Raw:', text);
@@ -682,6 +688,12 @@ Return ONLY valid JSON (no markdown, no explanation):
     }
 
     console.log(`📋 Asked: ${result.session_memory?.asked_questions?.length} | Classification: ${result.answer_classification} | Needs followup: ${result.session_memory?.needs_followup}`);
+    
+    // 🚀 PREFETCH: Generate TTS immediately in background for next question
+    if (result.question) {
+      generateAndCacheTTS(result.question).catch(err => console.error("Prefetch TTS failed:", err));
+    }
+
     return Response.json(result);
   }
 

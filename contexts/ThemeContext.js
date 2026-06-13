@@ -10,6 +10,7 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     // Load theme from localStorage
     const savedTheme = localStorage.getItem('bridge-theme') || 'light';
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(savedTheme);
     
     // Apply theme to document

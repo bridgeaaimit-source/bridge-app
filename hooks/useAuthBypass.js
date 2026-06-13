@@ -46,6 +46,7 @@ export function useAuthBypass() {
 
   useEffect(() => {
     const BYPASS = process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true';
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsBypassed(BYPASS);
     
     if (BYPASS) {

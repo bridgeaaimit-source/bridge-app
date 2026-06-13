@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { m, useScroll, useMotionValueEvent  } from "framer-motion";
 import { 
   Video, 
@@ -8,7 +8,6 @@ import {
   TrendingUp, 
   ShieldCheck, 
   Search, 
-  Activity, 
   Eye, 
   CheckCircle2, 
   Users, 
@@ -16,7 +15,6 @@ import {
   BookOpen, 
   Lock,
   Unlock,
-  Target,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
@@ -119,7 +117,7 @@ function StepVisual01() {
             <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-lg p-3 flex-1 transition-colors">
               <span className="text-[9px] font-bold text-gray-500 dark:text-gray-400 block mb-1">Transcript Intelligence</span>
               <p className="text-[9px] text-gray-700 dark:text-gray-300 italic border-l-2 border-teal-500/30 pl-2 leading-relaxed">
-                "The core issue isn't <span className="font-semibold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10">user acquisition</span>, but rather <span className="font-semibold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10">retention leakage</span> in the first 7 days..."
+                &quot;The core issue isn&apos;t <span className="font-semibold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10">user acquisition</span>, but rather <span className="font-semibold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10">retention leakage</span> in the first 7 days...&quot;
               </p>
             </div>
           </div>
@@ -181,7 +179,7 @@ function StepVisual02() {
         <div className="bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/30 rounded-lg p-3">
           <span className="text-[9px] font-bold text-teal-600 dark:text-teal-500 uppercase tracking-wider block mb-1">Moderator Insight: Consensus Building</span>
           <p className="text-[10px] text-gray-600 dark:text-gray-400 leading-relaxed">
-            Excellent pivot. You successfully synthesized Participant B's operational concern with Participant C's financial model.
+            Excellent pivot. You successfully synthesized Participant B&apos;s operational concern with Participant C&apos;s financial model.
           </p>
         </div>
       </div>
@@ -479,10 +477,9 @@ export default function JourneySection() {
     }
   };
 
-  const ActiveVisual = VISUALS[activeStep];
 
   return (
-    <section ref={containerRef} id="journey" className="relative bg-transparent border-b border-gray-200 dark:border-white/10 transition-colors" style={{ height: "600vh" }}>
+    <section ref={containerRef} id="how-it-works" className="relative bg-transparent border-b border-gray-200 dark:border-white/10 transition-colors" style={{ height: "600vh" }}>
       <div className="sticky top-0 h-screen w-full flex items-center justify-center">
         <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 

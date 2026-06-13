@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { doc, getDoc, updateDoc, collection, getDocs } from "firebase/firestore";
+import { updateDoc, collection, getDocs } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
 export default function Page() {

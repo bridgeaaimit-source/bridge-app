@@ -219,19 +219,7 @@ export default function PulsePage() {
             </div>
           </div>
 
-          {/* Category Pills */}
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-            {CATEGORIES.map(cat => (
-              <button key={cat} onClick={() => handleCategoryChange(cat)}
-                className={`px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all border ${
-                  activeCategory === cat
-                    ? 'bg-[#0D9488] text-white border-[#0D9488] shadow-sm'
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-[#0D9488] hover:text-[#0D9488]'
-                }`}>
-                {cat}
-              </button>
-            ))}
-          </div>
+
         </div>
 
         <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-4 space-y-8">
@@ -402,9 +390,24 @@ export default function PulsePage() {
               NEWS FEED
           ══════════════════════════════════════════ */}
           <div>
-            <h2 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
-              <Newspaper className="w-5 h-5 text-[#0D9488]" /> Placement News
-            </h2>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
+                <Newspaper className="w-5 h-5 text-[#0D9488]" /> Placement News
+              </h2>
+              {/* Category Pills */}
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 w-full md:w-auto">
+                {CATEGORIES.map(cat => (
+                  <button key={cat} onClick={() => handleCategoryChange(cat)}
+                    className={`px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all border ${
+                      activeCategory === cat
+                        ? 'bg-[#0D9488] text-white border-[#0D9488] shadow-sm'
+                        : 'bg-white text-gray-500 border-gray-200 hover:border-[#0D9488] hover:text-[#0D9488]'
+                    }`}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {newsLoading ? (
               <div className="space-y-4">

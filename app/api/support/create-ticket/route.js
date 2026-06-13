@@ -1,6 +1,5 @@
 import { adminDb } from '@/lib/firebase-admin';
 import * as admin from 'firebase-admin';
-import twilio from 'twilio';
 
 export async function POST(request) {
   try {
