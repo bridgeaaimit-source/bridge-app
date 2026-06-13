@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { m, useScroll, useTransform, useMotionValueEvent  } from "framer-motion";
-import { ArrowRight, Info, Check, Unlock, Lock } from "lucide-react";
+import { m, useScroll, useMotionValueEvent } from "framer-motion";
+import { ArrowRight, Info, Unlock, Lock } from "lucide-react";
 
 const SIGNALS = [
   { label: "Communication Verified", minScore: 400 },
@@ -52,8 +52,8 @@ export default function BridgeScoreSection() {
   // Continuous live evaluation fluctuation
   useEffect(() => {
     if (isManualMode) {
-      setLiveJitter(0);
-      return;
+      const t = setTimeout(() => setLiveJitter(0), 0);
+      return () => clearTimeout(t);
     }
     const interval = setInterval(() => {
       // Random fluctuation between -6 and +6 to simulate live AI processing

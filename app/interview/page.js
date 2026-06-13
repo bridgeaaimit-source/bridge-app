@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { ChevronLeft, Info, Send, RotateCcw, Share2, Home, Mic, Zap, Trophy, User, Volume2, Lightbulb, Star, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
+import { RotateCcw, Share2, Mic, Trophy, Volume2, Lightbulb, Star, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
 import confetti from "canvas-confetti";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";

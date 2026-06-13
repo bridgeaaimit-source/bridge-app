@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { Home, Mic, Zap, Trophy, User, Download, Share2, Sparkles } from "lucide-react";
 import AppShell from "@/components/AppShell";
 

@@ -11,7 +11,7 @@ import {
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import AppShell from "@/components/AppShell";
-import { Users, Star, MessageSquare, Briefcase, Search, Filter, ChevronRight, Mail, Phone, MapPin, Award, TrendingUp } from "lucide-react";
+import { Users, Star, Briefcase, Search, Mail, Phone, Award, TrendingUp } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function RecruiterPage() {

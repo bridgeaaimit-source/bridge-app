@@ -1,19 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import {
-  doc, getDoc, collection, query, where, getDocs, orderBy, limit, deleteDoc, addDoc, updateDoc, serverTimestamp,
+  doc, getDoc,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import TPOShell from "@/components/TPOShell";
 import toast from "react-hot-toast";
 import {
   Users, TrendingUp, TrendingDown, AlertTriangle, Award, Target,
-  Building2, Calendar, ChevronDown, ChevronUp, Send, Download,
-  Plus, Edit3, Trash2, ExternalLink, FileText, Sparkles, ArrowRight,
-  Clock, Minus, X, Check, Briefcase, BarChart2, RefreshCw,
+  ChevronDown, ChevronUp, Send, Download,
+  Plus, Edit3, Trash2, Sparkles,
+  X, Check, BarChart2, RefreshCw,
 } from "lucide-react";
 import { getCompanyLogoUrl, getCompanyFallback, formatDate, formatCountdown, timeAgo } from "@/lib/driveUtils";
 
@@ -64,7 +63,6 @@ function MiniRing({ value, size = 40, stroke = 4, color = "#0D9488" }) {
 }
 
 export default function TPODashboardPage() {
-  const router = useRouter();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -100,6 +98,47 @@ export default function TPODashboardPage() {
 
   const toggleSection = (s) => setExpandedSections(prev => ({ ...prev, [s]: !prev[s] }));
 
+  // ─── Data fetchers (declared before useEffect to avoid hoisting issues) ───
+  async function fetchBatchStats(collegeId) {
+    try {
+      const res = await fetch(`/api/tpo/batch-stats?collegeId=${collegeId}`);
+      const data = await res.json();
+      if (data.error) { console.error(data.error); return; }
+
+      setBatchStats(data);
+      setAtRiskStudents(data.atRisk?.students || []);
+
+      // Sort students by bridgeScore for leaderboard
+      const sorted = [...(data.students || [])]
+        .sort((a, b) => (b.bridgeScore || 0) - (a.bridgeScore || 0))
+        .slice(0, 10);
+      setTopPerformers(sorted);
+    } catch (e) {
+      console.error("Batch stats fetch error:", e);
+    }
+  }
+
+  async function fetchDrives(collegeId) {
+    try {
+      const res = await fetch(`/api/tpo/drives?collegeId=${collegeId}`);
+      const data = await res.json();
+      setDrives(data.drives || []);
+    } catch (e) {
+      console.error("Drives fetch error:", e);
+    }
+  }
+
+  async function fetchSkillGap(collegeId) {
+    try {
+      const res = await fetch(`/api/tpo/skill-gap?collegeId=${collegeId}`);
+      const data = await res.json();
+      setHeatmap(data.heatmap || []);
+      setHeatmapInsights(data.insights || []);
+    } catch (e) {
+      console.error("Skill gap fetch error:", e);
+    }
+  }
+
   // ─── Load data ───
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -118,46 +157,6 @@ export default function TPODashboardPage() {
     });
     return () => unsubscribe();
   }, []);
-
-  const fetchBatchStats = async (collegeId) => {
-    try {
-      const res = await fetch(`/api/tpo/batch-stats?collegeId=${collegeId}`);
-      const data = await res.json();
-      if (data.error) { console.error(data.error); return; }
-
-      setBatchStats(data);
-      setAtRiskStudents(data.atRisk?.students || []);
-
-      // Sort students by bridgeScore for leaderboard
-      const sorted = [...(data.students || [])]
-        .sort((a, b) => (b.bridgeScore || 0) - (a.bridgeScore || 0))
-        .slice(0, 10);
-      setTopPerformers(sorted);
-    } catch (e) {
-      console.error("Batch stats fetch error:", e);
-    }
-  };
-
-  const fetchDrives = async (collegeId) => {
-    try {
-      const res = await fetch(`/api/tpo/drives?collegeId=${collegeId}`);
-      const data = await res.json();
-      setDrives(data.drives || []);
-    } catch (e) {
-      console.error("Drives fetch error:", e);
-    }
-  };
-
-  const fetchSkillGap = async (collegeId) => {
-    try {
-      const res = await fetch(`/api/tpo/skill-gap?collegeId=${collegeId}`);
-      const data = await res.json();
-      setHeatmap(data.heatmap || []);
-      setHeatmapInsights(data.insights || []);
-    } catch (e) {
-      console.error("Skill gap fetch error:", e);
-    }
-  };
 
   // ─── Drive CRUD ───
   const resetDriveForm = () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { m } from "framer-motion";
+import { m, motion } from "framer-motion";
 import { Check, Star } from "lucide-react";
 import Link from "next/link";
 

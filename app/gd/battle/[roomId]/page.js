@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Users, Clock, Send, AlertCircle, ChevronLeft, Award, TrendingUp, Target, MessageSquare, ArrowRight, CheckCircle, Loader2 } from "lucide-react";
+import { Users, Clock, Send, AlertCircle, ChevronLeft, TrendingUp, Target, MessageSquare, ArrowRight, CheckCircle, Loader2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { db, auth } from "@/lib/firebase";

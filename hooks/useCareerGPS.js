@@ -87,11 +87,11 @@ export function useCareerGPS(userId) {
           });
           setGpsData(MOCK_GPS);
         }
-      } catch (_) { setGpsData(MOCK_GPS); }
+      } catch (e) { console.error("Error loading GPS data:", e); setGpsData(MOCK_GPS); }
       finally { setLoading(false); }
     }
     load();
-  }, [userId]);
+  }, [userId, isBypass]);
 
   return { gpsData, loading };
 }

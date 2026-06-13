@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export function useScreenLock({ isActive, onTerminate, maxViolations = 3 }) {
   const [violations, setViolations] = useState(0);
@@ -7,9 +7,11 @@ export function useScreenLock({ isActive, onTerminate, maxViolations = 3 }) {
   const isTerminatedRef = useRef(false);
 
   const onTerminateRef = useRef(onTerminate);
+  // eslint-disable-next-line react-hooks/refs
   onTerminateRef.current = onTerminate;
 
   const isActiveRef = useRef(isActive);
+  // eslint-disable-next-line react-hooks/refs
   isActiveRef.current = isActive;
 
   const requestFullscreen = () => {

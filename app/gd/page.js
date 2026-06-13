@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, Clock, Target, Zap, Plus, X, Activity } from "lucide-react";
+import { Users, Target, Zap, Plus, X, Activity } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { db, auth } from "@/lib/firebase";

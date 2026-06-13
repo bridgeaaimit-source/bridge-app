@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Home, Mic, Zap, Trophy, User, Edit, Languages, Lightbulb, Wand2, ChevronLeft } from "lucide-react";
 import toast from "react-hot-toast";
 import AppShell from "@/components/AppShell";
