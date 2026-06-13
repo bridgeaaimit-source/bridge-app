@@ -21,71 +21,92 @@ import {
 import AppShell from "@/components/AppShell";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
 
 // Curated mock data for week-wise history in bypass mode
-const mockWeeklyHistory = [
-  {
-    weekLabel: "Week 1 (Baseline)",
-    dateRange: "May 11 - May 17, 2026",
-    score: 680,
-    change: 0,
-    breakdown: {
-      cognitive: 220, // max 350
-      competence: 240, // max 400
-      communication: 220 // max 250
+const generateDetailedDynamicHistory = (latestScore) => {
+  const scoreVal = typeof latestScore === 'number' ? latestScore : parseInt(latestScore) || 0;
+  
+  const breakdownLatest = {
+    cognitive: Math.round(scoreVal * 0.33),
+    competence: Math.round(scoreVal * 0.40),
+    communication: Math.round(scoreVal * 0.27)
+  };
+  
+  const w1 = Math.max(0, scoreVal - 70);
+  const w2 = Math.max(w1, scoreVal - 40);
+  const w3 = Math.max(w2, scoreVal - 15);
+  const w4 = scoreVal;
+  
+  const ch4 = w4 - w3;
+  const ch3 = w3 - w2;
+  const ch2 = w2 - w1;
+  
+  const breakdownW3 = {
+    cognitive: breakdownLatest.cognitive,
+    competence: Math.max(0, breakdownLatest.competence - Math.round(ch4 * 0.8)),
+    communication: Math.max(0, breakdownLatest.communication - (ch4 - Math.round(ch4 * 0.8)))
+  };
+  
+  const breakdownW2 = {
+    cognitive: breakdownW3.cognitive,
+    competence: Math.max(0, breakdownW3.competence - Math.round(ch3 * 0.8)),
+    communication: Math.max(0, breakdownW3.communication - (ch3 - Math.round(ch3 * 0.8)))
+  };
+  
+  const breakdownW1 = {
+    cognitive: Math.max(0, breakdownW2.cognitive - Math.round(ch2 * 0.8)),
+    competence: breakdownW2.competence,
+    communication: Math.max(0, breakdownW2.communication - (ch2 - Math.round(ch2 * 0.8)))
+  };
+
+  return [
+    {
+      weekLabel: "Week 4 (Current)",
+      dateRange: "June 1 - June 7, 2026",
+      score: w4,
+      change: ch4,
+      breakdown: breakdownLatest,
+      activities: ch4 > 0 ? [
+        { name: "Smart Interview Practice", value: Math.round(ch4 * 0.8), type: "interview", positive: true },
+        { name: "Group Discussion Battle", value: ch4 - Math.round(ch4 * 0.8), type: "gd", positive: true }
+      ] : [{ name: "Initial Score Assessment", value: w4, type: "resume" }]
     },
-    activities: [
-      { name: "Resume Score Initial Upload", value: 680, type: "resume" }
-    ]
-  },
-  {
-    weekLabel: "Week 2",
-    dateRange: "May 18 - May 24, 2026",
-    score: 710,
-    change: 30,
-    breakdown: {
-      cognitive: 245,
-      competence: 240,
-      communication: 225
+    {
+      weekLabel: "Week 3",
+      dateRange: "May 25 - May 31, 2026",
+      score: w3,
+      change: ch3,
+      breakdown: breakdownW3,
+      activities: ch3 > 0 ? [
+        { name: "Smart Interview Session", value: Math.round(ch3 * 0.8), type: "interview", positive: true },
+        { name: "Group Discussion Session", value: ch3 - Math.round(ch3 * 0.8), type: "gd", positive: true }
+      ] : [{ name: "No major updates", value: 0, type: "target" }]
     },
-    activities: [
-      { name: "Aptitude (Quant & Logical)", value: 25, type: "aptitude", positive: true },
-      { name: "Group Discussion Practice", value: 5, type: "gd", positive: true }
-    ]
-  },
-  {
-    weekLabel: "Week 3",
-    dateRange: "May 25 - May 31, 2026",
-    score: 735,
-    change: 25,
-    breakdown: {
-      cognitive: 245,
-      competence: 260,
-      communication: 230
+    {
+      weekLabel: "Week 2",
+      dateRange: "May 18 - May 24, 2026",
+      score: w2,
+      change: ch2,
+      breakdown: breakdownW2,
+      activities: ch2 > 0 ? [
+        { name: "Aptitude Area Training", value: Math.round(ch2 * 0.8), type: "aptitude", positive: true },
+        { name: "Group Discussion Practice", value: ch2 - Math.round(ch2 * 0.8), type: "gd", positive: true }
+      ] : [{ name: "No major updates", value: 0, type: "target" }]
     },
-    activities: [
-      { name: "Smart Interview (SDE Mock)", value: 20, type: "interview", positive: true },
-      { name: "Group Discussion (Hiring Batch)", value: 5, type: "gd", positive: true }
-    ]
-  },
-  {
-    weekLabel: "Week 4 (Current)",
-    dateRange: "June 1 - June 7, 2026",
-    score: 750,
-    change: 15,
-    breakdown: {
-      cognitive: 245,
-      competence: 270,
-      communication: 235
-    },
-    activities: [
-      { name: "Smart Interview (HR Practice)", value: 10, type: "interview", positive: true },
-      { name: "Group Discussion (Live Battle)", value: 5, type: "gd", positive: true }
-    ]
-  }
-];
+    {
+      weekLabel: "Week 1 (Baseline)",
+      dateRange: "May 11 - May 17, 2026",
+      score: w1,
+      change: 0,
+      breakdown: breakdownW1,
+      activities: [
+        { name: "Resume Score Initial Upload", value: w1, type: "resume" }
+      ]
+    }
+  ];
+};
 
 export default function BridgeScoreAnalysis() {
   const router = useRouter();
@@ -98,12 +119,13 @@ export default function BridgeScoreAnalysis() {
 
   useEffect(() => {
     if (isBypassed && mockUserData) {
-      setCurrentScore(mockUserData.stats.bridgeScore || 750);
-      setWeeklyHistory(mockWeeklyHistory.reverse());
+      const mockScore = mockUserData.stats.bridgeScore || 750;
+      setCurrentScore(mockScore);
+      const historyData = generateDetailedDynamicHistory(mockScore);
+      setWeeklyHistory(historyData);
       
-      const latest = mockWeeklyHistory[0]; // Already reversed, so index 0 is Week 4
-      setCurrentBreakdown(latest.breakdown);
-      calculateRecommendations(latest.breakdown);
+      setCurrentBreakdown(historyData[0].breakdown);
+      calculateRecommendations(historyData[0].breakdown);
       setLoading(false);
       return;
     }
@@ -111,6 +133,16 @@ export default function BridgeScoreAnalysis() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
+          // Fetch user profile current score
+          const userRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userRef);
+          let currentProfileScore = 750;
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            const scoreVal = userData.bridgeScore;
+            currentProfileScore = typeof scoreVal === 'number' ? scoreVal : parseInt(scoreVal) || 0;
+          }
+
           // Fetch historical calculated bridge scores
           const scoresRef = collection(db, "users", user.uid, "bridge_scores");
           const q = query(scoresRef, orderBy("createdAt", "desc"), limit(20));
@@ -118,10 +150,11 @@ export default function BridgeScoreAnalysis() {
 
           if (snap.empty) {
             // Synthesize default mock history based on their current score or defaults
-            setCurrentScore(750);
-            setWeeklyHistory(mockWeeklyHistory.reverse());
-            setCurrentBreakdown(mockWeeklyHistory[0].breakdown);
-            calculateRecommendations(mockWeeklyHistory[0].breakdown);
+            setCurrentScore(currentProfileScore);
+            const historyData = generateDetailedDynamicHistory(currentProfileScore);
+            setWeeklyHistory(historyData);
+            setCurrentBreakdown(historyData[0].breakdown);
+            calculateRecommendations(historyData[0].breakdown);
           } else {
             const records = snap.docs.map(doc => ({
               id: doc.id,

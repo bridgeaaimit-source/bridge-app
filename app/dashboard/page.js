@@ -26,26 +26,57 @@ import { useAuthBypass } from "@/hooks/useAuthBypass";
 import GettingStartedChecklist from "@/components/onboarding/GettingStartedChecklist";
 import OnboardingTour from "@/components/OnboardingTour";
 
-const mockWeeklyChanges = [
-  {
-    weekDate: "Week of June 1",
-    score: 750,
-    change: 15,
-    details: ["Smart Interview +10", "Group Discussion +5"]
-  },
-  {
-    weekDate: "Week of May 25",
-    score: 735,
-    change: 25,
-    details: ["Smart Interview +20", "Group Discussion +5"]
-  },
-  {
-    weekDate: "Week of May 18",
-    score: 710,
-    change: 30,
-    details: ["Aptitude +25", "Group Discussion +5"]
+const generateDynamicHistory = (latestScore) => {
+  const scoreVal = typeof latestScore === 'number' ? latestScore : parseInt(latestScore) || 0;
+  
+  const w1 = Math.max(0, scoreVal - 70);
+  const w2 = Math.max(w1, scoreVal - 40);
+  const w3 = Math.max(w2, scoreVal - 15);
+  const w4 = scoreVal;
+  
+  const ch4 = w4 - w3;
+  const ch3 = w3 - w2;
+  const ch2 = w2 - w1;
+  
+  const detailsW4 = [];
+  if (ch4 > 0) {
+    detailsW4.push(`Smart Interview +${Math.round(ch4 * 0.7)}`);
+    detailsW4.push(`Group Discussion +${ch4 - Math.round(ch4 * 0.7)}`);
   }
-];
+  
+  const detailsW3 = [];
+  if (ch3 > 0) {
+    detailsW3.push(`Smart Interview +${Math.round(ch3 * 0.8)}`);
+    detailsW3.push(`Group Discussion +${ch3 - Math.round(ch3 * 0.8)}`);
+  }
+
+  const detailsW2 = [];
+  if (ch2 > 0) {
+    detailsW2.push(`Aptitude +${Math.round(ch2 * 0.8)}`);
+    detailsW2.push(`Group Discussion +${ch2 - Math.round(ch2 * 0.8)}`);
+  }
+  
+  return [
+    {
+      weekDate: "Week of June 1",
+      score: w4,
+      change: ch4,
+      details: detailsW4
+    },
+    {
+      weekDate: "Week of May 25",
+      score: w3,
+      change: ch3,
+      details: detailsW3
+    },
+    {
+      weekDate: "Week of May 18",
+      score: w2,
+      change: ch2,
+      details: detailsW2
+    }
+  ];
+};
 
 export default function Dashboard() {
   const router = useRouter();
@@ -104,7 +135,7 @@ export default function Dashboard() {
       setBridgeScore(mockUserData.stats.bridgeScore);
       setRecentActivity(mockUserData.recentActivity);
       setLeaderboard(mockUserData.leaderboard);
-      setScoreHistory(mockWeeklyChanges);
+      setScoreHistory(generateDynamicHistory(mockUserData.stats.bridgeScore));
       return;
     }
 
@@ -127,6 +158,8 @@ export default function Dashboard() {
             currentStreak: 0,
             avgScore: 0
           };
+
+          let currentScoreVal = 0;
           
           if (userSnap.exists()) {
             console.log('✅ Dashboard - User document exists');
@@ -139,8 +172,9 @@ export default function Dashboard() {
             setResumeUploaded(!!userData.resumeUploaded);
             setUserProfile({ college: userData.college || '', name: userData.name || '' });
             const score = userData.bridgeScore;
+            currentScoreVal = typeof score === 'number' ? score : parseInt(score) || 0;
             const userStats = {
-              bridgeScore: typeof score === 'number' ? score : parseInt(score) || 0,
+              bridgeScore: currentScoreVal,
               interviewsDone: userData.interviewsDone || 0,
               currentStreak: userData.streak || 0,
               avgScore: userData.avgScore || 0
@@ -183,6 +217,7 @@ export default function Dashboard() {
             setUserName(user.displayName || 'User');
             setStats(defaultStats);
             setBridgeScore(0);
+            currentScoreVal = 0;
           }
 
           // Fetch recent interview sessions
@@ -298,11 +333,11 @@ export default function Dashboard() {
               });
               setScoreHistory(formattedHistory.reverse().slice(0, 3));
             } else {
-              setScoreHistory(mockWeeklyChanges);
+              setScoreHistory(generateDynamicHistory(currentScoreVal));
             }
           } catch (scoreHistoryErr) {
             console.error('Error fetching score history:', scoreHistoryErr);
-            setScoreHistory(mockWeeklyChanges);
+            setScoreHistory(generateDynamicHistory(currentScoreVal));
           }
 
         } catch (error) {
