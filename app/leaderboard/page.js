@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Home, Mic, Zap, Trophy, User, Crown, Flame, Star, Medal, Award, Users } from "lucide-react";
+import { Crown, Flame, Star, Medal, Award, Users } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { auth } from "@/lib/firebase";

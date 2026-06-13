@@ -71,6 +71,24 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
   const [usingFallback, setUsingFallback] = useState(false);
   const [voiceCommandDetected, setVoiceCommandDetected] = useState(null);
 
+  const onVoiceCommandRef = useRef(onVoiceCommand);
+  useEffect(() => {
+    onVoiceCommandRef.current = onVoiceCommand;
+  }, [onVoiceCommand]);
+
+  const voiceCommandDetectedRef = useRef(null);
+
+  const checkVoiceCommands = useCallback((text) => {
+    const lower = text.toLowerCase();
+    if (/\b(finish|end|stop)\s+(the\s+)?interview\b/.test(lower) || /\bi\s+(want to|wanna)\s+(finish|end|stop)\b/.test(lower)) {
+      if (!voiceCommandDetectedRef.current) {
+        voiceCommandDetectedRef.current = 'finish';
+        setVoiceCommandDetected('finish');
+        onVoiceCommandRef.current?.('finish');
+      }
+    }
+  }, []);
+
   const recognitionRef = useRef(null);
   const wsRef = useRef(null);
   const streamRef = useRef(null);
@@ -197,6 +215,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
           } else if (msg.message_type === 'FinalTranscript' && msg.text) {
             const newFinal = applyCorrections((finalRef.current + ' ' + msg.text).trim());
             commitFinal(newFinal);
+            checkVoiceCommands(newFinal);
           }
         } catch {}
       };
@@ -218,6 +237,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
       setUsingFallback(true);
       startWebSpeech(lang);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [commitFinal, updateStats]);
 
   // ── Web Speech API — 50ms restart = NO dropped words between pauses ───────
@@ -268,14 +288,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
         commitFinal(newFinal);
         if (interimText) { setInterimTranscript(interimText); updateStats((newFinal + ' ' + interimText).trim()); }
 
-        // Voice command detection: finish/end/stop interview
-        const lower = newFinal.toLowerCase();
-        if (/\b(finish|end|stop)\s+(the\s+)?interview\b/.test(lower) || /\bi\s+(want to|wanna)\s+(finish|end|stop)\b/.test(lower)) {
-          if (!voiceCommandDetected) {
-            setVoiceCommandDetected('finish');
-            onVoiceCommand?.('finish');
-          }
-        }
+        checkVoiceCommands(newFinal);
 
         // Silence detection — 6s after last final word (longer for natural pauses)
         silenceTimer.current = setTimeout(() => {
@@ -330,10 +343,11 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
       console.error('Failed to start speech recognition:', e);
       wsSpeechStarted.current = false;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [commitFinal, updateStats]);
 
   // ── startRecording ────────────────────────────────────────────────────────
-  const startRecording = useCallback(async (existingStream = null) => {
+  const startRecording = useCallback(async () => {
     try {
       setError(null);
       isRecordingRef.current = true;
@@ -417,10 +431,12 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
     setError(null);
     setVolume(0);
     setVoiceCommandDetected(null);
+    voiceCommandDetectedRef.current = null;
   }, []);
 
   const resetVoiceCommand = useCallback(() => {
     setVoiceCommandDetected(null);
+    voiceCommandDetectedRef.current = null;
   }, []);
 
   const exportTranscript = useCallback(() => {

@@ -1,8 +1,7 @@
 "use client";
 
 import { m } from "framer-motion";
-import Image from "next/image";
-import { ArrowRight, CheckCircle2, ShieldAlert } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
 export default function FooterCTA() {
@@ -79,11 +78,9 @@ export default function FooterCTA() {
           
           <div>
             <div className="inline-flex items-center">
-              <Image
+              <img
                 src="/images/logo_transparent.png"
                 alt="BridgeAI"
-                width={112}
-                height={36}
                 className="h-8 sm:h-9 w-auto dark:invert dark:hue-rotate-180 transition-all"
               />
             </div>
@@ -154,5 +151,4 @@ export default function FooterCTA() {
     </div>
   );
 }
-
 

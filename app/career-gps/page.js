@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle, Circle, ArrowRight, ExternalLink, TrendingUp, Target, BookOpen, Zap, AlertTriangle, MapPin, GraduationCap, Briefcase, ChevronRight } from "lucide-react";
+import { CheckCircle, Circle, ArrowRight, ExternalLink, Target, BookOpen, Zap, AlertTriangle, MapPin, GraduationCap, Briefcase, ChevronRight } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useCareerGPS } from "@/hooks/useCareerGPS";
 import { auth } from "@/lib/firebase";

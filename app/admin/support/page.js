@@ -5,7 +5,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { collection, query, onSnapshot, doc, updateDoc, getDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import AppShell from "@/components/AppShell";
-import { Users, Clock, CheckCircle2, AlertCircle, Send, MessageSquare, ShieldAlert, Key, UserCheck } from "lucide-react";
+import { Clock, CheckCircle2, AlertCircle, Send, MessageSquare, ShieldAlert, Key, UserCheck } from "lucide-react";
 import toast from "react-hot-toast";
 
 const TEAM_MEMBERS = [
@@ -543,7 +543,7 @@ export default function AdminSupportPage() {
                           </div>
                           <div className="font-semibold text-gray-800 text-xs truncate">{t.userName}</div>
                           <div className="text-[10px] text-gray-400 truncate">{t.userEmail}</div>
-                          <p className="text-gray-500 text-xs mt-1.5 italic line-clamp-1">"{t.description}"</p>
+                          <p className="text-gray-500 text-xs mt-1.5 italic line-clamp-1">&quot;{t.description}&quot;</p>
                         </div>
 
                         <div className="flex flex-col items-end justify-between h-full min-h-[70px] shrink-0 text-right">
@@ -653,7 +653,7 @@ export default function AdminSupportPage() {
                           {getRelativeTime(selectedTicket.createdAt)}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-800 leading-relaxed font-medium">"{selectedTicket.description}"</p>
+                      <p className="text-sm text-gray-800 leading-relaxed font-medium">&quot;{selectedTicket.description}&quot;</p>
                       {selectedTicket.screenshotUrl && (
                         <div className="mt-3.5 pt-3.5 border-t border-gray-100">
                           <p className="text-[11px] font-bold text-gray-400 uppercase mb-1">Attached Screenshot</p>
@@ -784,7 +784,7 @@ export default function AdminSupportPage() {
               </div>
               <h3 className="text-lg font-bold text-gray-900">Configure Admin Secret Key</h3>
               <p className="text-gray-500 text-xs mt-1.5 leading-relaxed">
-                To perform administrative actions (like sending replies via backend endpoints), please enter your shared <code className="bg-gray-100 text-red-500 font-bold px-1 py-0.5 rounded">ADMIN_SECRET_KEY</code>. This is stored securely in your browser's localStorage.
+                To perform administrative actions (like sending replies via backend endpoints), please enter your shared <code className="bg-gray-100 text-red-500 font-bold px-1 py-0.5 rounded">ADMIN_SECRET_KEY</code>. This is stored securely in your browser&apos;s localStorage.
               </p>
 
               <form onSubmit={handleSaveSecretKey} className="mt-4 space-y-4">

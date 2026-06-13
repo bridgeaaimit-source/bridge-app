@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp, TrendingDown, Zap, Building2, Users, IndianRupee, ArrowUpRight, ArrowDownRight, ExternalLink, RefreshCw, AlertTriangle, Briefcase, Flame } from "lucide-react";
+import { motion } from "framer-motion";
+import { TrendingUp, TrendingDown, Zap, Building2, IndianRupee, Flame } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useSkillPulse } from "@/hooks/useSkillPulse";
 

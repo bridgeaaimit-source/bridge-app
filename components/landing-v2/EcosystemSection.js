@@ -1,12 +1,12 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
-import { m, useScroll, useTransform, AnimatePresence  } from "framer-motion";
-import { Video, Mic, Activity, TrendingUp, Users, MessageSquare, BookOpen, FileText, Target, LayoutGrid, CheckCircle2, ShieldCheck, ChevronRight, BarChart, Sparkles } from "lucide-react";
+import { useRef } from "react";
+import { m, useScroll } from "framer-motion";
+import { Video, Mic, Activity, TrendingUp, Users, MessageSquare, FileText, Target, LayoutGrid, CheckCircle2, Sparkles } from "lucide-react";
 
 export default function EcosystemSection() {
   const containerRef = useRef(null);
-  const { scrollYProgress } = useScroll({
+  useScroll({
     target: containerRef,
     offset: ["start end", "end start"]
   });
@@ -259,7 +259,7 @@ export default function EcosystemSection() {
                 <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-800 transition-colors">
                   <div className="text-[10px] font-bold text-gray-500 uppercase mb-2">Live Transcription Analysis</div>
                   <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed italic">
-                    "<span className="text-indigo-300 not-italic font-medium">Adding to Rahul's point about supply chain risk</span>, if we map the unit economics, localizing production actually reduces our margin by 4% in year one, but shields us from tariff shocks."
+                    &quot;<span className="text-indigo-300 not-italic font-medium">Adding to Rahul&apos;s point about supply chain risk</span>, if we map the unit economics, localizing production actually reduces our margin by 4% in year one, but shields us from tariff shocks.&quot;
                   </p>
                   <div className="flex gap-2 mt-3">
                     <span className="text-[9px] bg-indigo-500/10 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/20">Consensus Building</span>
@@ -288,7 +288,7 @@ export default function EcosystemSection() {
                 News that prepares you.
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-8 leading-relaxed max-w-md">
-                Stop reading generic feeds. BridgeAI takes the day's top business developments and generates consulting case structures and strategy frameworks.
+                Stop reading generic feeds. BridgeAI takes the day&apos;s top business developments and generates consulting case structures and strategy frameworks.
               </p>
               
               <ul className="space-y-4">
@@ -311,7 +311,7 @@ export default function EcosystemSection() {
             <div className="bg-white dark:bg-black/40 rounded-2xl border border-gray-200 dark:border-white/10 shadow-xl overflow-hidden transition-colors">
               {/* Header */}
               <div className="bg-gray-50 dark:bg-black/20 border-b border-gray-200 dark:border-white/10 p-4 flex items-center justify-between transition-colors">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Today's Briefing</span>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Today&apos;s Briefing</span>
                 <span className="text-[10px] font-bold text-teal-400 bg-teal-500/10 px-2 py-1 rounded">Tech & Strategy</span>
               </div>
               
@@ -391,7 +391,7 @@ export default function EcosystemSection() {
                   <span className="text-[10px] font-bold text-[#0D9488] dark:text-teal-400 uppercase tracking-wider block mb-1">Week 1: High Priority</span>
                   <div className="bg-white dark:bg-black/20 border border-teal-100 dark:border-teal-500/30 shadow-sm rounded-lg p-3 text-xs text-gray-600 dark:text-gray-300">
                     <strong className="block text-gray-900 dark:text-white mb-0.5">Improve quantified impact</strong>
-                    Revise bullet points to include exact metrics (e.g., "$1.2M revenue").
+                    Revise bullet points to include exact metrics (e.g., &quot;$1.2M revenue&quot;).
                   </div>
                 </div>
 
@@ -510,6 +510,4 @@ export default function EcosystemSection() {
     </section>
   );
 }
-
-
 

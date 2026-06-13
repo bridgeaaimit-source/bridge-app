@@ -4,36 +4,23 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
-  Home, 
   Mic, 
   Zap, 
   Trophy, 
-  User, 
-  Bell, 
   Flame, 
-  Briefcase, 
   MessageSquare, 
-  TrendingUp, 
   Target, 
   Brain, 
-  Calendar,
-  ArrowUp,
-  ArrowDown,
-  Clock,
-  Award,
   Star,
   ChevronRight
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
-import toast from "react-hot-toast";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { doc, collection, query, orderBy, limit, getDocs, getDoc, where, setDoc } from "firebase/firestore";
+import { doc, collection, query, orderBy, limit, getDocs, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
-import { motion } from "framer-motion";
 import GettingStartedChecklist from "@/components/onboarding/GettingStartedChecklist";
-import InfoTooltip from "@/components/onboarding/InfoTooltip";
 import OnboardingTour from "@/components/OnboardingTour";
 
 export default function Dashboard() {
@@ -57,6 +44,16 @@ export default function Dashboard() {
 
   const handleStartChallenge = () => {
     router.push('/smart-interview');
+  };
+
+  const getTimeAgo = (date) => {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+    return date.toLocaleDateString();
   };
 
   useEffect(() => {
@@ -222,15 +219,6 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, []);
 
-  const getTimeAgo = (date) => {
-    const seconds = Math.floor((new Date() - date) / 1000);
-    
-    if (seconds < 60) return 'Just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
-    return date.toLocaleDateString();
-  };
 
   const features = [
     {

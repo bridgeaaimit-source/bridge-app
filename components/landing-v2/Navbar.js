@@ -93,25 +93,25 @@ export default function Navbar() {
         <div className="hidden items-center gap-3 md:flex">
           <ThemeToggle />
           
-          <Link href="/login" passHref legacyBehavior>
-            <m.a
+          <Link href="/login" className="inline-block">
+            <m.div
               className="rounded-xl border px-4 py-2 text-sm font-medium transition-all cursor-pointer border-gray-200 bg-white text-gray-700 hover:border-[#0D9488] hover:text-[#0D9488] dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:border-[#2DD4BF] dark:hover:text-[#2DD4BF]"
               whileHover={{ scale: 1.015, y: -0.5 }}
               whileTap={{ scale: 0.97 }}
               transition={{ type: "spring", stiffness: 600, damping: 30 }}
             >
               Login
-            </m.a>
+            </m.div>
           </Link>
-          <Link href="/login" passHref legacyBehavior>
-            <m.a
+          <Link href="/login" className="inline-block">
+            <m.div
               className="rounded-xl bg-[#0D524C] px-5 py-2 text-sm font-semibold text-white shadow-md hover:bg-[#0A3D36] transition-all cursor-pointer"
               whileHover={{ scale: 1.015, y: -0.5, boxShadow: "0 4px 12px rgba(13, 82, 76, 0.12)" }}
               whileTap={{ scale: 0.97 }}
               transition={{ type: "spring", stiffness: 600, damping: 30 }}
             >
               Start Free
-            </m.a>
+            </m.div>
           </Link>
         </div>
 
@@ -168,25 +168,25 @@ export default function Navbar() {
                 );
               })}
               <div className="grid grid-cols-2 gap-3 pt-4 border-t mt-2 border-gray-100 dark:border-white/10">
-                <Link href="/login" passHref legacyBehavior>
-                  <m.a
+                <Link href="/login" className="block">
+                  <m.div
                     onClick={() => setMobileMenuOpen(false)}
                     className="rounded-xl border px-4 py-2.5 text-center text-sm font-medium cursor-pointer border-gray-200 bg-white text-gray-700 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                     whileTap={{ scale: 0.965 }}
                     transition={{ type: "spring", stiffness: 600, damping: 30 }}
                   >
                     Login
-                  </m.a>
+                  </m.div>
                 </Link>
-                <Link href="/login" passHref legacyBehavior>
-                  <m.a
+                <Link href="/login" className="block">
+                  <m.div
                     onClick={() => setMobileMenuOpen(false)}
                     className="rounded-xl bg-[#0D524C] px-4 py-2.5 text-center text-sm font-semibold text-white shadow-sm cursor-pointer"
                     whileTap={{ scale: 0.965 }}
                     transition={{ type: "spring", stiffness: 600, damping: 30 }}
                   >
                     Start Free
-                  </m.a>
+                  </m.div>
                 </Link>
               </div>
             </div>

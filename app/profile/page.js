@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Home, Mic, Zap, Trophy, User, Edit3, Target, Award, TrendingUp, Calendar, Mail, Phone, MapPin, GraduationCap, Briefcase, Upload, CheckCircle, FileText } from "lucide-react";
+import { User, Edit3, MapPin, GraduationCap, Briefcase, Upload, CheckCircle, FileText } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { onAuthStateChanged } from "firebase/auth";
