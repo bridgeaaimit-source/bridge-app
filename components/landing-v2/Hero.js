@@ -125,7 +125,7 @@ export default function Hero() {
           >
             <span className="inline-flex items-center gap-2 rounded-full border border-teal-600/10 bg-teal-500/5 px-4 py-1.5 text-xs font-semibold text-[#0D524C]">
               <Sparkles className="h-3.5 w-3.5" />
-              The operating system for career readiness.
+              India's AI-Powered Placement Readiness & Campus Hiring Platform
             </span>
           </m.div>
 
@@ -138,7 +138,7 @@ export default function Hero() {
               transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: 0.08 }}
               className="block"
             >
-              Become
+              Turn Placement Preparation
             </m.span>
             <m.span
               initial={{ opacity: 0, y: 12 }}
@@ -146,7 +146,7 @@ export default function Hero() {
               transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: 0.16 }}
               className="block text-[#0D9488] dark:text-[#2DD4BF]"
             >
-              impossible to ignore.
+              Into Placement Success
             </m.span>
           </m.h1>
 
@@ -156,7 +156,7 @@ export default function Hero() {
             transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: 0.24 }}
             className="mt-6 max-w-lg text-lg text-gray-600 dark:text-gray-300 leading-relaxed font-medium"
           >
-            BridgeAI transforms communication quality, structured thinking, leadership presence, and interview performance into measurable professional credibility recruiters can trust.
+            AI-powered interviews, GD practice, resume intelligence, career guidance, and readiness analytics for students, colleges, and recruiters.
           </m.p>
 
           <m.div
@@ -165,32 +165,51 @@ export default function Hero() {
             transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: 0.32 }}
             className="mt-8 flex flex-wrap gap-4 animate-parent"
           >
-            <Link href="/login" className="cursor-pointer">
+            <Link href="/colleges#demo" className="cursor-pointer">
               <m.span
                 className="inline-flex items-center gap-2 rounded-xl bg-[#0D524C] px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-teal-900/10 hover:bg-[#0A3D36] cursor-pointer"
                 whileHover={{ scale: 1.03, y: -1.5, boxShadow: "0 10px 25px -4px rgba(13, 82, 76, 0.22)" }}
                 whileTap={{ scale: 0.96 }}
                 transition={{ type: "spring", stiffness: 600, damping: 28 }}
               >
-                Unlock Your BRIDGE Score <ArrowRight className="h-5 w-5" />
+                Book Demo <ArrowRight className="h-5 w-5" />
               </m.span>
             </Link>
-            <Link href="/login" className="cursor-pointer">
+            <a href="#demo" className="cursor-pointer">
               <m.span
                 className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-7 py-3.5 text-base font-semibold text-gray-700 hover:border-[#0D9488] hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:border-[#2DD4BF] dark:hover:bg-white/10 cursor-pointer"
                 whileHover={{ scale: 1.03, y: -1.5 }}
                 whileTap={{ scale: 0.96 }}
                 transition={{ type: "spring", stiffness: 600, damping: 28 }}
               >
-                Explore the Readiness Framework
+                Watch Demo
               </m.span>
-            </Link>
+            </a>
           </m.div>
 
           <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.3, delay: 0.3 }}
+            transition={{ duration: 0.55, delay: 0.4 }}
+            className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-gray-200/50 dark:border-white/10 pt-6"
+          >
+            {[
+              { label: "AI-Powered", desc: "Real-time evaluation" },
+              { label: "Placement Focused", desc: "Recruiter vetted" },
+              { label: "College Ready", desc: "Batch analytics" },
+              { label: "Recruiter Friendly", desc: "Pre-screened talent" }
+            ].map((item, idx) => (
+              <div key={idx} className="flex flex-col">
+                <span className="text-sm font-bold text-[#0D9488] dark:text-[#2DD4BF]">{item.label}</span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400">{item.desc}</span>
+              </div>
+            ))}
+          </m.div>
+
+          <m.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.5 }}
             className="mt-8 flex items-center gap-3"
           >
             <div className="flex -space-x-2">
@@ -204,7 +223,7 @@ export default function Hero() {
               ))}
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Trusted by ambitious candidates entering consulting, product, leadership, and technology careers.
+              Trusted by ambitious students, leading colleges, and recruiters across India.
             </p>
           </m.div>
         </m.div>

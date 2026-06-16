@@ -34,14 +34,14 @@ export default function FooterCTA() {
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4">
-            <Link href="/login" className="cursor-pointer w-full sm:w-auto">
+            <Link href="/colleges#demo" className="cursor-pointer w-full sm:w-auto">
               <m.span 
                 className="inline-flex justify-center items-center gap-2 rounded-xl bg-[#0D9488] px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-teal-950/30 hover:bg-[#14B8A6] cursor-pointer w-full"
                 whileHover={{ scale: 1.02, y: -0.5, boxShadow: "0 8px 25px -4px rgba(13, 148, 136, 0.25)" }}
                 whileTap={{ scale: 0.98, y: 0 }}
                 transition={{ type: "spring", stiffness: 600, damping: 30 }}
               >
-                Take your free mock now <ArrowRight className="h-4 w-4" />
+                Book Demo / Talk to Sales <ArrowRight className="h-4 w-4" />
               </m.span>
             </Link>
           </div>
@@ -128,18 +128,19 @@ export default function FooterCTA() {
           </div>
 
           <div>
-            <p className="font-bold text-gray-900 dark:text-white mb-4">Contact</p>
-            <ul className="space-y-3 font-medium">
-              {[
-                "info@appbridgeai.in",
-                "Pune, India",
-                "For Recruiters"
-              ].map((label) => (
-                <li key={label}>
-                  <span className="text-gray-500 dark:text-slate-400 hover:text-[#0D9488] dark:hover:text-[#2DD4BF] transition-colors cursor-pointer">{label}</span>
-                </li>
-              ))}
-            </ul>
+            <p className="font-bold text-gray-900 dark:text-white mb-4">Contact Us</p>
+            <div className="space-y-3 text-xs leading-relaxed">
+              <span className="block font-bold text-gray-900 dark:text-white">Bridgeconnex Technologies Private Limited</span>
+              <span className="block text-gray-500 dark:text-slate-400">
+                Unit No 441, Fourth Floor,<br />
+                Lodha Signet 1, Kolshet Road,<br />
+                Thane, Maharashtra, India
+              </span>
+              <span className="block text-gray-500 dark:text-slate-400">
+                Phone: <a href="tel:+919920580247" className="hover:text-[#0D9488] font-bold">+91 99205 80247</a><br />
+                Email: <a href="mailto:sales@bridgeai.in" className="hover:text-[#0D9488] font-bold">sales@bridgeai.in</a>
+              </span>
+            </div>
           </div>
 
         </div>

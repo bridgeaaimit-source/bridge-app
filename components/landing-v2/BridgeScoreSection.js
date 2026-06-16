@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { m, useScroll, useMotionValueEvent } from "framer-motion";
 import { ArrowRight, Info, Unlock, Lock } from "lucide-react";
+import Link from "next/link";
 
 const SIGNALS = [
   { label: "Communication Verified", minScore: 400 },
@@ -319,6 +320,28 @@ export default function BridgeScoreSection() {
                 <span>Week 8: <strong className="text-[#0D9488] dark:text-[#2DD4BF]">820+</strong></span>
               </div>
             </m.div>
+
+            {/* CTAs */}
+            <div className="flex flex-wrap gap-4 mt-6">
+              <Link href="/students" className="inline-block">
+                <m.span
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#0D524C] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#0A3D36] cursor-pointer"
+                  whileHover={{ scale: 1.02, y: -0.5 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Verify Your Score
+                </m.span>
+              </Link>
+              <Link href="/colleges#demo" className="inline-block">
+                <m.span
+                  className="inline-flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 px-5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer"
+                  whileHover={{ scale: 1.02, y: -0.5 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Book Demo for Campus
+                </m.span>
+              </Link>
+            </div>
 
           </div>
 

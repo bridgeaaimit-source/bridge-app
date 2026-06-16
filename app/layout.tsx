@@ -47,11 +47,11 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "BridgeAI — Crack Placements From Any College",
-  description: "Real questions. Live AI feedback. Daily GD battles. One score that proves you're ready.",
+  title: "BridgeAI — India's AI Placement Readiness & Campus Hiring Platform",
+  description: "Simulate real mock interviews, participate in daily group discussions, ATS-optimize resumes, and monitor placement metrics with BridgeAI.",
   openGraph: {
-    title: "BridgeAI — Crack Placements From Any College",
-    description: "Real questions. Live AI feedback. Daily GD battles. One score that proves you're ready.",
+    title: "BridgeAI — India's AI Placement Readiness & Campus Hiring Platform",
+    description: "Simulate real mock interviews, participate in daily group discussions, ATS-optimize resumes, and monitor placement metrics with BridgeAI.",
     type: "website",
     url: "https://bridge-app.vercel.app",
     images: [
@@ -59,14 +59,14 @@ export const metadata: Metadata = {
         url: "https://bridge-app.vercel.app/og-image.png",
         width: 1200,
         height: 630,
-        alt: "BRIDGE - AI Placement Prep",
+        alt: "BridgeAI Placement Platform",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "BRIDGE - AI Placement Prep",
-    description: "India's smartest placement prep platform",
+    title: "BridgeAI Placement Platform",
+    description: "India's primary AI placement readiness & campus hiring platform",
     images: ["https://bridge-app.vercel.app/og-image.png"],
   },
   icons: {
