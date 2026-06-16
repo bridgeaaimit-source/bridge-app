@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { m, useScroll } from "framer-motion";
 import { Video, Mic, Activity, TrendingUp, Users, MessageSquare, FileText, Target, LayoutGrid, CheckCircle2, Sparkles } from "lucide-react";
+import Link from "next/link";
 
 export default function EcosystemSection() {
   const containerRef = useRef(null);
@@ -101,53 +102,46 @@ export default function EcosystemSection() {
 
             {/* Right: Live AI Insights */}
             <div className="lg:col-span-5 flex flex-col justify-center">
-              <span className="text-xs font-bold tracking-widest text-[#0D9488] dark:text-teal-400 uppercase mb-3">Live Panel Interviews</span>
-              <h3 className="font-display text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                Train under recruiter-grade pressure.
+              <span className="text-xs font-bold tracking-widest text-[#0D9488] dark:text-teal-400 uppercase mb-3">AI Interview Coach</span>
+              <h3 className="font-display text-3xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
+                Practice Real Interviews Before They Matter
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-                Experience realistic interview environments. BridgeAI analyzes your pacing, eye contact, and structured thinking in real-time, completely invisibly.
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+                Experience realistic, recruiter-vetted simulated placement runs with our enterprise-grade AI interviewer panel.
               </p>
 
-              {/* Real-time metrics UI */}
-              <div className="space-y-4">
-                <div className="bg-gray-50 dark:bg-black/20 border border-gray-100 dark:border-white/10 rounded-xl p-4">
-                  <div className="flex justify-between text-xs font-bold mb-2">
-                    <span className="text-gray-700 dark:text-gray-300">Confidence Stability</span>
-                    <span className="text-[#0D9488] dark:text-[#2DD4BF]">82% (Steady)</span>
+              {/* Highlights List */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                {[
+                  { title: "Voice Interviews", desc: "Realistic phone and panel conversation pacing." },
+                  { title: "Video Interviews", desc: "Facial expressions, posture, and visual indicators." },
+                  { title: "Resume-Aware Questions", desc: "Directly targets your internships and projects." },
+                  { title: "Domain-Specific", desc: "Tailored scenarios for PM, SDE, Consult, and Finance." },
+                  { title: "Instant Feedback", desc: "Deep analytics on answers, logic, pacing, and poise." },
+                  { title: "Placement Insights", desc: "Readiness indicators mapped to recruiter checklists." }
+                ].map((item, idx) => (
+                  <div key={idx} className="flex flex-col">
+                    <span className="text-xs font-bold text-[#0D9488] dark:text-[#2DD4BF] flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
+                      {item.title}
+                    </span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-normal">{item.desc}</span>
                   </div>
-                  <div className="h-1.5 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
-                    <m.div 
-                      initial={{ width: "40%" }}
-                      whileInView={{ width: "82%" }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                      className="h-full bg-[#0D9488] dark:bg-[#2DD4BF] rounded-full"
-                    />
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 dark:bg-black/20 border border-gray-100 dark:border-white/10 rounded-xl p-4">
-                   <div className="flex justify-between items-center mb-3">
-                     <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Real-time Analysis</span>
-                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
-                   </div>
-                   <ul className="space-y-2 text-xs text-gray-600 dark:text-gray-400">
-                     <li className="flex items-center gap-2">
-                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                       Communication Clarity: <span className="font-semibold text-gray-900 dark:text-white">Excellent</span>
-                     </li>
-                     <li className="flex items-center gap-2">
-                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                       Structured Thinking: <span className="font-semibold text-gray-900 dark:text-white">Improving (MECE applied)</span>
-                     </li>
-                     <li className="flex items-center gap-2">
-                       <Activity className="h-3.5 w-3.5 text-amber-500" />
-                       Pacing Control: <span className="font-semibold text-gray-900 dark:text-white">Slightly fast (160 wpm)</span>
-                     </li>
-                   </ul>
-                </div>
+                ))}
               </div>
 
+              {/* CTA */}
+              <div>
+                <Link href="/students#interviews" className="inline-block">
+                  <m.span
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#0D524C] px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-[#0A3D36] cursor-pointer"
+                    whileHover={{ scale: 1.02, y: -0.5 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Start AI Mock Interviews &rarr;
+                  </m.span>
+                </Link>
+              </div>
             </div>
           </div>
         </m.div>

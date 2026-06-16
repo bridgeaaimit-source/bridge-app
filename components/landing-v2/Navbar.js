@@ -58,15 +58,16 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Links */}
-        <div className="hidden items-center gap-8 md:flex">
+        <div className="hidden items-center gap-6 lg:gap-8 md:flex">
           {[
-            ["#features", "Features"],
-            ["#how-it-works", "How it Works"],
-            ["#pricing", "Pricing"],
-            ["#stories", "Stories"],
-            ["/tpo/login", "For TPO"],
+            ["/colleges", "For Colleges"],
+            ["/recruiters", "For Recruiters"],
+            ["/students", "For Students"],
+            ["/#features", "Platform"],
+            ["/#pricing", "Pricing"],
+            ["/#about-us", "About Us"],
           ].map(([href, label]) => {
-            const isExternal = href.startsWith('/');
+            const isExternal = href.startsWith('/') && !href.startsWith('/#');
             return isExternal ? (
               <Link
                 key={href}
@@ -103,14 +104,14 @@ export default function Navbar() {
               Login
             </m.div>
           </Link>
-          <Link href="/login" className="inline-block">
+          <Link href="/colleges#demo" className="inline-block">
             <m.div
               className="rounded-xl bg-[#0D524C] px-5 py-2 text-sm font-semibold text-white shadow-md hover:bg-[#0A3D36] transition-all cursor-pointer"
               whileHover={{ scale: 1.015, y: -0.5, boxShadow: "0 4px 12px rgba(13, 82, 76, 0.12)" }}
               whileTap={{ scale: 0.97 }}
               transition={{ type: "spring", stiffness: 600, damping: 30 }}
             >
-              Start Free
+              Book Demo
             </m.div>
           </Link>
         </div>
@@ -140,13 +141,14 @@ export default function Navbar() {
           >
             <div className="space-y-1 px-4 py-4">
               {[
-                ["#features", "Features"],
-                ["#how-it-works", "How it Works"],
-                ["#pricing", "Pricing"],
-                ["#stories", "Stories"],
-                ["/tpo/login", "For TPO"],
+                ["/colleges", "For Colleges"],
+                ["/recruiters", "For Recruiters"],
+                ["/students", "For Students"],
+                ["/#features", "Platform"],
+                ["/#pricing", "Pricing"],
+                ["/#about-us", "About Us"],
               ].map(([href, label]) => {
-                const isExternal = href.startsWith('/');
+                const isExternal = href.startsWith('/') && !href.startsWith('/#');
                 return isExternal ? (
                   <Link
                     key={href}
@@ -178,14 +180,14 @@ export default function Navbar() {
                     Login
                   </m.div>
                 </Link>
-                <Link href="/login" className="block">
+                <Link href="/colleges#demo" className="block">
                   <m.div
                     onClick={() => setMobileMenuOpen(false)}
                     className="rounded-xl bg-[#0D524C] px-4 py-2.5 text-center text-sm font-semibold text-white shadow-sm cursor-pointer"
                     whileTap={{ scale: 0.965 }}
                     transition={{ type: "spring", stiffness: 600, damping: 30 }}
                   >
-                    Start Free
+                    Book Demo
                   </m.div>
                 </Link>
               </div>
