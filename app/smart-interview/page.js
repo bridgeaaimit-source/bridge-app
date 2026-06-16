@@ -808,7 +808,6 @@ function SmartInterviewContent() {
         },
         body: JSON.stringify({
           action: 'continue',
-          resume_base64: state.config.resumeBase64,
           job_role: state.config.jobRole,
           jd: state.config.jobDescription,
           round: state.config.round,
@@ -1086,7 +1085,7 @@ function SmartInterviewContent() {
   }
 
   if (state.status === 'device-test') {
-    return <DeviceTestPanel startInterview={startInterview} />;
+    return <DeviceTestPanel startInterview={startInterview} loading={loading} />;
   }
 
   // INTERVIEW SCREEN

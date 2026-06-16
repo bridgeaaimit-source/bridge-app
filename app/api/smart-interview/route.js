@@ -246,7 +246,7 @@ Return ONLY valid JSON:
         );
       }
 
-      await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-haiku-4-5-20251001');
+      trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-haiku-4-5-20251001').catch(e => console.error('Token tracking error:', e));
 
       const text = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -548,7 +548,7 @@ Return ONLY valid JSON (no markdown, no explanation):
         );
       }
 
-      await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-haiku-4-5-20251001');
+      trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-haiku-4-5-20251001').catch(e => console.error('Token tracking error:', e));
 
       const text = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -748,26 +748,29 @@ SCORING DIMENSIONS (evaluate each dimension INDEPENDENTLY from 1-10):
    Behavior flags to consider: ${JSON.stringify(behaviorFlags)}
    Contradictions: ${JSON.stringify(contradictions)}
 
-For each score, include a brief "justification": one sentence quoting or paraphrasing what specifically in the transcript drove this score.
+For each score, you MUST provide:
+- "score": integer from 1 to 10.
+- "evidence": direct quote or specific reference to the transcript where this was demonstrated.
+- "justification": rationale mapping the evidence to the rubric anchors.
 
 FEEDBACK GUIDELINES:
 - Strengths and Weaknesses must be specific to what was said in the transcript.
 - Identify RECURRING patterns, not one-off moments. Example: "You consistently gave vague answers when asked about your project contributions."
 - key_takeaways: 3-4 sentences on overall readiness, main pattern of mistakes, and the single most important thing to practice.
 
-Return ONLY valid JSON:
+Return ONLY valid JSON (the overall_score and placement_chance fields are placeholder values; the system will calculate them mathematically on the server, but they must be present in the output schema):
 {
-  "placement_chance": 75,
-  "verdict": "Strong Hire / Hire / Strong Maybe / Weak Maybe / Not Hire",
+  "placement_chance": 70,
+  "verdict": "Hire",
   "overall_score": 7,
   "scores": {
-    "communication":       { "score": 7, "justification": "..." },
-    "technical_knowledge": { "score": 7, "justification": "..." },
-    "resume_jd_fit":       { "score": 7, "justification": "..." },
-    "confidence":          { "score": 7, "justification": "..." },
-    "answer_quality":      { "score": 7, "justification": "..." },
-    "problem_solving":     { "score": 7, "justification": "..." },
-    "professionalism":     { "score": 10, "justification": "..." }
+    "communication":       { "score": 7, "evidence": "...", "justification": "..." },
+    "technical_knowledge": { "score": 7, "evidence": "...", "justification": "..." },
+    "resume_jd_fit":       { "score": 7, "evidence": "...", "justification": "..." },
+    "confidence":          { "score": 7, "evidence": "...", "justification": "..." },
+    "answer_quality":      { "score": 7, "evidence": "...", "justification": "..." },
+    "problem_solving":     { "score": 7, "evidence": "...", "justification": "..." },
+    "professionalism":     { "score": 10, "evidence": "...", "justification": "..." }
   },
   "summary": {
     "strengths": ["specific strength 1 from transcript", "specific strength 2"],
@@ -793,7 +796,7 @@ Return ONLY valid JSON:
         })
       );
 
-      await trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-haiku-4-5-20251001');
+      trackTokensServer(user_id || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-haiku-4-5-20251001').catch(e => console.error('Token tracking error:', e));
 
       const text = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -803,13 +806,6 @@ Return ONLY valid JSON:
 
       try {
         const parsed = JSON.parse(cleanText);
-
-        // Normalize scores — handle both {score, justification} objects and plain numbers
-        parsed.overall_score = safeInt(parsed.overall_score);
-        let rawChance = parseInt(parsed.placement_chance, 10);
-        if (isNaN(rawChance)) rawChance = 60;
-        if (rawChance <= 10) rawChance = rawChance * 10;
-        parsed.placement_chance = Math.max(0, Math.min(100, rawChance));
 
         if (parsed.scores) {
           const flatScores = {};
@@ -824,7 +820,7 @@ Return ONLY valid JSON:
           // Server-side score variance check
           checkScoreVariance(flatScores);
 
-          // Re-attach justifications
+          // Re-attach normalized scores to their objects or values
           if (typeof Object.values(parsed.scores)[0] === 'object') {
             Object.keys(parsed.scores).forEach(k => {
               if (typeof parsed.scores[k] === 'object') {
@@ -836,6 +832,64 @@ Return ONLY valid JSON:
           } else {
             parsed.scores = flatScores;
           }
+
+          // ─── Server-Side Mathematical Overall Score Calculation ───
+          // Define weights for dimensions (sum of weights = 1.0)
+          const weights = {
+            communication: 0.15,
+            technical_knowledge: 0.30,
+            resume_jd_fit: 0.10,
+            confidence: 0.05,
+            answer_quality: 0.20,
+            problem_solving: 0.20
+          };
+
+          let calculatedOverall = 0;
+          let weightSum = 0;
+          Object.entries(weights).forEach(([dim, w]) => {
+            if (typeof flatScores[dim] === 'number') {
+              calculatedOverall += flatScores[dim] * w;
+              weightSum += w;
+            }
+          });
+
+          let overall = weightSum > 0 ? (calculatedOverall / weightSum) : 6.0;
+
+          // Deduct from overall score if professionalism is low (less than 7)
+          const profVal = flatScores.professionalism;
+          if (typeof profVal === 'number' && profVal < 7) {
+            overall = Math.max(1.0, overall - (10 - profVal) * 0.5);
+          }
+
+          parsed.overall_score = Math.round(overall * 10) / 10;
+
+          // Non-linear calibration for placement chance
+          let calculatedChance = 60;
+          const roundedOverall = parsed.overall_score;
+          if (roundedOverall >= 8.5) {
+            calculatedChance = 85 + (roundedOverall - 8.5) * 8.66; // 8.5 -> 85%, 10 -> 98%
+          } else if (roundedOverall >= 7.0) {
+            calculatedChance = 70 + (roundedOverall - 7.0) * 10.0;  // 7.0 -> 70%, 8.5 -> 85%
+          } else if (roundedOverall >= 5.5) {
+            calculatedChance = 50 + (roundedOverall - 5.5) * 13.33; // 5.5 -> 50%, 7.0 -> 70%
+          } else if (roundedOverall >= 4.0) {
+            calculatedChance = 30 + (roundedOverall - 4.0) * 13.33; // 4.0 -> 30%, 5.5 -> 50%
+          } else {
+            calculatedChance = 10 + (roundedOverall - 1.0) * 6.66;  // 1.0 -> 10%, 4.0 -> 30%
+          }
+          parsed.placement_chance = Math.round(Math.max(0, Math.min(100, calculatedChance)));
+
+          // Derive verdict from calculated overall score
+          if (roundedOverall >= 8.5) parsed.verdict = "Strong Hire";
+          else if (roundedOverall >= 7.0) parsed.verdict = "Hire";
+          else if (roundedOverall >= 5.5) parsed.verdict = "Strong Maybe";
+          else if (roundedOverall >= 4.0) parsed.verdict = "Weak Maybe";
+          else parsed.verdict = "Not Hire";
+        } else {
+          // Fallback values if scores object is missing
+          parsed.overall_score = 6.0;
+          parsed.placement_chance = 60;
+          parsed.verdict = "Strong Maybe";
         }
 
         parsed.question_analysis = [];
@@ -844,12 +898,17 @@ Return ONLY valid JSON:
       } catch (parseError) {
         console.error('JSON parse error in evaluate:', parseError, 'Raw:', text);
         return Response.json({
-          placement_chance: 65,
-          verdict: 'Hire',
-          overall_score: 6,
+          placement_chance: 60,
+          verdict: 'Strong Maybe',
+          overall_score: 6.0,
           scores: {
-            communication: 6, technical_knowledge: 6, resume_jd_fit: 6,
-            confidence: 6, answer_quality: 6, problem_solving: 6, professionalism: 8,
+            communication: { score: 6, evidence: "Completed the interview session.", justification: "General structured dialogue." },
+            technical_knowledge: { score: 6, evidence: "Completed the interview session.", justification: "General knowledge." },
+            resume_jd_fit: { score: 6, evidence: "Completed the interview session.", justification: "General fit." },
+            confidence: { score: 6, evidence: "Completed the interview session.", justification: "Steady response rate." },
+            answer_quality: { score: 6, evidence: "Completed the interview session.", justification: "Answers were direct." },
+            problem_solving: { score: 6, evidence: "Completed the interview session.", justification: "Reasonable workflow." },
+            professionalism: { score: 8, evidence: "No violations recorded.", justification: "Standard professional conduct." }
           },
           summary: {
             strengths: ['Completed the mock interview', 'Showed interest and effort'],
@@ -868,12 +927,17 @@ Return ONLY valid JSON:
     } catch (claudeError) {
       console.warn('Evaluate Claude call failed:', claudeError.message);
       return Response.json({
-        placement_chance: 65,
-        verdict: 'Hire',
-        overall_score: 6,
+        placement_chance: 60,
+        verdict: 'Strong Maybe',
+        overall_score: 6.0,
         scores: {
-          communication: 7, technical_knowledge: 6, resume_jd_fit: 6,
-          confidence: 7, answer_quality: 5, problem_solving: 6, professionalism: 8,
+          communication: { score: 7, evidence: "Completed the interview session.", justification: "Structured articulation." },
+          technical_knowledge: { score: 6, evidence: "Completed the interview session.", justification: "Adequate explanations." },
+          resume_jd_fit: { score: 6, evidence: "Completed the interview session.", justification: "Good alignment." },
+          confidence: { score: 7, evidence: "Completed the interview session.", justification: "Clear vocal delivery." },
+          answer_quality: { score: 5, evidence: "Completed the interview session.", justification: "Standard answers." },
+          problem_solving: { score: 6, evidence: "Completed the interview session.", justification: "Satisfactory approach." },
+          professionalism: { score: 8, evidence: "No violations recorded.", justification: "Standard conduct." }
         },
         summary: {
           strengths: ['Completed the full interview', 'Demonstrated structured communication'],

@@ -8,7 +8,7 @@ import CameraTest from './CameraTest';
 import MicTest from './MicTest';
 import VoiceTest from './VoiceTest';
 
-export default function DeviceTestPanel({ startInterview }) {
+export default function DeviceTestPanel({ startInterview, loading }) {
   const state = useInterviewState();
   const dispatch = useInterviewDispatch();
 
@@ -18,7 +18,6 @@ export default function DeviceTestPanel({ startInterview }) {
   const setCameraOk = useCallback((val) => dispatch({ type: 'SET_DEVICES', payload: { cameraOk: val } }), [dispatch]);
   const setMicOk = useCallback((val) => dispatch({ type: 'SET_DEVICES', payload: { micOk: val } }), [dispatch]);
   const setVoiceOk = useCallback((val) => dispatch({ type: 'SET_DEVICES', payload: { voiceOk: val } }), [dispatch]);
-  const setSelectedLang = useCallback((val) => dispatch({ type: 'SET_DEVICES', payload: { selectedLang: val } }), [dispatch]);
 
   return (
     <AppShell>
@@ -54,9 +53,19 @@ export default function DeviceTestPanel({ startInterview }) {
                   }
                   startInterview(true);
                 }}
-                className="w-full bg-[#0D9488] text-white py-4 rounded-xl font-semibold hover:bg-[#0F766E] transition-colors shadow-md flex items-center justify-center gap-2"
+                disabled={loading}
+                className="w-full bg-[#0D9488] text-white py-4 rounded-xl font-semibold hover:bg-[#0F766E] transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                Start Interview <ArrowRight className="w-5 h-5" />
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    Preparing Interview...
+                  </>
+                ) : (
+                  <>
+                    Start Interview <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
               </button>
             </div>
           ) : (
@@ -69,7 +78,8 @@ export default function DeviceTestPanel({ startInterview }) {
                   }
                   startInterview(true);
                 }}
-                className="text-xs text-gray-500 hover:text-gray-700 underline flex items-center gap-1 mx-auto"
+                disabled={loading}
+                className="text-xs text-gray-500 hover:text-gray-700 underline flex items-center gap-1 mx-auto disabled:opacity-50"
               >
                 Skip verification and start anyway
               </button>
@@ -78,7 +88,8 @@ export default function DeviceTestPanel({ startInterview }) {
           
           <button
             onClick={() => dispatch({ type: 'SET_STATUS', payload: 'setup' })}
-            className="w-full py-3 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+            disabled={loading}
+            className="w-full py-3 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <ChevronLeft className="w-4 h-4" /> Back to Parameters Setup
           </button>
