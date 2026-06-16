@@ -4,27 +4,57 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  Home, 
-  Mic, 
-  Zap, 
-  Trophy, 
-  User, 
   Bell, 
-  LogOut,
-  Upload,
-  CheckCircle,
-  Rocket,
-  Briefcase,
-  Users,
-  Newspaper,
-  Navigation,
-  BarChart2,
-  Sparkles,
-  Brain,
-  Shield,
+  LogOut, 
+  Upload, 
+  CheckCircle, 
+  Rocket, 
   MessageSquare,
-  Building2
+  Menu,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
+
+import {
+  SmartInterviewIcon,
+  GDPulseIcon,
+  AptitudeArenaIcon,
+  CareerIntelligenceIcon,
+  JobsIcon,
+  RecruitersIcon,
+  PlacementReadinessIcon,
+  BridgeScoreIcon,
+  TrophyIcon,
+  ShieldIcon
+} from '@/components/DesignSystem';
+
+const HomeIcon = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
+
+const UserIcon = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+const DrivesIcon = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="2" y="10" width="20" height="12" rx="2" />
+    <path d="m12 2 8 8H4z" />
+  </svg>
+);
+
+const AdminIcon = ShieldIcon;
+const SupportIcon = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+);
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, setDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -50,6 +80,22 @@ export default function AppShell({ children, hideNavigation = false }) {
   const [resumeFile, setResumeFile] = useState(null);
   const [uploadingResume, setUploadingResume] = useState(false);
   const [openTicketsCount, setOpenTicketsCount] = useState(0);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('bridge_sidebar_collapsed') === 'true';
+      setCollapsed(saved);
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    const newVal = !collapsed;
+    setCollapsed(newVal);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('bridge_sidebar_collapsed', String(newVal));
+    }
+  };
   
   const { isBypassed, mockUserData } = useAuthBypass();
 
@@ -210,29 +256,49 @@ export default function AppShell({ children, hideNavigation = false }) {
   const isAdmin = userRole === 'admin';
   const isRecruiter = userRole === 'recruiter' || isAdmin;
 
-  const sidebarNav = [
-    { href: '/dashboard',   icon: Home,       label: 'Home',           group: ['/dashboard'], tour: 'dashboard' },
-    { href: '/smart-interview', icon: Mic,    label: 'Smart Interview',group: ['/smart-interview', '/interview', '/device-test'], tour: 'smart-interview' },
-    { href: '/pulse',       icon: Users,      label: 'GD Pulse',       group: ['/pulse', '/gd', '/coach'], tour: 'gd-practice' },
-    { href: '/skillpulse',  icon: BarChart2,  label: 'SkillPulse',     group: ['/skillpulse'], tour: 'pulse' },
-    { href: '/aptitude',    icon: Brain,      label: 'Aptitude Arena', group: ['/aptitude'] },
-    { href: '/career-gps',  icon: Navigation, label: 'Career GPS',     group: ['/career-gps'] },
-    { href: '/career-intelligence', icon: Sparkles, label: 'Career Intelligence', group: ['/career-intelligence'] },
-    { href: '/jobs',        icon: Briefcase,  label: 'Jobs',           group: ['/jobs'], tour: 'jobs' },
-    { href: '/drives',      icon: Building2,  label: 'Drives',         group: ['/drives'] },
-    { href: '/leaderboard', icon: Trophy,     label: 'Leaderboard',    group: ['/leaderboard'], tour: 'leaderboard' },
-    { href: '/profile',     icon: User,       label: 'Profile',        group: ['/profile'], tour: 'profile' },
-    ...(isRecruiter ? [{ href: '/recruiter', icon: User, label: 'Recruiter', group: ['/recruiter'] }] : []),
-    ...(isAdmin ? [{ href: '/admin', icon: Shield, label: 'Admin Dashboard', group: ['/admin'] }] : []),
-    ...(isAdmin ? [{ href: '/admin/support', icon: MessageSquare, label: 'Support', group: ['/admin/support'], badge: openTicketsCount }] : []),
+  const categorizedNav = [
+    {
+      title: 'PLACEMENT PREP',
+      items: [
+        { href: '/dashboard', icon: HomeIcon, label: 'Home', group: ['/dashboard'], tour: 'dashboard' },
+        { href: '/smart-interview', icon: SmartInterviewIcon, label: 'Smart Interview', group: ['/smart-interview', '/interview', '/device-test'], tour: 'smart-interview' },
+        { href: '/pulse', icon: GDPulseIcon, label: 'GD Pulse', group: ['/pulse', '/gd', '/coach'], tour: 'gd-practice' },
+        { href: '/aptitude', icon: AptitudeArenaIcon, label: 'Aptitude Arena', group: ['/aptitude'] }
+      ]
+    },
+    {
+      title: 'CAREER',
+      items: [
+        { href: '/career-gps', icon: PlacementReadinessIcon, label: 'Career GPS', group: ['/career-gps'] },
+        { href: '/career-intelligence', icon: CareerIntelligenceIcon, label: 'Career Intelligence', group: ['/career-intelligence'] },
+        { href: '/jobs', icon: JobsIcon, label: 'Jobs', group: ['/jobs'], tour: 'jobs' }
+      ]
+    },
+    {
+      title: 'PROGRESS',
+      items: [
+        { href: '/leaderboard', icon: TrophyIcon, label: 'Leaderboard', group: ['/leaderboard'], tour: 'leaderboard' },
+        { href: '/profile', icon: UserIcon, label: 'Profile', group: ['/profile'], tour: 'profile' },
+        { href: '/dashboard/bridge-score', icon: BridgeScoreIcon, label: 'Bridge Score', group: ['/dashboard/bridge-score'] }
+      ]
+    },
+    {
+      title: 'RECRUITMENT',
+      items: [
+        ...(isRecruiter ? [{ href: '/recruiter', icon: RecruitersIcon, label: 'Recruiter', group: ['/recruiter'] }] : []),
+        { href: '/drives', icon: DrivesIcon, label: 'Drives', group: ['/drives'] },
+        ...(isAdmin ? [{ href: '/admin', icon: AdminIcon, label: 'Admin Dashboard', group: ['/admin'] }] : []),
+        ...(isAdmin ? [{ href: '/admin/support', icon: SupportIcon, label: 'Support', group: ['/admin/support'], badge: openTicketsCount }] : [])
+      ]
+    }
   ];
 
   const mobileNav = [
-    { href: '/dashboard', icon: Home, label: 'Home', group: ['/dashboard'] },
-    { href: '/smart-interview', icon: Mic, label: 'Interview', group: ['/smart-interview', '/interview', '/device-test'] },
-    { href: '/pulse', icon: Newspaper, label: 'Pulse', group: ['/pulse', '/career-intelligence'] },
-    { href: '/leaderboard', icon: Trophy, label: 'Rank', group: ['/leaderboard'] },
-    { href: '/profile', icon: User, label: 'Me', group: ['/profile'] },
+    { href: '/dashboard', icon: HomeIcon, label: 'Home', group: ['/dashboard'] },
+    { href: '/smart-interview', icon: SmartInterviewIcon, label: 'Interview', group: ['/smart-interview', '/interview', '/device-test'] },
+    { href: '/pulse', icon: GDPulseIcon, label: 'GD Pulse', group: ['/pulse', '/gd', '/coach'] },
+    { href: '/leaderboard', icon: TrophyIcon, label: 'Rank', group: ['/leaderboard'] },
+    { href: '/profile', icon: UserIcon, label: 'Me', group: ['/profile'] },
   ];
 
   const isGroupActive = (group) => group.some(p => pathname === p || pathname.startsWith(p + '/'));
@@ -280,86 +346,128 @@ export default function AppShell({ children, hideNavigation = false }) {
 
       {/* ── Desktop Sidebar ── */}
       {!hideNavigation && (
-        <nav className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-[#f5f2ff] shadow-md z-50">
-        <div className="px-5 py-5 bg-white border-b border-gray-100 flex justify-center">
-          <Link href="/dashboard" className="flex items-center justify-center">
-            <img src="/images/logo_navbar_48h.png" alt="BridgeAI" className="h-9 w-auto" />
-          </Link>
-        </div>
-
-        <div className="flex-1 flex flex-col gap-1 px-3 overflow-y-auto">
-          {sidebarNav.map((item) => {
-            const Icon = item.icon;
-            const active = isGroupActive(item.group);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                data-tour={item.tour}
-                className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                  active
-                    ? 'text-[#00685f] bg-[#6df5e1]/30 border-l-4 border-[#00685f]'
-                    : 'text-gray-500 opacity-80 hover:bg-[#6df5e1]/20 hover:text-[#00685f]'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className="w-5 h-5 flex-shrink-0" />
-                  <span>{item.label}</span>
-                </div>
-                {item.badge !== undefined && item.badge > 0 && (
-                  <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
-                    {item.badge}
-                  </span>
-                )}
+        <nav 
+          className={`hidden md:flex flex-col h-screen fixed left-0 top-0 bg-[#F8FAFC] border-r border-[#E2E8F0] z-50 transition-all duration-300 ${
+            collapsed ? 'w-20' : 'w-64'
+          }`}
+        >
+          {/* Logo & Toggle Header */}
+          <div className="px-4 py-5 border-b border-[#E2E8F0] flex items-center justify-between">
+            {!collapsed ? (
+              <Link href="/dashboard" className="flex items-center gap-2 font-bold text-slate-855 text-sm">
+                <div className="w-8 h-8 bg-[#14B8A6] rounded-lg flex items-center justify-center text-white font-extrabold text-sm shrink-0">B</div>
+                <span className="font-bold text-slate-800 text-base">BridgeAI</span>
               </Link>
-            );
-          })}
-        </div>
+            ) : (
+              <Link href="/dashboard" className="w-8 h-8 bg-[#14B8A6] rounded-lg flex items-center justify-center text-white font-extrabold text-sm mx-auto">
+                B
+              </Link>
+            )}
+            <button 
+              onClick={toggleSidebar} 
+              className="p-1.5 rounded-lg hover:bg-slate-200/50 text-slate-500 transition-colors"
+            >
+              {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
+          </div>
 
-        <div className="p-4 flex flex-col gap-3">
-          <Link
-            href="/smart-interview"
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#0D9488] to-[#14B8A6] text-white py-3 rounded-2xl font-semibold text-sm shadow-md hover:shadow-lg hover:opacity-95 transition-all"
-            
-          >
-            <Rocket className="w-4 h-4" /> Start Practice
-          </Link>
-          <button
-            onClick={() => {
-              if (isBypassed) { window.location.reload(); }
-              else { auth.signOut(); router.push('/login'); }
-            }}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl text-xs font-medium transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            {isBypassed ? 'Reset Bypass' : 'Sign Out'}
-          </button>
-        </div>
+          {/* Categorized Nav List */}
+          <div className="flex-1 flex flex-col gap-5 py-4 px-3 overflow-y-auto">
+            {categorizedNav.map((category) => (
+              <div key={category.title} className="flex flex-col gap-1">
+                {/* Category Title (hidden when collapsed) */}
+                {!collapsed && (
+                  <h4 className="text-[10px] font-bold text-slate-400 tracking-wider px-3 mb-1.5 uppercase">
+                    {category.title}
+                  </h4>
+                )}
+                {category.items.map((item) => {
+                  const Icon = item.icon;
+                  const active = isGroupActive(item.group);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      data-tour={item.tour}
+                      title={collapsed ? item.label : undefined}
+                      className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 group relative ${
+                        active
+                          ? 'text-[#0D9488] bg-[#CCFBF1]/40 border-l-4 border-[#14B8A6]'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className={`w-4 h-4 flex-shrink-0 transition-transform group-hover:scale-105 ${active ? 'text-[#14B8A6]' : 'text-slate-500'}`} />
+                        {!collapsed && <span>{item.label}</span>}
+                      </div>
+                      {item.badge !== undefined && item.badge > 0 && !collapsed && (
+                        <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+
+          {/* Footer CTAs */}
+          <div className="p-4 border-t border-[#E2E8F0] flex flex-col gap-2.5">
+            {!collapsed ? (
+              <Link
+                href="/smart-interview"
+                className="w-full flex items-center justify-center gap-2 bg-[#14B8A6] hover:bg-[#0D9488] text-white py-3 rounded-xl font-bold text-xs shadow-sm transition-all"
+              >
+                <Rocket className="w-3.5 h-3.5" /> Start Practice
+              </Link>
+            ) : (
+              <Link
+                href="/smart-interview"
+                title="Start Practice"
+                className="w-10 h-10 mx-auto flex items-center justify-center bg-[#14B8A6] hover:bg-[#0D9488] text-white rounded-xl shadow-sm transition-all"
+              >
+                <Rocket className="w-4 h-4" />
+              </Link>
+            )}
+            <button
+              onClick={() => {
+                if (isBypassed) { window.location.reload(); }
+                else { auth.signOut(); router.push('/login'); }
+              }}
+              className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50/50 rounded-xl text-xs font-semibold transition-colors ${
+                collapsed ? 'justify-center' : ''
+              }`}
+            >
+              <LogOut className="w-4 h-4" />
+              {!collapsed && (isBypassed ? 'Reset Bypass' : 'Sign Out')}
+            </button>
+          </div>
         </nav>
       )}
 
       {/* ── Resume Gate ── */}
       {!isBypassed && resumeUploaded === false && currentUser && (
-        <div className="fixed inset-0 z-[100] bg-[#fcf8ff] flex items-center justify-center p-6">
+        <div className="fixed inset-0 z-[100] bg-white flex items-center justify-center p-6">
           <div className="max-w-md w-full text-center">
-            <h1 className="text-2xl font-extrabold text-[#00685f] mb-8" >BridgeAI</h1>
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-              <div className="w-16 h-16 bg-[#CCFBF1] rounded-full flex items-center justify-center mx-auto mb-5">
-                <Upload className="w-8 h-8 text-[#0D9488]" />
+            <h1 className="text-2xl font-extrabold text-[#14B8A6] mb-8" style={{fontFamily:'Syne,sans-serif'}}>BridgeAI</h1>
+            <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 p-8">
+              <div className="w-16 h-16 bg-[#CCFBF1]/50 rounded-full flex items-center justify-center mx-auto mb-5">
+                <Upload className="w-7 h-7 text-[#14B8A6]" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2" >Upload Your Resume First</h2>
-              <p className="text-gray-500 text-sm mb-6">
-                Hey {currentUser?.displayName?.split(' ')[0] || 'there'} 👋 — upload your resume to get your <strong className="text-[#0D9488]">personalised Bridge Score</strong> and unlock all AI features.
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Upload Your Resume First</h2>
+              <p className="text-slate-600 text-sm mb-6">
+                Hey {currentUser?.displayName?.split(' ')[0] || 'there'} 👋 — upload your resume to get your <strong className="text-[#14B8A6]">personalised Bridge Score</strong> and unlock all AI features.
               </p>
-              <div className="text-left space-y-2 mb-7 bg-[#f5f2ff] rounded-xl p-4">
+              <div className="text-left space-y-2 mb-7 bg-[#F8FAFC] rounded-xl p-4 border border-slate-100">
                 {['Upload your resume (PDF/DOC)', 'Complete your profile', 'Start AI mock interviews'].map((s, i) => (
-                  <div key={i} className="flex items-center gap-3 text-sm text-gray-700">
-                    <div className="w-5 h-5 rounded-full bg-[#0D9488] text-white flex items-center justify-center text-xs font-bold shrink-0">{i + 1}</div>
+                  <div key={i} className="flex items-center gap-3 text-xs text-slate-700 font-medium">
+                    <div className="w-5 h-5 rounded-full bg-[#14B8A6] text-white flex items-center justify-center text-[10px] font-bold shrink-0">{i + 1}</div>
                     {s}
                   </div>
                 ))}
               </div>
-              <label className={`w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-semibold text-white cursor-pointer transition-all ${uploadingResume ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-[#0D9488] to-[#14B8A6] hover:opacity-90'}`}>
+              <label className={`w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-white cursor-pointer transition-all ${uploadingResume ? 'bg-slate-300 cursor-not-allowed' : 'bg-[#14B8A6] hover:bg-[#0D9488]'}`}>
                 {uploadingResume ? (
                   <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Analysing resume...</>
                 ) : resumeFile ? (
@@ -369,8 +477,8 @@ export default function AppShell({ children, hideNavigation = false }) {
                 )}
                 <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleResumeGateUpload} disabled={uploadingResume} />
               </label>
-              {uploadingResume && <p className="text-xs text-[#0D9488] mt-3 font-medium">AI is scoring your resume — this takes ~10 seconds...</p>}
-              {!uploadingResume && <p className="text-xs text-gray-400 mt-3">Max 5MB · PDF, DOC, or DOCX</p>}
+              {uploadingResume && <p className="text-xs text-[#14B8A6] mt-3 font-semibold">AI is scoring your resume — this takes ~10 seconds...</p>}
+              {!uploadingResume && <p className="text-xs text-slate-400 mt-3">Max 5MB · PDF, DOC, or DOCX</p>}
             </div>
           </div>
         </div>
@@ -379,33 +487,33 @@ export default function AppShell({ children, hideNavigation = false }) {
       {/* ── Desktop Top Right Profile ── */}
       {!hideNavigation && (
         <div className="hidden md:flex fixed top-4 right-6 z-40 items-center gap-4">
-        <button className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-500 bg-white shadow-sm border border-gray-200 relative">
-          <Bell className="w-5 h-5" />
+        <button className="p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-500 bg-white shadow-sm border border-slate-200 relative">
+          <Bell className="w-4 h-4" />
           {unreadNotifCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{unreadNotifCount > 9 ? '9+' : unreadNotifCount}</span>
+            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">{unreadNotifCount > 9 ? '9+' : unreadNotifCount}</span>
           )}
         </button>
         <div className="relative">
           <button onClick={() => setShowProfileDropdown(!showProfileDropdown)} className="focus:outline-none flex items-center">
             {userProfile?.photo ? (
-              <img src={userProfile.photo} alt={userProfile.name} className="w-10 h-10 rounded-full object-cover border-2 border-[#008378] shadow-sm" />
+              <img src={userProfile.photo} alt={userProfile.name} className="w-8 h-8 rounded-full object-cover border-2 border-[#14B8A6] shadow-sm" />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-[#CCFBF1] flex items-center justify-center text-[#00685f] font-bold text-sm shadow-sm border border-[#008378]">
+              <div className="w-8 h-8 rounded-full bg-[#CCFBF1]/50 flex items-center justify-center text-[#0D9488] font-bold text-xs shadow-sm border border-[#14B8A6]">
                 {userProfile?.name?.charAt(0)?.toUpperCase() || 'U'}
               </div>
             )}
           </button>
           {showProfileDropdown && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2">
-              <div className="px-4 py-2 border-b border-gray-100 mb-1">
-                <p className="text-sm font-bold text-gray-900 truncate">{userProfile?.name || 'User'}</p>
-                <p className="text-xs text-gray-500 truncate">{userProfile?.email || 'Student'}</p>
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-2">
+              <div className="px-4 py-2 border-b border-slate-100 mb-1">
+                <p className="text-xs font-bold text-slate-900 truncate">{userProfile?.name || 'User'}</p>
+                <p className="text-[10px] text-slate-500 truncate">{userProfile?.email || 'Student'}</p>
               </div>
-              <Link href="/profile" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                <User className="w-4 h-4" /> Profile
+              <Link href="/profile" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50">
+                <UserIcon className="w-3.5 h-3.5" /> Profile
               </Link>
-              <button onClick={() => { auth.signOut(); router.push('/login'); setShowProfileDropdown(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                <LogOut className="w-4 h-4" /> Sign Out
+              <button onClick={() => { auth.signOut(); router.push('/login'); setShowProfileDropdown(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-xs text-red-600 hover:bg-red-50">
+                <LogOut className="w-3.5 h-3.5" /> Sign Out
               </button>
             </div>
           )}
@@ -414,10 +522,10 @@ export default function AppShell({ children, hideNavigation = false }) {
       )}
 
       {/* ── Main Content ── */}
-      <main className={`flex-1 min-h-screen bg-[#fcf8ff] ${
+      <main className={`flex-1 min-h-screen bg-white ${
         hideNavigation 
           ? "w-full pt-0 pb-0 ml-0" 
-          : "md:ml-64 pt-16 md:pt-0 pb-24 md:pb-0"
+          : `${collapsed ? 'md:ml-20' : 'md:ml-64'} pt-16 md:pt-0 pb-24 md:pb-0`
       }`}>
         {children}
       </main>

@@ -1,188 +1,366 @@
 "use client";
 
-import React, { useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useInterviewState, useInterviewDispatch } from '@/context/InterviewContext';
-import { Upload, CheckCircle, FileText, Mic, Play, History, Lightbulb, Sliders } from 'lucide-react';
+import { 
+  Upload, 
+  CheckCircle, 
+  FileText, 
+  Mic, 
+  Play, 
+  History, 
+  Sliders, 
+  ChevronRight, 
+  ChevronLeft,
+  Sparkles,
+  Award,
+  Video
+} from 'lucide-react';
 import AppShell from '@/components/AppShell';
+import { Button, Input, Textarea, ProgressBar } from '@/components/DesignSystem';
 
 export default function SetupForm({ startInterview, loadFeedbackHistory, handleResumeUpload, loading }) {
   const state = useInterviewState();
   const dispatch = useInterviewDispatch();
   const fileInputRef = useRef(null);
+  
+  const [step, setStep] = useState(1);
+  const [difficulty, setDifficulty] = useState('Intermediate'); // local UX choice
+
   const resumeFileName = state.config.resumeFileName;
   const jobRole = state.config.jobRole;
   const jobDescription = state.config.jobDescription;
   const startError = state.error;
 
+  const nextStep = () => setStep((prev) => Math.min(prev + 1, 4));
+  const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
+
+  const isStep1Valid = !!state.config.round;
+  const isStep2Valid = !!state.config.mode;
+  const isStep3Valid = !!state.config.resumeBase64 && !!state.config.jobRole;
+
   return (
-      <AppShell>
-        <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
+    <AppShell>
+      <div className="max-w-[1000px] mx-auto px-4 md:px-10 py-6 md:py-10">
+        
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10 border-b border-slate-100 pb-6">
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Smart Interview</h1>
+            <p className="text-slate-500 text-sm mt-1">Placement Readiness Flagship Experience</p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={loadFeedbackHistory}
+            className="self-start sm:self-center"
+          >
+            <History className="w-4 h-4 text-slate-500" />
+            <span>View History</span>
+          </Button>
+        </div>
+
+        {/* Wizard Progress Bar */}
+        <div className="mb-10 space-y-2">
+          <div className="flex justify-between text-xs font-bold text-slate-400 tracking-wider">
+            <span>STEP {step} OF 4</span>
+            <span className="text-[#14B8A6]">{step === 1 ? 'ROUND TYPE' : step === 2 ? 'PARAMETERS' : step === 3 ? 'BASE MATERIAL' : 'LAUNCH BRIEF'}</span>
+          </div>
+          <ProgressBar progress={(step / 4) * 100} />
+        </div>
+
+        {/* Error message */}
+        {startError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+            <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center text-red-600 shrink-0 text-xs font-bold">!</div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Smart Interview</h1>
-              <p className="text-gray-600 mt-1">Personalized based on your resume & job description</p>
+              <p className="text-red-600 text-sm font-semibold">{startError}</p>
+              <button onClick={() => dispatch({ type: 'SET_ERROR', payload: '' })} className="text-red-400 hover:text-red-500 text-xs mt-1 font-semibold underline">Dismiss</button>
             </div>
-            <button
-              onClick={loadFeedbackHistory}
-              className="flex items-center gap-2 px-4 py-2 bg-[#0D9488] text-white rounded-lg hover:bg-[#0F766E] transition-colors"
-            >
-              <History className="w-5 h-5" />
-              View History
-            </button>
           </div>
+        )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 flex flex-col gap-6">
-              
-              {/* Setup form */}
-              {/* Card 1: Base Material */}
-              <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(13,148,136,0.08)] border border-gray-100 overflow-hidden">
-                <div className="bg-[#CCFBF1] px-6 py-4">
-                  <h2 className="font-bold text-[#0D9488] flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
-                    <Upload className="w-5 h-5" /> Base Material
-                  </h2>
-                </div>
-                <div className="p-6">
-                  <label htmlFor="resume-upload" className={`relative border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all group ${
-                    state.config.resumeFileName ? 'border-[#0D9488] bg-[#F0FDFA]' : 'border-[#CCFBF1] hover:border-[#0D9488] bg-[#F0FDFA]/50'
-                  }`}>
-                    <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 transition-colors ${
-                      state.config.resumeFileName ? 'bg-[#0D9488] text-white' : 'bg-[#CCFBF1] text-[#0D9488] group-hover:bg-[#0D9488] group-hover:text-white'
+        {/* ── STEP 1: CHOOSE INTERVIEW TYPE ── */}
+        {step === 1 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Choose Round Focus</h2>
+              <p className="text-slate-500 text-sm mt-1">Select the interview focus area you want to benchmark.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { r: 'Technical Round', title: 'Technical Interview', desc: 'Assess coding speed, system design tradeoffs, and fundamental algorithms.' },
+                { r: 'HR Round', title: 'HR & Behavioral', desc: 'Evaluate communication, STAR scenario formatting, and cultural alignment.' },
+                { r: 'Managerial Round', title: 'Managerial Round', desc: 'Assess situational logic, conflict resolution, and technical leadership.' },
+                { r: 'Final Round', title: 'Executive Placement Mock', desc: 'Comprehensive panel emulation designed for top tier company hiring filters.' }
+              ].map((item) => (
+                <div 
+                  key={item.r}
+                  onClick={() => dispatch({ type: 'SET_CONFIG', payload: { round: item.r } })}
+                  className={`border rounded-2xl p-6 cursor-pointer transition-all ${
+                    state.config.round === item.r 
+                      ? 'border-[#14B8A6] bg-[#CCFBF1]/15 shadow-sm' 
+                      : 'border-slate-200 bg-white hover:bg-slate-50/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-slate-800 text-base">{item.title}</h3>
+                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                      state.config.round === item.r ? 'border-[#14B8A6] bg-[#14B8A6] text-white' : 'border-slate-300'
                     }`}>
-                      {resumeFileName ? <CheckCircle className="w-7 h-7" /> : <Upload className="w-7 h-7" />}
-                    </div>
-                    {resumeFileName ? (
-                      <>
-                        <p className="font-bold text-[#0D9488] text-sm">{resumeFileName}</p>
-                        <p className="text-xs text-gray-400 mt-1">Click to replace</p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="font-bold text-gray-700 mb-1">Upload your Resume</p>
-                        <p className="text-sm text-gray-400 max-w-xs">Drag & drop your PDF or DOCX here. {"We'll"} tailor questions to your experience.</p>
-                      </>
-                    )}
-                    <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} className="hidden" id="resume-upload" />
-                  </label>
-                </div>
-              </div>
-
-              {/* Card 2: Interview Parameters */}
-              <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(13,148,136,0.08)] border border-gray-100 overflow-hidden">
-                <div className="bg-[#CCFBF1] px-6 py-4">
-                  <h2 className="font-bold text-[#0D9488] flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
-                    <FileText className="w-5 h-5" /> Interview Parameters
-                  </h2>
-                </div>
-                <div className="p-6 flex flex-col gap-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Job Role</label>
-                      <input
-                        type="text"
-                        value={jobRole}
-                        onChange={(e) => dispatch({ type: 'SET_CONFIG', payload: { jobRole: e.target.value } })}
-                        placeholder="e.g. Software Engineer, Product Manager"
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2">Job Description (Optional)</label>
-                      <input type="text" value={jobDescription} onChange={(e) => dispatch({ type: 'SET_CONFIG', payload: { jobDescription: e.target.value } })}
-                        placeholder="Paste JD text snippet"
-                        className="w-full bg-gray-50 border-2 border-[#CCFBF1] focus:border-[#0D9488] rounded-xl px-4 py-3 outline-none text-gray-800 text-sm transition-colors" />
+                      {state.config.round === item.r && "✓"}
                     </div>
                   </div>
+                  <p className="text-xs text-slate-500 mt-2.5 leading-relaxed">{item.desc}</p>
                 </div>
-              </div>
-
-              {/* Card 3: Interview Settings */}
-              <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(13,148,136,0.08)] border border-gray-100 overflow-hidden">
-                <div className="bg-[#CCFBF1] px-6 py-4">
-                  <h2 className="font-bold text-[#0D9488] flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
-                    <Sliders className="w-5 h-5" /> Interview Settings
-                  </h2>
-                </div>
-                <div className="p-6 flex flex-col gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Interview Round</label>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                      {['HR Round', 'Technical Round', 'Managerial Round', 'Final Round'].map((r) => (
-                        <button
-                          key={r}
-                          onClick={() => dispatch({ type: 'SET_CONFIG', payload: { round: r } })}
-                          className={`px-4 py-2 rounded-lg transition-colors ${
-                            state.config.round === r
-                              ? 'bg-[#F0FDFA] text-[#0D9488] font-semibold'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          {r}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-3">Practice Mode</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[{m:'voice',Icon:Mic,label:'Voice Only'},{m:'video',Icon:Play,label:'Video & Voice'}].map(({m,Icon,label}) => (
-                        <button key={m} onClick={() => dispatch({ type: 'SET_CONFIG', payload: { mode: m } })}
-                          className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                            state.config.mode === m ? 'border-[#0D9488] bg-[#F0FDFA] text-[#0D9488]' : 'border-[#CCFBF1] text-gray-400 hover:border-[#0D9488]/40'
-                          }`}>
-                          <Icon className="w-6 h-6" />
-                          <span className="text-xs font-bold">{label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-[#F0FDFA] rounded-2xl p-6 border border-[#CCFBF1]">
-                <p className="font-bold text-[#0D9488] mb-3 flex items-center gap-2 text-sm">
-                  <CheckCircle className="w-4 h-4" /> What to expect
-                </p>
-                <ul className="text-xs text-gray-600 space-y-1.5 mb-6">
-                  <li>• AI asks 8–12 highly personalized questions</li>
-                  <li>• Hands-free conversational speech flow</li>
-                  <li>• Full scoring analysis and integrity rating provided</li>
-                </ul>
-                {startError && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-                    <p className="text-red-600 text-sm">❌ {startError}</p>
-                    <button onClick={() => dispatch({ type: 'SET_ERROR', payload: '' })} className="text-red-400 text-xs mt-1">Dismiss</button>
-                  </div>
-                )}
-                <button onClick={() => startInterview(false)} disabled={!state.config.resumeBase64 || !state.config.jobRole || loading}
-                  className="w-full bg-gradient-to-r from-[#0D9488] to-[#14B8A6] text-white py-4 rounded-2xl font-bold text-base hover:opacity-90 transition-opacity shadow-md disabled:opacity-50 flex items-center justify-center gap-2">
-                  {loading ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Preparing Interview…</> : <>Start Practice Interview <FileText className="w-4 h-4" /></>}
-                </button>
-              </div>
+              ))}
             </div>
 
-            <div className="flex flex-col gap-6">
-              <div className="bg-white rounded-2xl p-6 shadow-[0_4px_20px_rgba(13,148,136,0.08)] border border-gray-100">
-                <h3 className="font-bold text-[#0D9488] mb-4 flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
-                  <Lightbulb className="w-5 h-5" /> Pacing & Pointers
-                </h3>
-                <div className="flex flex-col gap-3">
-                  {[
-                    {title:'STAR Method', body:'Structure answers using Situation, Task, Action, and Result.'},
-                    {title:'Comprehension Time', body:'You get 5 seconds to think before the mic opens automatically.'},
-                    {title:'Stay Focused', body:'Keep the tab active. Leaving the window will impact your integrity score.'},
-                  ].map(({title,body}) => (
-                    <div key={title} className="p-4 bg-[#F0FDFA] rounded-xl border border-[#CCFBF1]">
-                      <p className="font-bold text-gray-800 text-sm mb-1">{title}</p>
-                      <p className="text-xs text-gray-500">{body}</p>
-                    </div>
-                  ))}
-                  </div>
-                </div>
-              </div>
+            <div className="flex justify-end pt-4 border-t border-slate-100">
+              <Button disabled={!isStep1Valid} onClick={nextStep} variant="teal">
+                <span>Continue Parameters</span>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
             </div>
           </div>
-      </AppShell>
-    );
+        )}
+
+        {/* ── STEP 2: SELECT DIFFICULTY & MODE ── */}
+        {step === 2 && (
+          <div className="space-y-8">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Select Difficulty Level</h2>
+                <p className="text-slate-500 text-sm mt-1">Calibrate the questions complexity to match your current target.</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  { d: 'Beginner', desc: 'Basic terms, syntax, loops, core values. (+10 Bridge score impact)' },
+                  { d: 'Intermediate', desc: 'Standard DSA, frameworks, scenarios. (+25 Bridge score impact)' },
+                  { d: 'Placement Ready', desc: 'Complex problem-solving, scale, STAR formats. (+40 Bridge score impact)' }
+                ].map((item) => (
+                  <div 
+                    key={item.d}
+                    onClick={() => setDifficulty(item.d)}
+                    className={`border rounded-2xl p-5 cursor-pointer transition-all ${
+                      difficulty === item.d 
+                        ? 'border-[#6366F1] bg-[#6366F1]/5 shadow-sm' 
+                        : 'border-slate-200 bg-white hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs uppercase tracking-wider text-slate-700">{item.d}</span>
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                        difficulty === item.d ? 'border-[#6366F1] bg-[#6366F1] text-white' : 'border-slate-300'
+                      }`}>
+                        {difficulty === item.d && "✓"}
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-6 pt-4 border-t border-slate-100">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Practice Mode</h2>
+                <p className="text-slate-500 text-sm mt-1">Choose whether to enable video recording alongside voice inputs.</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { m: 'voice', label: 'Voice Only', desc: 'Hands-free audio transcription.', icon: Mic },
+                  { m: 'video', label: 'Video & Voice', desc: 'Assess body language & visual responses.', icon: Video }
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div 
+                      key={item.m}
+                      onClick={() => dispatch({ type: 'SET_CONFIG', payload: { mode: item.m } })}
+                      className={`border rounded-2xl p-5 cursor-pointer flex items-center gap-4 transition-all ${
+                        state.config.mode === item.m 
+                          ? 'border-[#14B8A6] bg-[#CCFBF1]/15 shadow-sm' 
+                          : 'border-slate-200 bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        state.config.mode === item.m ? 'bg-[#14B8A6] text-white' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div className="text-left">
+                        <span className="font-bold text-slate-800 text-sm block">{item.label}</span>
+                        <span className="text-[10px] text-slate-400 mt-0.5 block">{item.desc}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex justify-between pt-6 border-t border-slate-100">
+              <Button onClick={prevStep} variant="outline">
+                <ChevronLeft className="w-4 h-4" />
+                <span>Back</span>
+              </Button>
+              <Button disabled={!isStep2Valid} onClick={nextStep} variant="teal">
+                <span>Continue Base Material</span>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 3: BASE MATERIAL ── */}
+        {step === 3 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Upload Target Base Material</h2>
+              <p className="text-slate-500 text-sm mt-1">We tailor questions dynamically to your resume claims and target job requirements.</p>
+            </div>
+
+            {/* Resume Upload Box */}
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase">RESUME (PDF, DOCX)</label>
+              <label htmlFor="resume-upload" className={`relative border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all group ${
+                state.config.resumeBase64 ? 'border-[#14B8A6] bg-[#CCFBF1]/5' : 'border-slate-200 hover:border-[#14B8A6]/60 bg-white'
+              }`}>
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 transition-colors ${
+                  state.config.resumeBase64 ? 'bg-[#14B8A6] text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-[#14B8A6] group-hover:text-white'
+                }`}>
+                  {resumeFileName ? <CheckCircle className="w-7 h-7" /> : <Upload className="w-7 h-7" />}
+                </div>
+                {resumeFileName ? (
+                  <>
+                    <p className="font-bold text-slate-800 text-sm">{resumeFileName}</p>
+                    <p className="text-xs text-slate-400 mt-1.5">Click to replace file</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-bold text-slate-800 text-sm">Upload your Resume</p>
+                    <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">Drag & drop your PDF/DOCX here. Questions will adapt to your projects.</p>
+                  </>
+                )}
+                <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} className="hidden" id="resume-upload" />
+              </label>
+            </div>
+
+            {/* Role & JD inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase">TARGET JOB ROLE</label>
+                <Input 
+                  type="text"
+                  value={jobRole}
+                  onChange={(e) => dispatch({ type: 'SET_CONFIG', payload: { jobRole: e.target.value } })}
+                  placeholder="e.g. Software Engineer, Marketing Analyst"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase">JOB DESCRIPTION (OPTIONAL)</label>
+                <Input 
+                  type="text"
+                  value={jobDescription}
+                  onChange={(e) => dispatch({ type: 'SET_CONFIG', payload: { jobDescription: e.target.value } })}
+                  placeholder="e.g. Paste JD snippet or keywords"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between pt-6 border-t border-slate-100">
+              <Button onClick={prevStep} variant="outline">
+                <ChevronLeft className="w-4 h-4" />
+                <span>Back</span>
+              </Button>
+              <Button disabled={!isStep3Valid} onClick={nextStep} variant="teal">
+                <span>Review AI Brief</span>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 4: LAUNCH BRIEF SUMMARY ── */}
+        {step === 4 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Confirm AI Interview Brief</h2>
+              <p className="text-slate-500 text-sm mt-1">Review parameters and outcomes prior to session launch.</p>
+            </div>
+
+            <div className="bg-[#F8FAFC] border border-slate-200/60 rounded-2xl p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase">INTERVIEW PROPERTIES</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-xs font-medium text-slate-500">
+                    <span>Round Focus:</span>
+                    <span className="font-bold text-slate-700">{state.config.round}</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-medium text-slate-500">
+                    <span>Mode:</span>
+                    <span className="font-bold text-slate-700 capitalize">{state.config.mode} & Voice</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-medium text-slate-500">
+                    <span>Target Role:</span>
+                    <span className="font-bold text-slate-700">{state.config.jobRole}</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-medium text-slate-500">
+                    <span>Resume:</span>
+                    <span className="font-bold text-slate-700">{resumeFileName}</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-medium text-slate-500">
+                    <span>Difficulty:</span>
+                    <span className="font-bold text-slate-700">{difficulty}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 border-t md:border-t-0 md:border-l border-slate-200/80 pt-6 md:pt-0 md:pl-6">
+                <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase">SESSION BOUNDS</h3>
+                <div className="space-y-3 text-xs text-slate-500 leading-relaxed">
+                  <div className="flex justify-between">
+                    <span>⏱️ Est. Duration:</span>
+                    <span className="font-bold text-slate-700">15-20 Mins</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>📝 Questions Count:</span>
+                    <span className="font-bold text-slate-700">8-12 Questions</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>⚡ Bridge Score Impact:</span>
+                    <span className="font-bold text-slate-700 text-[#14B8A6]">{difficulty === 'Beginner' ? '+10 Pts' : difficulty === 'Intermediate' ? '+25 Pts' : '+40 Pts'}</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-2 leading-normal">
+                    This interview calculates real-time integrity alerts. Switching tabs or exiting fullscreen may negatively affect your evaluation metrics.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between pt-6 border-t border-slate-100">
+              <Button onClick={prevStep} variant="outline">
+                <ChevronLeft className="w-4 h-4" />
+                <span>Back</span>
+              </Button>
+              <Button 
+                onClick={() => startInterview(false)} 
+                disabled={loading}
+                variant="teal"
+                className="px-8 animate-pulse shadow-md"
+              >
+                {loading ? (
+                  <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Preparing Session...</>
+                ) : (
+                  <>Start Practice Interview <Sparkles className="w-4 h-4" /></>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </AppShell>
+  );
 }
