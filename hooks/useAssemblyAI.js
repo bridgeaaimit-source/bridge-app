@@ -137,7 +137,6 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
       const { token } = await res.json();
       if (!token) throw new Error('No token');
 
-      const sampleRate = 16000;
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
       });
@@ -146,8 +145,10 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
       // Volume analyser
       const AudioContextClass = typeof window !== 'undefined' ? (window.AudioContext || window.webkitAudioContext) : null;
       if (!AudioContextClass) throw new Error('AudioContext not supported');
-      const audioCtx = new AudioContextClass({ sampleRate });
+      const audioCtx = new AudioContextClass({ sampleRate: 16000 });
       audioCtxRef.current = audioCtx;
+      const actualSampleRate = audioCtx.sampleRate || 16000;
+      
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
@@ -166,7 +167,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
 
       // AssemblyAI WebSocket
       const ws = new WebSocket(
-        `wss://api.assemblyai.com/v2/realtime/ws?sample_rate=${sampleRate}&token=${token}&word_boost=${encodeURIComponent(
+        `wss://api.assemblyai.com/v2/realtime/ws?sample_rate=${actualSampleRate}&token=${token}&word_boost=${encodeURIComponent(
           JSON.stringify(['React','JavaScript','Python','Node','MongoDB','SQL','MySQL','PostgreSQL','AWS','GCP','Azure','GitHub','Docker','Kubernetes','TypeScript','Infosys','TCS','Wipro','Accenture','Flipkart','IIT','NIT','BITS'])
         )}&boost_param=high`
       );
@@ -313,6 +314,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
     // Web Speech API auto-ends after ~60s of silence or sometimes randomly.
     // We wait 1s then restart only if still recording and not mid-speech.
     recognition.onend = () => {
+      recognitionRef.current = null;
       if (!isRecordingRef.current) return;
       clearTimeout(restartTimer.current);
       restartTimer.current = setTimeout(() => {
