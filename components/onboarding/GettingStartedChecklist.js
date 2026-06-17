@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
 const ITEMS = [
@@ -63,7 +63,7 @@ export default function GettingStartedChecklist({ stats, userProfile, gdJoined =
 
   return (
     <AnimatePresence>
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
@@ -72,7 +72,7 @@ export default function GettingStartedChecklist({ stats, userProfile, gdJoined =
         {allDone ? (
           <div className="text-center py-2">
             <div className="text-2xl mb-2">🎉</div>
-            <p className="font-semibold text-gray-900">You're all set! Keep practicing to climb the leaderboard.</p>
+            <p className="font-semibold text-gray-900">{"You're all set! Keep practicing to climb the leaderboard."}</p>
           </div>
         ) : (
           <>
@@ -86,7 +86,7 @@ export default function GettingStartedChecklist({ stats, userProfile, gdJoined =
 
             {/* Progress bar */}
             <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-5">
-              <motion.div
+              <m.div
                 className="h-full rounded-full bg-gradient-to-r from-[#0D9488] to-[#14B8A6]"
                 initial={{ width: 0 }}
                 animate={{ width: `${pct}%` }}
@@ -120,7 +120,7 @@ export default function GettingStartedChecklist({ stats, userProfile, gdJoined =
             </div>
           </>
         )}
-      </motion.div>
+      </m.div>
     </AnimatePresence>
   );
 }

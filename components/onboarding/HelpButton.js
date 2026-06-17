@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 
 const MENU = [
   { icon: "🎯", label: "Retake product tour", action: "tour" },
@@ -35,7 +35,7 @@ export default function HelpButton({ onStartTour }) {
         {/* Popover */}
         <AnimatePresence>
           {open && (
-            <motion.div initial={{ opacity: 0, y: 8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+            <m.div initial={{ opacity: 0, y: 8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.95 }} transition={{ duration: 0.15 }}
               className="bg-white rounded-xl shadow-xl border border-gray-100 p-1.5 w-52 mb-1">
               {MENU.map((item) => (
@@ -45,24 +45,24 @@ export default function HelpButton({ onStartTour }) {
                   <span className="text-sm font-medium text-gray-700">{item.label}</span>
                 </button>
               ))}
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
 
         {/* Main button */}
-        <motion.button initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 1, type: "spring", stiffness: 260, damping: 20 }}
+        <m.button initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 1, type: "spring", stiffness: 260, damping: 20 }}
           onClick={() => setOpen((o) => !o)}
           className="w-12 h-12 bg-[#0D9488] text-white rounded-full shadow-lg flex items-center justify-center text-xl font-bold hover:bg-[#0F766E] transition-colors"
           aria-label="Help">
           {open ? "✕" : "?"}
-        </motion.button>
+        </m.button>
       </div>
 
       {/* Shortcuts modal */}
       <AnimatePresence>
         {showShortcuts && (
           <div className="fixed inset-0 z-[9100] flex items-center justify-center bg-black/50" onClick={() => setShowShortcuts(false)}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+            <m.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <h3 className="font-bold text-gray-900 text-lg mb-4">⌨️ Keyboard Shortcuts</h3>
               <div className="space-y-2.5 text-sm">
@@ -74,7 +74,7 @@ export default function HelpButton({ onStartTour }) {
                 ))}
               </div>
               <button onClick={() => setShowShortcuts(false)} className="mt-5 w-full py-2 bg-[#F0FDFA] text-[#0D9488] rounded-lg font-medium text-sm">Close</button>
-            </motion.div>
+            </m.div>
           </div>
         )}
       </AnimatePresence>
@@ -83,7 +83,7 @@ export default function HelpButton({ onStartTour }) {
       <AnimatePresence>
         {showScore && (
           <div className="fixed inset-0 z-[9100] flex items-center justify-center bg-black/50" onClick={() => setShowScore(false)}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+            <m.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <h3 className="font-bold text-gray-900 text-lg mb-3">📊 How BRIDGE Score Works</h3>
               <p className="text-gray-500 text-sm leading-relaxed mb-4">
@@ -98,7 +98,7 @@ export default function HelpButton({ onStartTour }) {
                 ))}
               </div>
               <button onClick={() => setShowScore(false)} className="mt-5 w-full py-2 bg-[#0D9488] text-white rounded-lg font-medium text-sm">Got it</button>
-            </motion.div>
+            </m.div>
           </div>
         )}
       </AnimatePresence>

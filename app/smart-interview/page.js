@@ -1302,7 +1302,7 @@ function SmartInterviewContent() {
                         <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-left animate-fade-in">
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Live Transcript Preview</p>
                           <p className="text-xs text-slate-600 leading-relaxed italic">
-                            "{fullTranscript || interimTranscript}"
+                            &ldquo;{fullTranscript || interimTranscript}&rdquo;
                           </p>
                         </div>
                       )}

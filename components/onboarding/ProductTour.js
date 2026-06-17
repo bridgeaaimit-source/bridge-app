@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 
 const STEPS = [
   { target: "[data-tour='bridge-score-card']", title: "Your BRIDGE Score", body: "This is your placement readiness out of 1000. Every activity you do here pushes it higher. Aim for 700+.", pos: "right" },
@@ -151,7 +151,7 @@ export default function ProductTour({ isOpen, onClose, startStep = 0 }) {
 
       {/* Tooltip */}
       <AnimatePresence mode="wait">
-        <motion.div key={step} initial={{ opacity: 0, scale: 0.93 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.93 }}
+        <m.div key={step} initial={{ opacity: 0, scale: 0.93 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.93 }}
           transition={{ duration: 0.18 }}
           className="absolute bg-white rounded-xl shadow-2xl p-4 w-72 pointer-events-auto z-10"
           style={tooltipStyle}>
@@ -180,7 +180,7 @@ export default function ProductTour({ isOpen, onClose, startStep = 0 }) {
               <div key={i} className={`h-1 rounded-full transition-all ${i === step ? "w-4 bg-[#0D9488]" : "w-1 bg-gray-200"}`} />
             ))}
           </div>
-        </motion.div>
+        </m.div>
       </AnimatePresence>
     </div>
   );

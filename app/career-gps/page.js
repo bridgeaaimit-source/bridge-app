@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { CheckCircle, Circle, ArrowRight, ExternalLink, Target, BookOpen, Zap, AlertTriangle, MapPin, GraduationCap, Briefcase, ChevronRight } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useCareerGPS } from "@/hooks/useCareerGPS";
@@ -97,7 +97,7 @@ function ScoreBreakdown({ breakdown, loading }) {
             <span className="font-bold text-gray-900">{breakdown?.[key] || 0}%</span>
           </div>
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-            <motion.div
+            <m.div
               initial={{ width: 0 }}
               whileInView={{ width: `${breakdown?.[key] || 0}%` }}
               viewport={{ once: true }}
@@ -117,7 +117,7 @@ function SkillGaps({ gaps, loading }) {
   return (
     <div className="space-y-4">
       {(gaps || []).map((g, i) => (
-        <motion.div key={g.skill} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.07 }}>
+        <m.div key={g.skill} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.07 }}>
           <div className="flex items-center justify-between text-xs mb-1.5">
             <span className="font-semibold text-gray-800">{g.skill}</span>
             <span className={`px-2 py-0.5 rounded-full font-bold text-xs ${g.priority === "high" ? "bg-red-50 text-red-600" : g.priority === "medium" ? "bg-amber-50 text-amber-600" : "bg-[#F0FDFA] text-[#0D9488]"}`}>
@@ -126,7 +126,7 @@ function SkillGaps({ gaps, loading }) {
           </div>
           <div className="relative h-5 bg-gray-100 rounded-full overflow-hidden">
             {/* Required bar (ghost) */}
-            <motion.div
+            <m.div
               initial={{ width: 0 }}
               whileInView={{ width: `${g.required}%` }}
               viewport={{ once: true }}
@@ -134,7 +134,7 @@ function SkillGaps({ gaps, loading }) {
               className="absolute top-0 left-0 h-full rounded-full border-2 border-[#0D9488]/30 bg-transparent"
             />
             {/* User bar */}
-            <motion.div
+            <m.div
               initial={{ width: 0 }}
               whileInView={{ width: `${g.userLevel}%` }}
               viewport={{ once: true }}
@@ -147,7 +147,7 @@ function SkillGaps({ gaps, loading }) {
             <span className="text-red-500">Gap: {g.required - g.userLevel}%</span>
             <span>Required: {g.required}%</span>
           </div>
-        </motion.div>
+        </m.div>
       ))}
     </div>
   );
@@ -161,7 +161,7 @@ function JourneyTimeline({ timeline, loading }) {
       <div className="absolute left-5 top-4 bottom-4 w-0.5 bg-gray-100" />
       <div className="space-y-4">
         {(timeline || []).map((t, i) => (
-          <motion.div
+          <m.div
             key={t.id}
             initial={{ x: -32, opacity: 0 }}
             whileInView={{ x: 0, opacity: 1 }}
@@ -176,13 +176,13 @@ function JourneyTimeline({ timeline, loading }) {
                   <CheckCircle className="w-5 h-5 text-white" />
                 </div>
               ) : t.status === "active" ? (
-                <motion.div
+                <m.div
                   animate={{ scale: [1, 1.2, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}
                   className="w-10 h-10 bg-[#0D9488] rounded-full flex items-center justify-center shadow-[0_0_0_6px_#CCFBF1]"
                 >
                   <div className="w-3 h-3 bg-white rounded-full" />
-                </motion.div>
+                </m.div>
               ) : (
                 <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center border-2 border-gray-200">
                   <Circle className="w-5 h-5 text-gray-300" />
@@ -204,7 +204,7 @@ function JourneyTimeline({ timeline, loading }) {
                 <div className="mt-2">
                   <div className="flex justify-between text-xs text-gray-400 mb-1"><span>Progress</span><span>{t.progress}%</span></div>
                   <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <motion.div
+                    <m.div
                       initial={{ width: 0 }}
                       animate={{ width: `${t.progress}%` }}
                       transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
@@ -219,7 +219,7 @@ function JourneyTimeline({ timeline, loading }) {
                 </a>
               )}
             </div>
-          </motion.div>
+          </m.div>
         ))}
       </div>
     </div>
@@ -231,7 +231,7 @@ function StageSelector({ active, onChange }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-8">
       {STAGES.map((s) => (
-        <motion.button
+        <m.button
           key={s.id}
           onClick={() => onChange(s.id)}
           whileTap={{ scale: 0.97 }}
@@ -245,7 +245,7 @@ function StageSelector({ active, onChange }) {
         >
           <span className="text-xl">{s.icon}</span>
           {s.label}
-        </motion.button>
+        </m.button>
       ))}
     </div>
   );
@@ -254,10 +254,10 @@ function StageSelector({ active, onChange }) {
 /* ── 10th stage content ── */
 function Stage10th({ stageData }) {
   return (
-    <motion.div key="10th" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.3 }}>
+    <m.div key="10th" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.3 }}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {(stageData?.streams || []).map((s, i) => (
-          <motion.div key={s.name} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+          <m.div key={s.name} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
             whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(13,148,136,0.15)" }}
             className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
             <div className="font-bold text-gray-900 mb-1" style={{ fontFamily: "Syne, sans-serif" }}>{s.name}</div>
@@ -267,26 +267,26 @@ function Stage10th({ stageData }) {
               <span className="font-bold text-gray-900">{s.avgSalary}</span>
             </div>
             <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
-              <motion.div initial={{ width: 0 }} whileInView={{ width: `${s.demandScore}%` }} viewport={{ once: true }}
+              <m.div initial={{ width: 0 }} whileInView={{ width: `${s.demandScore}%` }} viewport={{ once: true }}
                 transition={{ duration: 0.8, delay: i * 0.1 }} className="h-full rounded-full bg-gradient-to-r from-[#0D9488] to-[#14B8A6]" />
             </div>
             <div className="flex flex-wrap gap-1">
               {s.careers.map(c => <span key={c} className="text-xs bg-[#F0FDFA] text-[#0D9488] px-2 py-0.5 rounded-full border border-[#CCFBF1]">{c}</span>)}
             </div>
-          </motion.div>
+          </m.div>
         ))}
       </div>
-    </motion.div>
+    </m.div>
   );
 }
 
 /* ── 12th stage content ── */
 function Stage12th({ stageData }) {
   return (
-    <motion.div key="12th" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.3 }}>
+    <m.div key="12th" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.3 }}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {(stageData?.degrees || []).map((d, i) => (
-          <motion.div key={d.name} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+          <m.div key={d.name} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
             whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(13,148,136,0.15)" }}
             className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
             <div className="font-bold text-gray-900 mb-1" style={{ fontFamily: "Syne, sans-serif" }}>{d.name}</div>
@@ -298,20 +298,20 @@ function Stage12th({ stageData }) {
             <div className="flex flex-wrap gap-1">
               {d.topColleges.map(c => <span key={c} className="text-xs bg-[#F0FDFA] text-[#0D9488] px-2 py-0.5 rounded-full border border-[#CCFBF1]">{c}</span>)}
             </div>
-          </motion.div>
+          </m.div>
         ))}
       </div>
-    </motion.div>
+    </m.div>
   );
 }
 
 /* ── Post Grad stage content ── */
 function StagePostGrad({ stageData }) {
   return (
-    <motion.div key="postgrad" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.3 }}>
+    <m.div key="postgrad" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.3 }}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {(stageData?.paths || []).map((p, i) => (
-          <motion.div key={p.name} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+          <m.div key={p.name} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
             whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(13,148,136,0.15)" }}
             className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
             <div className="font-bold text-gray-900 mb-3" style={{ fontFamily: "Syne, sans-serif" }}>{p.name}</div>
@@ -320,17 +320,17 @@ function StagePostGrad({ stageData }) {
               <div className="bg-gray-50 rounded-xl p-2 text-center"><div className="text-xs text-gray-500">Earning at 3yr</div><div className="font-bold text-gray-900 text-sm">{p.earningAt3yr}</div></div>
             </div>
             <div className="text-xs text-gray-500 bg-amber-50 px-3 py-2 rounded-lg">🎯 Best for: <span className="font-semibold text-amber-700">{p.bestFor}</span></div>
-          </motion.div>
+          </m.div>
         ))}
       </div>
-    </motion.div>
+    </m.div>
   );
 }
 
 /* ── Career Intelligence stage content ── */
 function StageCareerIntelligence({ stageData }) {
   return (
-    <motion.div key="career-intelligence" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.3 }}>
+    <m.div key="career-intelligence" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.3 }}>
       <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
         <div className="text-center mb-6">
           <div className="text-4xl mb-2">🧠</div>
@@ -338,17 +338,17 @@ function StageCareerIntelligence({ stageData }) {
           <p className="text-sm text-gray-500">AI-powered career gap analysis and recommendations</p>
         </div>
         <a href="/career-intelligence" className="block w-full">
-          <motion.button
+          <m.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="w-full bg-gradient-to-r from-[#0D9488] to-[#14B8A6] text-white px-6 py-3 rounded-xl font-semibold shadow hover:shadow-lg transition-shadow flex items-center justify-center gap-2"
           >
             <Zap className="w-4 h-4" /> Open Career Intelligence
             <ArrowRight className="w-4 h-4" />
-          </motion.button>
+          </m.button>
         </a>
       </div>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -358,7 +358,7 @@ function Recommendations({ recs, loading }) {
   return (
     <div className="space-y-3">
       {(recs || []).map((r, i) => (
-        <motion.a
+        <m.a
           key={r.title}
           href={r.url}
           initial={{ opacity: 0, x: -16 }}
@@ -379,7 +379,7 @@ function Recommendations({ recs, loading }) {
             <div className="text-xs text-gray-500 mt-0.5">{r.reason}</div>
           </div>
           <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
-        </motion.a>
+        </m.a>
       ))}
     </div>
   );
@@ -392,7 +392,10 @@ export default function CareerGPSPage() {
   const isBypass = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true";
 
   useEffect(() => {
-    if (isBypass) { setUserId("bypass"); return; }
+    if (isBypass) {
+      const timer = setTimeout(() => setUserId("bypass"), 0);
+      return () => clearTimeout(timer);
+    }
     const unsub = onAuthStateChanged(auth, (u) => setUserId(u?.uid || null));
     return unsub;
   }, []);
@@ -403,28 +406,28 @@ export default function CareerGPSPage() {
 
   return (
     <AppShell>
-      <motion.div variants={container} initial="hidden" animate="visible" className="max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10">
+      <m.div variants={container} initial="hidden" animate="visible" className="max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10">
 
         {/* Header */}
-        <motion.div variants={item} className="mb-8">
+        <m.div variants={item} className="mb-8">
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900" style={{ fontFamily: "Syne, sans-serif" }}>Career GPS</h1>
             <span className="text-xs bg-[#CCFBF1] text-[#0D9488] px-3 py-1 rounded-full font-bold border border-[#99F6E4]">Personalized</span>
           </div>
           <p className="text-gray-500 text-sm">Your navigation system from where you are to where you want to be</p>
-        </motion.div>
+        </m.div>
 
         {/* Stage Selector */}
-        <motion.div variants={item}>
+        <m.div variants={item}>
           <StageSelector active={activeStage} onChange={setActiveStage} />
-        </motion.div>
+        </m.div>
 
         {/* Stage title */}
         <AnimatePresence mode="wait">
-          <motion.div key={activeStage + "-title"} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="mb-6">
+          <m.div key={activeStage + "-title"} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="mb-6">
             <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: "Syne, sans-serif" }}>{stageContent?.title || ""}</h2>
             <p className="text-sm text-gray-500">{stageContent?.subtitle || ""}</p>
-          </motion.div>
+          </m.div>
         </AnimatePresence>
 
         {/* Graduation stage — 2-column layout */}
@@ -433,17 +436,17 @@ export default function CareerGPSPage() {
             {/* Left column */}
             <div className="lg:col-span-1 space-y-6">
               {/* Market Fit Score */}
-              <motion.div variants={item} whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(13,148,136,0.15)" }}
+              <m.div variants={item} whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(13,148,136,0.15)" }}
                 className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] p-6">
                 <MarketFitRing score={gpsData?.marketFitScore} loading={loading} />
                 <div className="mt-5 pt-5 border-t border-gray-100">
                   <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Score Breakdown</div>
                   <ScoreBreakdown breakdown={gpsData?.scoreBreakdown} loading={loading} />
                 </div>
-              </motion.div>
+              </m.div>
 
               {/* Recommendations */}
-              <motion.div variants={item} className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] overflow-hidden">
+              <m.div variants={item} className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
                   <Target className="w-5 h-5 text-[#0D9488]" />
                   <h2 className="font-bold text-gray-900" style={{ fontFamily: "Syne, sans-serif" }}>Your Action Plan</h2>
@@ -451,13 +454,13 @@ export default function CareerGPSPage() {
                 <div className="p-4">
                   <Recommendations recs={gpsData?.recommendations} loading={loading} />
                 </div>
-              </motion.div>
+              </m.div>
             </div>
 
             {/* Right column */}
             <div className="lg:col-span-2 space-y-6">
               {/* Journey Timeline */}
-              <motion.div variants={item} className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] overflow-hidden">
+              <m.div variants={item} className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
                   <span className="text-lg">🗺️</span>
                   <h2 className="font-bold text-gray-900" style={{ fontFamily: "Syne, sans-serif" }}>Your Journey</h2>
@@ -465,10 +468,10 @@ export default function CareerGPSPage() {
                 <div className="p-5">
                   <JourneyTimeline timeline={gpsData?.timeline} loading={loading} />
                 </div>
-              </motion.div>
+              </m.div>
 
               {/* Skill Gaps */}
-              <motion.div variants={item} className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] overflow-hidden">
+              <m.div variants={item} className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-amber-500" />
                   <h2 className="font-bold text-gray-900" style={{ fontFamily: "Syne, sans-serif" }}>Skill Gaps</h2>
@@ -486,7 +489,7 @@ export default function CareerGPSPage() {
                     <Zap className="w-4 h-4" /> Practice Gap Skills in AI Interview
                   </a>
                 </div>
-              </motion.div>
+              </m.div>
             </div>
           </div>
         ) : (
@@ -500,7 +503,7 @@ export default function CareerGPSPage() {
         )}
 
         {/* Connect to SkillPulse CTA */}
-        <motion.div variants={item} className="mt-8 bg-gradient-to-r from-[#0D9488] to-[#14B8A6] rounded-2xl p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-4">
+        <m.div variants={item} className="mt-8 bg-gradient-to-r from-[#0D9488] to-[#14B8A6] rounded-2xl p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <div className="font-bold text-lg mb-1" style={{ fontFamily: "Syne, sans-serif" }}>See what the market wants THIS week</div>
             <div className="text-[#CCFBF1] text-sm">SkillPulse shows live hiring trends — your GPS updates from it automatically</div>
@@ -508,9 +511,9 @@ export default function CareerGPSPage() {
           <a href="/skillpulse" className="shrink-0 bg-white text-[#0D9488] px-5 py-2.5 rounded-xl font-bold text-sm hover:shadow-lg transition-shadow flex items-center gap-2">
             Open SkillPulse <ArrowRight className="w-4 h-4" />
           </a>
-        </motion.div>
+        </m.div>
 
-      </motion.div>
+      </m.div>
     </AppShell>
   );
 }
