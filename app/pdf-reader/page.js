@@ -15,7 +15,7 @@ import {
   HelpCircle,
   Lightbulb
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 export default function PDFReaderPage() {
@@ -194,7 +194,7 @@ export default function PDFReaderPage() {
                   </div>
                 ) : (
                   chatMessages.map((message, index) => (
-                    <motion.div
+                    <m.div
                       key={index}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -209,7 +209,7 @@ export default function PDFReaderPage() {
                       >
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                       </div>
-                    </motion.div>
+                    </m.div>
                   ))
                 )}
                 {isLoading && (

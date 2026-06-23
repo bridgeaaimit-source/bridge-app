@@ -1090,85 +1090,122 @@ function SmartInterviewContent() {
 
   // INTERVIEW SCREEN
   if (state.status === 'interviewing') {
-    // Fix 6: 15s → 10s lock
     const isNextLocked = speakingTime < 10;
+    const totalExpectedQuestions = 10;
+    const estimatedQuestionsRemaining = Math.max(0, totalExpectedQuestions - state.engine.questionNumber);
 
     return (
       <AppShell hideNavigation={true}>
-        <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+        <div className="max-w-[1000px] mx-auto px-4 md:px-10 py-6 md:py-10">
+          
+          {/* Top Control Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6 border-b border-slate-100 pb-4">
             <div className="flex items-center gap-3">
               {isRecording && (
-                <div className="flex items-center gap-2 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full">
-                  <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                  <span className="text-xs font-bold text-red-600 uppercase tracking-wide">Recording</span>
+                <div className="flex items-center gap-2 bg-red-50 border border-red-200 px-3.5 py-1.5 rounded-full">
+                  <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></span>
+                  <span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">Recording</span>
                 </div>
               )}
-              <div className="flex items-center gap-2 bg-[#CCFBF1] px-3 py-1.5 rounded-full">
-                <span className="text-xs font-bold text-[#0D9488]">Question {state.engine.questionNumber}</span>
-                <span className="text-xs text-gray-400">• {state.config.round}</span>
+              <div className="flex items-center gap-2 bg-[#CCFBF1]/50 px-3.5 py-1.5 rounded-full">
+                <span className="text-[10px] font-bold text-[#0D9488] uppercase tracking-wider">Question {state.engine.questionNumber}</span>
+                <span className="text-[10px] text-slate-400 font-semibold">• {state.config.round}</span>
               </div>
-              {/* Fix 7: Exit fullscreen button */}
               {state.integrity.isFullscreen && (
                 <button
                   onClick={() => document.exitFullscreen?.()}
                   title="Exit fullscreen"
-                  className="flex items-center gap-1.5 bg-gray-800/70 text-white px-3 py-1.5 rounded-full text-xs font-semibold hover:bg-gray-700 transition-colors"
+                  className="flex items-center gap-1.5 bg-slate-800 text-white px-3 py-1.5 rounded-full text-[10px] font-bold hover:bg-slate-700 transition-colors uppercase"
                 >
                   <XCircle className="w-3.5 h-3.5" /> Exit Fullscreen
                 </button>
               )}
             </div>
+            
             <button
               onClick={() => {
                 stopRecordingState();
                 submitAnswer(fullTranscript || interimTranscript || currentAnswer, true);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200/60 text-red-700 rounded-xl hover:bg-red-100/80 transition-colors text-xs font-bold"
             >
               <X className="w-4 h-4" />
               Finish &amp; Get Report
             </button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* INTERVIEW PROGRESS TIMELINE */}
+          <div className="bg-white border border-slate-100 rounded-2xl p-5 mb-6 shadow-[0_8px_30px_rgb(0,0,0,0.01)]">
+            <div className="flex justify-between items-center text-xs font-bold text-slate-400 tracking-wider mb-3 uppercase">
+              <span>Interview Timeline Progress</span>
+              <span className="text-[#14B8A6]">{estimatedQuestionsRemaining} Questions Est. Remaining</span>
+            </div>
+            <div className="flex gap-2 items-center overflow-x-auto pb-1.5">
+              {[...Array(totalExpectedQuestions)].map((_, i) => {
+                const qIndex = i + 1;
+                const active = state.engine.questionNumber === qIndex;
+                const completed = state.engine.questionNumber > qIndex;
+                return (
+                  <div key={i} className="flex items-center gap-2 shrink-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                      completed 
+                        ? 'bg-[#14B8A6] text-white shadow-sm' 
+                        : active 
+                        ? 'bg-[#6366F1] text-white ring-4 ring-[#6366F1]/10' 
+                        : 'bg-slate-50 border border-slate-200 text-slate-400'
+                    }`}>
+                      {completed ? "✓" : qIndex}
+                    </div>
+                    {qIndex < totalExpectedQuestions && (
+                      <div className={`w-6 h-0.5 ${completed ? 'bg-[#14B8A6]' : 'bg-slate-100'}`} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+              <div className="bg-white rounded-2xl p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100">
                 
                 {state.engine.interviewerThought && (
-                  <div className="bg-[#F0FDFA] border border-[#0D9488]/20 rounded-xl p-3 mb-3 animate-fade-in">
-                    <p className="text-xs text-[#8888A0] mb-1">💭 Context / Why this is asked:</p>
-                    <p className="text-xs text-[#44445A]">{state.engine.interviewerThought}</p>
+                  <div className="bg-[#F8FAFC] border border-slate-200/60 rounded-xl p-4 mb-4 animate-fade-in">
+                    <p className="text-[10px] font-bold text-slate-400 tracking-wider uppercase mb-1">Recruiter Panel Context:</p>
+                    <p className="text-xs text-slate-600 leading-relaxed font-medium">{state.engine.interviewerThought}</p>
                   </div>
                 )}
 
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-[#F0FDFA] rounded-full flex items-center justify-center">
-                    <Brain className="w-6 h-6 text-[#0D9488]" />
+                  <div className="w-12 h-12 bg-[#CCFBF1]/40 rounded-full flex items-center justify-center text-[#0D9488] shrink-0">
+                    <Brain className="w-6 h-6" />
                   </div>
                   <div>
-                    <div className="text-sm text-gray-600">AI Recruiter</div>
-                    <div className="font-semibold text-gray-900">{state.config.jobRole} Panel</div>
+                    <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">AI Recruiter Panel</div>
+                    <div className="font-bold text-slate-800 text-base">{state.config.jobRole} Role</div>
                   </div>
                   <button
                     onClick={() => speakText(state.engine.currentQuestion)}
-                    className="ml-auto p-2 text-gray-600 hover:text-[#14B8A6] transition-colors"
+                    className="ml-auto p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors border border-slate-200/60"
+                    title="Repeat question"
                   >
-                    <Volume2 className="w-5 h-5" />
+                    <Volume2 className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
+                {/* Conversation Container */}
+                <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2">
                   {state.engine.conversationHistory.map((msg, index) => (
                     <div
                       key={index}
                       className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-lg px-4 py-3 rounded-2xl ${
+                        className={`max-w-lg px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                           msg.role === 'user'
-                            ? 'bg-[#0D9488] text-white'
-                            : 'bg-gray-100 text-gray-900'
+                            ? 'bg-[#14B8A6] text-white font-medium shadow-sm rounded-tr-none'
+                            : 'bg-[#F8FAFC] border border-slate-200/50 text-slate-800 font-medium rounded-tl-none'
                         }`}
                       >
                         {msg.message}
@@ -1177,32 +1214,33 @@ function SmartInterviewContent() {
                   ))}
                   {isTyping && (
                     <div className="flex justify-start">
-                      <div className="bg-gray-100 px-4 py-3 rounded-2xl">
+                      <div className="bg-[#F8FAFC] border border-slate-200/50 px-4 py-3 rounded-2xl rounded-tl-none">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div className="border-t pt-4">
+                {/* Active Interaction Stage panel */}
+                <div className="border-t border-slate-100 pt-4">
                   {isSpeaking ? (
-                    <div className="flex flex-col items-center justify-center p-8 bg-[#F0FDFA] rounded-2xl border border-teal-100 text-center space-y-4 animate-fade-in">
-                      <div className="flex items-center gap-1.5 h-8">
-                        {[...Array(6)].map((_, i) => (
-                          <div key={i} className="w-1.5 bg-[#0D9488] rounded-full animate-bounce" style={{
-                            height: '100%',
-                            animationDelay: `${i * 0.15}s`,
-                            animationDuration: '1.2s'
+                    <div className="flex flex-col items-center justify-center p-8 bg-[#F8FAFC] rounded-2xl border border-slate-100 text-center space-y-4 animate-fade-in">
+                      <div className="flex items-end justify-center gap-1.5 h-10">
+                        {[...Array(8)].map((_, i) => (
+                          <div key={i} className="w-1.5 bg-[#14B8A6] rounded-full animate-pulse" style={{
+                            height: `${Math.max(20, Math.sin(i * 0.4) * 100)}%`,
+                            animationDelay: `${i * 0.12}s`,
+                            animationDuration: '1s'
                           }} />
                         ))}
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-800 text-sm">Interviewer is speaking...</p>
-                        <p className="text-xs text-gray-400 mt-1">Please listen carefully to the question.</p>
+                        <p className="font-bold text-slate-800 text-sm">Interviewer is speaking...</p>
+                        <p className="text-xs text-slate-400 mt-1">Please listen carefully to the question prompt.</p>
                       </div>
                       <button 
                         onClick={() => { 
@@ -1217,41 +1255,41 @@ function SmartInterviewContent() {
                           setIsThinking(true);
                           setThinkingTimeLeft(5);
                         }} 
-                        className="text-xs text-[#0D9488] hover:underline font-semibold"
+                        className="text-xs text-[#14B8A6] hover:underline font-bold"
                       >
                         Skip voice and start thinking
                       </button>
                     </div>
                   ) : isThinking ? (
-                    <div className="flex flex-col items-center justify-center p-8 bg-[#F0FDFA] rounded-2xl border border-teal-100 text-center space-y-4 animate-fade-in">
-                      <div className="relative w-20 h-20 flex items-center justify-center">
+                    <div className="flex flex-col items-center justify-center p-8 bg-[#F8FAFC] rounded-2xl border border-slate-100 text-center space-y-4 animate-fade-in">
+                      <div className="relative w-16 h-16 flex items-center justify-center">
                         <svg className="absolute w-full h-full -rotate-90" viewBox="0 0 100 100">
-                          <circle cx="50" cy="50" r="45" fill="none" stroke="#CCFBF1" strokeWidth="6" />
-                          <circle cx="50" cy="50" r="45" fill="none" stroke="#0D9488" strokeWidth="6" 
+                          <circle cx="50" cy="50" r="45" fill="none" stroke="#E2E8F0" strokeWidth="6" />
+                          <circle cx="50" cy="50" r="45" fill="none" stroke="#14B8A6" strokeWidth="6" 
                             strokeDasharray={2 * Math.PI * 45} 
                             strokeDashoffset={2 * Math.PI * 45 * (1 - thinkingTimeLeft / 5)} 
                             strokeLinecap="round" className="transition-all duration-1000" />
                         </svg>
-                        <span className="text-3xl font-bold text-[#0D9488]">{thinkingTimeLeft}</span>
+                        <span className="text-2xl font-extrabold text-[#14B8A6]">{thinkingTimeLeft}</span>
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-800 text-sm">Comprehending Question...</p>
-                        <p className="text-xs text-gray-400 mt-1">Take a moment to formulate your answer.</p>
+                        <p className="font-bold text-slate-800 text-sm">Comprehending Question...</p>
+                        <p className="text-xs text-slate-400 mt-1">Take a moment to formulate your response outline.</p>
                       </div>
-                      <button onClick={() => { setIsThinking(false); startRecordingState(); }} className="text-xs text-[#0D9488] hover:underline font-semibold">
+                      <button onClick={() => { setIsThinking(false); startRecordingState(); }} className="text-xs text-[#14B8A6] hover:underline font-bold">
                         Skip countdown and speak now
                       </button>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {isRecording && (
-                        <div className="flex flex-col items-center justify-center p-6 bg-red-50/40 border border-red-100 rounded-xl space-y-3 animate-fade-in">
-                          <div className="flex items-center gap-1.5 h-8">
-                            {[...Array(6)].map((_, i) => (
+                        <div className="flex flex-col items-center justify-center p-6 bg-red-50/20 border border-red-100 rounded-2xl space-y-3 animate-fade-in">
+                          <div className="flex items-end justify-center gap-1.5 h-10">
+                            {[...Array(12)].map((_, i) => (
                               <div key={i} className="w-1.5 bg-red-500 rounded-full animate-bounce" style={{
-                                height: '100%',
-                                animationDelay: `${i * 0.15}s`,
-                                animationDuration: '1.2s'
+                                height: `${Math.max(15, Math.cos(i * 0.5) * 100)}%`,
+                                animationDelay: `${i * 0.1}s`,
+                                animationDuration: '0.8s'
                               }} />
                             ))}
                           </div>
@@ -1259,14 +1297,23 @@ function SmartInterviewContent() {
                         </div>
                       )}
 
-                      {/* Locked manual Next Question button */}
+                      {/* Real-time speech transcript preview box */}
+                      {(fullTranscript || interimTranscript) && (
+                        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-left animate-fade-in">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Live Transcript Preview</p>
+                          <p className="text-xs text-slate-600 leading-relaxed italic">
+                            &ldquo;{fullTranscript || interimTranscript}&rdquo;
+                          </p>
+                        </div>
+                      )}
+
                       <button
                         onClick={handleNextQuestionManual}
                         disabled={isNextLocked || isTyping}
-                        className={`w-full py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 ${
+                        className={`w-full py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
                           isNextLocked 
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' 
-                            : 'bg-[#0D9488] text-white hover:bg-[#0F766E] shadow-md hover:scale-[1.01]'
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200/60' 
+                            : 'bg-[#14B8A6] text-white hover:bg-[#0D9488] shadow-sm hover:scale-[1.01]'
                         }`}
                       >
                         {isNextLocked ? (
@@ -1282,45 +1329,44 @@ function SmartInterviewContent() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-5">
-              {/* Fix 9: video preview with stable ref */}
+            {/* Right Column (Webcam Preview & Parameters) */}
+            <div className="flex flex-col gap-6">
               {state.config.mode === 'video' && !isThinking && (
-                <div className="bg-gray-900 rounded-2xl p-4 overflow-hidden border border-gray-800 shadow-lg">
-                  <div className="aspect-video w-full overflow-hidden rounded-lg bg-black relative">
-                    {/* Always render video element; srcObject kept in sync via useEffect */}
+                <div className="bg-slate-900 rounded-2xl p-4 overflow-hidden border border-slate-800 shadow-md">
+                  <div className="aspect-video w-full overflow-hidden rounded-xl bg-black relative">
                     <video
                       ref={liveVideoRef}
                       autoPlay
                       muted
                       playsInline
-                      className={`h-full w-full object-cover ${videoStream ? '' : 'hidden'}`}
+                      className={`h-full w-full object-cover rounded-lg ${videoStream ? '' : 'hidden'}`}
                     />
                     {!videoStream && (
-                      <div className="flex h-full w-full items-center justify-center text-xs text-gray-500">Camera preview</div>
+                      <div className="flex h-full w-full items-center justify-center text-xs text-slate-500 font-semibold uppercase tracking-wider">Webcam Active</div>
                     )}
                   </div>
                 </div>
               )}
 
-              <div className="bg-white rounded-2xl p-5 shadow-[0_4px_20px_rgba(13,148,136,0.08)] border border-gray-100">
-                <h3 className="font-bold text-[#0D9488] mb-4 text-sm flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
-                  <TrendingUp className="w-4 h-4" /> Live Progress
+              <div className="bg-white rounded-2xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100">
+                <h3 className="font-bold text-[#14B8A6] mb-4 text-xs uppercase tracking-wider flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" /> Assessment Tips
                 </h3>
                 <div className="space-y-3">
-                  <div className="p-3 bg-[#F0FDFA] rounded-lg">
-                    <p className="text-sm text-[#14B8A6]">
-                      💡 Be specific and provide examples from your experience
+                  <div className="p-3 bg-[#F8FAFC] border border-slate-200/60 rounded-xl">
+                    <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+                      💡 STAR Method: Structure answers using Situation, Task, Action, and Result.
                     </p>
                   </div>
-                  <div className="p-3 bg-[#F0FDFA] rounded-lg">
-                    <p className="text-sm text-[#14B8A6]">
-                      🎯 Relate your answers to the job requirements
+                  <div className="p-3 bg-[#F8FAFC] border border-slate-200/60 rounded-xl">
+                    <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+                      🎯 Quantify: Mention numbers, percentages, and metrics.
                     </p>
                   </div>
-                  <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-50">
-                    <span className="text-gray-500">Integrity Status</span>
-                    <span className={`font-semibold ${state.integrity.violations.length > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
-                      {state.integrity.violations.length === 0 ? '🔒 Perfect' : `⚠️ ${state.integrity.violations.length} warnings`}
+                  <div className="flex items-center justify-between text-xs pt-3 border-t border-slate-100">
+                    <span className="text-slate-400 font-bold uppercase tracking-wider">Integrity Tracker</span>
+                    <span className={`font-bold ${state.integrity.violations.length > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+                      {state.integrity.violations.length === 0 ? '🔒 Perfect Score' : `⚠️ ${state.integrity.violations.length} Warnings`}
                     </span>
                   </div>
                 </div>

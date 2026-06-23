@@ -99,7 +99,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="512x512" href="/images/logo_favicon_512.png" />
         <link rel="icon" href="/images/logo_favicon_512.png" />
       </head>
-      <body className="min-h-full flex flex-col bg-white dark:bg-gray-900 transition-colors">
+      <body className="min-h-full flex flex-col bg-white dark:bg-gray-900 transition-colors" suppressHydrationWarning>
         <ThemeProvider>
           <FramerMotionProvider>
             {children}

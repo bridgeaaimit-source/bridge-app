@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
 const GOALS = [
@@ -24,7 +24,12 @@ const slideVariants = {
 function ScoreRing({ animate }) {
   const [score, setScore] = useState(0);
   useEffect(() => {
-    if (!animate) { setScore(0); return; }
+    if (!animate) {
+      const timer = setTimeout(() => {
+        setScore(0);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
     let start = null;
     const target = 520;
     const duration = 1400;
@@ -107,14 +112,14 @@ export default function OnboardingModal({ isOpen, userName, onComplete, onSkip }
           <AnimatePresence mode="wait" custom={dir}>
             {/* Step 0 — Welcome */}
             {step === 0 && (
-              <motion.div key="s0" custom={dir} variants={slideVariants} initial="enter" animate="center" exit="exit"
+              <m.div key="s0" custom={dir} variants={slideVariants} initial="enter" animate="center" exit="exit"
                 transition={{ duration: 0.22 }} className="text-center">
-                <motion.img src="/images/logo_400w.png" alt="BridgeAI"
+                <m.img src="/images/logo_400w.png" alt="BridgeAI"
                   initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }}
                   className="h-14 mx-auto mb-6 object-contain" />
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">Welcome to BridgeAI, {firstName} 👋</h2>
                 <p className="text-gray-500 leading-relaxed mb-8">
-                  You're about to go from nervous to unstoppable.<br />Let's set you up in 60 seconds.
+                  {"You're about to go from nervous to unstoppable."}<br />{"Let's set you up in 60 seconds."}
                 </p>
                 <div className="flex justify-center gap-2 mb-8">
                   {Array.from({ length: TOTAL }).map((_, i) => (
@@ -122,18 +127,18 @@ export default function OnboardingModal({ isOpen, userName, onComplete, onSkip }
                   ))}
                 </div>
                 <button onClick={() => go(1)} className="w-full bg-gradient-to-r from-[#0D9488] to-[#14B8A6] text-white py-3.5 rounded-xl font-semibold hover:shadow-lg transition-all">
-                  Let's go →
+                  {"Let's go →"}
                 </button>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Step 1 — BRIDGE Score */}
             {step === 1 && (
-              <motion.div key="s1" custom={dir} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.22 }}>
+              <m.div key="s1" custom={dir} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.22 }}>
                 <ScoreRing animate={scoreAnimated} />
                 <h2 className="text-xl font-bold text-gray-900 mt-5 mb-2 text-center">Your BRIDGE Score — your placement passport</h2>
                 <p className="text-gray-500 text-sm leading-relaxed text-center mb-5">
-                  Every mock, GD battle, and interview pushes this number up. Recruiters love students above 700. You start at 0 — let's change that.
+                  {"Every mock, GD battle, and interview pushes this number up. Recruiters love students above 700. You start at 0 — let's change that."}
                 </p>
                 <div className="relative h-2.5 rounded-full overflow-hidden mb-2"
                   style={{ background: "linear-gradient(to right, #ef4444 0%, #f97316 30%, #eab308 60%, #22c55e 100%)" }}>
@@ -148,13 +153,13 @@ export default function OnboardingModal({ isOpen, userName, onComplete, onSkip }
                 <button onClick={() => go(2)} className="w-full bg-gradient-to-r from-[#0D9488] to-[#14B8A6] text-white py-3.5 rounded-xl font-semibold hover:shadow-lg transition-all">
                   Got it →
                 </button>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Step 2 — Goal */}
             {step === 2 && (
-              <motion.div key="s2" custom={dir} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.22 }}>
-                <h2 className="text-xl font-bold text-gray-900 mb-1">What's your #1 goal right now?</h2>
+              <m.div key="s2" custom={dir} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.22 }}>
+                <h2 className="text-xl font-bold text-gray-900 mb-1">{"What's your #1 goal right now?"}</h2>
                 <p className="text-gray-500 text-sm mb-5">This helps us personalise your experience.</p>
                 <div className="space-y-3 mb-6">
                   {GOALS.map((g) => (
@@ -171,12 +176,12 @@ export default function OnboardingModal({ isOpen, userName, onComplete, onSkip }
                   className="w-full bg-gradient-to-r from-[#0D9488] to-[#14B8A6] text-white py-3.5 rounded-xl font-semibold disabled:opacity-40 hover:shadow-lg transition-all">
                   This is my goal →
                 </button>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Step 3 — Target Company */}
             {step === 3 && (
-              <motion.div key="s3" custom={dir} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.22 }}>
+              <m.div key="s3" custom={dir} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.22 }}>
                 <h2 className="text-xl font-bold text-gray-900 mb-1">Any company in mind?</h2>
                 <p className="text-gray-500 text-sm mb-5">Select all that apply.</p>
                 <div className="flex flex-wrap gap-2 mb-6">
@@ -198,21 +203,21 @@ export default function OnboardingModal({ isOpen, userName, onComplete, onSkip }
                   className="w-full text-sm text-gray-400 hover:text-gray-600 py-1 transition-colors">
                   Skip for now
                 </button>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Step 4 — All set */}
             {step === 4 && (
-              <motion.div key="s4" custom={dir} variants={slideVariants} initial="enter" animate="center" exit="exit"
+              <m.div key="s4" custom={dir} variants={slideVariants} initial="enter" animate="center" exit="exit"
                 transition={{ duration: 0.22 }} className="text-center">
                 <svg className="w-20 h-20 mx-auto mb-4" viewBox="0 0 80 80">
                   <circle cx="40" cy="40" r="36" fill="#F0FDFA" stroke="#0D9488" strokeWidth="4" />
-                  <motion.path d="M24 40 L36 52 L56 28" fill="none" stroke="#0D9488" strokeWidth="4"
+                  <m.path d="M24 40 L36 52 L56 28" fill="none" stroke="#0D9488" strokeWidth="4"
                     strokeLinecap="round" strokeLinejoin="round"
                     initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5, delay: 0.3 }} />
                 </svg>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">You're ready to bridge the gap! 🎉</h2>
-                <p className="text-gray-500 text-sm mb-6">Here's your personalised plan:</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">{"You're ready to bridge the gap! 🎉"}</h2>
+                <p className="text-gray-500 text-sm mb-6">{"Here's your personalised plan:"}</p>
                 <div className="text-left bg-[#F0FDFA] rounded-xl p-4 mb-6 space-y-2.5">
                   {["Take your first mock interview","Join a GD battle","Build your resume","Check your BRIDGE Score"].map((item, i) => (
                     <div key={i} className="flex items-center gap-3 text-sm text-[#0F766E] font-medium">
@@ -232,7 +237,7 @@ export default function OnboardingModal({ isOpen, userName, onComplete, onSkip }
                 <button onClick={onSkip} className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
                   Take me to dashboard
                 </button>
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </div>
