@@ -304,7 +304,7 @@ export default function AppShell({ children, hideNavigation = false }) {
   const isGroupActive = (group) => group.some(p => pathname === p || pathname.startsWith(p + '/'));
 
   return (
-    <div className="min-h-screen bg-[#fcf8ff] flex flex-col md:flex-row">
+    <div className="min-h-screen h-screen overflow-hidden bg-[#fcf8ff] flex flex-col md:flex-row">
 
       {/* ── Mobile Top App Bar ── */}
       {!hideNavigation && (
@@ -522,7 +522,7 @@ export default function AppShell({ children, hideNavigation = false }) {
       )}
 
       {/* ── Main Content ── */}
-      <main className={`flex-1 min-h-screen bg-white ${
+      <main className={`flex-1 min-h-0 overflow-y-auto ${
         hideNavigation 
           ? "w-full pt-0 pb-0 ml-0" 
           : `${collapsed ? 'md:ml-20' : 'md:ml-64'} pt-16 md:pt-0 pb-24 md:pb-0`

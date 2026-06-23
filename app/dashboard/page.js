@@ -7,7 +7,7 @@ import {
   ChevronRight,
   ArrowUpRight,
   ArrowDownRight,
-  Briefcase
+  TrendingUp
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { onAuthStateChanged } from "firebase/auth";
@@ -17,13 +17,13 @@ import { db } from "@/lib/firebase";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
 import GettingStartedChecklist from "@/components/onboarding/GettingStartedChecklist";
 import OnboardingTour from "@/components/OnboardingTour";
+import { m } from "framer-motion";
 import { 
   Radar, 
   RadarChart, 
   PolarGrid, 
   PolarAngleAxis, 
-  PolarRadiusAxis, 
-  ResponsiveContainer 
+  PolarRadiusAxis
 } from 'recharts';
 import {
   TrophyIcon,
@@ -35,8 +35,7 @@ import {
   CareerIntelligenceIcon,
   JobsIcon,
   PlacementReadinessIcon,
-  BridgeScoreIcon,
-  ShieldIcon
+  BridgeScoreIcon
 } from '@/components/DesignSystem';
 
 const generateDynamicHistory = (latestScore) => {
@@ -93,7 +92,6 @@ const generateDynamicHistory = (latestScore) => {
 
 export default function Dashboard() {
   const router = useRouter();
-  const [bridgeScore, setBridgeScore] = useState(null);
   const [greeting, setGreeting] = useState("");
   const [todayDate, setTodayDate] = useState("");
   const [userName, setUserName] = useState("");
@@ -104,7 +102,6 @@ export default function Dashboard() {
     avgScore: 0
   });
   const [recentActivity, setRecentActivity] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
   const [resumeUploaded, setResumeUploaded] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [scoreHistory, setScoreHistory] = useState([]);
@@ -279,7 +276,7 @@ export default function Dashboard() {
           const leaderboardSnapshot = await getDocs(leaderboardQuery);
           const leaderboardData = [];
           
-          leaderboardSnapshot.forEach((doc, index) => {
+          leaderboardSnapshot.forEach((doc) => {
             const userData = doc.data();
             // Only include students in leaderboard
             if (userData.role === 'student') {
@@ -292,7 +289,6 @@ export default function Dashboard() {
             }
           });
           
-          setLeaderboard(leaderboardData);
           console.log('🏆 Dashboard - Leaderboard data:', leaderboardData);
 
           // Fetch real score history
@@ -373,6 +369,7 @@ export default function Dashboard() {
       unsubscribe();
       clearTimeout(timer);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
@@ -432,11 +429,34 @@ export default function Dashboard() {
   return (
     <AppShell>
       <OnboardingTour />
-      <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10">
-        <GettingStartedChecklist stats={stats} userProfile={userProfile} resumeUploaded={resumeUploaded} />
+      <div className="relative w-full overflow-x-hidden">
+        {/* Abstract Background Tech Art Overlay (Opacity-controlled watermark without mix-blend mode to keep scrolling smooth and lag-free) */}
+        <div 
+          className="fixed inset-0 bg-cover bg-center opacity-[0.10] pointer-events-none z-0" 
+          style={{ backgroundImage: 'url("/images/abstract_tech.png")' }} 
+        />
+        {/* Fine background grid (Fixed) */}
+        <div className="fixed inset-0 bg-[linear-gradient(to_right,#F1F5F9_1px,transparent_1px),linear-gradient(to_bottom,#F1F5F9_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-50 pointer-events-none z-0" />
+        
+        {/* Soft background glows (Fixed) */}
+        <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-[#14B8A6]/5 rounded-full blur-[140px] pointer-events-none z-0" />
+        <div className="fixed bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-100/10 rounded-full blur-[120px] pointer-events-none z-0" />
+
+        <div className="relative max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10 z-10">
+          <GettingStartedChecklist stats={stats} userProfile={userProfile} resumeUploaded={resumeUploaded} />
 
         {/* ── DESIGN SYSTEM HERO AREA ── */}
-        <div className="bg-gradient-to-br from-white to-[#F8FAFC] rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-6 md:p-8 mb-8 mt-4 flex flex-col lg:flex-row items-center justify-between gap-8">
+        <div className="bg-gradient-to-br from-white to-[#F8FAFC] rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-6 md:p-8 mb-8 mt-4 flex flex-col lg:flex-row items-center justify-between gap-8 relative overflow-hidden">
+          {/* Breathing ambient glow mesh inside card */}
+          <m.div
+            animate={{ 
+              scale: [1, 1.12, 1], 
+              x: [0, 8, 0], 
+              y: [0, -6, 0] 
+            }}
+            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -right-12 -top-12 w-64 h-64 bg-[#14B8A6]/5 rounded-full blur-3xl pointer-events-none"
+          />
           <div className="flex-1 space-y-4 text-center lg:text-left">
             <div>
               <p className="text-xs text-slate-400 font-semibold tracking-wider uppercase">{todayDate}</p>
@@ -469,6 +489,67 @@ export default function Dashboard() {
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
+          </div>
+
+          {/* Middle: Floating Abstract Tech Art and Connection Nodes */}
+          <div className="hidden xl:flex items-center justify-center relative w-64 h-48 shrink-0 z-10 select-none">
+            {/* Concentric rotating glowing rings */}
+            <m.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="absolute w-36 h-36 border border-dashed border-teal-500/40 rounded-full flex items-center justify-center"
+            >
+              <div className="w-28 h-28 border border-dashed border-cyan-500/30 rounded-full flex items-center justify-center" />
+            </m.div>
+
+            <m.div
+              animate={{ rotate: -360 }}
+              transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+              className="absolute w-32 h-32 border border-slate-200/50 rounded-full"
+            />
+
+            {/* Floating data nodes/cubes */}
+            <m.div
+              animate={{ y: [-6, 6] }}
+              transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+              className="relative w-28 h-28 bg-gradient-to-br from-teal-400/10 to-cyan-500/10 rounded-2xl border border-teal-500/20 backdrop-blur-sm shadow-inner flex items-center justify-center"
+            >
+              {/* Inner glowing core */}
+              <m.div 
+                animate={{ scale: [0.85, 1.05, 0.85] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="w-12 h-12 bg-gradient-to-tr from-teal-500 to-cyan-500 rounded-lg shadow-lg flex items-center justify-center text-white font-mono text-xs font-bold"
+              >
+                AI
+              </m.div>
+            </m.div>
+
+            {/* Floating abstract code and target items */}
+            <m.div 
+              animate={{ y: [-8, 8], x: [-3, 3] }}
+              transition={{ duration: 3.2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+              className="absolute -top-1 left-4 bg-white border border-slate-100 rounded-lg p-2 shadow-md flex items-center gap-1.5"
+            >
+              <span className="text-[10px] font-bold text-teal-600 font-mono">&lt;/&gt;</span>
+              <span className="text-[9px] font-semibold text-slate-500">Validation</span>
+            </m.div>
+
+            <m.div 
+              animate={{ y: [8, -8], x: [3, -3] }}
+              transition={{ duration: 3.8, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+              className="absolute bottom-2 right-4 bg-white border border-slate-100 rounded-lg p-2 shadow-md flex items-center gap-1.5"
+            >
+              <TrendingUp className="w-3 h-3 text-[#14B8A6]" />
+              <span className="text-[9px] font-semibold text-slate-500">Employability</span>
+            </m.div>
+
+            <m.div 
+              animate={{ scale: [0.95, 1.05, 0.95] }}
+              transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-10 -right-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-full px-2.5 py-0.5 text-[8px] font-bold uppercase tracking-wider shadow-sm"
+            >
+              Active
+            </m.div>
           </div>
 
           {/* RADIUS BRIDGE SCORE GAUGE */}
@@ -570,15 +651,30 @@ export default function Dashboard() {
                   { label: "Recruiter Ready", status: stats.bridgeScore >= 600 ? "Completed" : "Locked" }
                 ].map((step, idx) => (
                   <div key={step.label} className="flex md:flex-col items-center gap-3 md:text-center z-10 w-full md:w-auto">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-sm ${
-                      step.status === "Completed" 
-                        ? "bg-[#14B8A6] text-white" 
-                        : step.status === "In Progress" 
-                        ? "bg-[#6366F1] text-white animate-pulse" 
-                        : "bg-slate-100 text-slate-400 border border-slate-200"
-                    }`}>
-                      {step.status === "Completed" ? "✓" : idx + 1}
-                    </div>
+                    {step.status === "In Progress" ? (
+                      <div className="relative flex items-center justify-center w-10 h-10">
+                        <m.span 
+                          animate={{ scale: [1, 1.35, 1], opacity: [0.5, 0, 0.5] }}
+                          transition={{ duration: 2.2, repeat: Infinity, ease: "easeOut" }}
+                          className="absolute w-12 h-12 rounded-full bg-[#6366F1]/30 z-0"
+                        />
+                        <m.div 
+                          animate={{ scale: [1, 1.04, 1] }}
+                          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                          className="w-10 h-10 rounded-full bg-[#6366F1] text-white flex items-center justify-center text-xs font-bold shadow-md relative z-10"
+                        >
+                          {idx + 1}
+                        </m.div>
+                      </div>
+                    ) : (
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-sm ${
+                        step.status === "Completed" 
+                          ? "bg-[#14B8A6] text-white" 
+                          : "bg-slate-100 text-slate-400 border border-slate-200"
+                      }`}>
+                        {step.status === "Completed" ? "✓" : idx + 1}
+                      </div>
+                    )}
                     <div>
                       <p className="text-xs font-bold text-slate-800 mt-1">{step.label}</p>
                       <p className={`text-[10px] font-medium mt-0.5 ${
@@ -661,15 +757,13 @@ export default function Dashboard() {
                 <p className="text-[10px] text-slate-400">6 Dimension Competency Vectors</p>
               </div>
 
-              <div className="w-full h-52 relative">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                    <PolarGrid stroke="#E2E8F0" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 10, fontWeight: 600 }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} />
-                    <Radar name="Readiness" dataKey="value" stroke="#14B8A6" fill="#14B8A6" fillOpacity={0.2} />
-                  </RadarChart>
-                </ResponsiveContainer>
+              <div className="w-full h-52 relative flex items-center justify-center overflow-hidden">
+                <RadarChart width={300} height={208} cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+                  <PolarGrid stroke="#E2E8F0" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 10, fontWeight: 600 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} />
+                  <Radar name="Readiness" dataKey="value" stroke="#14B8A6" fill="#14B8A6" fillOpacity={0.2} />
+                </RadarChart>
               </div>
 
               <Link 
@@ -707,13 +801,20 @@ export default function Dashboard() {
                 {['M','T','W','T','F','S','S'].map((day, idx) => (
                   <div key={idx} className="flex flex-col gap-1.5 items-center">
                     <span>{day}</span>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                      idx < stats.currentStreak
-                        ? "bg-[#14B8A6] text-white shadow-sm"
-                        : "bg-slate-100 border border-slate-200 text-slate-300"
-                    }`}>
-                      {idx < stats.currentStreak ? "✓" : ""}
-                    </div>
+                    {idx < stats.currentStreak ? (
+                      <m.div 
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: idx * 0.1, type: "spring", stiffness: 100 }}
+                        className="w-6 h-6 rounded-full flex items-center justify-center bg-[#14B8A6] text-white shadow-sm font-semibold"
+                      >
+                        ✓
+                      </m.div>
+                    ) : (
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center bg-slate-100 border border-slate-200 text-slate-300 font-semibold">
+                        
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -749,6 +850,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </AppShell>
