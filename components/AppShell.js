@@ -355,12 +355,12 @@ export default function AppShell({ children, hideNavigation = false }) {
           <div className="px-4 py-5 border-b border-[#E2E8F0] flex items-center justify-between">
             {!collapsed ? (
               <Link href="/dashboard" className="flex items-center gap-2 font-bold text-slate-855 text-sm">
-                <div className="w-8 h-8 bg-[#14B8A6] rounded-lg flex items-center justify-center text-white font-extrabold text-sm shrink-0">B</div>
+                <img src="/images/logo_favicon_512.png" alt="BridgeAI Logo" className="w-8 h-8 object-contain shrink-0" />
                 <span className="font-bold text-slate-800 text-base">BridgeAI</span>
               </Link>
             ) : (
-              <Link href="/dashboard" className="w-8 h-8 bg-[#14B8A6] rounded-lg flex items-center justify-center text-white font-extrabold text-sm mx-auto">
-                B
+              <Link href="/dashboard" className="w-8 h-8 flex items-center justify-center mx-auto shrink-0">
+                <img src="/images/logo_favicon_512.png" alt="BridgeAI Logo" className="w-8 h-8 object-contain" />
               </Link>
             )}
             <button 
