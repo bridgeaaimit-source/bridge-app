@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
-// ─── Indian English corrections ──────────────────────────────────────────────
+// ─── Indian English corrections ───────────────────────────────────────────────
 const CORRECTIONS = [
   [/\bi\b/g, 'I'],
   [/\bi'm\b/gi, "I'm"], [/\bi've\b/gi, "I've"], [/\bi'll\b/gi, "I'll"],
@@ -24,7 +24,7 @@ const CORRECTIONS = [
   [/\btype script\b/gi, 'TypeScript'], [/\bnode js\b/gi, 'Node.js'],
   [/\breact js\b/gi, 'React.js'], [/\bnext js\b/gi, 'Next.js'],
   [/\bvs code\b/gi, 'VS Code'], [/\bopen ai\b/gi, 'OpenAI'],
-  [/\bdot net\b/gi, '.NET'], [/\bgit hub\b/gi, 'GitHub'],
+  [/\bdot net\b/gi, '.NET'],
   [/\bamazon web services\b/gi, 'AWS'], [/\bgoogle cloud\b/gi, 'GCP'],
   // Numbers
   [/\bone lakh\b/gi, '1,00,000'], [/\bone crore\b/gi, '1,00,00,000'],
@@ -71,41 +71,36 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
   const [usingFallback, setUsingFallback] = useState(false);
   const [voiceCommandDetected, setVoiceCommandDetected] = useState(null);
 
+  // ── Stable refs for callbacks and state ──────────────────────────────────
   const onVoiceCommandRef = useRef(onVoiceCommand);
-  useEffect(() => {
-    onVoiceCommandRef.current = onVoiceCommand;
-  }, [onVoiceCommand]);
+  useEffect(() => { onVoiceCommandRef.current = onVoiceCommand; }, [onVoiceCommand]);
 
   const voiceCommandDetectedRef = useRef(null);
+  const isMountedRef = useRef(true);
 
-  const checkVoiceCommands = useCallback((text) => {
-    const lower = text.toLowerCase();
-    if (/\b(finish|end|stop)\s+(the\s+)?interview\b/.test(lower) || /\bi\s+(want to|wanna)\s+(finish|end|stop)\b/.test(lower)) {
-      if (!voiceCommandDetectedRef.current) {
-        voiceCommandDetectedRef.current = 'finish';
-        setVoiceCommandDetected('finish');
-        onVoiceCommandRef.current?.('finish');
-      }
-    }
-  }, []);
+  // Hardware / API resource refs
+  const recognitionRef = useRef(null);        // active SpeechRecognition instance
+  const wsRef = useRef(null);                 // AssemblyAI WebSocket
+  const streamRef = useRef(null);             // getUserMedia stream
+  const audioCtxRef = useRef(null);           // AudioContext
+  const processorRef = useRef(null);          // ScriptProcessor node
+  const analyserRef = useRef(null);           // AnalyserNode
+  const animFrameRef = useRef(null);          // rAF for volume meter
 
-  const recognitionRef = useRef(null);
-  const wsRef = useRef(null);
-  const streamRef = useRef(null);
-  const audioCtxRef = useRef(null);
-  const processorRef = useRef(null);
-  const analyserRef = useRef(null);
-  const animFrameRef = useRef(null);
-  const finalRef = useRef('');
-  const isRecordingRef = useRef(false);
-  const wsSpeechStarted = useRef(false);
-  const restartTimer = useRef(null);
-  const silenceTimer = useRef(null);
+  // State refs that must be readable inside event callbacks without closures
+  const finalRef = useRef('');                // accumulated final transcript
+  const isRecordingRef = useRef(false);       // true while session should be alive
+  const isWebSpeechActiveRef = useRef(false); // guard: one WebSpeech instance at a time
+  const restartTimerRef = useRef(null);       // restart debounce
+  const silenceTimerRef = useRef(null);       // hook-internal silence status timer
+  const watchdogTimerRef = useRef(null);      // detects frozen/dead recognition
 
   useEffect(() => {
+    isMountedRef.current = true;
     if (typeof window !== 'undefined') {
       setSpeechLangState(localStorage.getItem('bridge_speech_lang') || 'en-IN');
     }
+    return () => { isMountedRef.current = false; };
   }, []);
 
   const setLang = useCallback((lang) => {
@@ -114,6 +109,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
   }, []);
 
   const updateStats = useCallback((text) => {
+    if (!isMountedRef.current) return;
     const words = text.trim().split(/\s+/).filter(Boolean);
     setWordCount(words.length);
     const { words: fw, counts: fc } = detectFillers(text);
@@ -122,12 +118,210 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
   }, []);
 
   const commitFinal = useCallback((text) => {
+    if (!isMountedRef.current) return;
     const corrected = applyCorrections(text);
     finalRef.current = corrected;
     setTranscript(corrected);
     setInterimTranscript('');
     updateStats(corrected);
   }, [updateStats]);
+
+  const checkVoiceCommands = useCallback((text) => {
+    const lower = text.toLowerCase();
+    if (
+      /\b(finish|end|stop)\s+(the\s+)?interview\b/.test(lower) ||
+      /\bi\s+(want to|wanna)\s+(finish|end|stop)\b/.test(lower)
+    ) {
+      if (!voiceCommandDetectedRef.current) {
+        voiceCommandDetectedRef.current = 'finish';
+        setVoiceCommandDetected('finish');
+        onVoiceCommandRef.current?.('finish');
+      }
+    }
+  }, []);
+
+  // ── Centralised resource cleanup ─────────────────────────────────────────
+  // Safe to call multiple times; clears every audio resource without
+  // touching the transcript or isRecordingRef (caller sets those).
+  const cleanupResources = useCallback(() => {
+    clearTimeout(restartTimerRef.current);
+    clearTimeout(silenceTimerRef.current);
+    clearInterval(watchdogTimerRef.current);
+    cancelAnimationFrame(animFrameRef.current);
+
+    // Kill Web Speech recognition
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onstart = null;
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+      } catch { /* ignore */ }
+      recognitionRef.current = null;
+    }
+    isWebSpeechActiveRef.current = false;
+
+    // Kill AssemblyAI WebSocket
+    if (wsRef.current) {
+      try {
+        if (wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ terminate_session: true }));
+        }
+        wsRef.current.close();
+      } catch { /* ignore */ }
+      wsRef.current = null;
+    }
+
+    // Tear down audio pipeline
+    if (processorRef.current) { try { processorRef.current.disconnect(); } catch {} processorRef.current = null; }
+    if (analyserRef.current) { analyserRef.current = null; }
+    if (audioCtxRef.current) { try { audioCtxRef.current.close(); } catch {} audioCtxRef.current = null; }
+    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
+  }, []);
+
+  // ── Web Speech API — continuous restart loop ─────────────────────────────
+  // Accepts an optional `existingFinal` so transcript is preserved across
+  // restarts (e.g. after silence warning "Continue Answering").
+  const startWebSpeech = useCallback((lang) => {
+    // Single-instance guard
+    if (isWebSpeechActiveRef.current) return;
+    isWebSpeechActiveRef.current = true;
+
+    const SR = typeof window !== 'undefined'
+      ? (window.SpeechRecognition || window.webkitSpeechRecognition)
+      : null;
+
+    if (!SR) {
+      if (isMountedRef.current) {
+        setError('Speech recognition requires Chrome or Edge browser.');
+        setIsConnecting(false);
+        setIsRecording(false);
+      }
+      isWebSpeechActiveRef.current = false;
+      return;
+    }
+
+    // Prefer en-IN for Indian English; fall back gracefully
+    const useLang = lang ||
+      (typeof window !== 'undefined' ? localStorage.getItem('bridge_speech_lang') || 'en-IN' : 'en-IN');
+
+    // ── Build a fresh recognition instance with all handlers ──────────────
+    const buildRec = () => {
+      const rec = new SR();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;  // Index 0 is always best; don't iterate
+      rec.lang = useLang;       // en-IN for Indian English accent optimisation
+
+      rec.onstart = () => {
+        if (!isMountedRef.current) return;
+        setIsConnecting(false);
+        setIsRecording(true);
+        setRecordingStatus('listening');
+        // Kick watchdog — if no event fires in 8s we restart
+        clearInterval(watchdogTimerRef.current);
+        watchdogTimerRef.current = setInterval(() => {
+          if (!isRecordingRef.current) { clearInterval(watchdogTimerRef.current); return; }
+          // Recognition is alive if recognitionRef.current is set;
+          // if it has been nulled (premature end) trigger a restart.
+          if (!recognitionRef.current && isRecordingRef.current) {
+            clearInterval(watchdogTimerRef.current);
+            isWebSpeechActiveRef.current = false;
+            restartTimerRef.current = setTimeout(() => {
+              if (isRecordingRef.current) startWebSpeech(useLang);
+            }, 500);
+          }
+        }, 3000);
+      };
+
+      rec.onresult = (event) => {
+        if (!isRecordingRef.current || !isMountedRef.current) return;
+        clearTimeout(silenceTimerRef.current);
+
+        let interimText = '';
+        let finalText = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          // result[0] is always the highest-confidence alternative
+          const best = result[0];
+          if (result.isFinal) finalText += best.transcript + ' ';
+          else interimText += best.transcript;
+        }
+
+        if (finalText.trim()) {
+          const newFinal = applyCorrections((finalRef.current + ' ' + finalText).trim());
+          commitFinal(newFinal);
+          if (interimText && isMountedRef.current) {
+            setInterimTranscript(interimText);
+            updateStats((newFinal + ' ' + interimText).trim());
+          }
+          checkVoiceCommands(newFinal);
+
+          // Status: paused only after 6s of silence with real content
+          silenceTimerRef.current = setTimeout(() => {
+            if (isRecordingRef.current && finalRef.current.length > 20 && isMountedRef.current) {
+              setRecordingStatus('paused');
+            }
+          }, 6000);
+        } else if (interimText && isMountedRef.current) {
+          setInterimTranscript(interimText);
+        }
+      };
+
+      rec.onerror = (e) => {
+        if (!isRecordingRef.current) return;
+        if (e.error === 'no-speech') return;           // normal — user paused
+        if (e.error === 'audio-capture') return;       // transient; onend will restart
+        if (e.error === 'not-allowed') {
+          if (isMountedRef.current) {
+            setError('Microphone permission denied. Please allow access in your browser settings.');
+          }
+          isRecordingRef.current = false;
+          return;
+        }
+        if (e.error === 'network') {
+          // Network glitch — onend will fire and restart
+          console.warn('[Speech] network error, will auto-restart on onend');
+          return;
+        }
+        if (e.error !== 'aborted') console.warn('[Speech] error:', e.error);
+      };
+
+      rec.onend = () => {
+        recognitionRef.current = null;
+        if (!isRecordingRef.current) {
+          isWebSpeechActiveRef.current = false;
+          return;
+        }
+        // Auto-restart after a short delay to prevent mid-sentence interruption
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = setTimeout(() => {
+          if (!isRecordingRef.current) { isWebSpeechActiveRef.current = false; return; }
+          isWebSpeechActiveRef.current = false; // allow buildRec to proceed
+          try {
+            const newRec = buildRec();
+            newRec.start();
+            recognitionRef.current = newRec;
+            isWebSpeechActiveRef.current = true;
+          } catch { /* will retry on next watchdog tick */ }
+        }, 400);
+      };
+
+      return rec;
+    };
+
+    try {
+      const rec = buildRec();
+      rec.start();
+      recognitionRef.current = rec;
+    } catch (e) {
+      console.error('[Speech] failed to start:', e);
+      isWebSpeechActiveRef.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [commitFinal, updateStats, checkVoiceCommands]);
 
   // ── AssemblyAI real-time via direct WebSocket ─────────────────────────────
   const startAssemblyAI = useCallback(async (lang) => {
@@ -142,13 +336,14 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
       });
       streamRef.current = stream;
 
-      // Volume analyser
-      const AudioContextClass = typeof window !== 'undefined' ? (window.AudioContext || window.webkitAudioContext) : null;
+      const AudioContextClass = typeof window !== 'undefined'
+        ? (window.AudioContext || window.webkitAudioContext)
+        : null;
       if (!AudioContextClass) throw new Error('AudioContext not supported');
       const audioCtx = new AudioContextClass({ sampleRate: 16000 });
       audioCtxRef.current = audioCtx;
       const actualSampleRate = audioCtx.sampleRate || 16000;
-      
+
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
@@ -160,33 +355,38 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
         const data = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(data);
         const avg = data.reduce((a, b) => a + b, 0) / data.length;
-        setVolume(Math.min(100, avg * 2));
+        if (isMountedRef.current) setVolume(Math.min(100, avg * 2));
         animFrameRef.current = requestAnimationFrame(trackVolume);
       };
       trackVolume();
 
-      // AssemblyAI WebSocket
+      // Derive ISO 639-1 code for AssemblyAI (en-IN → en, hi-IN → hi, etc.)
+      const isoLang = (lang || 'en-IN').split('-')[0].toLowerCase() || 'en';
+
       const ws = new WebSocket(
-        `wss://api.assemblyai.com/v2/realtime/ws?sample_rate=${actualSampleRate}&token=${token}&word_boost=${encodeURIComponent(
-          JSON.stringify(['React','JavaScript','Python','Node','MongoDB','SQL','MySQL','PostgreSQL','AWS','GCP','Azure','GitHub','Docker','Kubernetes','TypeScript','Infosys','TCS','Wipro','Accenture','Flipkart','IIT','NIT','BITS'])
+        `wss://api.assemblyai.com/v2/realtime/ws?sample_rate=${actualSampleRate}&token=${token}&language_code=${isoLang}&word_boost=${encodeURIComponent(
+          JSON.stringify(['React','JavaScript','Python','Node','MongoDB','SQL','MySQL','PostgreSQL',
+            'AWS','GCP','Azure','GitHub','Docker','Kubernetes','TypeScript',
+            'Infosys','TCS','Wipro','Accenture','Flipkart','IIT','NIT','BITS'])
         )}&boost_param=high`
       );
 
-      const timeout = setTimeout(() => {
+      // Connection timeout
+      const wsTimeout = setTimeout(() => {
         if (ws.readyState !== WebSocket.OPEN) {
           ws.close();
-          throw new Error('AssemblyAI timeout');
         }
       }, 6000);
 
       ws.onopen = () => {
-        clearTimeout(timeout);
-        setIsConnecting(false);
-        setIsRecording(true);
-        setRecordingStatus('listening');
+        clearTimeout(wsTimeout);
         wsRef.current = ws;
+        if (isMountedRef.current) {
+          setIsConnecting(false);
+          setIsRecording(true);
+          setRecordingStatus('listening');
+        }
 
-        // Pipe raw PCM via ScriptProcessor
         const processor = audioCtx.createScriptProcessor(4096, 1, 1);
         processor.onaudioprocess = (e) => {
           if (ws.readyState !== WebSocket.OPEN) return;
@@ -203,13 +403,14 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
       };
 
       ws.onmessage = (e) => {
+        if (!isRecordingRef.current) return;
         try {
           const msg = JSON.parse(e.data);
           if (msg.message_type === 'PartialTranscript' && msg.text) {
-            setInterimTranscript(msg.text);
-            clearTimeout(silenceTimer.current);
-            silenceTimer.current = setTimeout(() => {
-              if (isRecordingRef.current && finalRef.current.length > 20) {
+            if (isMountedRef.current) setInterimTranscript(msg.text);
+            clearTimeout(silenceTimerRef.current);
+            silenceTimerRef.current = setTimeout(() => {
+              if (isRecordingRef.current && finalRef.current.length > 20 && isMountedRef.current) {
                 setRecordingStatus('processing');
               }
             }, 4000);
@@ -218,200 +419,98 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
             commitFinal(newFinal);
             checkVoiceCommands(newFinal);
           }
-        } catch {}
+        } catch { /* ignore malformed JSON */ }
       };
 
       ws.onerror = () => {
-        clearTimeout(timeout);
-        throw new Error('AssemblyAI WS error');
+        clearTimeout(wsTimeout);
+        // onclose will fire next, which triggers Web Speech fallback
       };
 
       ws.onclose = () => {
+        wsRef.current = null;
         if (isRecordingRef.current) {
-          setUsingFallback(true);
+          if (isMountedRef.current) setUsingFallback(true);
           startWebSpeech(lang);
         }
       };
 
     } catch (err) {
-      console.warn('AssemblyAI unavailable, using Web Speech API:', err.message);
-      setUsingFallback(true);
+      console.warn('[AssemblyAI] unavailable, falling back to Web Speech API:', err.message);
+      if (isMountedRef.current) setUsingFallback(true);
       startWebSpeech(lang);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [commitFinal, updateStats]);
-
-  // ── Web Speech API — 50ms restart = NO dropped words between pauses ───────
-  const startWebSpeech = useCallback((lang) => {
-    if (wsSpeechStarted.current) return;
-    wsSpeechStarted.current = true;
-
-    const SR = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
-    if (!SR) {
-      setError('Speech recognition requires Chrome or Edge browser.');
-      setIsConnecting(false);
-      return;
-    }
-
-    const useLang = lang || (typeof window !== 'undefined' ? localStorage.getItem('bridge_speech_lang') || 'en-IN' : 'en-IN');
-    const recognition = new SR();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 3;
-    recognition.lang = useLang;
-
-    recognition.onstart = () => {
-      setIsConnecting(false);
-      setIsRecording(true);
-      setRecordingStatus('listening');
-    };
-
-    recognition.onresult = (event) => {
-      // Clear silence timer on new speech
-      clearTimeout(silenceTimer.current);
-
-      let interimText = '';
-      let finalText = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        // Pick best alternative
-        let best = result[0];
-        for (let j = 1; j < result.length; j++) {
-          if (result[j] && (result[j].confidence || 0) > (best.confidence || 0)) best = result[j];
-        }
-        if (result.isFinal) finalText += best.transcript + ' ';
-        else interimText += best.transcript;
-      }
-
-      if (finalText.trim()) {
-        const newFinal = applyCorrections((finalRef.current + ' ' + finalText).trim());
-        commitFinal(newFinal);
-        if (interimText) { setInterimTranscript(interimText); updateStats((newFinal + ' ' + interimText).trim()); }
-
-        checkVoiceCommands(newFinal);
-
-        // Silence detection — 6s after last final word (longer for natural pauses)
-        silenceTimer.current = setTimeout(() => {
-          if (isRecordingRef.current && finalRef.current.length > 20) {
-            setRecordingStatus('paused');
-          }
-        }, 6000);
-      } else if (interimText) {
-        setInterimTranscript(interimText);
-      }
-    };
-
-    recognition.onerror = (e) => {
-      if (!isRecordingRef.current) return;
-      if (e.error === 'no-speech' || e.error === 'audio-capture') return;
-      if (e.error === 'network') { setTimeout(() => { if (isRecordingRef.current) try { recognition.start(); } catch {} }, 1000); return; }
-      if (e.error === 'not-allowed') { setError('Microphone permission denied. Please allow access.'); isRecordingRef.current = false; return; }
-      if (e.error !== 'aborted') console.warn('Speech error:', e.error);
-    };
-
-    // ── Smart restart: 1000ms delay prevents mid-sentence interruptions ────
-    // Web Speech API auto-ends after ~60s of silence or sometimes randomly.
-    // We wait 1s then restart only if still recording and not mid-speech.
-    recognition.onend = () => {
-      recognitionRef.current = null;
-      if (!isRecordingRef.current) return;
-      clearTimeout(restartTimer.current);
-      restartTimer.current = setTimeout(() => {
-        if (isRecordingRef.current && !recognitionRef.current) {
-          // Only restart if we haven't already started a new one
-          const newRec = new SR();
-          newRec.continuous = true;
-          newRec.interimResults = true;
-          newRec.maxAlternatives = 3;
-          newRec.lang = useLang;
-          // Copy all handlers
-          newRec.onstart = recognition.onstart;
-          newRec.onresult = recognition.onresult;
-          newRec.onerror = recognition.onerror;
-          newRec.onend = recognition.onend;
-          try {
-            newRec.start();
-            recognitionRef.current = newRec;
-          } catch {}
-        }
-      }, 1000);
-    };
-
-    try {
-      recognition.start();
-      recognitionRef.current = recognition;
-    } catch (e) {
-      console.error('Failed to start speech recognition:', e);
-      wsSpeechStarted.current = false;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [commitFinal, updateStats]);
+  }, [commitFinal, checkVoiceCommands, startWebSpeech]);
 
   // ── startRecording ────────────────────────────────────────────────────────
-  const startRecording = useCallback(async () => {
+  // preserveTranscript=true: keep finalRef as-is (used by "Continue Answering")
+  const startRecording = useCallback(async ({ preserveTranscript = false } = {}) => {
+    // Guard: stop any existing session cleanly before starting a new one
+    if (isRecordingRef.current) {
+      cleanupResources();
+      // Brief pause ensures previous mic track is fully released
+      await new Promise(r => setTimeout(r, 120));
+    }
+
+    if (!preserveTranscript) {
+      // Fresh question — wipe the buffer
+      finalRef.current = '';
+      if (isMountedRef.current) {
+        setTranscript('');
+        setInterimTranscript('');
+        setWordCount(0);
+        setFillerWords([]);
+        setFillerWordCounts({});
+      }
+    }
+    // If preserveTranscript=true, finalRef retains its accumulated content
+    // and the next spoken words will be appended to it automatically.
+
     try {
-      setError(null);
+      if (isMountedRef.current) {
+        setError(null);
+        setIsConnecting(true);
+        setUsingFallback(false);
+        setVoiceCommandDetected(null);
+      }
+      voiceCommandDetectedRef.current = null;
       isRecordingRef.current = true;
-      wsSpeechStarted.current = false;
-      setUsingFallback(false);
-      setIsConnecting(true);
+      isWebSpeechActiveRef.current = false;
 
-      const lang = typeof window !== 'undefined' ? localStorage.getItem('bridge_speech_lang') || 'en-IN' : 'en-IN';
+      const lang = typeof window !== 'undefined'
+        ? localStorage.getItem('bridge_speech_lang') || 'en-IN'
+        : 'en-IN';
 
-      // Try AssemblyAI first; falls back to Web Speech API internally
       await startAssemblyAI(lang);
 
     } catch (err) {
-      console.error('startRecording error:', err);
+      console.error('[startRecording] error:', err);
       isRecordingRef.current = false;
-      const msg =
-        err.name === 'NotAllowedError'  ? 'Microphone permission denied. Click the lock icon in your browser address bar and allow microphone.' :
-        err.name === 'NotFoundError'    ? 'No microphone detected. Please connect a microphone and try again.' :
-        err.name === 'NotReadableError' ? 'Microphone is in use by another app. Close Zoom/Meet/Teams and retry.' :
-                                          'Could not start recording. Please check browser permissions.';
-      setError(msg);
-      setIsConnecting(false);
-      toast.error(msg, { duration: 6000 });
+      if (isMountedRef.current) {
+        const msg =
+          err.name === 'NotAllowedError'  ? 'Microphone permission denied. Click the lock icon in your browser address bar and allow microphone.' :
+          err.name === 'NotFoundError'    ? 'No microphone detected. Please connect a microphone and try again.' :
+          err.name === 'NotReadableError' ? 'Microphone is in use by another app. Close Zoom/Meet/Teams and retry.' :
+                                            'Could not start recording. Please check browser permissions.';
+        setError(msg);
+        setIsConnecting(false);
+        toast.error(msg, { duration: 6000 });
+      }
     }
-  }, [startAssemblyAI]);
+  }, [startAssemblyAI, cleanupResources]);
 
   // ── stopRecording ─────────────────────────────────────────────────────────
   const stopRecording = useCallback(() => {
     isRecordingRef.current = false;
-    wsSpeechStarted.current = false;
-    clearTimeout(restartTimer.current);
-    clearTimeout(silenceTimer.current);
-    cancelAnimationFrame(animFrameRef.current);
+    cleanupResources();
 
-    // Stop Web Speech
-    if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch {}
-      recognitionRef.current = null;
-    }
-
-    // Stop AssemblyAI WS
-    if (wsRef.current) {
-      try {
-        if (wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ terminate_session: true }));
-        }
-        wsRef.current.close();
-      } catch {}
-      wsRef.current = null;
-    }
-
-    // Stop audio pipeline
-    if (processorRef.current) { processorRef.current.disconnect(); processorRef.current = null; }
-    if (analyserRef.current) { analyserRef.current = null; }
-    if (audioCtxRef.current) { try { audioCtxRef.current.close(); } catch {} audioCtxRef.current = null; }
-    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
-
+    if (!isMountedRef.current) return;
     setIsRecording(false);
     setRecordingStatus('idle');
     setVolume(0);
 
-    // Merge any pending interim into final transcript
+    // Merge any pending interim text into the final transcript
     setInterimTranscript(prev => {
       if (prev && prev.trim()) {
         const combined = applyCorrections((finalRef.current + ' ' + prev).trim());
@@ -421,10 +520,12 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
       }
       return '';
     });
-  }, [updateStats]);
+  }, [cleanupResources, updateStats]);
 
+  // ── clearTranscript ───────────────────────────────────────────────────────
   const clearTranscript = useCallback(() => {
     finalRef.current = '';
+    if (!isMountedRef.current) return;
     setTranscript('');
     setInterimTranscript('');
     setWordCount(0);
@@ -442,16 +543,24 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
   }, []);
 
   const exportTranscript = useCallback(() => {
-    const text = transcript || interimTranscript;
+    const text = finalRef.current || interimTranscript;
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `transcript-${Date.now()}.txt`; a.click();
+    a.href = url;
+    a.download = `transcript-${Date.now()}.txt`;
+    a.click();
     URL.revokeObjectURL(url);
     toast.success('Transcript exported');
-  }, [transcript, interimTranscript]);
+  }, [interimTranscript]);
 
-  useEffect(() => () => { stopRecording(); }, [stopRecording]);
+  // ── Cleanup on unmount ────────────────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      isRecordingRef.current = false;
+      cleanupResources();
+    };
+  }, [cleanupResources]);
 
   return {
     isRecording,

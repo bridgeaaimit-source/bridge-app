@@ -78,6 +78,14 @@ function SmartInterviewContent() {
   const [feedbackHistory, setFeedbackHistory] = useState([]);
   const [startError, setStartError] = useState('');
 
+  // In-flight request dedup guards — prevent duplicate concurrent API calls
+  const isStartingRef = useRef(false);
+  const isSubmittingRef = useRef(false);
+  const isEvaluatingRef = useRef(false);
+  // Keep a stable snapshot of conversation history for retry
+  const lastHistorySnapshotRef = useRef([]);
+  const lastMemorySnapshotRef = useRef(null);
+
   // 15s Lock for Next Question Button
   const [speakingTime, setSpeakingTime] = useState(0);
   const speakingIntervalRef = useRef(null);
@@ -91,6 +99,8 @@ function SmartInterviewContent() {
   const [autoSubmitCountdown, setAutoSubmitCountdown] = useState(5);
   const silenceTimerRef = useRef(null);
   const autoSubmitTimerRef = useRef(null);
+  // Capture a stable ref to the latest transcript to avoid stale-closure in auto-submit
+  const fullTranscriptRef = useRef('');
 
   // Tab switch focus integrity scoring
   const violationsCountRef = useRef(0);
@@ -133,12 +143,18 @@ function SmartInterviewContent() {
     exportTranscript = () => {},
   } = useDeepgramTranscription({ onVoiceCommand: handleVoiceCommand });
 
+  // Keep stable transcript ref for auto-submit to avoid stale closures
+  useEffect(() => {
+    fullTranscriptRef.current = fullTranscript;
+  }, [fullTranscript]);
+
   // submitAnswer uses fullTranscript in video mode too
-  const startRecordingState = () => {
+  // preserveTranscript=true: spoken text accumulated so far is kept (used by Continue Answering)
+  const startRecordingState = (preserveTranscript = false) => {
     if (state.config.mode === 'video') {
       startVideoRecording();
     } else {
-      startDeepgramRecording();
+      startDeepgramRecording({ preserveTranscript });
     }
   };
 
@@ -485,7 +501,7 @@ function SmartInterviewContent() {
         }
       }
 
-      startDeepgramRecording(stream);
+      startDeepgramRecording({ preserveTranscript: false });
       setVideoStream(stream);
       videoChunksRef.current = [];
 
@@ -592,7 +608,8 @@ function SmartInterviewContent() {
     };
   }, [transcript, interimTranscript, isRecording, state.status, wordCount, showCompletionModal, isThinking, isTyping]);
 
-  // Auto-submit countdown (5 seconds, hidden from UI)
+  // Auto-submit countdown (5 seconds)
+  // Uses a ref snapshot of fullTranscript to avoid stale closure bugs
   useEffect(() => {
     if (!showCompletionModal) {
       if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
@@ -606,7 +623,8 @@ function SmartInterviewContent() {
           clearInterval(autoSubmitTimerRef.current);
           setShowCompletionModal(false);
           console.log('⏰ Auto-submitting due to silence inactivity...');
-          submitAnswer(fullTranscript || interimTranscript || currentAnswer);
+          // Use the stable ref so we always get the latest transcript value
+          submitAnswer(fullTranscriptRef.current || currentAnswer);
           return 0;
         }
         return prev - 1;
@@ -616,12 +634,14 @@ function SmartInterviewContent() {
     return () => {
       if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
     };
-  }, [showCompletionModal, fullTranscript, interimTranscript, currentAnswer]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCompletionModal]);
 
   const handleContinueAnswering = () => {
     if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
     setShowCompletionModal(false);
-    startRecordingState();
+    // Issue 1 FIX: preserve transcript — new speech appends to what was already said
+    startRecordingState(true);
   };
 
   const handleNextQuestionManual = () => {
@@ -629,7 +649,7 @@ function SmartInterviewContent() {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     setShowCompletionModal(false);
     stopRecordingState();
-    submitAnswer(fullTranscript || interimTranscript || currentAnswer);
+    submitAnswer(fullTranscriptRef.current || currentAnswer);
   };
 
   // Fix 8: Tab switch detection — debounced to prevent double-counting
@@ -672,15 +692,21 @@ function SmartInterviewContent() {
       }
     }
 
+    // Dedup guard: prevent double-clicking Start Interview
+    if (isStartingRef.current) return;
+    isStartingRef.current = true;
     setLoading(true);
     lastViolationTimeRef.current = 0;
     
+    // 30-second AbortController timeout for the init request
+    const abortCtrl = new AbortController();
+    const abortTimer = setTimeout(() => abortCtrl.abort(), 30000);
+
     try {
       const response = await fetch('/api/smart-interview', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
+        signal: abortCtrl.signal,
         body: JSON.stringify({
           action: 'init',
           resume_base64: state.config.resumeBase64,
@@ -699,8 +725,6 @@ function SmartInterviewContent() {
       }
 
       const responseText = await response.text();
-      console.log('API Response Text (init):', responseText);
-      
       if (!responseText || responseText.trim() === '') {
         throw new Error('Empty response from server');
       }
@@ -709,8 +733,6 @@ function SmartInterviewContent() {
       try {
         data = JSON.parse(responseText);
       } catch (parseError) {
-        console.error('JSON Parse Error (init):', parseError);
-        console.error('Response that failed to parse:', responseText);
         throw new Error('Invalid response format from server');
       }
 
@@ -724,11 +746,9 @@ function SmartInterviewContent() {
       });
       setStartError('');
 
-      // Fix 7: enter fullscreen when interview starts
+      // Enter fullscreen when interview starts
       if (typeof document !== 'undefined' && document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(() => {
-          // Fullscreen might be refused on some browsers — that's ok
-        });
+        document.documentElement.requestFullscreen().catch(() => {});
       }
 
       if (autoSpeak) {
@@ -742,10 +762,16 @@ function SmartInterviewContent() {
       }
 
     } catch (error) {
-      console.error('Interview start error:', error);
-      setStartError(error.message || 'Failed to start interview. Please try again.');
+      if (error.name === 'AbortError') {
+        setStartError('Request timed out. Please check your internet and try again.');
+      } else {
+        console.error('Interview start error:', error);
+        setStartError(error.message || 'Failed to start interview. Please try again.');
+      }
     } finally {
+      clearTimeout(abortTimer);
       setLoading(false);
+      isStartingRef.current = false;
     }
   };
 
@@ -754,58 +780,63 @@ function SmartInterviewContent() {
       typeof overrideAnswer === "string"
         ? overrideAnswer
         : state.config.mode === 'voice'
-          ? fullTranscript
+          ? fullTranscriptRef.current
           : currentAnswer;
     
-    console.log('submitAnswer called:', { answer, shouldFinish, mode: state.config.mode, currentQuestion: state.engine.currentQuestion });
+    console.log('submitAnswer called:', { answer: answer?.slice(0,60), shouldFinish });
 
     if (!answer.trim() && !shouldFinish) {
-      toast.error('Please provide an answer');
+      toast.error('Please provide an answer before continuing.');
       startRecordingState();
       return;
     }
 
+    // Dedup guard: prevent double-submit on fast clicks
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+
     setIsTyping(true);
-    stopRecordingState(); // Ensure recording stops immediately
+    stopRecordingState();
 
     if (speakingIntervalRef.current) {
       clearInterval(speakingIntervalRef.current);
       speakingIntervalRef.current = null;
     }
-    
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
     setShowCompletionModal(false);
-      
+
     const historySnapshot = state.engine.conversationHistory;
     const updatedHistory = answer.trim()
       ? [...state.engine.conversationHistory, { role: 'user', message: answer }]
       : state.engine.conversationHistory;
 
-    // Optimistically update conversation history
+    // Optimistically add the user's answer to the conversation
     if (answer.trim()) {
       dispatch({ type: 'SUBMIT_ANSWER', payload: { answer } });
-    }
-
-    if (answer.trim()) {
-      
     }
 
     if (shouldFinish) {
       setIsTyping(false);
       setCurrentAnswer('');
       clearTranscript();
-      toast.success('Interview finished! Generating state.evaluation.feedback...');
+      // Snapshot history for potential retry
+      lastHistorySnapshotRef.current = updatedHistory;
+      lastMemorySnapshotRef.current = state.engine.sessionMemory;
+      isSubmittingRef.current = false;
       await getFeedback(state.engine.sessionMemory, updatedHistory);
       return;
     }
 
+    // 30-second timeout for the continue request
+    const abortCtrl = new AbortController();
+    const abortTimer = setTimeout(() => abortCtrl.abort(), 30000);
+
     try {
       const response = await fetch('/api/smart-interview', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
+        signal: abortCtrl.signal,
         body: JSON.stringify({
           action: 'continue',
           job_role: state.config.jobRole,
@@ -821,13 +852,10 @@ function SmartInterviewContent() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error Response (continue):', errorText);
         throw new Error(errorText || 'Failed to process answer');
       }
 
       const responseText = await response.text();
-      console.log('API Response Text (continue):', responseText);
-      
       if (!responseText || responseText.trim() === '') {
         throw new Error('Empty response from server');
       }
@@ -835,18 +863,15 @@ function SmartInterviewContent() {
       let data;
       try {
         data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('JSON Parse Error (continue):', parseError);
-        console.error('Response that failed to parse:', responseText);
-        throw new Error('Invalid response format from server');
-      }
+      } catch { throw new Error('Invalid response format from server'); }
 
       const updatedMemory = (data && data.session_memory) || state.engine.sessionMemory;
 
       if (data && data.interview_complete === true) {
-        toast.success('Interview completed! Generating state.evaluation.feedback...');
         setCurrentAnswer('');
         clearTranscript();
+        lastHistorySnapshotRef.current = updatedHistory;
+        lastMemorySnapshotRef.current = updatedMemory;
         await getFeedback(updatedMemory, updatedHistory);
       } else if (data && typeof data.question === 'string' && data.question.trim()) {
         dispatch({
@@ -872,15 +897,21 @@ function SmartInterviewContent() {
       } else {
         throw new Error('Invalid interview response structure');
       }
-      
+
     } catch (error) {
-      toast.error(error.message || 'Failed to process answer');
-      console.error('Answer submission error:', error);
-      // Rollback optimistic update
+      const msg = error.name === 'AbortError'
+        ? 'Request timed out. Check your internet connection and try again.'
+        : (error.message || 'Failed to process answer');
+      toast.error(msg);
+      console.error('[submitAnswer] error:', error);
+      // Rollback optimistic update so user can retry
       dispatch({ type: 'SET_ENGINE', payload: { conversationHistory: historySnapshot } });
-      startRecordingState();
+      // Restart recording so user is not stuck
+      setTimeout(() => startRecordingState(true), 400);
     } finally {
+      clearTimeout(abortTimer);
       setIsTyping(false);
+      isSubmittingRef.current = false;
       if (state.config.mode === 'video') {
         setRecordedVideoUrl('');
         setRecordingState('idle');
@@ -890,15 +921,22 @@ function SmartInterviewContent() {
   };
 
   const getFeedback = async (memoryObj, historyOverride) => {
+    // Dedup guard: don't allow multiple concurrent evaluation calls
+    if (isEvaluatingRef.current) return;
+    isEvaluatingRef.current = true;
     setIsEvaluating(true);
+
     const historyToUse = historyOverride || state.engine.conversationHistory;
+
+    // 50-second timeout for evaluation (AI calls can be slow)
+    const abortCtrl = new AbortController();
+    const abortTimer = setTimeout(() => abortCtrl.abort(), 50000);
 
     try {
       const response = await fetch('/api/smart-interview', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
+        signal: abortCtrl.signal,
         body: JSON.stringify({
           action: 'evaluate',
           job_role: state.config.jobRole,
@@ -912,12 +950,10 @@ function SmartInterviewContent() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error Response:', errorText);
         throw new Error(errorText || 'Failed to get feedback');
       }
 
       const responseText = await response.text();
-      
       if (!responseText || responseText.trim() === '') {
         throw new Error('Empty response from server');
       }
@@ -925,20 +961,16 @@ function SmartInterviewContent() {
       let data;
       try {
         data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('JSON Parse Error:', parseError);
-        throw new Error('Invalid response format from server');
-      }
+      } catch { throw new Error('Invalid response format from server'); }
 
+      // Transition to feedback screen BEFORE saving so UI is never stuck
       dispatch({ type: 'RECEIVE_EVALUATION', payload: { feedback: data } });
       dispatch({ type: 'SET_STATUS', payload: 'feedback' });
-      
+
+      // Save to Firestore in the background (non-blocking)
       try {
         const user = isBypassed ? { uid: 'test-user-123' } : auth.currentUser;
-        
         if (user) {
-          console.log('🔄 Starting feedback save process...');
-          
           if (!isBypassed) {
             await addDoc(collection(db, 'users', user.uid, 'interview_feedback'), {
               jobRole: state.config.jobRole,
@@ -952,70 +984,74 @@ function SmartInterviewContent() {
               timestamp: new Date().toISOString(),
               createdAt: Date.now()
             });
-            console.log('✅ Feedback saved to history');
-          } else {
-            console.log('🔓 Bypass mode - simulating feedback save to localStorage');
-            const mockHistory = JSON.parse(localStorage.getItem('bridge_mock_interview_history') || '[]');
-            mockHistory.unshift({
-              id: 'mock-feedback-' + Date.now(),
-              jobRole: state.config.jobRole,
-              round: state.config.round,
-              feedback: {
-                ...data,
-                integrityScore: state.integrity.integrityScore,
-                violations: state.integrity.violations
-              },
-              conversationHistory: historyToUse,
-              timestamp: new Date().toISOString(),
-              createdAt: Date.now()
-            });
-            localStorage.setItem('bridge_mock_interview_history', JSON.stringify(mockHistory));
-          }
-          
-          if (!isBypassed) {
+
             const userRef = doc(db, 'users', user.uid);
             const userSnap = await getDoc(userRef);
-            
             if (userSnap.exists()) {
               const userData = userSnap.data();
               const newInterviewsDone = (userData.interviewsDone || 0) + 1;
               const overallScore = data.overall_score || 5;
               const newAvgScore = ((userData.avgScore || 0) * (userData.interviewsDone || 0) + overallScore) / newInterviewsDone;
               const newBridgeScore = Math.min(1000, (userData.bridgeScore || 500) + (overallScore * 10));
-              
-              const updateData = {
+              await updateDoc(userRef, {
                 interviewsDone: newInterviewsDone,
                 avgScore: Math.round(newAvgScore * 10) / 10,
                 bridgeScore: newBridgeScore,
                 streak: (userData.streak || 0) + 1,
                 updatedAt: new Date().toISOString()
-              };
-              
-              await updateDoc(userRef, updateData);
+              });
             }
+          } else {
+            const mockHistory = JSON.parse(localStorage.getItem('bridge_mock_interview_history') || '[]');
+            mockHistory.unshift({
+              id: 'mock-feedback-' + Date.now(),
+              jobRole: state.config.jobRole,
+              round: state.config.round,
+              feedback: { ...data, integrityScore: state.integrity.integrityScore, violations: state.integrity.violations },
+              conversationHistory: historyToUse,
+              timestamp: new Date().toISOString(),
+              createdAt: Date.now()
+            });
+            localStorage.setItem('bridge_mock_interview_history', JSON.stringify(mockHistory));
           }
         }
       } catch (saveError) {
         console.error('❌ Error saving feedback:', saveError);
-        toast.error('Failed to save interview results');
+        // Don't block the user — they already have their results on screen
       }
-      
+
     } catch (error) {
-      console.error('Feedback error:', error);
-      dispatch({ type: 'RECEIVE_EVALUATION', payload: { feedback: { 
+      const isTimeout = error.name === 'AbortError';
+      console.error('[getFeedback] error:', error);
+      // Show error state so user can retry
+      dispatch({ type: 'RECEIVE_EVALUATION', payload: { feedback: {
         error: true,
         overall_score: 0,
-        placement_chance: 'Unable to evaluate',
-        verdict: 'Feedback generation failed.',
+        placement_chance: 0,
+        verdict: isTimeout ? 'Report timed out — please retry.' : 'Feedback generation failed.',
         scores: {},
-        summary: { key_takeaways: 'Failed to generate state.evaluation.feedback.' },
+        summary: { key_takeaways: isTimeout ? 'The report request timed out. Please use the retry button.' : 'Failed to generate feedback.' },
         question_analysis: []
-       } } });
+      } } });
       dispatch({ type: 'SET_STATUS', payload: 'feedback' });
     } finally {
+      clearTimeout(abortTimer);
       setIsEvaluating(false);
+      isEvaluatingRef.current = false;
     }
   };
+
+  // Retry evaluation using the last-known history snapshot
+  const retryEvaluation = useCallback(() => {
+    const history = lastHistorySnapshotRef.current;
+    const memory  = lastMemorySnapshotRef.current;
+    if (!history || history.length === 0) {
+      toast.error('No interview data to evaluate. Please complete an interview first.');
+      return;
+    }
+    getFeedback(memory, history);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const resetInterview = () => {
     dispatch({ type: 'RESET_INTERVIEW' });
@@ -1024,7 +1060,36 @@ function SmartInterviewContent() {
     setShowEndModal(false);
     setTooFewAnswers(false);
     setSpeakingTime(0);
+    isStartingRef.current = false;
+    isSubmittingRef.current = false;
+    isEvaluatingRef.current = false;
+    lastHistorySnapshotRef.current = [];
+    lastMemorySnapshotRef.current = null;
+    fullTranscriptRef.current = '';
   };
+
+  // ── Browser tab visibility recovery ──────────────────────────────────────
+  // If the candidate switches tabs and comes back while recording, restart the
+  // recognition session so the microphone is never silently dead.
+  useEffect(() => {
+    if (state.status !== 'interviewing') return;
+    const handleVisibilityReturn = () => {
+      if (!document.hidden && isRecording) {
+        // Recognition may have been suspended by the browser — restart safely
+        console.log('[Visibility] tab visible again — checking recognition health');
+        // stopRecordingState then restart preserves the transcript
+        stopDeepgramRecording();
+        setTimeout(() => {
+          if (state.status === 'interviewing' && !isTyping && !isThinking && !isSpeaking) {
+            startDeepgramRecording({ preserveTranscript: true });
+          }
+        }, 600);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityReturn);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityReturn);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.status, isRecording, isTyping, isThinking, isSpeaking]);
 
   const loadFeedbackHistory = async () => {
     try {
@@ -1125,12 +1190,12 @@ function SmartInterviewContent() {
             <button
               onClick={() => {
                 stopRecordingState();
-                submitAnswer(fullTranscript || interimTranscript || currentAnswer, true);
+                submitAnswer(fullTranscriptRef.current || currentAnswer, true);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200/60 text-red-700 rounded-xl hover:bg-red-100/80 transition-colors text-xs font-bold"
+              disabled={isSubmittingRef.current || isTyping}
+              className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200/60 text-red-700 rounded-xl hover:bg-red-100/80 transition-colors text-xs font-bold disabled:opacity-50"
             >
-              <X className="w-4 h-4" />
-              Finish &amp; Get Report
+              {isTyping ? <><div className="w-3.5 h-3.5 border-2 border-red-400 border-t-transparent rounded-full animate-spin" /> Evaluating...</> : <><X className="w-4 h-4" /> Finish &amp; Get Report</>}
             </button>
           </div>
 
@@ -1276,12 +1341,30 @@ function SmartInterviewContent() {
                         <p className="font-bold text-slate-800 text-sm">Comprehending Question...</p>
                         <p className="text-xs text-slate-400 mt-1">Take a moment to formulate your response outline.</p>
                       </div>
-                      <button onClick={() => { setIsThinking(false); startRecordingState(); }} className="text-xs text-[#14B8A6] hover:underline font-bold">
+                      <button onClick={() => { setIsThinking(false); startRecordingState(true); }} className="text-xs text-[#14B8A6] hover:underline font-bold">
                         Skip countdown and speak now
                       </button>
                     </div>
                   ) : (
                     <div className="space-y-4">
+                      {/* Microphone error alert */}
+                      {transcriptionError && (
+                        <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-3 animate-fade-in">
+                          <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold text-red-700">Microphone Issue</p>
+                            <p className="text-[11px] text-red-600 mt-0.5">{transcriptionError}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {isConnecting && (
+                        <div className="flex items-center justify-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 font-semibold animate-pulse">
+                          <div className="w-3 h-3 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+                          Connecting microphone...
+                        </div>
+                      )}
+
                       {isRecording && (
                         <div className="flex flex-col items-center justify-center p-6 bg-red-50/20 border border-red-100 rounded-2xl space-y-3 animate-fade-in">
                           <div className="flex items-end justify-center gap-1.5 h-10">
@@ -1403,9 +1486,15 @@ function SmartInterviewContent() {
     );
   }
 
-  // FEEDBACK SCREEN
-  if (state.status === 'feedback') {
-    return <FeedbackReport resetInterview={resetInterview} isEvaluating={isEvaluating} />;
+  // FEEDBACK SCREEN (also shown while isEvaluating via PremiumLoading inside FeedbackReport)
+  if (state.status === 'feedback' || isEvaluating) {
+    return (
+      <FeedbackReport
+        resetInterview={resetInterview}
+        isEvaluating={isEvaluating}
+        onRetryEvaluation={retryEvaluation}
+      />
+    );
   }
 
   // HISTORY SCREEN
