@@ -55,6 +55,46 @@ function detectFillers(text) {
   return { words: Object.keys(counts), counts };
 }
 
+// ─── Overlap & Duplication Prevention Helpers ─────────────────────────────────
+function removeOverlap(text1, text2) {
+  const t1 = text1.trim();
+  const t2 = text2.trim();
+  if (!t1) return t2;
+  if (!t2) return '';
+
+  const words1 = t1.split(/\s+/);
+  const words2 = t2.split(/\s+/);
+
+  const maxOverlap = Math.min(words1.length, words2.length);
+  for (let len = maxOverlap; len > 0; len--) {
+    let match = true;
+    for (let i = 0; i < len; i++) {
+      const w1 = words1[words1.length - len + i].toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "");
+      const w2 = words2[i].toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "");
+      if (w1 !== w2) {
+        match = false;
+        break;
+      }
+    }
+    if (match) {
+      return words2.slice(len).join(' ');
+    }
+  }
+  return t2;
+}
+
+function safeAppend(existing, newText) {
+  const cleanExisting = existing.trim();
+  const cleanNew = newText.trim();
+  if (!cleanExisting) return cleanNew;
+  if (!cleanNew) return cleanExisting;
+  
+  const appended = removeOverlap(cleanExisting, cleanNew);
+  if (!appended) return cleanExisting;
+  return cleanExisting + ' ' + appended;
+}
+
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 export function useAssemblyAI({ onVoiceCommand } = {}) {
   const [transcript, setTranscript] = useState('');
@@ -89,10 +129,11 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
 
   // State refs that must be readable inside event callbacks without closures
   const finalRef = useRef('');                // accumulated final transcript
+  const interimRef = useRef('');              // track the latest interim transcript state
+  const lastProcessedIndexRef = useRef(-1);   // track the last processed index of event.results in WebSpeech
   const isRecordingRef = useRef(false);       // true while session should be alive
   const isWebSpeechActiveRef = useRef(false); // guard: one WebSpeech instance at a time
   const restartTimerRef = useRef(null);       // restart debounce
-  const silenceTimerRef = useRef(null);       // hook-internal silence status timer
   const watchdogTimerRef = useRef(null);      // detects frozen/dead recognition
 
   useEffect(() => {
@@ -121,6 +162,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
     if (!isMountedRef.current) return;
     const corrected = applyCorrections(text);
     finalRef.current = corrected;
+    interimRef.current = '';
     setTranscript(corrected);
     setInterimTranscript('');
     updateStats(corrected);
@@ -145,9 +187,18 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
   // touching the transcript or isRecordingRef (caller sets those).
   const cleanupResources = useCallback(() => {
     clearTimeout(restartTimerRef.current);
-    clearTimeout(silenceTimerRef.current);
     clearInterval(watchdogTimerRef.current);
     cancelAnimationFrame(animFrameRef.current);
+
+    // Merge any pending interim text into finalRef.current before resource cleanup
+    if (interimRef.current && interimRef.current.trim()) {
+      const combined = applyCorrections(safeAppend(finalRef.current, interimRef.current));
+      finalRef.current = combined;
+      setTranscript(combined);
+      setInterimTranscript('');
+      interimRef.current = '';
+      updateStats(combined);
+    }
 
     // Kill Web Speech recognition
     if (recognitionRef.current) {
@@ -178,7 +229,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
     if (analyserRef.current) { analyserRef.current = null; }
     if (audioCtxRef.current) { try { audioCtxRef.current.close(); } catch {} audioCtxRef.current = null; }
     if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
-  }, []);
+  }, [updateStats]);
 
   // ── Web Speech API — continuous restart loop ─────────────────────────────
   // Accepts an optional `existingFinal` so transcript is preserved across
@@ -208,6 +259,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
 
     // ── Build a fresh recognition instance with all handlers ──────────────
     const buildRec = () => {
+      lastProcessedIndexRef.current = -1;
       const rec = new SR();
       rec.continuous = true;
       rec.interimResults = true;
@@ -237,36 +289,37 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
 
       rec.onresult = (event) => {
         if (!isRecordingRef.current || !isMountedRef.current) return;
-        clearTimeout(silenceTimerRef.current);
 
         let interimText = '';
-        let finalText = '';
+        let newFinalText = '';
 
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        for (let i = 0; i < event.results.length; i++) {
           const result = event.results[i];
-          // result[0] is always the highest-confidence alternative
           const best = result[0];
-          if (result.isFinal) finalText += best.transcript + ' ';
-          else interimText += best.transcript;
+          if (result.isFinal) {
+            if (i > lastProcessedIndexRef.current) {
+              newFinalText += best.transcript + ' ';
+              lastProcessedIndexRef.current = i;
+            }
+          } else {
+            interimText += best.transcript;
+          }
         }
 
-        if (finalText.trim()) {
-          const newFinal = applyCorrections((finalRef.current + ' ' + finalText).trim());
+        interimRef.current = interimText;
+
+        if (newFinalText.trim()) {
+          const newFinal = applyCorrections(safeAppend(finalRef.current, newFinalText));
           commitFinal(newFinal);
           if (interimText && isMountedRef.current) {
             setInterimTranscript(interimText);
-            updateStats((newFinal + ' ' + interimText).trim());
+            updateStats(applyCorrections(safeAppend(newFinal, interimText)));
           }
           checkVoiceCommands(newFinal);
-
-          // Status: paused only after 6s of silence with real content
-          silenceTimerRef.current = setTimeout(() => {
-            if (isRecordingRef.current && finalRef.current.length > 20 && isMountedRef.current) {
-              setRecordingStatus('paused');
-            }
-          }, 6000);
-        } else if (interimText && isMountedRef.current) {
+        } else if (isMountedRef.current) {
           setInterimTranscript(interimText);
+          const currentTotalText = applyCorrections(safeAppend(finalRef.current, interimText));
+          updateStats(currentTotalText);
         }
       };
 
@@ -291,6 +344,17 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
 
       rec.onend = () => {
         recognitionRef.current = null;
+
+        // Merge any pending interim text into finalRef.current before restart
+        if (interimRef.current && interimRef.current.trim()) {
+          const combined = applyCorrections(safeAppend(finalRef.current, interimRef.current));
+          finalRef.current = combined;
+          setTranscript(combined);
+          setInterimTranscript('');
+          interimRef.current = '';
+          updateStats(combined);
+        }
+
         if (!isRecordingRef.current) {
           isWebSpeechActiveRef.current = false;
           return;
@@ -408,14 +472,8 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
           const msg = JSON.parse(e.data);
           if (msg.message_type === 'PartialTranscript' && msg.text) {
             if (isMountedRef.current) setInterimTranscript(msg.text);
-            clearTimeout(silenceTimerRef.current);
-            silenceTimerRef.current = setTimeout(() => {
-              if (isRecordingRef.current && finalRef.current.length > 20 && isMountedRef.current) {
-                setRecordingStatus('processing');
-              }
-            }, 4000);
           } else if (msg.message_type === 'FinalTranscript' && msg.text) {
-            const newFinal = applyCorrections((finalRef.current + ' ' + msg.text).trim());
+            const newFinal = applyCorrections(safeAppend(finalRef.current, msg.text));
             commitFinal(newFinal);
             checkVoiceCommands(newFinal);
           }
@@ -429,6 +487,17 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
 
       ws.onclose = () => {
         wsRef.current = null;
+
+        // Merge any pending interim text into finalRef.current before fallback
+        if (interimRef.current && interimRef.current.trim()) {
+          const combined = applyCorrections(safeAppend(finalRef.current, interimRef.current));
+          finalRef.current = combined;
+          setTranscript(combined);
+          setInterimTranscript('');
+          interimRef.current = '';
+          updateStats(combined);
+        }
+
         if (isRecordingRef.current) {
           if (isMountedRef.current) setUsingFallback(true);
           startWebSpeech(lang);
@@ -456,6 +525,8 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
     if (!preserveTranscript) {
       // Fresh question — wipe the buffer
       finalRef.current = '';
+      interimRef.current = '';
+      lastProcessedIndexRef.current = -1;
       if (isMountedRef.current) {
         setTranscript('');
         setInterimTranscript('');
@@ -509,22 +580,13 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
     setIsRecording(false);
     setRecordingStatus('idle');
     setVolume(0);
-
-    // Merge any pending interim text into the final transcript
-    setInterimTranscript(prev => {
-      if (prev && prev.trim()) {
-        const combined = applyCorrections((finalRef.current + ' ' + prev).trim());
-        finalRef.current = combined;
-        setTranscript(combined);
-        updateStats(combined);
-      }
-      return '';
-    });
-  }, [cleanupResources, updateStats]);
+  }, [cleanupResources]);
 
   // ── clearTranscript ───────────────────────────────────────────────────────
   const clearTranscript = useCallback(() => {
     finalRef.current = '';
+    interimRef.current = '';
+    lastProcessedIndexRef.current = -1;
     if (!isMountedRef.current) return;
     setTranscript('');
     setInterimTranscript('');
@@ -567,7 +629,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
     isConnecting,
     transcript,
     interimTranscript,
-    fullTranscript: (transcript + (transcript && interimTranscript ? ' ' : '') + interimTranscript).trim(),
+    fullTranscript: applyCorrections(safeAppend(transcript, interimTranscript)),
     wordCount,
     fillerWords,
     fillerWordCounts,

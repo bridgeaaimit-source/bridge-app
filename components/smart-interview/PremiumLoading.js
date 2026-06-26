@@ -132,13 +132,13 @@ export default function PremiumLoading() {
           className="text-white text-2xl font-bold text-center mb-2 anim-fade-up"
           style={{ fontFamily: 'Syne, sans-serif' }}
         >
-          Generating Your Report
+          Analyzing your interview...
         </h2>
         <p
-          className="text-slate-400 text-sm text-center mb-8 anim-fade-up"
+          className="text-slate-400 text-sm text-center mb-8 anim-fade-up px-4"
           style={{ animationDelay: '0.2s', opacity: 0 }}
         >
-          Our AI is analysing your complete interview session...
+          Please wait while BridgeAI evaluates your interview performance and generates your personalized feedback. This may take a few moments.
         </p>
 
         {/* Analysis checklist */}
@@ -203,7 +203,7 @@ export default function PremiumLoading() {
 
         {/* Bottom info strip */}
         <p className="mt-8 text-xs text-slate-600 text-center">
-          This usually takes 10–20 seconds. Please don't close this window.
+          This usually takes 10–20 seconds. Please don&apos;t close this window.
         </p>
       </div>
     </div>
