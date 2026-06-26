@@ -340,7 +340,7 @@ Return ONLY valid JSON:
     ) || uncoveredCompetencies[0] || 'behavioral';
 
     const prompt = `You are a professional campus recruiter conducting a ${round} for: ${job_role}.
-You are currently on question ${canonicalAskedQuestions.length + 1} of max 15 (target 10).
+You are currently on question ${canonicalAskedQuestions.length + 1} of max 10.
 
 ━━ SESSION MEMORY (your running notes) ━━
 Interview Summary (older turns already captured here):
@@ -484,8 +484,7 @@ QUESTION RULES:
 
 INTERVIEW COMPLETION:
 Set "interview_complete": true ONLY when:
-  - All 6 competencies have "covered": true AND >= 8 questions asked
-  - OR >= 15 questions asked
+  - >= 10 questions asked
   - Do NOT end interview when "needs_followup": true (always resolve follow-ups first)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -597,7 +596,7 @@ Return ONLY valid JSON (no markdown, no explanation):
             last_question_type: 'new_topic',
             needs_followup: false,
           },
-          interview_complete: canonicalAskedQuestions.length >= 14,
+          interview_complete: canonicalAskedQuestions.length >= 10,
         };
       }
     } catch (claudeError) {
@@ -622,7 +621,7 @@ Return ONLY valid JSON (no markdown, no explanation):
           last_question_type: 'new_topic',
           needs_followup: false,
         },
-        interview_complete: currentCount >= 9,
+        interview_complete: currentCount >= 10,
       };
     }
 

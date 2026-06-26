@@ -94,11 +94,6 @@ function SmartInterviewContent() {
   const [thinkingTimeLeft, setThinkingTimeLeft] = useState(0);
   const [isThinking, setIsThinking] = useState(false);
 
-  // Silence Detection & Modal (7s Silence, 5s Auto-Submit)
-  const [showCompletionModal, setShowCompletionModal] = useState(false);
-  const [autoSubmitCountdown, setAutoSubmitCountdown] = useState(5);
-  const silenceTimerRef = useRef(null);
-  const autoSubmitTimerRef = useRef(null);
   // Capture a stable ref to the latest transcript to avoid stale-closure in auto-submit
   const fullTranscriptRef = useRef('');
 
@@ -152,7 +147,7 @@ function SmartInterviewContent() {
   // preserveTranscript=true: spoken text accumulated so far is kept (used by Continue Answering)
   const startRecordingState = (preserveTranscript = false) => {
     if (state.config.mode === 'video') {
-      startVideoRecording();
+      startVideoRecording(preserveTranscript);
     } else {
       startDeepgramRecording({ preserveTranscript });
     }
@@ -476,17 +471,18 @@ function SmartInterviewContent() {
     }
   };
 
-  const startVideoRecording = async () => {
+  const startVideoRecording = async (preserveTranscript = false) => {
     if (!isVideoSupported) {
       toast.error('Video recording is not supported in this browser');
       return;
     }
 
     try {
-      clearTranscript();
+      if (!preserveTranscript) {
+        clearTranscript();
+      }
       setRecordedVideoUrl("");
       setRecordingState('recording');
-      setRecordingTimeLeft(120);
       setIsVideoRecording(true);
 
       let stream;
@@ -501,7 +497,7 @@ function SmartInterviewContent() {
         }
       }
 
-      startDeepgramRecording({ preserveTranscript: false });
+      startDeepgramRecording({ preserveTranscript });
       setVideoStream(stream);
       videoChunksRef.current = [];
 
@@ -535,16 +531,6 @@ function SmartInterviewContent() {
       };
 
       recorder.start();
-
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingTimeLeft((prev) => {
-          if (prev <= 1) {
-            stopVideoRecording();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
     } catch (error) {
       console.error("Video recording error:", error);
       setIsVideoRecording(false);
@@ -588,66 +574,7 @@ function SmartInterviewContent() {
     };
   }, [isRecording]);
 
-  // Invisible silence detector: triggers after 7 seconds of speech silence
-  useEffect(() => {
-    if (state.status !== 'interviewing' || !isRecording || showCompletionModal || isThinking || isTyping) return;
-
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-
-    if (wordCount > 2) {
-      silenceTimerRef.current = setTimeout(() => {
-        console.log('🔇 7 seconds of silence detected. Triggering prompt...');
-        stopRecordingState();
-        setShowCompletionModal(true);
-        setAutoSubmitCountdown(5);
-      }, 7000);
-    }
-
-    return () => {
-      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    };
-  }, [transcript, interimTranscript, isRecording, state.status, wordCount, showCompletionModal, isThinking, isTyping]);
-
-  // Auto-submit countdown (5 seconds)
-  // Uses a ref snapshot of fullTranscript to avoid stale closure bugs
-  useEffect(() => {
-    if (!showCompletionModal) {
-      if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
-      return;
-    }
-
-    setAutoSubmitCountdown(5);
-    autoSubmitTimerRef.current = setInterval(() => {
-      setAutoSubmitCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(autoSubmitTimerRef.current);
-          setShowCompletionModal(false);
-          console.log('⏰ Auto-submitting due to silence inactivity...');
-          // Use the stable ref so we always get the latest transcript value
-          submitAnswer(fullTranscriptRef.current || currentAnswer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showCompletionModal]);
-
-  const handleContinueAnswering = () => {
-    if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
-    setShowCompletionModal(false);
-    // Issue 1 FIX: preserve transcript — new speech appends to what was already said
-    startRecordingState(true);
-  };
-
   const handleNextQuestionManual = () => {
-    if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    setShowCompletionModal(false);
     stopRecordingState();
     submitAnswer(fullTranscriptRef.current || currentAnswer);
   };
@@ -697,16 +624,11 @@ function SmartInterviewContent() {
     isStartingRef.current = true;
     setLoading(true);
     lastViolationTimeRef.current = 0;
-    
-    // 30-second AbortController timeout for the init request
-    const abortCtrl = new AbortController();
-    const abortTimer = setTimeout(() => abortCtrl.abort(), 30000);
 
     try {
       const response = await fetch('/api/smart-interview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: abortCtrl.signal,
         body: JSON.stringify({
           action: 'init',
           resume_base64: state.config.resumeBase64,
@@ -762,14 +684,9 @@ function SmartInterviewContent() {
       }
 
     } catch (error) {
-      if (error.name === 'AbortError') {
-        setStartError('Request timed out. Please check your internet and try again.');
-      } else {
-        console.error('Interview start error:', error);
-        setStartError(error.message || 'Failed to start interview. Please try again.');
-      }
+      console.error('Interview start error:', error);
+      setStartError(error.message || 'Failed to start interview. Please try again.');
     } finally {
-      clearTimeout(abortTimer);
       setLoading(false);
       isStartingRef.current = false;
     }
@@ -785,6 +702,9 @@ function SmartInterviewContent() {
     
     console.log('submitAnswer called:', { answer: answer?.slice(0,60), shouldFinish });
 
+    const isTenthQuestion = state.engine.questionNumber >= 10;
+    const finalShouldFinish = shouldFinish || isTenthQuestion;
+
     if (!answer.trim() && !shouldFinish) {
       toast.error('Please provide an answer before continuing.');
       startRecordingState();
@@ -796,15 +716,15 @@ function SmartInterviewContent() {
     isSubmittingRef.current = true;
 
     setIsTyping(true);
+    
+    // Cleanly stop all recording and release resources immediately
     stopRecordingState();
+    stopVideoStream();
 
     if (speakingIntervalRef.current) {
       clearInterval(speakingIntervalRef.current);
       speakingIntervalRef.current = null;
     }
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    if (autoSubmitTimerRef.current) clearInterval(autoSubmitTimerRef.current);
-    setShowCompletionModal(false);
 
     const historySnapshot = state.engine.conversationHistory;
     const updatedHistory = answer.trim()
@@ -816,7 +736,7 @@ function SmartInterviewContent() {
       dispatch({ type: 'SUBMIT_ANSWER', payload: { answer } });
     }
 
-    if (shouldFinish) {
+    if (finalShouldFinish) {
       setIsTyping(false);
       setCurrentAnswer('');
       clearTranscript();
@@ -828,15 +748,10 @@ function SmartInterviewContent() {
       return;
     }
 
-    // 30-second timeout for the continue request
-    const abortCtrl = new AbortController();
-    const abortTimer = setTimeout(() => abortCtrl.abort(), 30000);
-
     try {
       const response = await fetch('/api/smart-interview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: abortCtrl.signal,
         body: JSON.stringify({
           action: 'continue',
           job_role: state.config.jobRole,
@@ -899,9 +814,7 @@ function SmartInterviewContent() {
       }
 
     } catch (error) {
-      const msg = error.name === 'AbortError'
-        ? 'Request timed out. Check your internet connection and try again.'
-        : (error.message || 'Failed to process answer');
+      const msg = error.message || 'Failed to process answer';
       toast.error(msg);
       console.error('[submitAnswer] error:', error);
       // Rollback optimistic update so user can retry
@@ -909,7 +822,6 @@ function SmartInterviewContent() {
       // Restart recording so user is not stuck
       setTimeout(() => startRecordingState(true), 400);
     } finally {
-      clearTimeout(abortTimer);
       setIsTyping(false);
       isSubmittingRef.current = false;
       if (state.config.mode === 'video') {
@@ -928,15 +840,10 @@ function SmartInterviewContent() {
 
     const historyToUse = historyOverride || state.engine.conversationHistory;
 
-    // 50-second timeout for evaluation (AI calls can be slow)
-    const abortCtrl = new AbortController();
-    const abortTimer = setTimeout(() => abortCtrl.abort(), 50000);
-
     try {
       const response = await fetch('/api/smart-interview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: abortCtrl.signal,
         body: JSON.stringify({
           action: 'evaluate',
           job_role: state.config.jobRole,
@@ -1021,21 +928,19 @@ function SmartInterviewContent() {
       }
 
     } catch (error) {
-      const isTimeout = error.name === 'AbortError';
       console.error('[getFeedback] error:', error);
       // Show error state so user can retry
       dispatch({ type: 'RECEIVE_EVALUATION', payload: { feedback: {
         error: true,
         overall_score: 0,
         placement_chance: 0,
-        verdict: isTimeout ? 'Report timed out — please retry.' : 'Feedback generation failed.',
+        verdict: 'Feedback generation failed.',
         scores: {},
-        summary: { key_takeaways: isTimeout ? 'The report request timed out. Please use the retry button.' : 'Failed to generate feedback.' },
+        summary: { key_takeaways: 'Failed to generate feedback.' },
         question_analysis: []
       } } });
       dispatch({ type: 'SET_STATUS', payload: 'feedback' });
     } finally {
-      clearTimeout(abortTimer);
       setIsEvaluating(false);
       isEvaluatingRef.current = false;
     }
@@ -1400,9 +1305,9 @@ function SmartInterviewContent() {
                         }`}
                       >
                         {isNextLocked ? (
-                          <span>Next Question (Unlocks in {10 - speakingTime}s)</span>
+                          <span>Submit Answer (Unlocks in {10 - speakingTime}s)</span>
                         ) : (
-                          <>Next Question <ArrowRight className="w-4 h-4" /></>
+                          <>Submit Answer <ArrowRight className="w-4 h-4" /></>
                         )}
                       </button>
                     </div>
@@ -1458,30 +1363,7 @@ function SmartInterviewContent() {
           </div>
         </div>
 
-        {/* 7s silence -> 5s auto-submit modal prompt */}
-        {showCompletionModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-100 flex flex-col items-center text-center space-y-4">
-              <div className="w-12 h-12 bg-teal-50 rounded-full flex items-center justify-center text-[#0D9488] animate-bounce">
-                <MessageSquare className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900 text-lg">Have you completed your answer?</h3>
-                <p className="text-xs text-gray-500 mt-1.5">
-                  No speech detected for 7 seconds. Automatically proceeding in <span className="font-bold text-red-500">{autoSubmitCountdown}s</span>...
-                </p>
-              </div>
-              <div className="flex flex-col w-full gap-2 pt-2">
-                <button onClick={handleContinueAnswering} className="w-full bg-[#0D9488] text-white py-3 rounded-xl font-semibold hover:bg-[#0F766E] transition-colors">
-                  Continue Answering
-                </button>
-                <button onClick={handleNextQuestionManual} className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-colors">
-                  Yes, Next Question
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+
       </AppShell>
     );
   }
