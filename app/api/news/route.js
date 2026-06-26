@@ -6,7 +6,7 @@ const MOCK_NEWS_CURATION = {
     {
       title: "TCS Announces 40,000 New Hires for FY2025",
       description: "Tata Consultancy Services plans to hire 40,000 fresh graduates focused on AI and cloud technologies.",
-      url: "#",
+      url: "https://www.tcs.com/careers",
       urlToImage: null,
       publishedAt: new Date().toISOString(),
       source: "TCS News",
@@ -18,7 +18,7 @@ const MOCK_NEWS_CURATION = {
     {
       title: "Top Skills Employers Want in 2025",
       description: "AI literacy, communication, and adaptability top the list of most sought-after skills by Indian recruiters.",
-      url: "#",
+      url: "https://india.linkedin.com",
       urlToImage: null,
       publishedAt: new Date().toISOString(),
       source: "LinkedIn India",
@@ -30,7 +30,7 @@ const MOCK_NEWS_CURATION = {
     {
       title: "India Startup Ecosystem Hits $150B Valuation",
       description: "Indian startups raised record funding in 2024 with fintech and edtech leading growth.",
-      url: "#",
+      url: "https://inc42.com",
       urlToImage: null,
       publishedAt: new Date().toISOString(),
       source: "Inc42",

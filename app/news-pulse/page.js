@@ -146,9 +146,9 @@ export default function NewsPulsePage() {
       setNewsData(data);
     } catch {
       setNewsData({ articles: [
-        { title: "TCS Announces 40,000 New Hires for FY2025", description: "Tata Consultancy Services plans to hire 40,000 fresh graduates focused on AI and cloud technologies.", url: "#", source: "TCS", time: "Today" },
-        { title: "Top Skills Employers Want in 2025", description: "AI literacy, communication, and adaptability top the list of most sought-after skills by Indian recruiters.", url: "#", source: "LinkedIn India", time: "Today" },
-        { title: "India Startup Ecosystem Hits $150B Valuation", description: "Indian startups raised record funding in 2024 with fintech and edtech leading growth.", url: "#", source: "Inc42", time: "Today" },
+        { title: "TCS Announces 40,000 New Hires for FY2025", description: "Tata Consultancy Services plans to hire 40,000 fresh graduates focused on AI and cloud technologies.", url: "https://www.tcs.com/careers", source: "TCS", time: "Today" },
+        { title: "Top Skills Employers Want in 2025", description: "AI literacy, communication, and adaptability top the list of most sought-after skills by Indian recruiters.", url: "https://india.linkedin.com", source: "LinkedIn India", time: "Today" },
+        { title: "India Startup Ecosystem Hits $150B Valuation", description: "Indian startups raised record funding in 2024 with fintech and edtech leading growth.", url: "https://inc42.com", source: "Inc42", time: "Today" },
       ]});
     } finally {
       setNewsLoading(false);
@@ -159,8 +159,8 @@ export default function NewsPulsePage() {
     if (isBypassed) {
       setGdInsights(FALLBACK_GD);
       setNewsData({ articles: [
-        { title: "AI Revolution: What Students Must Know", description: "Major companies are investing in AI, creating massive opportunities for graduates.", url: "#", source: "Tech News", time: "2h ago" },
-        { title: "Top 10 Skills Employers Want in 2025", description: "Communication, problem-solving, and AI literacy top recruiter wishlists.", url: "#", source: "Career Insights", time: "5h ago" },
+        { title: "AI Revolution: What Students Must Know", description: "Major companies are investing in AI, creating massive opportunities for graduates.", url: "https://www.google.com/search?q=AI+revolution+careers", source: "Tech News", time: "2h ago" },
+        { title: "Top 10 Skills Employers Want in 2025", description: "Communication, problem-solving, and AI literacy top recruiter wishlists.", url: "https://www.linkedin.com/pulse/top-skills-employers-want-2025", source: "Career Insights", time: "5h ago" },
       ]});
       setGdLoading(false);
       setNewsLoading(false);
@@ -416,7 +416,17 @@ export default function NewsPulsePage() {
             ) : filteredArticles.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredArticles.map((article, i) => (
-                  <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.05)] hover:shadow-[0_4px_20px_rgba(13,148,136,0.12)] hover:border-[#CCFBF1] transition-all group overflow-hidden">
+                  <div 
+                    key={i} 
+                    onClick={() => {
+                      if (article.url && article.url !== '#') {
+                        window.open(article.url, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
+                    className={`bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.05)] hover:shadow-[0_4px_20px_rgba(13,148,136,0.12)] hover:border-[#CCFBF1] transition-all group overflow-hidden ${
+                      article.url && article.url !== '#' ? 'cursor-pointer' : ''
+                    }`}
+                  >
                     <div className="p-5">
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-[11px] font-bold uppercase tracking-wide text-[#0D9488] bg-[#CCFBF1] px-2 py-0.5 rounded-full">
@@ -434,11 +444,18 @@ export default function NewsPulsePage() {
                         {article.description}
                       </p>
                       <div className="flex items-center justify-between">
-                        <button onClick={() => toggleSave(article)} className="p-1.5 text-gray-400 hover:text-yellow-500 transition-colors rounded-lg hover:bg-yellow-50">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent card click event
+                            toggleSave(article);
+                          }} 
+                          className="p-1.5 text-gray-400 hover:text-yellow-500 transition-colors rounded-lg hover:bg-yellow-50"
+                        >
                           <Bookmark className={`w-4 h-4 ${savedArticles.some(a => a.title === article.title) ? 'fill-yellow-400 text-yellow-500' : ''}`} />
                         </button>
                         {article.url && article.url !== '#' ? (
                           <a href={article.url} target="_blank" rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()} // Prevent card double click trigger
                             className="text-xs font-semibold text-[#0D9488] hover:text-[#0F766E] flex items-center gap-1">
                             Read More <ArrowUpRight className="w-3 h-3" />
                           </a>
