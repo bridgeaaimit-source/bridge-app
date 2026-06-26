@@ -262,7 +262,7 @@ export default function AppShell({ children, hideNavigation = false }) {
       items: [
         { href: '/dashboard', icon: HomeIcon, label: 'Home', group: ['/dashboard'], tour: 'dashboard' },
         { href: '/smart-interview', icon: SmartInterviewIcon, label: 'Smart Interview', group: ['/smart-interview', '/interview', '/device-test'], tour: 'smart-interview' },
-        { href: '/pulse', icon: GDPulseIcon, label: 'GD Pulse', group: ['/pulse', '/gd', '/coach'], tour: 'gd-practice' },
+        { href: '/gd/ai', icon: GDPulseIcon, label: 'GD Pulse', group: ['/gd/ai', '/pulse', '/gd', '/coach'], tour: 'gd-practice' },
         { href: '/aptitude', icon: AptitudeArenaIcon, label: 'Aptitude Arena', group: ['/aptitude'] }
       ]
     },
@@ -296,7 +296,7 @@ export default function AppShell({ children, hideNavigation = false }) {
   const mobileNav = [
     { href: '/dashboard', icon: HomeIcon, label: 'Home', group: ['/dashboard'] },
     { href: '/smart-interview', icon: SmartInterviewIcon, label: 'Interview', group: ['/smart-interview', '/interview', '/device-test'] },
-    { href: '/pulse', icon: GDPulseIcon, label: 'GD Pulse', group: ['/pulse', '/gd', '/coach'] },
+    { href: '/gd/ai', icon: GDPulseIcon, label: 'GD Pulse', group: ['/gd/ai', '/pulse', '/gd', '/coach'] },
     { href: '/leaderboard', icon: TrophyIcon, label: 'Rank', group: ['/leaderboard'] },
     { href: '/profile', icon: UserIcon, label: 'Me', group: ['/profile'] },
   ];
