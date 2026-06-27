@@ -135,6 +135,8 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
   const isWebSpeechActiveRef = useRef(false); // guard: one WebSpeech instance at a time
   const restartTimerRef = useRef(null);       // restart debounce
   const watchdogTimerRef = useRef(null);      // detects frozen/dead recognition
+  const consecutiveShortSessionsRef = useRef(0); // tracks rapid crash/restart loops
+  const lastStartTimeRef = useRef(0);         // timestamp of last SpeechRecognition start
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -304,6 +306,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
 
       rec.onstart = () => {
         if (!isMountedRef.current) return;
+        lastStartTimeRef.current = Date.now(); // Record start time
         setIsConnecting(false);
         setIsRecording(true);
         setRecordingStatus('listening');
@@ -395,6 +398,27 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
           isWebSpeechActiveRef.current = false;
           return;
         }
+
+        // Check if the session was extremely short (less than 1.5 seconds)
+        const sessionDuration = Date.now() - lastStartTimeRef.current;
+        if (sessionDuration < 1500) {
+          consecutiveShortSessionsRef.current += 1;
+        } else {
+          consecutiveShortSessionsRef.current = 0;
+        }
+
+        // If it failed 3 times consecutively, stop recording to prevent infinite flashing mic
+        if (consecutiveShortSessionsRef.current >= 3) {
+          console.warn('[Speech] Stopping restart loop: SpeechRecognition sessions ending too fast.');
+          consecutiveShortSessionsRef.current = 0;
+          stopRecording();
+          if (isMountedRef.current) {
+            setError('Microphone capture failed or was interrupted. Please check permissions or disconnect other apps using the mic.');
+            toast.error('Microphone connection failed. Please check your browser mic permissions.');
+          }
+          return;
+        }
+
         // Auto-restart after a short delay to prevent mid-sentence interruption
         clearTimeout(restartTimerRef.current);
         restartTimerRef.current = setTimeout(() => {
@@ -551,6 +575,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
   // ── startRecording ────────────────────────────────────────────────────────
   // preserveTranscript=true: keep finalRef as-is (used by "Continue Answering")
   const startRecording = useCallback(async ({ preserveTranscript = false } = {}) => {
+    consecutiveShortSessionsRef.current = 0; // Reset consecutive restart failures on user start
     // Guard: stop any existing session cleanly before starting a new one
     if (isRecordingRef.current) {
       cleanupResources();
