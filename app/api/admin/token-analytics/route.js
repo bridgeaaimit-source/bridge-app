@@ -99,7 +99,7 @@ export async function POST(request) {
               const tokens = val;
               const inputTokens = data[`${key}_input`] || 0;
               const outputTokens = data[`${key}_output`] || 0;
-              const modelSlug = data[`${key}_model`] || FEATURE_DEFAULT_MODEL[key] || 'claude-sonnet-4-20250514';
+              const modelSlug = data[`${key}_model`] || FEATURE_DEFAULT_MODEL[key] || 'claude-sonnet-4-5';
 
               let costInfo;
               if (inputTokens > 0 || outputTokens > 0) {

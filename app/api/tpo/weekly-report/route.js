@@ -44,7 +44,7 @@ Generate a 1-page professional weekly report with these sections:
 Format as clean markdown with headers, bullet points, and bold text for emphasis. Be specific with numbers. Keep it professional but engaging. Maximum 800 words.`;
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }],
     });
@@ -54,7 +54,7 @@ Format as clean markdown with headers, bullet points, and bold text for emphasis
       'tpo',
       message.usage?.input_tokens,
       message.usage?.output_tokens,
-      'claude-sonnet-4-20250514'
+      'claude-sonnet-4-5'
     );
 
     const report = message.content[0].text;

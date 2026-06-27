@@ -117,7 +117,7 @@ Return ONLY valid JSON:
 }`;
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 1500,
       messages: [{
         role: 'user',
@@ -136,7 +136,7 @@ Return ONLY valid JSON:
     });
 
     // Track token usage
-    await trackTokensServer(uid || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514');
+    await trackTokensServer(uid || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-5');
 
     const text = message.content[0].text
       .replace(/```json/g, '')
@@ -414,13 +414,13 @@ IMPORTANT:
 - Every job returned must be from the REAL JOBS TO MATCH list`;
 
     const matchMsg = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 3000,
       messages: [{ role: 'user', content: matchPrompt }]
     });
 
     // Track token usage
-    await trackTokensServer(uid || 'anonymous', 'jobs', matchMsg.usage?.input_tokens, matchMsg.usage?.output_tokens, 'claude-sonnet-4-20250514');
+    await trackTokensServer(uid || 'anonymous', 'jobs', matchMsg.usage?.input_tokens, matchMsg.usage?.output_tokens, 'claude-sonnet-4-5');
 
     const matchText = matchMsg.content[0].text
       .replace(/```json/g, '')
@@ -532,13 +532,13 @@ Return ONLY valid JSON, no markdown:
 }`;
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }]
     });
 
     // Track token usage
-    await trackTokensServer(uid || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514');
+    await trackTokensServer(uid || 'anonymous', 'jobs', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-5');
 
     const text = message.content[0].text
       .replace(/```json/g, '')

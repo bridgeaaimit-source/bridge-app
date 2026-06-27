@@ -57,13 +57,13 @@ Return ONLY valid JSON (no markdown, no explanation):
 Maximum ${Math.min(daysRemaining, 14)} days. Be specific to ${company}'s known interview patterns.`;
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 3000,
       messages: [{ role: 'user', content: prompt }],
     });
 
     // Track token usage
-    trackTokensServer(uid || userId || 'anonymous', 'coach', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514').catch(() => {});
+    trackTokensServer(uid || userId || 'anonymous', 'coach', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-5').catch(() => {});
 
     const text = message.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
     const jsonMatch = text.match(/\[[\s\S]*\]/);

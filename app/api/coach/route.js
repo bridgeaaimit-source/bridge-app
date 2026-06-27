@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { trackTokensServer } from '@/lib/tokenTrackerServer';
-const MODEL = "claude-sonnet-4-20250514";
+const MODEL = "claude-sonnet-4-5";
 
 function jsonResponse(data, status = 200) {
   return Response.json(data, { status });

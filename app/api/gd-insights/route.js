@@ -142,13 +142,13 @@ Return ONLY valid JSON, no markdown:
 
   try {
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 1000,
       messages: [{ role: 'user', content: prompt }]
     });
 
     // Track token usage
-    await trackTokensServer(userId || 'anonymous', 'gd', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514');
+    await trackTokensServer(userId || 'anonymous', 'gd', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-5');
 
     const text = message.content[0].text
       .replace(/```json/g, '')

@@ -14,7 +14,7 @@ export async function POST(request) {
       .join(', ');
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 200,
       messages: [{
         role: 'user',
@@ -23,7 +23,7 @@ export async function POST(request) {
     });
 
     // Track token usage
-    await trackTokensServer(uid || userId || 'anonymous', 'aptitude', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514');
+    await trackTokensServer(uid || userId || 'anonymous', 'aptitude', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-5');
 
     const insight = message.content[0].text.trim();
     return Response.json({ insight });
