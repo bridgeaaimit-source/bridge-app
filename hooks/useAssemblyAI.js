@@ -253,6 +253,42 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
       return;
     }
 
+    // Start a mic stream for volume visualization if not already running
+    if (!streamRef.current && typeof window !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      }).then(stream => {
+        if (!isRecordingRef.current) {
+          stream.getTracks().forEach(t => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          const audioCtx = new AudioContextClass({ sampleRate: 16000 });
+          audioCtxRef.current = audioCtx;
+          
+          const source = audioCtx.createMediaStreamSource(stream);
+          const analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 256;
+          source.connect(analyser);
+          analyserRef.current = analyser;
+
+          const trackVolume = () => {
+            if (!isRecordingRef.current) return;
+            const data = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(data);
+            const avg = data.reduce((a, b) => a + b, 0) / data.length;
+            if (isMountedRef.current) setVolume(Math.min(100, avg * 2));
+            animFrameRef.current = requestAnimationFrame(trackVolume);
+          };
+          trackVolume();
+        }
+      }).catch(err => {
+        console.warn('[WebSpeech Mic Stream] failed for volume meter:', err);
+      });
+    }
+
     // Prefer en-IN for Indian English; fall back gracefully
     const useLang = lang ||
       (typeof window !== 'undefined' ? localStorage.getItem('bridge_speech_lang') || 'en-IN' : 'en-IN');

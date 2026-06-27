@@ -138,12 +138,13 @@ function SetupContent() {
   // Test Speaker
   const testSpeakerAudio = async () => {
     setTestingSpeaker(true);
+    const testText = 'Speaker check. Your sound is configured correctly. Welcome to Bridge A.I. Group Discussion chamber.';
     try {
       const response = await fetch('/api/gd-ai/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: 'Speaker check. Your sound is configured correctly. Welcome to Bridge A.I. Group Discussion chamber.',
+          text: testText,
           voiceRole: 'moderator',
           sessionId: 'audio_check_test',
         }),
@@ -161,12 +162,35 @@ function SetupContent() {
         URL.revokeObjectURL(audioUrl);
       };
 
+      audio.onerror = () => {
+        setTestingSpeaker(false);
+        setSpeakerTested(true);
+        URL.revokeObjectURL(audioUrl);
+      };
+
       await audio.play();
     } catch (err) {
-      console.error('Audio test failed:', err);
-      toast.error('Failed to play test audio. Continuing anyway.');
-      setTestingSpeaker(false);
-      setSpeakerTested(true);
+      console.warn('TTS API failed during check, using window.speechSynthesis fallback:', err);
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(testText);
+        utterance.rate = 0.95;
+        
+        utterance.onend = () => {
+          setTestingSpeaker(false);
+          setSpeakerTested(true);
+        };
+        utterance.onerror = () => {
+          setTestingSpeaker(false);
+          setSpeakerTested(true);
+        };
+        
+        window.speechSynthesis.speak(utterance);
+      } else {
+        toast.error('Failed to play test audio. Continuing anyway.');
+        setTestingSpeaker(false);
+        setSpeakerTested(true);
+      }
     }
   };
 
