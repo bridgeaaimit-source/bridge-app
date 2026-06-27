@@ -20,7 +20,8 @@ import Script from 'next/script';
 const FEATURE_META = {
   interview:         { label: 'Mock Interview',      icon: Mic,           gradient: 'from-rose-500 to-pink-600',    bg: 'bg-rose-50',    text: 'text-rose-700',    border: 'border-rose-200' },
   'smart-interview': { label: 'Smart Interview',     icon: Brain,         gradient: 'from-blue-500 to-indigo-600',  bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200' },
-  gd:                { label: 'GD Practice',         icon: MessageSquare, gradient: 'from-emerald-500 to-green-600',bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  gd:                { label: 'GD Pulse Practice',   icon: MessageSquare, gradient: 'from-emerald-500 to-green-600',bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  gd_eval:           { label: 'GD Pulse Evaluation', icon: ShieldCheck,   gradient: 'from-teal-500 to-cyan-600',    bg: 'bg-teal-50',    text: 'text-teal-700',    border: 'border-teal-200' },
   coach:             { label: 'Answer Coach',        icon: Star,          gradient: 'from-amber-500 to-yellow-600', bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200' },
   'pdf-chat':        { label: 'PDF Reader',          icon: BookOpen,      gradient: 'from-pink-500 to-fuchsia-600', bg: 'bg-pink-50',    text: 'text-pink-700',    border: 'border-pink-200' },
   personalize:       { label: 'Personalize',         icon: Search,        gradient: 'from-cyan-500 to-teal-600',    bg: 'bg-cyan-50',    text: 'text-cyan-700',    border: 'border-cyan-200' },
@@ -504,7 +505,7 @@ export default function TokenDashboard() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">Token Analytics</h1>
-                  <p className="text-sm text-gray-500">AI usage intelligence across all students & features</p>
+                  <p className="text-sm text-gray-500">AI usage intelligence across all students & features (Costing: $1 USD = ₹95)</p>
                 </div>
               </div>
             </div>
@@ -572,11 +573,11 @@ export default function TokenDashboard() {
             {/* ─── KPI Cards ─── */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
               {[
-                { label: 'Total AI Cost', value: `₹${parseFloat(summary.totalCostINR || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, sub: `${summary.exactDaysCount}d exact / ${summary.estimatedDaysCount}d est.`, icon: DollarSign, iconBg: 'bg-teal-100 text-teal-600' },
-                { label: 'LLM Cost', value: `₹${parseFloat(summary.totalLLMCostINR || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, sub: `${fmt(summary.totalTokens || 0)} tokens`, icon: BarChart3, iconBg: 'bg-blue-100 text-blue-600' },
-                { label: 'Voice Cost', value: `₹${(parseFloat(summary.totalTTSCostINR || 0) + parseFloat(summary.totalSTTCostINR || 0)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, sub: `${fmt(analyticsData.voiceSummary?.ttsChars || 0)} chars`, icon: Mic, iconBg: 'bg-emerald-100 text-emerald-600' },
+                { label: 'Total AI Cost', value: `₹${parseFloat(summary.totalCostINR || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })} ($${(parseFloat(summary.totalCostINR || 0) / 95).toFixed(2)})`, sub: `${summary.exactDaysCount}d exact / ${summary.estimatedDaysCount}d est.`, icon: DollarSign, iconBg: 'bg-teal-100 text-teal-600' },
+                { label: 'LLM Cost', value: `₹${parseFloat(summary.totalLLMCostINR || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })} ($${(parseFloat(summary.totalLLMCostINR || 0) / 95).toFixed(2)})`, sub: `${fmt(summary.totalTokens || 0)} tokens`, icon: BarChart3, iconBg: 'bg-blue-100 text-blue-600' },
+                { label: 'Voice Cost', value: `₹${(parseFloat(summary.totalTTSCostINR || 0) + parseFloat(summary.totalSTTCostINR || 0)).toLocaleString('en-IN', { maximumFractionDigits: 2 })} ($${((parseFloat(summary.totalTTSCostINR || 0) + parseFloat(summary.totalSTTCostINR || 0)) / 95).toFixed(2)})`, sub: `${fmt(analyticsData.voiceSummary?.ttsChars || 0)} chars`, icon: Mic, iconBg: 'bg-emerald-100 text-emerald-600' },
                 { label: 'Active Users', value: summary.totalUsers || 0, sub: `in ${summary.period || 7}d`, icon: Users, iconBg: 'bg-orange-100 text-orange-600' },
-                { label: 'Avg / User', value: `₹${(parseFloat(summary.totalCostINR || 0) / Math.max(summary.totalUsers || 1, 1)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`, sub: `average cost`, icon: TrendingUp, iconBg: 'bg-indigo-100 text-indigo-600' },
+                { label: 'Avg / User', value: `₹${(parseFloat(summary.totalCostINR || 0) / Math.max(summary.totalUsers || 1, 1)).toLocaleString('en-IN', { maximumFractionDigits: 2 })} ($${((parseFloat(summary.totalCostINR || 0) / Math.max(summary.totalUsers || 1, 1)) / 95).toFixed(2)})`, sub: `average cost`, icon: TrendingUp, iconBg: 'bg-indigo-100 text-indigo-600' },
               ].map(({ label, value, sub, icon: Icon, iconBg }) => (
                 <div key={label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${iconBg}`}>
