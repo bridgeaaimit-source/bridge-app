@@ -751,6 +751,19 @@ export default function GDAISessionPage() {
         timestamp: new Date().toISOString(),
       };
 
+      // Detect if student addressed any specific persona (e.g. Vikram, Rohan, Anjali, Dev)
+      const personaNames = {
+        aggressive: 'Vikram',
+        analytical: 'Rohan',
+        contrarian: 'Anjali',
+        balanced: 'Dev',
+      };
+      addressedPersonaIdRef.current = detectAddressedPersona(
+        finalSpeech,
+        ['aggressive', 'analytical', 'contrarian', 'balanced'],
+        personaNames
+      );
+
       setTurns((prev) => [...prev, studentTurn]);
       await saveProgress([...turnsRef.current, studentTurn]);
     }

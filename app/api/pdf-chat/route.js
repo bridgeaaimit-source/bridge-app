@@ -28,7 +28,7 @@ export async function POST(request) {
     })) || [];
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 2000,
       messages: [
         ...conversationContext,
@@ -53,7 +53,7 @@ export async function POST(request) {
     });
 
     // Track token usage
-    await trackTokensServer(user_id || userId || 'anonymous', 'pdf-chat', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514');
+    await trackTokensServer(user_id || userId || 'anonymous', 'pdf-chat', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-5');
 
     const answer = message.content[0].text;
 

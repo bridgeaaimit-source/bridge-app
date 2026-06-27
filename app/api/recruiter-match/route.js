@@ -136,13 +136,13 @@ IMPORTANT:
 - Use exact candidate names from the list`;
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 4000,
       messages: [{ role: 'user', content: prompt }]
     });
 
     // Track token usage
-    await trackTokensServer(user_id || 'anonymous', 'recruiter', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514');
+    await trackTokensServer(user_id || 'anonymous', 'recruiter', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-5');
 
     const text = message.content[0].text
       .replace(/```json/g, '')

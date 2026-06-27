@@ -183,12 +183,12 @@ Return ONLY valid JSON, no markdown:
 }`;
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 4000,
       messages: [{ role: 'user', content: prompt }],
     });
 
-    trackTokensServer(uid, 'gd_ai_eval', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-20250514').catch(() => {});
+    trackTokensServer(uid, 'gd_ai_eval', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-5').catch(() => {});
 
     const rawText = message.content[0].text
       .replace(/```json/g, '')

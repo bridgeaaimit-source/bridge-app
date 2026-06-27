@@ -39,13 +39,13 @@ Return ONLY a valid JSON array of objects (no markdown, no backticks, no comment
 ]`;
 
     const message = await client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-5',
       max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }]
     });
 
     // Track token usage
-    trackTokensServer(uid || userId || 'anonymous', 'aptitude', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-3-5-sonnet-20241022').catch(() => {});
+    trackTokensServer(uid || userId || 'anonymous', 'aptitude', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-5').catch(() => {});
 
     const text = message.content[0].text
       .replace(/```json/g, '')
