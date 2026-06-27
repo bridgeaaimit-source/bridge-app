@@ -909,6 +909,23 @@ export default function GDAISessionPage() {
             <div className="flex items-center gap-4">
               <GDTimer elapsedSeconds={elapsedSeconds} />
               <button
+                onClick={() => {
+                  try {
+                    if (document.fullscreenElement) {
+                      document.exitFullscreen?.().catch(() => {});
+                    } else {
+                      document.documentElement.requestFullscreen?.().catch(() => {});
+                    }
+                  } catch (fsErr) {
+                    console.warn('Fullscreen action failed:', fsErr);
+                  }
+                }}
+                className="text-xs font-bold text-slate-600 hover:bg-slate-100 px-3.5 py-1.5 rounded-xl border border-slate-200 transition-colors flex items-center gap-1"
+                title="Toggle Fullscreen"
+              >
+                🗖 Fullscreen
+              </button>
+              <button
                 onClick={handleEndSession}
                 className="text-xs font-bold text-rose-600 hover:bg-rose-50 px-3.5 py-1.5 rounded-xl border border-rose-200 transition-colors"
               >
@@ -955,8 +972,14 @@ export default function GDAISessionPage() {
           <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex-grow overflow-hidden flex flex-col justify-between min-h-[300px]">
             <TranscriptPanel
               turns={turns}
-              streamingText={streamingText}
-              streamingSpeakerId={streamingSpeakerId}
+              streamingText={
+                speakerState === 'active'
+                  ? fullTranscript
+                  : streamingText
+              }
+              streamingSpeakerId={
+                speakerState === 'active' ? 'student' : streamingSpeakerId
+              }
               speakerNames={{
                 moderator: 'Nalini',
                 aggressive: 'Vikram',

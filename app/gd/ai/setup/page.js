@@ -229,6 +229,18 @@ function SetupContent() {
 
     // Save to sessionStorage
     sessionStorage.setItem('gdSetup', JSON.stringify(setupData));
+
+    // Request fullscreen on user gesture
+    try {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch((err) => {
+          console.warn('Fullscreen entry failed:', err);
+        });
+      }
+    } catch (fsErr) {
+      console.warn('Fullscreen API error:', fsErr);
+    }
+
     router.push('/gd/ai/session');
   };
 

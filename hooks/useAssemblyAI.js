@@ -137,6 +137,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
   const watchdogTimerRef = useRef(null);      // detects frozen/dead recognition
   const consecutiveShortSessionsRef = useRef(0); // tracks rapid crash/restart loops
   const lastStartTimeRef = useRef(0);         // timestamp of last SpeechRecognition start
+  const lastSpeechActivityRef = useRef(0);     // tracks last SpeechRecognition event
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -307,27 +308,41 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
       rec.onstart = () => {
         if (!isMountedRef.current) return;
         lastStartTimeRef.current = Date.now(); // Record start time
+        lastSpeechActivityRef.current = Date.now(); // Record start activity
         setIsConnecting(false);
         setIsRecording(true);
         setRecordingStatus('listening');
-        // Kick watchdog — if no event fires in 8s we restart
+        // Kick watchdog — detects dead speech session if no results or start events fire for 12s
         clearInterval(watchdogTimerRef.current);
         watchdogTimerRef.current = setInterval(() => {
           if (!isRecordingRef.current) { clearInterval(watchdogTimerRef.current); return; }
-          // Recognition is alive if recognitionRef.current is set;
-          // if it has been nulled (premature end) trigger a restart.
+          
+          // 1. If recognitionRef is null, force restart
           if (!recognitionRef.current && isRecordingRef.current) {
             clearInterval(watchdogTimerRef.current);
             isWebSpeechActiveRef.current = false;
             restartTimerRef.current = setTimeout(() => {
               if (isRecordingRef.current) startWebSpeech(useLang);
             }, 500);
+            return;
           }
-        }, 3000);
+
+          // 2. If it's been > 12 seconds with zero activity, abort stuck session to trigger a restart
+          const timeSinceLastActivity = Date.now() - lastSpeechActivityRef.current;
+          if (timeSinceLastActivity > 12000 && recognitionRef.current) {
+            console.warn('[Speech Watchdog] No activity for 12s, aborting stuck recognition session.');
+            try {
+              recognitionRef.current.abort();
+            } catch (err) {
+              console.error('[Speech Watchdog] Abort failed:', err);
+            }
+          }
+        }, 4000);
       };
 
       rec.onresult = (event) => {
         if (!isRecordingRef.current || !isMountedRef.current) return;
+        lastSpeechActivityRef.current = Date.now(); // Record activity on result
 
         let interimText = '';
         let newFinalText = '';
@@ -576,6 +591,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
   // preserveTranscript=true: keep finalRef as-is (used by "Continue Answering")
   const startRecording = useCallback(async ({ preserveTranscript = false } = {}) => {
     consecutiveShortSessionsRef.current = 0; // Reset consecutive restart failures on user start
+    lastSpeechActivityRef.current = Date.now(); // Initialize activity timestamp on user start
     // Guard: stop any existing session cleanly before starting a new one
     if (isRecordingRef.current) {
       cleanupResources();
