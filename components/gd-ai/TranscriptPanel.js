@@ -123,7 +123,7 @@ export default function TranscriptPanel({ turns = [], streamingText = '', stream
               {/* Text */}
               <p className="text-sm text-slate-700 leading-relaxed">
                 {turn.text}
-                {turn.streaming && (
+                {(turn.streaming || turn.typing) && (
                   <span
                     className="inline-block w-0.5 h-4 ml-0.5 bg-slate-400 align-middle"
                     style={{ animation: 'blink 1s step-end infinite' }}

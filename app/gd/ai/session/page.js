@@ -56,6 +56,7 @@ export default function GDAISessionPage() {
   const currentAudioRef = useRef(null);
   const discussAbortControllerRef = useRef(null);
   const isEndingRef = useRef(false);
+  const typingIntervalRef = useRef(null);
 
   // Sync turnsRef with state
   useEffect(() => {
@@ -153,6 +154,191 @@ export default function GDAISessionPage() {
     }
   };
 
+  // Helper: Play Text-to-Speech using server API, falling back to Web Speech Synthesis API
+  const playTextToSpeech = async (text, voiceRole, signal) => {
+    try {
+      const response = await fetch('/api/gd-ai/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: text,
+          voiceRole: voiceRole,
+          uid: setupData?.uid || 'anonymous',
+        }),
+        signal,
+      });
+
+      if (!response.ok) throw new Error('TTS server responded with non-200');
+
+      const blob = await response.blob();
+      const audioUrl = URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+      currentAudioRef.current = audio;
+
+      await new Promise((resolve, reject) => {
+        if (signal?.aborted) {
+          URL.revokeObjectURL(audioUrl);
+          reject(new DOMException('Aborted', 'AbortError'));
+          return;
+        }
+
+        const onAbort = () => {
+          audio.pause();
+          URL.revokeObjectURL(audioUrl);
+          reject(new DOMException('Aborted', 'AbortError'));
+        };
+        signal?.addEventListener('abort', onAbort);
+
+        audio.onended = () => {
+          signal?.removeEventListener('abort', onAbort);
+          URL.revokeObjectURL(audioUrl);
+          resolve();
+        };
+        audio.onerror = () => {
+          signal?.removeEventListener('abort', onAbort);
+          URL.revokeObjectURL(audioUrl);
+          reject(new Error('Audio playback error'));
+        };
+        audio.play().catch((err) => {
+          signal?.removeEventListener('abort', onAbort);
+          URL.revokeObjectURL(audioUrl);
+          reject(err);
+        });
+      });
+    } catch (err) {
+      if (err.name === 'AbortError') throw err;
+      console.warn(`[TTS API Fallback] Using window.speechSynthesis for role: ${voiceRole}`, err);
+
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        await new Promise((resolve, reject) => {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = 0.9; // Professional medium-slow rate
+
+          const voices = window.speechSynthesis.getVoices();
+          const enVoices = voices.filter(v => v.lang.startsWith('en'));
+          let selectedVoice = null;
+          if (voiceRole === 'moderator' || voiceRole === 'contrarian') {
+            selectedVoice = enVoices.find(v => v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('zira') || v.name.toLowerCase().includes('samantha') || v.name.toLowerCase().includes('google uk english female')) || enVoices[0];
+          } else {
+            selectedVoice = enVoices.find(v => v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('david') || v.name.toLowerCase().includes('google uk english male')) || enVoices[0];
+          }
+          if (selectedVoice) utterance.voice = selectedVoice;
+
+          if (signal?.aborted) {
+            reject(new DOMException('Aborted', 'AbortError'));
+            return;
+          }
+
+          const safetyTimer = setTimeout(() => {
+            console.warn('[SpeechSynthesis] Safety timeout triggered. Resolving to prevent block.');
+            signal?.removeEventListener('abort', onAbort);
+            resolve();
+          }, Math.max(6000, text.split(' ').length * 600 + 4000));
+
+          const onAbort = () => {
+            clearTimeout(safetyTimer);
+            window.speechSynthesis.cancel();
+            reject(new DOMException('Aborted', 'AbortError'));
+          };
+          signal?.addEventListener('abort', onAbort);
+
+          utterance.onend = () => {
+            clearTimeout(safetyTimer);
+            signal?.removeEventListener('abort', onAbort);
+            resolve();
+          };
+          utterance.onerror = (e) => {
+            clearTimeout(safetyTimer);
+            signal?.removeEventListener('abort', onAbort);
+            if (e.error === 'interrupted') {
+              reject(new DOMException('Aborted', 'AbortError'));
+            } else {
+              resolve(); // Resolve to not block discussion progression
+            }
+          };
+
+          currentAudioRef.current = {
+            pause: () => {
+              clearTimeout(safetyTimer);
+              window.speechSynthesis.cancel();
+            }
+          };
+
+          window.speechSynthesis.speak(utterance);
+        });
+      } else {
+        const readingTimeMs = Math.max(3000, text.split(' ').length * 350);
+        await new Promise((resolve) => {
+          const timer = setTimeout(resolve, readingTimeMs);
+          signal?.addEventListener('abort', () => {
+            clearTimeout(timer);
+            resolve();
+          });
+        });
+      }
+    }
+  };
+
+  // Helper: Typingly animation of text word-by-word synchronized with voice playback
+  const speakAndType = async (speakerId, personaName, text, turnType, signal) => {
+    const newTurn = {
+      speakerId,
+      personaName,
+      text: '',
+      type: turnType,
+      typing: true,
+      timestamp: new Date().toISOString(),
+    };
+
+    setTurns((prev) => [...prev, newTurn]);
+
+    const words = text.trim().split(/\s+/);
+    let currentWordIndex = 0;
+    const typingDelay = 320; // 320ms per word (~180 WPM medium-slow reading speed)
+
+    const typingPromise = new Promise((resolve) => {
+      if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+
+      typingIntervalRef.current = setInterval(() => {
+        if (signal?.aborted) {
+          clearInterval(typingIntervalRef.current);
+          resolve();
+          return;
+        }
+
+        if (currentWordIndex < words.length) {
+          const currentText = words.slice(0, currentWordIndex + 1).join(' ');
+          currentWordIndex++;
+          setTurns((prev) => {
+            if (prev.length === 0) return prev;
+            const nextTurns = [...prev];
+            nextTurns[nextTurns.length - 1] = {
+              ...nextTurns[nextTurns.length - 1],
+              text: currentText,
+            };
+            return nextTurns;
+          });
+        } else {
+          clearInterval(typingIntervalRef.current);
+          setTurns((prev) => {
+            if (prev.length === 0) return prev;
+            const nextTurns = [...prev];
+            const lastTurn = { ...nextTurns[nextTurns.length - 1] };
+            delete lastTurn.typing;
+            nextTurns[nextTurns.length - 1] = lastTurn;
+            return nextTurns;
+          });
+          resolve();
+        }
+      }, typingDelay);
+    });
+
+    const speakPromise = playTextToSpeech(text, speakerId, signal);
+
+    await Promise.all([typingPromise, speakPromise]);
+  };
+
   // Moderator Opening
   const triggerModeratorOpening = async () => {
     if (!setupData) return;
@@ -163,52 +349,28 @@ export default function GDAISessionPage() {
       setupData.studentName
     );
 
+    setSpeakerState('ai_speaking');
+    setActiveSpeakerId('moderator');
+
+    const controller = new AbortController();
+    discussAbortControllerRef.current = controller;
+
+    try {
+      await speakAndType('moderator', 'Nalini', openingText, 'opening', controller.signal);
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        console.log('Moderator opening voice playback aborted');
+        return;
+      }
+      console.error('Moderator opening voice failed:', err);
+    }
+
     const openingTurn = {
       speakerId: 'moderator',
       text: openingText,
       type: 'opening',
       timestamp: new Date().toISOString(),
     };
-
-    setTurns([openingTurn]);
-    
-    setSpeakerState('ai_speaking');
-    setActiveSpeakerId('moderator');
-
-    try {
-      const response = await fetch('/api/gd-ai/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: openingText,
-          voiceRole: 'moderator',
-          uid: setupData.uid,
-        }),
-      });
-
-      if (!response.ok) throw new Error('TTS opening failed');
-
-      const blob = await response.blob();
-      const audioUrl = URL.createObjectURL(blob);
-      const audio = new Audio(audioUrl);
-      currentAudioRef.current = audio;
-
-      await new Promise((resolve) => {
-        audio.onended = () => {
-          URL.revokeObjectURL(audioUrl);
-          resolve();
-        };
-        audio.onerror = () => {
-          URL.revokeObjectURL(audioUrl);
-          resolve();
-        };
-        audio.play().catch(resolve);
-      });
-    } catch (err) {
-      console.error('Moderator opening voice failed:', err);
-      // Wait briefly as fallback so student can read
-      await new Promise(r => setTimeout(r, 4000));
-    }
 
     // Save initial progress to Firestore
     await saveProgress([openingTurn]);
@@ -296,6 +458,9 @@ export default function GDAISessionPage() {
       setStreamingSpeakerId('moderator');
       setStreamingText('');
 
+      const controller = new AbortController();
+      discussAbortControllerRef.current = controller;
+
       try {
         const response = await fetch('/api/gd-ai/discuss', {
           method: 'POST',
@@ -312,6 +477,7 @@ export default function GDAISessionPage() {
             isModerator: true,
             uid: setupData.uid,
           }),
+          signal: controller.signal,
         });
 
         if (!response.ok) throw new Error('Moderator generation failed');
@@ -333,16 +499,8 @@ export default function GDAISessionPage() {
         setStreamingText('');
         setStreamingSpeakerId(null);
 
-        // Fetch Mod Speech
-        const ttsResponse = await fetch('/api/gd-ai/tts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text: finalModText,
-            voiceRole: 'moderator',
-            uid: setupData.uid,
-          }),
-        });
+        // Speak and type mod text word-by-word
+        await speakAndType('moderator', 'Nalini', finalModText, 'moderator', controller.signal);
 
         const newTurn = {
           speakerId: 'moderator',
@@ -350,30 +508,7 @@ export default function GDAISessionPage() {
           type: 'moderator',
           timestamp: new Date().toISOString(),
         };
-
-        setTurns((prev) => [...prev, newTurn]);
         await saveProgress([...currentTurns, newTurn]);
-
-        if (ttsResponse.ok) {
-          const blob = await ttsResponse.blob();
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          currentAudioRef.current = audio;
-
-          await new Promise((resolve) => {
-            audio.onended = () => {
-              URL.revokeObjectURL(url);
-              resolve();
-            };
-            audio.onerror = () => {
-              URL.revokeObjectURL(url);
-              resolve();
-            };
-            audio.play().catch(resolve);
-          });
-        } else {
-          await new Promise(r => setTimeout(r, 3000));
-        }
 
         setSpeakerState('idle');
         setActiveSpeakerId(null);
@@ -385,10 +520,18 @@ export default function GDAISessionPage() {
         return;
 
       } catch (err) {
+        if (err.name === 'AbortError') {
+          console.log('Moderator intervention aborted via student interruption.');
+          return;
+        }
         console.error('Moderator intervention error:', err);
         setSpeakerState('idle');
         setStreamingSpeakerId(null);
         setStreamingText('');
+        setTimeout(() => {
+          runNextTurn();
+        }, 1000);
+        return;
       }
     }
 
@@ -472,26 +615,8 @@ export default function GDAISessionPage() {
       setStreamingText('');
       setStreamingSpeakerId(null);
 
-      // Fetch AI Speech
-      const ttsResponse = await fetch('/api/gd-ai/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: finalAIText,
-          voiceRole: aiId,
-          uid: setupData.uid,
-        }),
-        signal: controller.signal,
-      });
-
-      // Save turn details
-      const newTurn = {
-        speakerId: aiId,
-        personaName: personaNames[aiId],
-        text: finalAIText,
-        type: turnType,
-        timestamp: new Date().toISOString(),
-      };
+      // Speak and type AI text word-by-word
+      await speakAndType(aiId, personaNames[aiId], finalAIText, turnType, controller.signal);
 
       // Update speaker tracking variables
       speakerStatsRef.current = updateSpeakerStats(speakerStatsRef.current, aiId, currentTurns.length);
@@ -501,29 +626,14 @@ export default function GDAISessionPage() {
         personaNames
       );
 
-      setTurns((prev) => [...prev, newTurn]);
+      const newTurn = {
+        speakerId: aiId,
+        personaName: personaNames[aiId],
+        text: finalAIText,
+        type: turnType,
+        timestamp: new Date().toISOString(),
+      };
       await saveProgress([...currentTurns, newTurn]);
-
-      if (ttsResponse.ok) {
-        const blob = await ttsResponse.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        currentAudioRef.current = audio;
-
-        await new Promise((resolve) => {
-          audio.onended = () => {
-            URL.revokeObjectURL(url);
-            resolve();
-          };
-          audio.onerror = () => {
-            URL.revokeObjectURL(url);
-            resolve();
-          };
-          audio.play().catch(resolve);
-        });
-      } else {
-        await new Promise(r => setTimeout(r, 4000));
-      }
 
       setSpeakerState('idle');
       setActiveSpeakerId(null);
@@ -555,17 +665,39 @@ export default function GDAISessionPage() {
     jumpInRequestedRef.current = true;
     setSpeakerState('queued');
 
-    // 1. Abort discuss HTTP stream
+    // 1. Abort discuss HTTP stream / TTS / speaking
     discussAbortControllerRef.current?.abort();
 
-    // 2. Stop audio output immediately
+    // 2. Stop audio output / speech synthesis immediately
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
     }
 
-    // 3. Save whatever AI text was generated as interrupted turn
-    if (streamingSpeakerId && streamingText.trim()) {
+    // Stop typing interval
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+
+    // 3. Save whatever AI text was generated / typed out as interrupted turn
+    if (speakerState === 'ai_speaking') {
+      // Mark last turn as interrupted
+      setTurns((prev) => {
+        if (prev.length === 0) return prev;
+        const nextTurns = [...prev];
+        const lastTurn = { ...nextTurns[nextTurns.length - 1] };
+        
+        if (!lastTurn.wasInterrupted) {
+          lastTurn.text = lastTurn.text.trim() + '...';
+          lastTurn.wasInterrupted = true;
+          delete lastTurn.typing;
+          nextTurns[nextTurns.length - 1] = lastTurn;
+          saveProgress(nextTurns);
+        }
+        return nextTurns;
+      });
+    } else if (streamingSpeakerId && streamingText.trim()) {
       const personaNames = {
         aggressive: 'Vikram',
         analytical: 'Rohan',
@@ -653,6 +785,15 @@ export default function GDAISessionPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [speakerState, transcript, fullTranscript]);
 
+  // Cleanup active typing intervals on unmount
+  useEffect(() => {
+    return () => {
+      if (typingIntervalRef.current) {
+        clearInterval(typingIntervalRef.current);
+      }
+    };
+  }, []);
+
   // Session End Evaluator Pipeline
   const handleEndSession = async () => {
     if (isEndingRef.current) return;
@@ -666,6 +807,12 @@ export default function GDAISessionPage() {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
     }
+
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+
     stopRecording();
 
     // 2. Open processing loading screen
