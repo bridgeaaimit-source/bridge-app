@@ -766,16 +766,25 @@ export default function GDAISessionPage() {
     }, 800);
   };
 
+  // Stable ref for speakerState to prevent event listener re-binding loops
+  const speakerStateRef = useRef(speakerState);
+  useEffect(() => {
+    speakerStateRef.current = speakerState;
+  }, [speakerState]);
+
   // Spacebar keyboard handler
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.code === 'Space') {
+        if (e.repeat) return; // Prevent auto-repeat triggers from holding down Spacebar
+        
         // Prevent default spacebar scrolling
         e.preventDefault();
 
-        if (speakerState === 'active') {
+        const currentState = speakerStateRef.current;
+        if (currentState === 'active') {
           handleDoneSpeaking();
-        } else if (speakerState === 'idle' || speakerState === 'student_active') {
+        } else if (currentState === 'idle' || currentState === 'student_active') {
           handleJumpIn();
         }
       }
@@ -783,7 +792,7 @@ export default function GDAISessionPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [speakerState, transcript, fullTranscript]);
+  }, []);
 
   // Cleanup active typing intervals on unmount
   useEffect(() => {
