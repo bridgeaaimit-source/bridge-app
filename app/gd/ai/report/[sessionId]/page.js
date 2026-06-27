@@ -51,6 +51,19 @@ export default function GDReportPage({ params: paramsPromise }) {
       })
       .catch((err) => {
         console.error('Error fetching session:', err);
+        // Fallback to local storage
+        if (typeof window !== 'undefined') {
+          try {
+            const localSessions = JSON.parse(localStorage.getItem('local_gd_sessions') || '[]');
+            const found = localSessions.find(s => s.sessionId === sessionId);
+            if (found) {
+              setSession(found);
+              return;
+            }
+          } catch (e) {
+            console.warn('Failed to parse local sessions on fallback:', e);
+          }
+        }
         toast.error('Failed to load evaluation details');
       })
       .finally(() => {
