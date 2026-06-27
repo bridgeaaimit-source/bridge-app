@@ -869,6 +869,38 @@ export default function GDAISessionPage() {
       const data = await res.json();
       toast.success('Evaluation complete!');
       
+      // Save evaluation to local storage as fallback/local history
+      if (typeof window !== 'undefined') {
+        try {
+          const localSessions = JSON.parse(localStorage.getItem('local_gd_sessions') || '[]');
+          const localRecord = {
+            sessionId: data.sessionId,
+            topic: setupData.topic,
+            category: setupData.category,
+            difficulty: difficulty,
+            type: 'ai_gd',
+            durationSeconds: elapsedSecondsRef.current,
+            overallScore: data.evaluation.overallScore,
+            summary: data.evaluation.summary,
+            strongestMoment: data.evaluation.strongestMoment,
+            growthArea: data.evaluation.growthArea,
+            dimensions: data.evaluation.dimensions,
+            overallAnalysis: data.evaluation.overallAnalysis,
+            transcript: turnsRef.current.map(t => ({
+              speakerId: t.speakerId,
+              speakerName: t.personaName || t.speakerId,
+              text: t.text,
+              type: t.type || 'debate',
+            })),
+            createdAt: new Date().toISOString(),
+          };
+          const updated = [localRecord, ...localSessions.filter(s => s.sessionId !== data.sessionId)].slice(0, 20);
+          localStorage.setItem('local_gd_sessions', JSON.stringify(updated));
+        } catch (storageErr) {
+          console.warn('Failed to save session to localStorage:', storageErr);
+        }
+      }
+
       // Navigate to report
       router.push(`/gd/ai/report/${data.sessionId}`);
     } catch (err) {

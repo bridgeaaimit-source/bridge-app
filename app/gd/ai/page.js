@@ -69,11 +69,49 @@ export default function GDAIHubPage() {
         return res.json();
       })
       .then((data) => {
-        setSessions(data.sessions || []);
+        const remoteSessions = data.sessions || [];
+        let localSessions = [];
+        if (typeof window !== 'undefined') {
+          try {
+            localSessions = JSON.parse(localStorage.getItem('local_gd_sessions') || '[]');
+          } catch (e) {
+            console.warn('Failed to parse local sessions:', e);
+          }
+        }
+        
+        // Combine remote and local sessions, deduplicating by sessionId
+        const combined = [...remoteSessions];
+        localSessions.forEach(ls => {
+          if (!combined.some(s => s.sessionId === ls.sessionId)) {
+            combined.push({
+              sessionId: ls.sessionId,
+              topic: ls.topic,
+              category: ls.category,
+              difficulty: ls.difficulty,
+              overallScore: ls.overallScore,
+              durationSeconds: ls.durationSeconds,
+              createdAt: ls.createdAt,
+            });
+          }
+        });
+        
+        // Sort newest first
+        combined.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setSessions(combined);
       })
       .catch((err) => {
         console.error('Error fetching sessions:', err);
-        toast.error('Failed to load past sessions');
+        // Fallback entirely to local storage history on failure
+        if (typeof window !== 'undefined') {
+          try {
+            const localSessions = JSON.parse(localStorage.getItem('local_gd_sessions') || '[]');
+            setSessions(localSessions);
+          } catch (e) {
+            toast.error('Failed to load past sessions');
+          }
+        } else {
+          toast.error('Failed to load past sessions');
+        }
       })
       .finally(() => {
         setLoadingSessions(false);
