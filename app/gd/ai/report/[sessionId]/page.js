@@ -78,7 +78,7 @@ export default function GDReportPage({ params: paramsPromise }) {
               pollInterval = null;
             }
 
-            if (status === 'FAILED') {
+            if (status === 'FAILED' || status === 'evaluation_failed') {
               setEvaluating(false);
               setEvalFailed(true);
             } else if (status === 'REPORT_READY') {
@@ -110,7 +110,7 @@ export default function GDReportPage({ params: paramsPromise }) {
             const found = localSessions.find(s => s.sessionId === sessionId);
             if (found) {
               setSession(found);
-              if (found.status === 'FAILED') {
+              if (found.status === 'FAILED' || found.status === 'evaluation_failed') {
                 setEvaluating(false);
                 setEvalFailed(true);
               } else {
@@ -151,6 +151,7 @@ export default function GDReportPage({ params: paramsPromise }) {
 
     const sessId = session.sessionId;
     const uid = currentUser.uid;
+    const safeTurns = session.turns || session.transcript || [];
 
     try {
       console.log(`[GD][Evaluation] [Session: ${sessId}] Manual report regeneration requested by user.`);
@@ -167,9 +168,9 @@ export default function GDReportPage({ params: paramsPromise }) {
             topic: session.topic,
             category: session.category,
             difficulty: session.difficulty,
-            turns: session.transcript.map(t => ({
+            turns: safeTurns.map(t => ({
               speakerId: t.speakerId,
-              speakerName: t.personaName || t.speakerId,
+              speakerName: t.speakerName || t.personaName || t.speakerId,
               text: t.text,
               type: t.type || 'debate'
             })),
@@ -199,16 +200,26 @@ export default function GDReportPage({ params: paramsPromise }) {
               topic: session.topic,
               category: session.category,
               difficulty: session.difficulty,
-              turns: session.transcript,
+              turns: safeTurns,
               elapsedSeconds: session.durationSeconds || 600,
               uid: uid,
               studentName: currentUser.displayName || currentUser.name || 'Candidate',
+              attempt: attempt,
             }),
           });
 
           if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.error || 'Evaluation failed');
+            let errMsg = 'Evaluation failed';
+            try {
+              const err = await res.json();
+              errMsg = err.error || errMsg;
+            } catch (jsonErr) {
+              try {
+                const txt = await res.text();
+                errMsg = txt || errMsg;
+              } catch {}
+            }
+            throw new Error(errMsg);
           }
 
           data = await res.json();
@@ -225,7 +236,9 @@ export default function GDReportPage({ params: paramsPromise }) {
           if (attempt >= maxAttempts) {
             throw err;
           } else {
-            await new Promise(r => setTimeout(r, 2000));
+            // Task 3: Delay intervals (2s after Attempt 1, 5s after Attempt 2)
+            const delay = attempt === 1 ? 2000 : 5000;
+            await new Promise(r => setTimeout(r, delay));
           }
         }
       }
@@ -251,7 +264,7 @@ export default function GDReportPage({ params: paramsPromise }) {
             growthArea: data.evaluation.growthArea,
             dimensions: data.evaluation.dimensions,
             overallAnalysis: data.evaluation.overallAnalysis,
-            transcript: session.transcript,
+            transcript: safeTurns,
             status: 'REPORT_READY',
             createdAt: new Date().toISOString(),
           };
@@ -278,7 +291,7 @@ export default function GDReportPage({ params: paramsPromise }) {
       setEvaluating(false);
       setEvalFailed(true);
       
-      // Update Firestore status to FAILED
+      // Update Firestore status to evaluation_failed (Refinement 3)
       try {
         await fetch('/api/gd-ai/session', {
           method: 'POST',
@@ -290,14 +303,14 @@ export default function GDReportPage({ params: paramsPromise }) {
               topic: session.topic,
               category: session.category,
               difficulty: session.difficulty,
-              turns: session.transcript,
+              turns: safeTurns,
               durationSeconds: session.durationSeconds || 600,
-              status: 'FAILED'
+              status: 'evaluation_failed'
             }
           })
         });
       } catch (dbErr) {
-        console.error(`[GD][Firestore] [Session: ${sessId}] Failed to update session status to FAILED:`, dbErr);
+        console.error(`[GD][Firestore] [Session: ${sessId}] Failed to update session status to evaluation_failed:`, dbErr);
       }
     }
   };
@@ -422,7 +435,7 @@ export default function GDReportPage({ params: paramsPromise }) {
 
   const safeDimensions = dimensions || {};
   const safeOverallAnalysis = overallAnalysis || {};
-  const safeTranscript = transcript || [];
+  const safeTranscript = transcript || session.turns || [];
 
   const scoreColor = 
     overallScore >= 80 ? 'text-emerald-600 border-emerald-500' :
@@ -504,25 +517,39 @@ export default function GDReportPage({ params: paramsPromise }) {
                   Moderator Executive Summary
                 </span>
                 <p className="text-base text-slate-700 leading-relaxed font-medium italic">
-                  "{summary}"
+                  {summary ? `"${summary}"` : "Unable to generate this section."}
                 </p>
               </div>
 
               {/* Strengths & Weaknesses quick tags */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-100 pt-6 mt-6">
-                {safeOverallAnalysis.topStrength && (
+                {safeOverallAnalysis.topStrength ? (
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Top Strength</span>
                     <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-xl block truncate border border-emerald-100">
                       ★ {safeOverallAnalysis.topStrength}
                     </span>
                   </div>
+                ) : (
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Top Strength</span>
+                    <span className="text-xs text-slate-450 font-semibold italic block border border-dashed border-slate-200 px-3 py-1 rounded-xl">
+                      Unable to generate this section.
+                    </span>
+                  </div>
                 )}
-                {safeOverallAnalysis.topWeakness && (
+                {safeOverallAnalysis.topWeakness ? (
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Growth Area</span>
                     <span className="text-xs font-bold text-rose-700 bg-rose-50 px-3 py-1 rounded-xl block truncate border border-rose-100">
                       ⚠ {safeOverallAnalysis.topWeakness}
+                    </span>
+                  </div>
+                ) : (
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Growth Area</span>
+                    <span className="text-xs text-slate-450 font-semibold italic block border border-dashed border-slate-200 px-3 py-1 rounded-xl">
+                      Unable to generate this section.
                     </span>
                   </div>
                 )}
@@ -540,7 +567,7 @@ export default function GDReportPage({ params: paramsPromise }) {
                   <span className="text-xs font-bold text-emerald-800 uppercase tracking-wide">Strongest Contribution Moment</span>
                 </div>
                 <blockquote className="text-xs italic text-slate-600 border-l-2 border-emerald-500 pl-3 leading-relaxed py-0.5">
-                  "{strongestMoment}"
+                  {strongestMoment ? `"${strongestMoment}"` : "Unable to generate this section."}
                 </blockquote>
               </div>
               <p className="text-[10px] text-emerald-700/80 font-bold tracking-wide mt-4">
@@ -556,7 +583,7 @@ export default function GDReportPage({ params: paramsPromise }) {
                   <span className="text-xs font-bold text-rose-800 uppercase tracking-wide">Primary Obstacle for Improvement</span>
                 </div>
                 <p className="text-xs text-slate-600 border-l-2 border-rose-500 pl-3 leading-relaxed py-0.5 font-medium">
-                  {growthArea}
+                  {growthArea || "Unable to generate this section."}
                 </p>
               </div>
               <p className="text-[10px] text-rose-700/80 font-bold tracking-wide mt-4">
@@ -566,7 +593,7 @@ export default function GDReportPage({ params: paramsPromise }) {
           </div>
 
           {/* Action Items Interactive list */}
-          {safeOverallAnalysis.actionItems && safeOverallAnalysis.actionItems.length > 0 && (
+          {safeOverallAnalysis.actionItems && safeOverallAnalysis.actionItems.length > 0 ? (
             <Card className="p-6 border-slate-200/80 space-y-4">
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
                 Your Custom 3-Step Action Plan
@@ -586,16 +613,27 @@ export default function GDReportPage({ params: paramsPromise }) {
                 ))}
               </div>
             </Card>
+          ) : (
+            <Card className="p-6 border-slate-200/80 space-y-2">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+                Your Custom 3-Step Action Plan
+              </span>
+              <p className="text-xs text-slate-450 font-semibold italic">Unable to generate this section.</p>
+            </Card>
           )}
 
           {/* 9 Dimensions feedback grid */}
           <div className="space-y-4">
             <h2 className="text-lg font-extrabold text-slate-800 tracking-tight">Recruiter Evaluation Dimensions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Object.entries(safeDimensions).map(([dimId, dimData]) => (
-                <DimensionScore key={dimId} dimensionId={dimId} data={dimData} />
-              ))}
-            </div>
+            {Object.keys(safeDimensions).length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Object.entries(safeDimensions).map(([dimId, dimData]) => (
+                  <DimensionScore key={dimId} dimensionId={dimId} data={dimData} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-450 font-semibold italic">Unable to generate this section.</p>
+            )}
           </div>
 
           {/* Accordion Chat Transcript */}

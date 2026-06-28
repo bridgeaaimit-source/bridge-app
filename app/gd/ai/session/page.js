@@ -929,12 +929,22 @@ export default function GDAISessionPage() {
             elapsedSeconds: elapsedSecondsRef.current,
             uid: setupData.uid,
             studentName: setupData.studentName,
+            attempt: attempt,
           }),
         });
 
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || 'Evaluation failed');
+          let errMsg = 'Evaluation failed';
+          try {
+            const err = await res.json();
+            errMsg = err.error || errMsg;
+          } catch (jsonErr) {
+            try {
+              const txt = await res.text();
+              errMsg = txt || errMsg;
+            } catch {}
+          }
+          throw new Error(errMsg);
         }
 
         data = await res.json();
@@ -973,16 +983,17 @@ export default function GDAISessionPage() {
                     type: t.type || 'debate'
                   })),
                   durationSeconds: elapsedSecondsRef.current,
-                  status: 'FAILED'
+                  status: 'evaluation_failed'
                 }
               })
             });
           } catch (dbErr) {
-            console.error(`[GD][Firestore] [Session: ${sessId}] [User: ${userId}] Failed to write FAILED session status:`, dbErr);
+            console.error(`[GD][Firestore] [Session: ${sessId}] [User: ${userId}] Failed to write evaluation_failed session status:`, dbErr);
           }
         } else {
-          // Pause before retry
-          await new Promise(r => setTimeout(r, 2000));
+          // Task 3: Delay intervals (2 seconds after Attempt 1, 5 seconds after Attempt 2)
+          const delay = attempt === 1 ? 2000 : 5000;
+          await new Promise(r => setTimeout(r, delay));
         }
       }
     }
@@ -1013,7 +1024,7 @@ export default function GDAISessionPage() {
             text: t.text,
             type: t.type || 'debate',
           })),
-          status: evalSuccess ? 'REPORT_READY' : 'FAILED',
+          status: evalSuccess ? 'REPORT_READY' : 'evaluation_failed',
           createdAt: new Date().toISOString(),
         };
         const updated = [localRecord, ...localSessions.filter(s => s.sessionId !== sessId)].slice(0, 20);
