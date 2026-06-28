@@ -18,8 +18,8 @@ module.exports = {
         }
       },
       fontFamily: {
-        display: ['Syne', 'sans-serif'],
-        body: ['DM Sans', 'sans-serif'],
+        display: ['Poppins', 'sans-serif'],
+        body: ['Poppins', 'sans-serif'],
       },
       boxShadow: {
         brand: '0 4px 24px rgba(13,148,136,0.08)',

@@ -877,7 +877,7 @@ export default function GDAISessionPage() {
             sessionId: data.sessionId,
             topic: setupData.topic,
             category: setupData.category,
-            difficulty: difficulty,
+            difficulty: setupData.difficulty,
             type: 'ai_gd',
             durationSeconds: elapsedSecondsRef.current,
             overallScore: data.evaluation.overallScore,
