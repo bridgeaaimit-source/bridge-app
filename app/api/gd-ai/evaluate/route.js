@@ -21,10 +21,11 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { adminDb, admin } from '@/lib/firebase-admin';
 import { trackTokensServer } from '@/lib/tokenTrackerServer';
+import { refreshBridgeScore } from '@/lib/refreshBridgeScore';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 120; // Raised: 5-dim schema needs up to ~44s inference + Firestore write buffer
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -77,124 +78,87 @@ export async function POST(request) {
       .map((t, i) => `Contribution ${i + 1}: "${t.text}"`)
       .join('\n');
 
-    const prompt = `You are an expert Group Discussion evaluator for Indian MBA and engineering placement interviews.
+    // Prompt: 5 recruiter-critical dimensions (redesigned from 9)
+    // Profiled output tokens: ~1,450 vs ~2,900 → inference ~32-44s vs ~61-81s
+    // Secondary signals (confidence, listening, evidence, collaboration) are
+    // embedded within the 5 core dimensions rather than scored separately.
+    const prompt = `You are an expert Group Discussion evaluator for Indian placement interviews.
 
 TOPIC: "${topic}"
 DURATION: ${Math.round(elapsedSeconds / 60)} minutes
-STUDENT NAME: ${studentName}
-TOTAL STUDENT CONTRIBUTIONS: ${studentTurns.length}
+STUDENT: ${studentName} (${studentTurns.length} contributions)
 
 FULL TRANSCRIPT:
 ${transcriptText}
 
-STUDENT'S CONTRIBUTIONS ONLY:
+STUDENT CONTRIBUTIONS:
 ${studentContributions}
 
-Evaluate ${studentName}'s performance across exactly 9 dimensions. Be REALISTIC and SPECIFIC — reference actual transcript moments, not generic observations. Most students score 50-75. Only exceptional performance deserves 80+. Weak or absent performance should score 20-45.
+Evaluate ${studentName} across 5 recruiter-critical dimensions. Be SPECIFIC — quote actual student text. Most students score 50-75; reserve 80+ for exceptional performance.
+
+SCORING WEIGHTS: Communication 25% | Critical Thinking 25% | Leadership & Collaboration 20% | Persuasiveness 15% | Participation Quality 15%
 
 CRITICAL RULES:
-- Every evidence quote MUST be the actual text the student said, taken directly from their contributions above.
-- Improvement suggestions must be actionable exercises, not vague advice.
-- Do NOT give the same score to every dimension.
-- Consider QUALITY of contributions, not just quantity.
+- Evidence quotes MUST be exact text from the student's contributions above.
+- Do NOT assign the same score to every dimension.
+- Improvement suggestions must be actionable, not generic.
+- Consider quality of contributions, not just quantity.
 
-You MUST return ONLY valid JSON.
-Do not include:
-- Markdown (do not wrap in \`\`\`json or other code fences)
-- Explanations
-- Notes
-- Introductory text
-- Trailing text
-- Apologies
+Return ONLY a valid JSON object. No markdown, no code fences, no explanation text.
 
-Return exactly one JSON object matching the required schema:
 {
-  "overallScore": number (0-100, weighted average),
-  "summary": "2-3 sentence honest overall assessment referencing the discussion",
-  "strongestMoment": "the single best thing the student said, quoted exactly",
-  "growthArea": "the single most important improvement needed",
+  "overallScore": number (0-100, weighted average per scoring weights above),
+  "summary": "2-3 sentence honest assessment referencing specific discussion moments",
+  "strongestMoment": "exact quote of the single best student contribution",
+  "growthArea": "the single most important improvement area",
   "dimensions": {
     "communication": {
       "score": number (0-100),
       "grade": "A|B|C|D|F",
-      "summary": "2 sentences specific to THIS student's actual communication style",
-      "evidence": [
-        {"quote": "exact student quote", "annotation": "what this shows about their communication", "timestamp": "turn number or approximate time"}
-      ],
-      "improvement": "One specific, actionable improvement",
-      "exercise": "A concrete 5-minute daily exercise to improve this dimension"
-    },
-    "leadership": {
-      "score": number,
-      "grade": "A|B|C|D|F",
-      "summary": "2 sentences",
-      "evidence": [{"quote": "...", "annotation": "...", "timestamp": "..."}],
-      "improvement": "...",
-      "exercise": "..."
-    },
-    "confidence": {
-      "score": number,
-      "grade": "A|B|C|D|F",
-      "summary": "2 sentences",
-      "evidence": [{"quote": "...", "annotation": "...", "timestamp": "..."}],
-      "improvement": "...",
-      "exercise": "..."
+      "summary": "2 specific sentences about this student's communication. Include signals: clarity, fluency, articulation, confidence in delivery.",
+      "evidence": [{"quote": "exact student quote", "annotation": "what this reveals about communication"}],
+      "improvement": "One specific actionable improvement",
+      "exercise": "One 5-minute daily drill"
     },
     "criticalThinking": {
-      "score": number,
+      "score": number (0-100),
       "grade": "A|B|C|D|F",
-      "summary": "2 sentences",
-      "evidence": [{"quote": "...", "annotation": "...", "timestamp": "..."}],
+      "summary": "2 specific sentences. Include secondary signals: logical structure, data/evidence usage, original analysis vs repetition.",
+      "evidence": [{"quote": "exact student quote", "annotation": "what this shows about analytical depth"}],
       "improvement": "...",
       "exercise": "..."
     },
-    "listening": {
-      "score": number,
+    "leadershipCollaboration": {
+      "score": number (0-100),
       "grade": "A|B|C|D|F",
-      "summary": "2 sentences — did they reference or respond to what others said?",
-      "evidence": [{"quote": "...", "annotation": "...", "timestamp": "..."}],
+      "summary": "2 specific sentences. Include secondary signals: initiating discussion threads, building on others' points, steering the group, active listening cues.",
+      "evidence": [{"quote": "exact student quote", "annotation": "what this shows about leadership or collaboration"}],
       "improvement": "...",
       "exercise": "..."
     },
     "persuasiveness": {
-      "score": number,
+      "score": number (0-100),
       "grade": "A|B|C|D|F",
-      "summary": "2 sentences — were their arguments convincing?",
-      "evidence": [{"quote": "...", "annotation": "...", "timestamp": "..."}],
+      "summary": "2 specific sentences. Include secondary signals: conviction, argument framing, ability to shift the group's direction.",
+      "evidence": [{"quote": "exact student quote", "annotation": "what this shows about persuasive ability"}],
       "improvement": "...",
       "exercise": "..."
     },
-    "participation": {
-      "score": number,
+    "participationQuality": {
+      "score": number (0-100),
       "grade": "A|B|C|D|F",
-      "summary": "2 sentences — was participation balanced? Not too dominant, not too quiet?",
-      "evidence": [{"quote": "...", "annotation": "...", "timestamp": "..."}],
-      "improvement": "...",
-      "exercise": "..."
-    },
-    "collaboration": {
-      "score": number,
-      "grade": "A|B|C|D|F",
-      "summary": "2 sentences — did they build on others' points?",
-      "evidence": [{"quote": "...", "annotation": "...", "timestamp": "..."}],
-      "improvement": "...",
-      "exercise": "..."
-    },
-    "evidenceUsage": {
-      "score": number,
-      "grade": "A|B|C|D|F",
-      "summary": "2 sentences — did they cite data, examples, or facts?",
-      "evidence": [{"quote": "...", "annotation": "...", "timestamp": "..."}],
+      "summary": "2 specific sentences. Include secondary signals: timing of jumps, relevance of each contribution, balance (not too dominant, not too quiet).",
+      "evidence": [{"quote": "exact student quote", "annotation": "what this shows about participation"}],
       "improvement": "...",
       "exercise": "..."
     }
   },
   "overallAnalysis": {
     "totalScore": number (same as overallScore),
-    "communication": number (0-10, the communication score / 10),
-    "logicalFlow": number (0-10, critical thinking / 10),
-    "contentQuality": number (0-10, evidence usage / 10),
-    "persuasiveness": number (0-10, persuasiveness / 10),
+    "communication": number (0-10, communication score ÷ 10),
+    "logicalFlow": number (0-10, criticalThinking score ÷ 10),
+    "contentQuality": number (0-10, derived from evidence depth within criticalThinking),
+    "persuasiveness": number (0-10, persuasiveness score ÷ 10),
     "summary": "...",
     "topStrength": "...",
     "topWeakness": "...",
@@ -202,8 +166,8 @@ Return exactly one JSON object matching the required schema:
   }
 }`;
 
-    // 4. Configurable execution timeout wrapper (Task 3 / Refinement 1)
-    const timeoutMs = parseInt(process.env.EVALUATION_TIMEOUT_MS || '45000', 10);
+    // Configurable execution timeout — default 90s (safe margin below 120s maxDuration)
+    const timeoutMs = parseInt(process.env.EVALUATION_TIMEOUT_MS || '90000', 10);
     console.log(`[GD][Evaluation] [Session: ${sessionId}] [User: ${uid}] Timeout configured at ${timeoutMs}ms.`);
 
     const timeoutPromise = new Promise((_, reject) =>
@@ -264,9 +228,10 @@ Return exactly one JSON object matching the required schema:
       evaluation.dimensions = {};
     }
 
+    // 5-dimension schema validation & repair
     const requiredDims = [
-      'communication', 'leadership', 'confidence', 'criticalThinking', 
-      'listening', 'persuasiveness', 'participation', 'collaboration', 'evidenceUsage'
+      'communication', 'criticalThinking', 'leadershipCollaboration',
+      'persuasiveness', 'participationQuality'
     ];
 
     requiredDims.forEach(dim => {
@@ -275,30 +240,33 @@ Return exactly one JSON object matching the required schema:
       }
       const d = evaluation.dimensions[dim];
       if (typeof d.score !== 'number') d.score = 60;
-      if (typeof d.grade !== 'string') d.grade = d.score >= 80 ? 'A' : d.score >= 60 ? 'B' : d.score >= 45 ? 'C' : 'D';
-      if (typeof d.summary !== 'string') d.summary = `Candidate demonstrated consistent performance in the ${dim} area.`;
+      d.score = Math.max(0, Math.min(100, d.score));
+      if (typeof d.grade !== 'string') d.grade = d.score >= 80 ? 'A' : d.score >= 65 ? 'B' : d.score >= 50 ? 'C' : d.score >= 35 ? 'D' : 'F';
+      if (typeof d.summary !== 'string') d.summary = `The candidate demonstrated baseline performance in the ${dim} area.`;
       if (!Array.isArray(d.evidence)) d.evidence = [];
-      if (typeof d.improvement !== 'string') d.improvement = "Focus on structuring key arguments.";
-      if (typeof d.exercise !== 'string') d.exercise = "Engage in structured peer discussion drills.";
+      if (typeof d.improvement !== 'string') d.improvement = 'Focus on delivering structured, evidence-backed contributions.';
+      if (typeof d.exercise !== 'string') d.exercise = 'Practice the PEP (Point, Explanation, Proof) framework in a 5-minute daily drill.';
     });
 
     if (!evaluation.overallAnalysis || typeof evaluation.overallAnalysis !== 'object') {
       evaluation.overallAnalysis = {};
     }
     const oa = evaluation.overallAnalysis;
+    const dims = evaluation.dimensions;
+    // Derive overallAnalysis from 5 dimensions — preserves Bridge Score engine compatibility
     if (typeof oa.totalScore !== 'number') oa.totalScore = evaluation.overallScore;
-    if (typeof oa.communication !== 'number') oa.communication = Math.round((evaluation.dimensions.communication?.score || 60) / 10);
-    if (typeof oa.logicalFlow !== 'number') oa.logicalFlow = Math.round((evaluation.dimensions.criticalThinking?.score || 60) / 10);
-    if (typeof oa.contentQuality !== 'number') oa.contentQuality = Math.round((evaluation.dimensions.evidenceUsage?.score || 60) / 10);
-    if (typeof oa.persuasiveness !== 'number') oa.persuasiveness = Math.round((evaluation.dimensions.persuasiveness?.score || 60) / 10);
+    if (typeof oa.communication !== 'number') oa.communication = Math.round((dims.communication?.score || 60) / 10);
+    if (typeof oa.logicalFlow !== 'number') oa.logicalFlow = Math.round((dims.criticalThinking?.score || 60) / 10);
+    if (typeof oa.contentQuality !== 'number') oa.contentQuality = Math.round((dims.criticalThinking?.score || 60) / 10);
+    if (typeof oa.persuasiveness !== 'number') oa.persuasiveness = Math.round((dims.persuasiveness?.score || 60) / 10);
     if (typeof oa.summary !== 'string') oa.summary = evaluation.summary;
-    if (typeof oa.topStrength !== 'string') oa.topStrength = "Logic-dense communication framing.";
-    if (typeof oa.topWeakness !== 'string') oa.topWeakness = "Actionable quantitative evidence implementation.";
+    if (typeof oa.topStrength !== 'string') oa.topStrength = 'Logic-dense communication framing.';
+    if (typeof oa.topWeakness !== 'string') oa.topWeakness = 'Actionable quantitative evidence implementation.';
     if (!Array.isArray(oa.actionItems) || oa.actionItems.length === 0) {
       oa.actionItems = [
-        "Structure contributions using the PEP (Point, Explanation, Example) framework.",
-        "Practice reference-based active listening to build on other participants' arguments.",
-        "Integrate structured data and placement-level facts in debate pitches."
+        'Structure contributions using the PEP (Point, Explanation, Example) framework.',
+        'Practice reference-based active listening to build on other participants\' arguments.',
+        'Integrate structured data and placement-level facts in debate pitches.',
       ];
     }
 
@@ -338,6 +306,11 @@ Return exactly one JSON object matching the required schema:
         .set(sessionRecord);
       const endDbWrite = Date.now();
       console.log(`[GD][Firestore] [Session: ${sessionRecord.sessionId}] Saved final report record to Firestore in ${endDbWrite - startDbWrite}ms.`);
+
+      // Trigger Bridge Score refresh in background — non-blocking, does not delay user response
+      refreshBridgeScore(uid).catch(err =>
+        console.warn(`[BridgeScore] [User: ${uid}] Background refresh failed (non-fatal):`, err.message)
+      );
     }
 
     return NextResponse.json({

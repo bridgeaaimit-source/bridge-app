@@ -100,9 +100,14 @@ export default function GDAISessionPage() {
       setElapsedSeconds((prev) => {
         const next = prev + 1;
         elapsedSecondsRef.current = next;
-        
-        // Auto-end at 10 minutes (600 seconds)
-        if (next >= 600) {
+
+        // At 10 min: enter closing-remarks phase (moderator prompts student)
+        if (next === 600 && sessionPhaseRef.current !== 'closing') {
+          triggerClosingPhase();
+        }
+
+        // Hard auto-end at 12 min (gives full 2-min closing window)
+        if (next >= 720) {
           clearInterval(interval);
           handleEndSession();
         }
@@ -341,6 +346,61 @@ export default function GDAISessionPage() {
     await Promise.all([typingPromise, speakPromise]);
   };
 
+  // Closing Remarks Phase — triggered at 600s; student gets up to 2 min
+  const triggerClosingPhase = () => {
+    if (sessionPhaseRef.current === 'closing') return; // guard against double-fire
+
+    // Abort any active AI audio or SSE stream
+    if (discussAbortControllerRef.current) {
+      discussAbortControllerRef.current.abort();
+      discussAbortControllerRef.current = null;
+    }
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+
+    sessionPhaseRef.current = 'closing';
+    setSessionPhase('closing');
+    setStreamingText('');
+    setStreamingSpeakerId(null);
+
+    const studentName = setupData?.studentName || 'everyone';
+    const closingPromptText = `We're approaching the end of our discussion. ${studentName}, please share your closing remarks — you have up to two minutes.`;
+
+    // Append closing turn to transcript
+    const closingTurn = {
+      speakerId: 'moderator',
+      text: closingPromptText,
+      type: 'closing',
+      timestamp: new Date().toISOString(),
+    };
+    setTurns((prev) => [...prev, closingTurn]);
+
+    // Speak the prompt then activate student mic
+    const controller = new AbortController();
+    discussAbortControllerRef.current = controller;
+
+    setSpeakerState('ai_speaking');
+    setActiveSpeakerId('moderator');
+
+    speakAndType('moderator', 'Nalini', closingPromptText, 'closing', controller.signal)
+      .then(() => {
+        if (!isSessionActiveRef.current || sessionPhaseRef.current !== 'closing') return;
+        setActiveSpeakerId(null);
+        handleJumpIn(); // auto-open mic for student closing remarks
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') console.error('Closing prompt speech error:', err);
+        setActiveSpeakerId(null);
+        setSpeakerState('idle');
+      });
+  };
+
   // Moderator Opening
   const triggerModeratorOpening = async () => {
     if (!setupData) return;
@@ -424,8 +484,11 @@ export default function GDAISessionPage() {
   const runNextTurn = async () => {
     if (!isSessionActiveRef.current || jumpInRequestedRef.current) return;
 
+    // Block AI turns during the closing-remarks phase — student-only window
+    if (sessionPhaseRef.current === 'closing') return;
+
     const elapsed = elapsedSecondsRef.current;
-    if (elapsed >= 600) {
+    if (elapsed >= 720) {
       handleEndSession();
       return;
     }
@@ -1069,7 +1132,7 @@ export default function GDAISessionPage() {
             </div>
             
             <div className="flex items-center gap-4">
-              <GDTimer elapsedSeconds={elapsedSeconds} />
+              <GDTimer elapsedSeconds={elapsedSeconds} maxSeconds={720} />
               <button
                 onClick={() => {
                   try {
@@ -1087,12 +1150,22 @@ export default function GDAISessionPage() {
               >
                 🗖 Fullscreen
               </button>
-              <button
-                onClick={handleEndSession}
-                className="text-xs font-bold text-rose-600 hover:bg-rose-50 px-3.5 py-1.5 rounded-xl border border-rose-200 transition-colors"
-              >
-                End GD
-              </button>
+              {sessionPhase === 'closing' ? (
+                <button
+                  onClick={handleEndSession}
+                  className="text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 px-4 py-1.5 rounded-xl border border-teal-700 transition-colors animate-pulse"
+                  title="Submit your closing remark and end the GD"
+                >
+                  ✓ Finish & Submit
+                </button>
+              ) : (
+                <button
+                  onClick={handleEndSession}
+                  className="text-xs font-bold text-rose-600 hover:bg-rose-50 px-3.5 py-1.5 rounded-xl border border-rose-200 transition-colors"
+                >
+                  End GD
+                </button>
+              )}
             </div>
           </div>
 

@@ -49,11 +49,15 @@ export default function TokenDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('7days');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const [chartReady, setChartReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [needsKey, setNeedsKey] = useState(false);
   const [keyInput, setKeyInput] = useState('');
+  const [dailySortKey, setDailySortKey] = useState('date');
+  const [dailySortDir, setDailySortDir] = useState('desc');
 
   // Data state
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -96,13 +100,20 @@ export default function TokenDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const days = selectedPeriod === '7days' ? 7 : selectedPeriod === '30days' ? 30 : 90;
+      const days = selectedPeriod === '7days' ? 7 : selectedPeriod === '30days' ? 30 : selectedPeriod === '90days' ? 90 : 30;
       const secretKey = localStorage.getItem('adminSecretKey') || '';
+
+      const payload = { secretKey, days };
+      // Custom date range overrides the preset days
+      if (selectedPeriod === 'custom' && customStartDate && customEndDate) {
+        payload.startDate = customStartDate;
+        payload.endDate = customEndDate;
+      }
 
       const res = await fetch('/api/admin/token-analytics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secretKey, days }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -119,7 +130,7 @@ export default function TokenDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [selectedPeriod]);
+  }, [selectedPeriod, customStartDate, customEndDate]);
 
   useEffect(() => {
     if (authorized && !needsKey) fetchAnalytics();
@@ -520,7 +531,25 @@ export default function TokenDashboard() {
                 <option value="7days">Last 7 Days</option>
                 <option value="30days">Last 30 Days</option>
                 <option value="90days">Last 90 Days</option>
+                <option value="custom">Custom Range</option>
               </select>
+              {selectedPeriod === 'custom' && (
+                <>
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 shadow-sm focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488] outline-none transition-all"
+                  />
+                  <span className="text-gray-400 text-sm">to</span>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 shadow-sm focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488] outline-none transition-all"
+                  />
+                </>
+              )}
               <button
                 onClick={fetchAnalytics}
                 disabled={loading}
@@ -900,39 +929,85 @@ export default function TokenDashboard() {
             {/* ═══════════════ DAILY LOG TAB ═══════════════ */}
             {activeTab === 'daily' && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-5 border-b border-gray-100">
-                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#0D9488]" />
-                    Daily Usage Log
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Day-by-day breakdown with cost</p>
+                <div className="p-5 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-[#0D9488]" />
+                      Day-Wise Usage Breakdown
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Click column headers to sort. {analyticsData?.summary?.dateRange ? `${analyticsData.summary.dateRange.start} → ${analyticsData.summary.dateRange.end}` : ''}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const rows = [
+                        ['Date', 'Tokens', 'LLM Cost (₹)', 'TTS Cost (₹)', 'STT Cost (₹)', 'Total Cost (₹)', 'Active Users'],
+                        ...[...daily].map(d => [d.date, d.total, parseFloat(d.llmCostINR || 0).toFixed(2), parseFloat(d.ttsCostINR || 0).toFixed(2), parseFloat(d.sttCostINR || 0).toFixed(2), parseFloat(d.totalCostINR || 0).toFixed(2), d.users]),
+                      ];
+                      const blob = new Blob([rows.map(r => r.join(',')).join('\n')], { type: 'text/csv' });
+                      const a = document.createElement('a');
+                      a.href = URL.createObjectURL(blob);
+                      a.download = `bridge-daily-usage-${new Date().toISOString().split('T')[0]}.csv`;
+                      a.click();
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 text-xs font-semibold transition-all shadow-sm"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Export CSV
+                  </button>
                 </div>
-                <div className="divide-y divide-gray-50">
-                  {[...daily].reverse().map((stat) => {
-                    const dayPct = summary.totalTokens > 0 ? ((stat.total / summary.totalTokens) * 100).toFixed(1) : 0;
-                    return (
-                      <div key={stat.date} className={`flex items-center gap-4 px-5 py-4 transition-colors ${stat.isToday ? 'bg-teal-50/60' : 'hover:bg-gray-50/50'}`}>
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-900 flex items-center gap-2">
-                            {new Date(stat.date).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}
-                            {stat.isToday && (
-                              <span className="text-[10px] bg-[#0D9488] text-white px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">Today</span>
-                            )}
-                          </div>
-                          <div className="text-xs text-gray-400 mt-0.5">{stat.users} active user{stat.users !== 1 ? 's' : ''}</div>
-                          {/* Mini progress bar */}
-                          <div className="w-full max-w-xs bg-gray-100 rounded-full h-1.5 mt-2">
-                            <div className="h-1.5 rounded-full bg-[#0D9488]" style={{ width: `${Math.max(parseFloat(dayPct), stat.total > 0 ? 2 : 0)}%` }} />
-                          </div>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <div className="font-bold text-gray-900">{fmt(stat.total)} <span className="text-xs font-normal text-gray-400">tokens</span></div>
-                          <div className="text-xs text-[#0D9488] font-semibold mt-0.5">{cost(stat.totalCostINR)}</div>
-                          <div className="text-[10px] text-gray-400">{dayPct}% of total</div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50/80 text-xs text-gray-500 uppercase tracking-wide sticky top-0">
+                      <tr>
+                        {[
+                          { key: 'date', label: 'Date' },
+                          { key: 'total', label: 'Tokens' },
+                          { key: 'llmCostINR', label: 'LLM Cost ₹' },
+                          { key: 'ttsCostINR', label: 'TTS ₹' },
+                          { key: 'sttCostINR', label: 'STT ₹' },
+                          { key: 'totalCostINR', label: 'Total ₹' },
+                          { key: 'users', label: 'Users' },
+                        ].map(col => (
+                          <th
+                            key={col.key}
+                            onClick={() => {
+                              if (dailySortKey === col.key) setDailySortDir(d => d === 'asc' ? 'desc' : 'asc');
+                              else { setDailySortKey(col.key); setDailySortDir('desc'); }
+                            }}
+                            className="px-4 py-3 text-left cursor-pointer select-none hover:text-gray-800 transition-colors"
+                          >
+                            {col.label} {dailySortKey === col.key ? (dailySortDir === 'asc' ? '↑' : '↓') : ''}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {[...daily]
+                        .sort((a, b) => {
+                          const av = a[dailySortKey] ?? '';
+                          const bv = b[dailySortKey] ?? '';
+                          if (typeof av === 'number') return dailySortDir === 'asc' ? av - bv : bv - av;
+                          return dailySortDir === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+                        })
+                        .map((stat) => (
+                          <tr key={stat.date} className={`transition-colors ${stat.isToday ? 'bg-teal-50/60' : 'hover:bg-gray-50/40'}`}>
+                            <td className="px-4 py-3 font-medium text-gray-900">
+                              {new Date(stat.date).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}
+                              {stat.isToday && <span className="ml-2 text-[10px] bg-[#0D9488] text-white px-1.5 py-0.5 rounded-full font-bold uppercase">Today</span>}
+                            </td>
+                            <td className="px-4 py-3 font-bold text-gray-900">{fmt(stat.total)}</td>
+                            <td className="px-4 py-3 text-[#0D9488] font-semibold">₹{parseFloat(stat.llmCostINR || 0).toFixed(2)}</td>
+                            <td className="px-4 py-3 text-gray-600">₹{parseFloat(stat.ttsCostINR || 0).toFixed(2)}</td>
+                            <td className="px-4 py-3 text-gray-600">₹{parseFloat(stat.sttCostINR || 0).toFixed(2)}</td>
+                            <td className="px-4 py-3 font-semibold text-gray-800">₹{parseFloat(stat.totalCostINR || 0).toFixed(2)}</td>
+                            <td className="px-4 py-3 text-gray-500">{stat.users}</td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                  {daily.length === 0 && (
+                    <div className="text-center py-12 text-gray-400 text-sm">No data for this period</div>
+                  )}
                 </div>
               </div>
             )}

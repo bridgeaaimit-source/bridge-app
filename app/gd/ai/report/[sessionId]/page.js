@@ -24,6 +24,10 @@ export default function GDReportPage({ params: paramsPromise }) {
   const [isCorrupted, setIsCorrupted] = useState(false);
   const [retryAttemptText, setRetryAttemptText] = useState('');
 
+  // Bridge Score delta state
+  const [bridgeScore, setBridgeScore] = useState(null);   // { current, previous, delta }
+  const [bridgeScoreLoading, setBridgeScoreLoading] = useState(false);
+
   // Resolve user
   useEffect(() => {
     if (isBypassed) {
@@ -85,8 +89,8 @@ export default function GDReportPage({ params: paramsPromise }) {
               setEvaluating(false);
               setEvalFailed(false);
               
-              // Validate schema check
-              const requiredDims = ['communication', 'leadership', 'confidence', 'criticalThinking', 'listening', 'persuasiveness', 'participation', 'collaboration', 'evidenceUsage'];
+              // Validate schema check — 5-dimension schema
+              const requiredDims = ['communication', 'criticalThinking', 'leadershipCollaboration', 'persuasiveness', 'participationQuality'];
               const hasAllDims = data.session.dimensions && requiredDims.every(d => data.session.dimensions[d] && typeof data.session.dimensions[d].score === 'number');
               const hasAnalysis = data.session.overallAnalysis && typeof data.session.overallAnalysis.totalScore === 'number';
               if (!hasAllDims || !hasAnalysis) {
@@ -139,6 +143,46 @@ export default function GDReportPage({ params: paramsPromise }) {
       }
     };
   }, [currentUser, sessionId]);
+
+  // Bridge Score poller — polls every 2.5s for up to 15s after report loads
+  useEffect(() => {
+    if (!currentUser || !session || session.status !== 'REPORT_READY') return;
+
+    const uid = currentUser.uid;
+    setBridgeScoreLoading(true);
+
+    let attempts = 0;
+    const MAX_ATTEMPTS = 6; // 6 × 2.5s = 15s
+    let previousScore = null;
+
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/bridge-score?userId=${uid}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.score !== null && data.score !== undefined) {
+          if (previousScore === null) {
+            // First fetch — this is the baseline (pre-refresh may already be updated)
+            previousScore = data.score;
+          }
+          setBridgeScore({ current: data.score, previous: previousScore, delta: data.score - previousScore });
+          setBridgeScoreLoading(false);
+          clearInterval(poller);
+        }
+      } catch { /* silent */ }
+      attempts++;
+      if (attempts >= MAX_ATTEMPTS) {
+        clearInterval(poller);
+        setBridgeScoreLoading(false); // hide loading state gracefully
+      }
+    };
+
+    // Small initial delay to let the background refresh write complete first
+    const poller = setInterval(poll, 2500);
+    setTimeout(poll, 500); // first check at 0.5s
+
+    return () => clearInterval(poller);
+  }, [currentUser, session?.status]);
 
   // Trigger manual API retry from the saved transcript
   const handleRetryEvaluation = async () => {
@@ -557,6 +601,43 @@ export default function GDReportPage({ params: paramsPromise }) {
             </Card>
           </div>
 
+          {/* Bridge Score Delta Card */}
+          {(bridgeScoreLoading || bridgeScore) && (
+            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200/80 rounded-2xl p-5 flex items-center justify-between shadow-sm">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-extrabold text-teal-600 uppercase tracking-widest block">Bridge Score Impact</span>
+                {bridgeScoreLoading ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-3 h-3 rounded-full bg-teal-400 animate-pulse" />
+                    <span className="text-xs font-semibold text-slate-500">Updating Bridge Score...</span>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-600 font-medium">
+                    Your GD evaluation has been factored into your Bridge Score.
+                  </p>
+                )}
+              </div>
+              {bridgeScore && !bridgeScoreLoading && (
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Current</span>
+                    <span className="text-2xl font-black text-teal-700">{bridgeScore.current}</span>
+                  </div>
+                  {bridgeScore.delta !== 0 && (
+                    <div className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm font-black ${
+                      bridgeScore.delta > 0 
+                        ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                        : 'bg-rose-100 text-rose-700 border border-rose-200'
+                    }`}>
+                      {bridgeScore.delta > 0 ? '▲' : '▼'}
+                      {bridgeScore.delta > 0 ? '+' : ''}{bridgeScore.delta}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Highlights: Strongest Moment & Growth Opportunity */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Strongest Moment */}
@@ -622,7 +703,7 @@ export default function GDReportPage({ params: paramsPromise }) {
             </Card>
           )}
 
-          {/* 9 Dimensions feedback grid */}
+          {/* 5 Dimension feedback grid */}
           <div className="space-y-4">
             <h2 className="text-lg font-extrabold text-slate-800 tracking-tight">Recruiter Evaluation Dimensions</h2>
             {Object.keys(safeDimensions).length > 0 ? (
