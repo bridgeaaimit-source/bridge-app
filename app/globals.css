@@ -31,15 +31,15 @@ h1, h2, h3, h4 {
 }
 
 .landing-theme {
-  font-family: var(--font-inter), sans-serif;
+  font-family: var(--font-poppins), sans-serif;
 }
 
 .landing-theme h1, .landing-theme h2, .landing-theme h3, .landing-theme h4 {
-  font-family: var(--font-jakarta), sans-serif;
+  font-family: var(--font-poppins), sans-serif;
 }
 
 .font-display {
-  font-family: var(--font-jakarta), sans-serif;
+  font-family: var(--font-poppins), sans-serif;
 }
 
 .gradient-text {
