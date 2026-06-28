@@ -9,7 +9,7 @@ import {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { secretKey, days = 30 } = body;
+    const { secretKey, days = 30, startDate, endDate } = body;
 
     // Validate admin secret
     const envKey = (process.env.ADMIN_SECRET_KEY || '').replace(/^["']|["']$/g, '').trim();
@@ -25,10 +25,38 @@ export async function POST(request) {
       return Response.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
     }
 
+    // Build ordered date array (oldest → newest)
+    let datesToFetch = [];
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    if (startDate && endDate) {
+      // Custom range: validate and build list
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (!isNaN(start) && !isNaN(end) && start <= end) {
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          datesToFetch.push(d.toISOString().split('T')[0]);
+        }
+      }
+    }
+
+    if (datesToFetch.length === 0) {
+      // Fallback: preset days (newest → oldest, then we reverse at end)
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        datesToFetch.push(d.toISOString().split('T')[0]);
+      }
+    }
+
+    const effectiveDays = datesToFetch.length;
+    const rangeStart = datesToFetch[0];
+    const rangeEnd = datesToFetch[datesToFetch.length - 1];
+
     const dailyData = [];
     const userMap = new Map();
     const featureDetailMap = new Map();
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayStr;
 
     let totalTokens = 0;
     let totalLLMCostINR = 0;
@@ -40,11 +68,8 @@ export async function POST(request) {
     let exactDaysCount = 0;
     let estimatedDaysCount = 0;
 
-    // Iterate over each day
-    for (let i = 0; i < days; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+    // Iterate over each day in the computed date list
+    for (const dateStr of datesToFetch) {
 
       let dayTotalTokens = 0;
       let dayLLMCostINR = 0;
@@ -244,9 +269,9 @@ export async function POST(request) {
       .map(u => ({ ...u, days: u.days.size, totalCostINR: u.totalCostINR.toFixed(2) }))
       .sort((a, b) => b.total - a.total);
 
-    const reversedDaily = dailyData.reverse();
+    const reversedDaily = dailyData; // already oldest→newest order
     const todayEntry = reversedDaily.find(d => d.isToday);
-    const avgDaily = totalTokens / Math.max(days, 1);
+    const avgDaily = totalTokens / Math.max(effectiveDays, 1);
 
     const featureBreakdown = Array.from(featureDetailMap.values())
       .map(feat => ({
@@ -266,7 +291,7 @@ export async function POST(request) {
     }
     const combinedTotalCost = totalLLMCostINR + totalTTSCostINR + totalSTTCostINR;
     if (combinedTotalCost > 500) {
-      alerts.push({ type: 'caution', message: `Total system cost is ₹${combinedTotalCost.toFixed(0)} in ${days} days` });
+      alerts.push({ type: 'caution', message: `Total system cost is ₹${combinedTotalCost.toFixed(0)} in ${effectiveDays} days` });
     }
 
     return Response.json({
@@ -276,7 +301,8 @@ export async function POST(request) {
         avgPerUser: sortedUsers.length > 0 ? Math.round(totalTokens / sortedUsers.length) : 0,
         todayTokens: todayEntry?.total || 0,
         avgDailyTokens: Math.round(avgDaily),
-        period: days,
+        period: effectiveDays,
+        dateRange: { start: rangeStart, end: rangeEnd, days: effectiveDays },
         // New model-aware cost summaries
         totalLLMCostINR: totalLLMCostINR.toFixed(2),
         totalTTSCostINR: totalTTSCostINR.toFixed(2),
