@@ -1,10 +1,19 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { m } from "framer-motion";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function FooterCTA() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <div className="bg-transparent">
       {/* Final CTA Section */}
@@ -78,11 +87,19 @@ export default function FooterCTA() {
           
           <div>
             <div className="inline-flex items-center">
-              <img
-                src="/images/logo_transparent.png"
-                alt="BridgeAI"
-                className="h-8 sm:h-9 w-auto dark:invert dark:hue-rotate-180 transition-all"
-              />
+              {mounted && theme === "dark" ? (
+                <img
+                  src="/images/logo_transparent_white_text.png"
+                  alt="BridgeAI"
+                  className="h-8 sm:h-9 w-auto transition-all"
+                />
+              ) : (
+                <img
+                  src="/images/logo_transparent.png"
+                  alt="BridgeAI"
+                  className="h-8 sm:h-9 w-auto transition-all"
+                />
+              )}
             </div>
             <p className="mt-4 text-gray-600 dark:text-slate-400 leading-relaxed font-medium pr-4 mb-4">
               AI placement prep for ambitious Indian students.
