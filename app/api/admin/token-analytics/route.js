@@ -108,7 +108,7 @@ export async function POST(request) {
           }
           const u = userMap.get(uid);
           u.days.add(dateStr);
-          u.lastSeen = i === 0 ? dateStr : u.lastSeen;
+          if (dateStr > u.lastSeen) u.lastSeen = dateStr;
           if (dateStr < u.firstSeen) u.firstSeen = dateStr;
 
           // For each key, if it represents a normalized feature
@@ -215,7 +215,7 @@ export async function POST(request) {
           const u = userMap.get(uid);
           u.totalCostINR += ttsCost + sttCost;
           u.days.add(dateStr);
-          u.lastSeen = i === 0 ? dateStr : u.lastSeen;
+          if (dateStr > u.lastSeen) u.lastSeen = dateStr;
           if (dateStr < u.firstSeen) u.firstSeen = dateStr;
         });
       } catch (err) {
