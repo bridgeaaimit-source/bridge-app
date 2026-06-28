@@ -199,8 +199,23 @@ Return ONLY valid JSON, no markdown:
     try {
       evaluation = JSON.parse(rawText);
     } catch {
-      console.error('[gd-ai/evaluate] JSON parse error:', rawText.slice(0, 500));
+      console.error(`[GD][Evaluation] [Session: ${sessionId}] [User: ${uid}] JSON parsing failed for raw output:`, rawText.slice(0, 500));
       return NextResponse.json({ error: 'Evaluation parsing failed' }, { status: 500 });
+    }
+
+    // Structure Validation
+    const requiredDims = [
+      'communication', 'leadership', 'confidence', 'criticalThinking', 
+      'listening', 'persuasiveness', 'participation', 'collaboration', 'evidenceUsage'
+    ];
+    const hasAllDims = evaluation.dimensions && requiredDims.every(d => evaluation.dimensions[d] && typeof evaluation.dimensions[d].score === 'number');
+    const hasAnalysis = evaluation.overallAnalysis && 
+      typeof evaluation.overallAnalysis.totalScore === 'number' && 
+      Array.isArray(evaluation.overallAnalysis.actionItems);
+
+    if (typeof evaluation.overallScore !== 'number' || !hasAllDims || !hasAnalysis) {
+      console.error(`[GD][Evaluation] [Session: ${sessionId}] [User: ${uid}] Validation failed for AI response structure.`);
+      return NextResponse.json({ error: 'AI evaluation failed validation check (corrupted structure)' }, { status: 500 });
     }
 
     // Save to Firestore — compatible with bridgeScoreEngine.js expectations
@@ -224,18 +239,21 @@ Return ONLY valid JSON, no markdown:
       strongestMoment: evaluation.strongestMoment,
       growthArea: evaluation.growthArea,
       dimensions: evaluation.dimensions,
-      // Bridge Score engine reads this field:
       overallAnalysis: evaluation.overallAnalysis,
+      status: 'REPORT_READY',
       createdAt: admin?.firestore?.FieldValue?.serverTimestamp?.() || new Date(),
     };
 
     if (adminDb) {
+      const startDbWrite = Date.now();
       await adminDb
         .collection('users')
         .doc(uid)
         .collection('gd_sessions')
         .doc(sessionRecord.sessionId)
         .set(sessionRecord);
+      const endDbWrite = Date.now();
+      console.log(`[GD][Firestore] [Session: ${sessionRecord.sessionId}] Saved final report record to Firestore in ${endDbWrite - startDbWrite}ms.`);
     }
 
     return NextResponse.json({

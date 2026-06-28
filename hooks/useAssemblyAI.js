@@ -130,6 +130,8 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
   // State refs that must be readable inside event callbacks without closures
   const finalRef = useRef('');                // accumulated final transcript
   const interimRef = useRef('');              // track the latest interim transcript state
+  const historicalTranscriptRef = useRef(''); // historical finalized text across session restarts
+  const sessionFinalTextRef = useRef('');     // current session's finalized text
   const lastProcessedIndexRef = useRef(-1);   // track the last processed index of event.results in WebSpeech
   const isRecordingRef = useRef(false);       // true while session should be alive
   const isWebSpeechActiveRef = useRef(false); // guard: one WebSpeech instance at a time
@@ -305,6 +307,8 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
       rec.maxAlternatives = 1;  // Index 0 is always best; don't iterate
       rec.lang = useLang;       // en-IN for Indian English accent optimisation
 
+      const sessId = typeof window !== 'undefined' ? (sessionStorage.getItem('gdSetup') ? JSON.parse(sessionStorage.getItem('gdSetup')).sessionId : 'unknown') : 'unknown';
+
       rec.onstart = () => {
         if (!isMountedRef.current) return;
         lastStartTimeRef.current = Date.now(); // Record start time
@@ -312,6 +316,9 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
         setIsConnecting(false);
         setIsRecording(true);
         setRecordingStatus('listening');
+        
+        console.log(`[GD][Speech] [Session: ${sessId}] WebSpeech SpeechRecognition started successfully.`);
+
         // Kick watchdog — detects dead speech session if no results or start events fire for 12s
         clearInterval(watchdogTimerRef.current);
         watchdogTimerRef.current = setInterval(() => {
@@ -319,22 +326,23 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
           
           // 1. If recognitionRef is null, force restart
           if (!recognitionRef.current && isRecordingRef.current) {
+            console.log(`[GD][Speech] [Session: ${sessId}] [Watchdog] recognitionRef.current is null, triggering forced restart.`);
             clearInterval(watchdogTimerRef.current);
             isWebSpeechActiveRef.current = false;
             restartTimerRef.current = setTimeout(() => {
               if (isRecordingRef.current) startWebSpeech(useLang);
-            }, 500);
+            }, 100);
             return;
           }
 
           // 2. If it's been > 12 seconds with zero activity, abort stuck session to trigger a restart
           const timeSinceLastActivity = Date.now() - lastSpeechActivityRef.current;
           if (timeSinceLastActivity > 12000 && recognitionRef.current) {
-            console.warn('[Speech Watchdog] No activity for 12s, aborting stuck recognition session.');
+            console.warn(`[GD][Speech] [Session: ${sessId}] [Watchdog] No speech activity for 12s, aborting stuck recognition instance.`);
             try {
               recognitionRef.current.abort();
             } catch (err) {
-              console.error('[Speech Watchdog] Abort failed:', err);
+              console.error(`[GD][Speech] [Session: ${sessId}] [Watchdog] Abort failed:`, err);
             }
           }
         }, 4000);
@@ -344,41 +352,40 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
         if (!isRecordingRef.current || !isMountedRef.current) return;
         lastSpeechActivityRef.current = Date.now(); // Record activity on result
 
-        let interimText = '';
-        let newFinalText = '';
+        let sessionFinalText = '';
+        let sessionInterimText = '';
 
         for (let i = 0; i < event.results.length; i++) {
           const result = event.results[i];
-          const best = result[0];
           if (result.isFinal) {
-            if (i > lastProcessedIndexRef.current) {
-              newFinalText += best.transcript + ' ';
-              lastProcessedIndexRef.current = i;
-            }
+            sessionFinalText += result[0].transcript + ' ';
           } else {
-            interimText += best.transcript;
+            sessionInterimText += result[0].transcript;
           }
         }
 
-        interimRef.current = interimText;
+        sessionFinalTextRef.current = sessionFinalText;
+        interimRef.current = sessionInterimText;
 
-        if (newFinalText.trim()) {
-          const newFinal = applyCorrections(safeAppend(finalRef.current, newFinalText));
-          commitFinal(newFinal);
-          if (interimText && isMountedRef.current) {
-            setInterimTranscript(interimText);
-            updateStats(applyCorrections(safeAppend(newFinal, interimText)));
-          }
-          checkVoiceCommands(newFinal);
-        } else if (isMountedRef.current) {
-          setInterimTranscript(interimText);
-          const currentTotalText = applyCorrections(safeAppend(finalRef.current, interimText));
-          updateStats(currentTotalText);
+        const currentFinal = applyCorrections(safeAppend(historicalTranscriptRef.current, sessionFinalText));
+        finalRef.current = currentFinal;
+        setTranscript(currentFinal);
+        setInterimTranscript(sessionInterimText);
+
+        const currentTotalText = applyCorrections(safeAppend(currentFinal, sessionInterimText));
+        updateStats(currentTotalText);
+
+        console.log(`[GD][Transcript] [Session: ${sessId}] WebSpeech result: final="${sessionFinalText.trim()}", interim="${sessionInterimText.trim()}"`);
+
+        if (sessionFinalText.trim()) {
+          checkVoiceCommands(currentFinal);
         }
       };
 
       rec.onerror = (e) => {
         if (!isRecordingRef.current) return;
+        console.warn(`[GD][Speech] [Session: ${sessId}] WebSpeech error event: ${e.error}`);
+
         if (e.error === 'no-speech') return;           // normal — user paused
         if (e.error === 'audio-capture') return;       // transient; onend will restart
         if (e.error === 'not-allowed') {
@@ -390,24 +397,27 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
         }
         if (e.error === 'network') {
           // Network glitch — onend will fire and restart
-          console.warn('[Speech] network error, will auto-restart on onend');
           return;
         }
-        if (e.error !== 'aborted') console.warn('[Speech] error:', e.error);
       };
 
       rec.onend = () => {
         recognitionRef.current = null;
+        console.log(`[GD][Speech] [Session: ${sessId}] WebSpeech onend fired.`);
 
-        // Merge any pending interim text into finalRef.current before restart
-        if (interimRef.current && interimRef.current.trim()) {
-          const combined = applyCorrections(safeAppend(finalRef.current, interimRef.current));
-          finalRef.current = combined;
-          setTranscript(combined);
-          setInterimTranscript('');
-          interimRef.current = '';
-          updateStats(combined);
+        // Merge any pending text into historical transcript on end
+        if (sessionFinalTextRef.current && sessionFinalTextRef.current.trim()) {
+          historicalTranscriptRef.current = safeAppend(historicalTranscriptRef.current, sessionFinalTextRef.current);
+          sessionFinalTextRef.current = '';
         }
+        if (interimRef.current && interimRef.current.trim()) {
+          historicalTranscriptRef.current = safeAppend(historicalTranscriptRef.current, interimRef.current);
+          interimRef.current = '';
+        }
+
+        finalRef.current = applyCorrections(historicalTranscriptRef.current);
+        setTranscript(finalRef.current);
+        setInterimTranscript('');
 
         if (!isRecordingRef.current) {
           isWebSpeechActiveRef.current = false;
@@ -424,28 +434,31 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
 
         // If it failed 3 times consecutively, stop recording to prevent infinite flashing mic
         if (consecutiveShortSessionsRef.current >= 3) {
-          console.warn('[Speech] Stopping restart loop: SpeechRecognition sessions ending too fast.');
+          console.warn(`[GD][Speech] [Session: ${sessId}] Stopping restart loop: WebSpeech ending too fast consecutively.`);
           consecutiveShortSessionsRef.current = 0;
           stopRecording();
           if (isMountedRef.current) {
-            setError('Microphone capture failed or was interrupted. Please check permissions or disconnect other apps using the mic.');
+            setError('Microphone capture failed or was interrupted.');
             toast.error('Microphone connection failed. Please check your browser mic permissions.');
           }
           return;
         }
 
-        // Auto-restart after a short delay to prevent mid-sentence interruption
+        // Auto-restart after a Snappy 100ms delay to prevent mid-sentence interruption gaps
         clearTimeout(restartTimerRef.current);
         restartTimerRef.current = setTimeout(() => {
           if (!isRecordingRef.current) { isWebSpeechActiveRef.current = false; return; }
           isWebSpeechActiveRef.current = false; // allow buildRec to proceed
           try {
+            console.log(`[GD][Speech] [Session: ${sessId}] Snappy auto-restart triggered.`);
             const newRec = buildRec();
             newRec.start();
             recognitionRef.current = newRec;
             isWebSpeechActiveRef.current = true;
-          } catch { /* will retry on next watchdog tick */ }
-        }, 400);
+          } catch (err) {
+            console.error(`[GD][Speech] [Session: ${sessId}] Snappy auto-restart failed:`, err);
+          }
+        }, 100);
       };
 
       return rec;
@@ -464,6 +477,9 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
 
   // ── AssemblyAI real-time via direct WebSocket ─────────────────────────────
   const startAssemblyAI = useCallback(async (lang) => {
+    const sessId = typeof window !== 'undefined' ? (sessionStorage.getItem('gdSetup') ? JSON.parse(sessionStorage.getItem('gdSetup')).sessionId : 'unknown') : 'unknown';
+    console.log(`[GD][Speech] [Session: ${sessId}] Initializing AssemblyAI stream...`);
+
     try {
       const res = await fetch('/api/assemblyai-token');
       if (!res.ok) throw new Error('Token fetch failed');
@@ -525,6 +541,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
           setIsRecording(true);
           setRecordingStatus('listening');
         }
+        console.log(`[GD][Speech] [Session: ${sessId}] AssemblyAI WebSocket connected successfully.`);
 
         const processor = audioCtx.createScriptProcessor(4096, 1, 1);
         processor.onaudioprocess = (e) => {
@@ -546,22 +563,27 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
         try {
           const msg = JSON.parse(e.data);
           if (msg.message_type === 'PartialTranscript' && msg.text) {
+            console.log(`[GD][Transcript] [Session: ${sessId}] AssemblyAI partial text: "${msg.text.trim()}"`);
             if (isMountedRef.current) setInterimTranscript(msg.text);
           } else if (msg.message_type === 'FinalTranscript' && msg.text) {
+            console.log(`[GD][Transcript] [Session: ${sessId}] AssemblyAI final sentence: "${msg.text.trim()}"`);
             const newFinal = applyCorrections(safeAppend(finalRef.current, msg.text));
             commitFinal(newFinal);
             checkVoiceCommands(newFinal);
           }
-        } catch { /* ignore malformed JSON */ }
+        } catch (err) {
+          console.warn(`[GD][Speech] [Session: ${sessId}] Failed to parse WebSocket message:`, err);
+        }
       };
 
-      ws.onerror = () => {
+      ws.onerror = (err) => {
         clearTimeout(wsTimeout);
-        // onclose will fire next, which triggers Web Speech fallback
+        console.error(`[GD][Speech] [Session: ${sessId}] AssemblyAI WebSocket error occurred:`, err);
       };
 
       ws.onclose = () => {
         wsRef.current = null;
+        console.log(`[GD][Speech] [Session: ${sessId}] AssemblyAI WebSocket closed.`);
 
         // Merge any pending interim text into finalRef.current before fallback
         if (interimRef.current && interimRef.current.trim()) {
@@ -574,14 +596,19 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
         }
 
         if (isRecordingRef.current) {
+          console.log(`[GD][Speech] [Session: ${sessId}] Transitioning to WebSpeech fallback...`);
           if (isMountedRef.current) setUsingFallback(true);
+          historicalTranscriptRef.current = finalRef.current;
+          sessionFinalTextRef.current = '';
           startWebSpeech(lang);
         }
       };
 
     } catch (err) {
-      console.warn('[AssemblyAI] unavailable, falling back to Web Speech API:', err.message);
+      console.warn(`[GD][Speech] [Session: ${sessId}] AssemblyAI unavailable, falling back:`, err.message);
       if (isMountedRef.current) setUsingFallback(true);
+      historicalTranscriptRef.current = finalRef.current;
+      sessionFinalTextRef.current = '';
       startWebSpeech(lang);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -599,9 +626,14 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
       await new Promise(r => setTimeout(r, 120));
     }
 
+    const sessId = typeof window !== 'undefined' ? (sessionStorage.getItem('gdSetup') ? JSON.parse(sessionStorage.getItem('gdSetup')).sessionId : 'unknown') : 'unknown';
+    console.log(`[GD][Speech] [Session: ${sessId}] startRecording called, preserveTranscript: ${preserveTranscript}`);
+
     if (!preserveTranscript) {
       // Fresh question — wipe the buffer
       finalRef.current = '';
+      historicalTranscriptRef.current = '';
+      sessionFinalTextRef.current = '';
       interimRef.current = '';
       lastProcessedIndexRef.current = -1;
       if (isMountedRef.current) {
@@ -611,9 +643,11 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
         setFillerWords([]);
         setFillerWordCounts({});
       }
+    } else {
+      historicalTranscriptRef.current = finalRef.current;
+      sessionFinalTextRef.current = '';
+      interimRef.current = '';
     }
-    // If preserveTranscript=true, finalRef retains its accumulated content
-    // and the next spoken words will be appended to it automatically.
 
     try {
       if (isMountedRef.current) {
@@ -693,6 +727,10 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
     toast.success('Transcript exported');
   }, [interimTranscript]);
 
+  const getLatestTranscript = useCallback(() => {
+    return applyCorrections(safeAppend(finalRef.current, interimRef.current));
+  }, []);
+
   // ── Cleanup on unmount ────────────────────────────────────────────────────
   useEffect(() => {
     return () => {
@@ -718,6 +756,7 @@ export function useAssemblyAI({ onVoiceCommand } = {}) {
     usingFallback,
     voiceCommandDetected,
     resetVoiceCommand,
+    getLatestTranscript,
     startRecording,
     stopRecording,
     clearTranscript,

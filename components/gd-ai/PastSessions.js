@@ -101,17 +101,29 @@ export default function PastSessions({ sessions = [], loading = false }) {
 
             {/* Score & View CTA */}
             <div className="flex items-center justify-between sm:justify-end gap-5 border-t border-slate-50 pt-3 sm:border-t-0 sm:pt-0">
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-slate-400 font-semibold hidden sm:inline">Score:</span>
-                <div className={`w-11 h-11 rounded-full flex items-center justify-center font-black text-sm border-2 ${scoreColor}`}>
-                  {session.overallScore}
+              {session.status === 'EVALUATING' ? (
+                <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-1.5 rounded-xl border border-amber-100 animate-pulse">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide">Generating...</span>
                 </div>
-              </div>
+              ) : session.status === 'FAILED' ? (
+                <div className="flex items-center gap-2 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-xl border border-rose-100">
+                  <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide">Failed</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-slate-400 font-semibold hidden sm:inline">Score:</span>
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center font-black text-sm border-2 ${scoreColor}`}>
+                    {session.overallScore}
+                  </div>
+                </div>
+              )}
               <Link 
                 href={`/gd/ai/report/${session.sessionId}`}
                 className="text-xs font-bold text-teal-600 border border-teal-200 hover:bg-teal-50 px-4 py-2 rounded-xl transition-all duration-200"
               >
-                View Report
+                {session.status === 'FAILED' ? 'Retry Report' : 'View Report'}
               </Link>
             </div>
           </div>
