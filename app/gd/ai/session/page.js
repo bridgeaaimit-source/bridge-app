@@ -27,6 +27,7 @@ export default function GDAISessionPage() {
     startRecording,
     stopRecording,
     clearTranscript,
+    getLatestTranscript,
   } = useAssemblyAI();
 
   // Session Config State
@@ -34,6 +35,7 @@ export default function GDAISessionPage() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [evalLoading, setEvalLoading] = useState(false);
+  const [evalStatusText, setEvalStatusText] = useState('');
 
   // Discussion State
   const [turns, setTurns] = useState([]);
@@ -739,10 +741,7 @@ export default function GDAISessionPage() {
     setSpeakerState('ai_thinking');
     stopRecording();
 
-    // Wait a brief window for any final speech transcript commits
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const finalSpeech = fullTranscript || transcript || '';
+    const finalSpeech = getLatestTranscript();
 
     if (finalSpeech.trim()) {
       const studentTurn = {
@@ -821,6 +820,13 @@ export default function GDAISessionPage() {
     if (isEndingRef.current) return;
     isEndingRef.current = true;
 
+    const sessId = setupData?.sessionId || 'unknown';
+    const userId = setupData?.uid || 'unknown';
+    const wasSpeaking = speakerState === 'active';
+    const timestamp = new Date().toISOString();
+
+    console.log(`[GD] [Session: ${sessId}] [User: ${userId}] [State: ${speakerState}] End Session triggered at ${timestamp}.`);
+
     // 1. Pause actions
     isSessionActiveRef.current = false;
     setIsSessionActive(false);
@@ -835,81 +841,194 @@ export default function GDAISessionPage() {
       typingIntervalRef.current = null;
     }
 
-    stopRecording();
+    stopRecording(); // Synchronously commits text from active session to refs
 
     // 2. Open processing loading screen
     setEvalLoading(true);
+    setEvalStatusText('Finalizing speech transcript...');
 
     if (!setupData) {
+      console.warn(`[GD][Navigation] [Session: ${sessId}] [User: ${userId}] No setupData found, redirecting to hub.`);
       router.push('/gd/ai');
       return;
     }
 
+    let finalTurns = [...turnsRef.current];
+
+    if (wasSpeaking) {
+      const activeTranscript = getLatestTranscript();
+      if (activeTranscript.trim()) {
+        console.log(`[GD][Transcript] [Session: ${sessId}] [User: ${userId}] Flushing final speech segment: "${activeTranscript.trim()}"`);
+        const studentTurn = {
+          speakerId: 'student',
+          text: activeTranscript,
+          timestamp: new Date().toISOString(),
+        };
+        finalTurns.push(studentTurn);
+        
+        // Update turns state immediately to reflect in visual components
+        setTurns(finalTurns);
+      }
+    }
+
+    // Save final state status to Firestore as 'EVALUATING' before triggering API
     try {
-      const res = await fetch('/api/gd-ai/evaluate', {
+      console.log(`[GD][Firestore] [Session: ${sessId}] [User: ${userId}] Saving final transcript with status 'EVALUATING'...`);
+      const startWriteTime = performance.now();
+      await fetch('/api/gd-ai/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionId: setupData.sessionId,
-          topic: setupData.topic,
-          category: setupData.category,
-          difficulty: setupData.difficulty,
-          turns: turnsRef.current,
-          elapsedSeconds: elapsedSecondsRef.current,
           uid: setupData.uid,
-          studentName: setupData.studentName,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Evaluation failed');
-      }
-
-      const data = await res.json();
-      toast.success('Evaluation complete!');
-      
-      // Save evaluation to local storage as fallback/local history
-      if (typeof window !== 'undefined') {
-        try {
-          const localSessions = JSON.parse(localStorage.getItem('local_gd_sessions') || '[]');
-          const localRecord = {
-            sessionId: data.sessionId,
+          sessionData: {
+            sessionId: setupData.sessionId,
             topic: setupData.topic,
             category: setupData.category,
             difficulty: setupData.difficulty,
-            type: 'ai_gd',
-            durationSeconds: elapsedSecondsRef.current,
-            overallScore: data.evaluation.overallScore,
-            summary: data.evaluation.summary,
-            strongestMoment: data.evaluation.strongestMoment,
-            growthArea: data.evaluation.growthArea,
-            dimensions: data.evaluation.dimensions,
-            overallAnalysis: data.evaluation.overallAnalysis,
-            transcript: turnsRef.current.map(t => ({
+            turns: finalTurns.map(t => ({
               speakerId: t.speakerId,
               speakerName: t.personaName || t.speakerId,
               text: t.text,
-              type: t.type || 'debate',
+              type: t.type || 'debate'
             })),
-            createdAt: new Date().toISOString(),
-          };
-          const updated = [localRecord, ...localSessions.filter(s => s.sessionId !== data.sessionId)].slice(0, 20);
-          localStorage.setItem('local_gd_sessions', JSON.stringify(updated));
-        } catch (storageErr) {
-          console.warn('Failed to save session to localStorage:', storageErr);
+            durationSeconds: elapsedSecondsRef.current,
+            status: 'EVALUATING'
+          }
+        })
+      });
+      const endWriteTime = performance.now();
+      console.log(`[GD][Firestore] [Session: ${sessId}] [User: ${userId}] Transcript saved successfully in ${(endWriteTime - startWriteTime).toFixed(2)}ms.`);
+    } catch (dbErr) {
+      console.error(`[GD][Firestore] [Session: ${sessId}] [User: ${userId}] Failed to write final transcript progress:`, dbErr);
+    }
+
+    // Attempt AI evaluation with retry limits
+    const maxAttempts = 3;
+    let attempt = 0;
+    let evalSuccess = false;
+    let data = null;
+
+    const startEvalTotalTime = performance.now();
+
+    while (attempt < maxAttempts && !evalSuccess) {
+      attempt++;
+      try {
+        console.log(`[GD][Evaluation] [Session: ${sessId}] [User: ${userId}] Triggering AI evaluation (Attempt ${attempt}/${maxAttempts})...`);
+        setEvalStatusText(`Evaluating performance... (Attempt ${attempt}/${maxAttempts})`);
+
+        const startApiTime = performance.now();
+        const res = await fetch('/api/gd-ai/evaluate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: setupData.sessionId,
+            topic: setupData.topic,
+            category: setupData.category,
+            difficulty: setupData.difficulty,
+            turns: finalTurns,
+            elapsedSeconds: elapsedSecondsRef.current,
+            uid: setupData.uid,
+            studentName: setupData.studentName,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Evaluation failed');
+        }
+
+        data = await res.json();
+        const endApiTime = performance.now();
+        console.log(`[GD][Evaluation] [Session: ${sessId}] [User: ${userId}] Evaluation response received in ${(endApiTime - startApiTime).toFixed(2)}ms.`);
+
+        // Structure Validation of returned AI response
+        if (!data.evaluation || typeof data.evaluation.overallScore !== 'number' || !data.evaluation.dimensions) {
+          throw new Error('AI evaluation payload has a corrupted structure or is missing required scores/dimensions.');
+        }
+
+        evalSuccess = true;
+        console.log(`[GD][Evaluation] [Session: ${sessId}] [User: ${userId}] Evaluation validated successfully.`);
+      } catch (err) {
+        console.warn(`[GD][Evaluation] [Session: ${sessId}] [User: ${userId}] Attempt ${attempt} failed: ${err.message}`);
+        if (attempt >= maxAttempts) {
+          // Failure on last attempt
+          toast.error(`Evaluation failed: ${err.message}. Preserving transcript.`);
+          
+          // Write failed status to Firestore
+          try {
+            await fetch('/api/gd-ai/session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                uid: setupData.uid,
+                sessionData: {
+                  sessionId: setupData.sessionId,
+                  topic: setupData.topic,
+                  category: setupData.category,
+                  difficulty: setupData.difficulty,
+                  turns: finalTurns.map(t => ({
+                    speakerId: t.speakerId,
+                    speakerName: t.personaName || t.speakerId,
+                    text: t.text,
+                    type: t.type || 'debate'
+                  })),
+                  durationSeconds: elapsedSecondsRef.current,
+                  status: 'FAILED'
+                }
+              })
+            });
+          } catch (dbErr) {
+            console.error(`[GD][Firestore] [Session: ${sessId}] [User: ${userId}] Failed to write FAILED session status:`, dbErr);
+          }
+        } else {
+          // Pause before retry
+          await new Promise(r => setTimeout(r, 2000));
         }
       }
-
-      // Navigate to report
-      router.push(`/gd/ai/report/${data.sessionId}`);
-    } catch (err) {
-      console.error('[gd-ai/evaluate] failed:', err);
-      toast.error(`Evaluation failed: ${err.message}. Saving progress.`);
-      router.push('/gd/ai');
-    } finally {
-      setEvalLoading(false);
     }
+
+    const endEvalTotalTime = performance.now();
+    console.log(`[GD][Evaluation] [Session: ${sessId}] [User: ${userId}] Total evaluation logic elapsed time: ${(endEvalTotalTime - startEvalTotalTime).toFixed(2)}ms.`);
+
+    // 3. Local Storage Sync (best-effort backup)
+    if (typeof window !== 'undefined') {
+      try {
+        const localSessions = JSON.parse(localStorage.getItem('local_gd_sessions') || '[]');
+        const localRecord = {
+          sessionId: sessId,
+          topic: setupData.topic,
+          category: setupData.category,
+          difficulty: setupData.difficulty,
+          type: 'ai_gd',
+          durationSeconds: elapsedSecondsRef.current,
+          overallScore: evalSuccess ? data.evaluation.overallScore : 0,
+          summary: evalSuccess ? data.evaluation.summary : 'Evaluation failed. Click to retry.',
+          strongestMoment: evalSuccess ? data.evaluation.strongestMoment : '',
+          growthArea: evalSuccess ? data.evaluation.growthArea : '',
+          dimensions: evalSuccess ? data.evaluation.dimensions : null,
+          overallAnalysis: evalSuccess ? data.evaluation.overallAnalysis : null,
+          transcript: finalTurns.map(t => ({
+            speakerId: t.speakerId,
+            speakerName: t.personaName || t.speakerId,
+            text: t.text,
+            type: t.type || 'debate',
+          })),
+          status: evalSuccess ? 'REPORT_READY' : 'FAILED',
+          createdAt: new Date().toISOString(),
+        };
+        const updated = [localRecord, ...localSessions.filter(s => s.sessionId !== sessId)].slice(0, 20);
+        localStorage.setItem('local_gd_sessions', JSON.stringify(updated));
+      } catch (storageErr) {
+        console.warn(`[GD][Report] [Session: ${sessId}] Failed to write local fallback backup:`, storageErr);
+      }
+    }
+
+    setEvalLoading(false);
+
+    // Redirect to the report page regardless of success
+    // If it failed, the report page will render the Fail Screen with "Retry Evaluation"
+    console.log(`[GD][Navigation] [Session: ${sessId}] [User: ${userId}] Redirecting to report page.`);
+    router.push(`/gd/ai/report/${sessId}`);
   };
 
   const participantConfigs = {
@@ -1047,7 +1166,7 @@ export default function GDAISessionPage() {
           </div>
 
           {/* Immersive Evaluation processing loading layer */}
-          <AnalysisLoader isOpen={evalLoading} />
+          <AnalysisLoader isOpen={evalLoading} statusText={evalStatusText} />
 
         </div>
       </AppShell>

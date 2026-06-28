@@ -17,6 +17,12 @@ export default function GDReportPage({ params: paramsPromise }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showTranscript, setShowTranscript] = useState(false);
+  
+  // Hardened states
+  const [evaluating, setEvaluating] = useState(false);
+  const [evalFailed, setEvalFailed] = useState(false);
+  const [isCorrupted, setIsCorrupted] = useState(false);
+  const [retryAttemptText, setRetryAttemptText] = useState('');
 
   // Resolve user
   useEffect(() => {
@@ -30,27 +36,73 @@ export default function GDReportPage({ params: paramsPromise }) {
     return () => unsubscribe();
   }, [isBypassed, mockUser]);
 
-  // Fetch session data once user is resolved
+  // Fetch session data and start polling if it is evaluating
   useEffect(() => {
     if (!currentUser || !sessionId) return;
 
     const uid = currentUser.uid;
-    setLoading(true);
+    let pollInterval = null;
 
-    fetch(`/api/gd-ai/session?uid=${uid}&sessionId=${sessionId}`)
-      .then((res) => {
+    const fetchSession = async (showLoader = true) => {
+      if (showLoader) setLoading(true);
+      try {
+        console.log(`[GD][Report] [Session: ${sessionId}] Fetching session details from database.`);
+        const startRead = performance.now();
+        const res = await fetch(`/api/gd-ai/session?uid=${uid}&sessionId=${sessionId}`);
         if (!res.ok) throw new Error('Session fetch failed');
-        return res.json();
-      })
-      .then((data) => {
+        const data = await res.json();
+        const endRead = performance.now();
+        console.log(`[GD][Report] [Session: ${sessionId}] Fetch took ${(endRead - startRead).toFixed(2)}ms.`);
+
         if (data.session) {
           setSession(data.session);
+          
+          const status = data.session.status;
+          console.log(`[GD][Report] [Session: ${sessionId}] Session status loaded: ${status}`);
+
+          if (status === 'EVALUATING') {
+            setEvaluating(true);
+            setEvalFailed(false);
+            setIsCorrupted(false);
+            if (!pollInterval) {
+              console.log(`[GD][Report] [Session: ${sessionId}] Report still evaluating, starting database poller...`);
+              pollInterval = setInterval(() => {
+                fetchSession(false);
+              }, 5000);
+            }
+          } else {
+            // Stop polling once ready or failed
+            if (pollInterval) {
+              console.log(`[GD][Report] [Session: ${sessionId}] Poller finished. Status: ${status}`);
+              clearInterval(pollInterval);
+              pollInterval = null;
+            }
+
+            if (status === 'FAILED') {
+              setEvaluating(false);
+              setEvalFailed(true);
+            } else if (status === 'REPORT_READY') {
+              setEvaluating(false);
+              setEvalFailed(false);
+              
+              // Validate schema check
+              const requiredDims = ['communication', 'leadership', 'confidence', 'criticalThinking', 'listening', 'persuasiveness', 'participation', 'collaboration', 'evidenceUsage'];
+              const hasAllDims = data.session.dimensions && requiredDims.every(d => data.session.dimensions[d] && typeof data.session.dimensions[d].score === 'number');
+              const hasAnalysis = data.session.overallAnalysis && typeof data.session.overallAnalysis.totalScore === 'number';
+              if (!hasAllDims || !hasAnalysis) {
+                console.error(`[GD][Report] [Session: ${sessionId}] Validation failed: report is corrupted.`);
+                setIsCorrupted(true);
+              } else {
+                setIsCorrupted(false);
+              }
+            }
+          }
         } else {
-          throw new Error('No session details found');
+          throw new Error('No session details found in Firestore');
         }
-      })
-      .catch((err) => {
-        console.error('Error fetching session:', err);
+      } catch (err) {
+        console.warn(`[GD][Report] [Session: ${sessionId}] Failed to fetch from database, checking local storage backup.`, err.message);
+        
         // Fallback to local storage
         if (typeof window !== 'undefined') {
           try {
@@ -58,6 +110,14 @@ export default function GDReportPage({ params: paramsPromise }) {
             const found = localSessions.find(s => s.sessionId === sessionId);
             if (found) {
               setSession(found);
+              if (found.status === 'FAILED') {
+                setEvaluating(false);
+                setEvalFailed(true);
+              } else {
+                setEvaluating(false);
+                setEvalFailed(false);
+              }
+              setLoading(false);
               return;
             }
           } catch (e) {
@@ -65,11 +125,182 @@ export default function GDReportPage({ params: paramsPromise }) {
           }
         }
         toast.error('Failed to load evaluation details');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+        setSession(null);
+      } finally {
+        if (showLoader) setLoading(false);
+      }
+    };
+
+    fetchSession(true);
+
+    return () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+    };
   }, [currentUser, sessionId]);
+
+  // Trigger manual API retry from the saved transcript
+  const handleRetryEvaluation = async () => {
+    if (!session || !currentUser) return;
+
+    setEvaluating(true);
+    setEvalFailed(false);
+    setIsCorrupted(false);
+    setRetryAttemptText('Starting retry evaluation pipeline...');
+
+    const sessId = session.sessionId;
+    const uid = currentUser.uid;
+
+    try {
+      console.log(`[GD][Evaluation] [Session: ${sessId}] Manual report regeneration requested by user.`);
+      const startRetryTotal = performance.now();
+      
+      // Update Firestore session status to 'EVALUATING'
+      await fetch('/api/gd-ai/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uid: uid,
+          sessionData: {
+            sessionId: sessId,
+            topic: session.topic,
+            category: session.category,
+            difficulty: session.difficulty,
+            turns: session.transcript.map(t => ({
+              speakerId: t.speakerId,
+              speakerName: t.personaName || t.speakerId,
+              text: t.text,
+              type: t.type || 'debate'
+            })),
+            durationSeconds: session.durationSeconds || 600,
+            status: 'EVALUATING'
+          }
+        })
+      });
+
+      // API trigger retry (up to 3 times)
+      const maxAttempts = 3;
+      let attempt = 0;
+      let evalSuccess = false;
+      let data = null;
+
+      while (attempt < maxAttempts && !evalSuccess) {
+        attempt++;
+        try {
+          console.log(`[GD][Evaluation] [Session: ${sessId}] Manual Retry: API call attempt ${attempt}/${maxAttempts}...`);
+          setRetryAttemptText(`Regenerating report... (Attempt ${attempt}/${maxAttempts})`);
+
+          const res = await fetch('/api/gd-ai/evaluate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId: sessId,
+              topic: session.topic,
+              category: session.category,
+              difficulty: session.difficulty,
+              turns: session.transcript,
+              elapsedSeconds: session.durationSeconds || 600,
+              uid: uid,
+              studentName: currentUser.displayName || currentUser.name || 'Candidate',
+            }),
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Evaluation failed');
+          }
+
+          data = await res.json();
+
+          // Validation
+          if (!data.evaluation || typeof data.evaluation.overallScore !== 'number' || !data.evaluation.dimensions) {
+            throw new Error('AI response structure validation failed.');
+          }
+
+          evalSuccess = true;
+          console.log(`[GD][Evaluation] [Session: ${sessId}] Manual Retry: Success.`);
+        } catch (err) {
+          console.warn(`[GD][Evaluation] [Session: ${sessId}] Manual Retry: Attempt ${attempt} failed: ${err.message}`);
+          if (attempt >= maxAttempts) {
+            throw err;
+          } else {
+            await new Promise(r => setTimeout(r, 2000));
+          }
+        }
+      }
+
+      toast.success('Report successfully generated!');
+      const endRetryTotal = performance.now();
+      console.log(`[GD][Evaluation] [Session: ${sessId}] Manual report retry total time: ${(endRetryTotal - startRetryTotal).toFixed(2)}ms.`);
+
+      // Update local storage backup
+      if (typeof window !== 'undefined') {
+        try {
+          const localSessions = JSON.parse(localStorage.getItem('local_gd_sessions') || '[]');
+          const localRecord = {
+            sessionId: sessId,
+            topic: session.topic,
+            category: session.category,
+            difficulty: session.difficulty,
+            type: 'ai_gd',
+            durationSeconds: session.durationSeconds,
+            overallScore: data.evaluation.overallScore,
+            summary: data.evaluation.summary,
+            strongestMoment: data.evaluation.strongestMoment,
+            growthArea: data.evaluation.growthArea,
+            dimensions: data.evaluation.dimensions,
+            overallAnalysis: data.evaluation.overallAnalysis,
+            transcript: session.transcript,
+            status: 'REPORT_READY',
+            createdAt: new Date().toISOString(),
+          };
+          const updated = [localRecord, ...localSessions.filter(s => s.sessionId !== sessId)].slice(0, 20);
+          localStorage.setItem('local_gd_sessions', JSON.stringify(updated));
+        } catch (storageErr) {
+          console.warn('Failed to update local backup:', storageErr);
+        }
+      }
+      
+      // Update UI with newly generated details
+      const finalRes = await fetch(`/api/gd-ai/session?uid=${uid}&sessionId=${sessId}`);
+      if (finalRes.ok) {
+        const finalData = await finalRes.json();
+        if (finalData.session) setSession(finalData.session);
+      }
+      
+      setEvaluating(false);
+      setEvalFailed(false);
+      setIsCorrupted(false);
+    } catch (err) {
+      console.error(`[GD][Evaluation] [Session: ${sessId}] Manual report retry failed completely:`, err);
+      toast.error(`Regeneration failed: ${err.message}`);
+      setEvaluating(false);
+      setEvalFailed(true);
+      
+      // Update Firestore status to FAILED
+      try {
+        await fetch('/api/gd-ai/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uid: uid,
+            sessionData: {
+              sessionId: sessId,
+              topic: session.topic,
+              category: session.category,
+              difficulty: session.difficulty,
+              turns: session.transcript,
+              durationSeconds: session.durationSeconds || 600,
+              status: 'FAILED'
+            }
+          })
+        });
+      } catch (dbErr) {
+        console.error(`[GD][Firestore] [Session: ${sessId}] Failed to update session status to FAILED:`, dbErr);
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -84,19 +315,91 @@ export default function GDReportPage({ params: paramsPromise }) {
     );
   }
 
-  if (!session) {
+  // State-aware loading screen during active AI generation / polling
+  if (evaluating) {
     return (
       <Canvas>
         <AppShell>
-          <div className="max-w-md mx-auto py-20 text-center space-y-4">
-            <div className="text-rose-500 text-5xl font-black">!</div>
-            <h2 className="text-xl font-bold text-slate-800">Report Not Found</h2>
-            <p className="text-xs text-slate-400 font-medium">
-              We couldn't retrieve the details for this discussion practice.
+          <div className="flex flex-col justify-center items-center py-20 min-h-[80vh] space-y-6 text-center max-w-md mx-auto">
+            <div className="relative w-20 h-20">
+              <div className="absolute inset-0 rounded-full bg-teal-500/10 animate-ping" style={{ animationDuration: '3s' }} />
+              <div className="absolute inset-2 rounded-full bg-teal-500/20 animate-pulse" />
+              <div className="absolute inset-4 rounded-full bg-teal-600 flex items-center justify-center text-white shadow-lg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-8 h-8 animate-spin">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                </svg>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-lg font-black text-slate-800">Generating Performance Evaluation</h2>
+              <p className="text-xs text-slate-400 font-medium">
+                BridgeAI is constructing your recruiter-grade dashboard. This takes up to 45 seconds.
+              </p>
+            </div>
+            {retryAttemptText && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold px-3 py-1.5 rounded-lg animate-pulse">
+                ⚠️ status: {retryAttemptText}
+              </div>
+            )}
+          </div>
+        </AppShell>
+      </Canvas>
+    );
+  }
+
+  // State-aware failure / corruption screens with Retry action trigger
+  if (evalFailed || isCorrupted || !session) {
+    return (
+      <Canvas>
+        <AppShell>
+          <div className="max-w-xl mx-auto py-16 text-center space-y-6 bg-white border border-slate-200 rounded-3xl p-8 shadow-sm my-10">
+            <div className="text-rose-500 text-6xl font-black mb-2">!</div>
+            <h2 className="text-xl font-bold text-slate-800">
+              {!session ? 'Report Not Found' : isCorrupted ? 'Evaluation Report Corrupted' : 'Evaluation Generation Failed'}
+            </h2>
+            <p className="text-xs text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
+              {!session 
+                ? "We couldn't retrieve the details for this discussion practice. It may have been deleted or the ID is incorrect." 
+                : isCorrupted
+                  ? "The saved report is missing critical scoring parameters or dimension indices."
+                  : "An unexpected error occurred while analyzing your conversational turns. The transcript was preserved."
+              }
             </p>
-            <Link href="/gd/ai">
-              <Button variant="teal">Back to Hub</Button>
-            </Link>
+
+            {session && (
+              <div className="flex flex-col gap-4 max-w-md mx-auto pt-4">
+                <Button 
+                  onClick={handleRetryEvaluation}
+                  variant="teal" 
+                  className="font-bold py-3 w-full shadow-lg"
+                >
+                  🔄 Regenerate Feedback Report
+                </Button>
+                <button
+                  onClick={() => setShowTranscript(!showTranscript)}
+                  className="text-xs font-semibold text-slate-500 hover:underline"
+                >
+                  {showTranscript ? 'Hide Preserved Transcript' : 'Review Preserved Transcript'}
+                </button>
+
+                {showTranscript && (
+                  <div className="border border-slate-150 rounded-2xl p-4 bg-slate-50/50 max-h-[300px] overflow-y-auto text-left space-y-3">
+                    {session.transcript?.map((t, idx) => (
+                      <div key={idx} className="text-xs">
+                        <span className="font-extrabold text-slate-700 uppercase tracking-wide mr-1.5">{t.speakerName || t.speakerId}:</span>
+                        <span className="text-slate-600 font-medium leading-relaxed italic">"{t.text}"</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="pt-2 border-t border-slate-100 max-w-md mx-auto">
+              <Link href="/gd/ai" className="text-xs font-bold text-teal-600 hover:underline">
+                ← Back to GD Pulse Hub
+              </Link>
+            </div>
           </div>
         </AppShell>
       </Canvas>
@@ -104,9 +407,9 @@ export default function GDReportPage({ params: paramsPromise }) {
   }
 
   const {
-    topic,
-    category,
-    difficulty,
+    topic = '',
+    category = 'General',
+    difficulty = 'intermediate',
     durationSeconds = 600,
     overallScore = 0,
     summary = '',
@@ -116,6 +419,10 @@ export default function GDReportPage({ params: paramsPromise }) {
     overallAnalysis = {},
     transcript = [],
   } = session;
+
+  const safeDimensions = dimensions || {};
+  const safeOverallAnalysis = overallAnalysis || {};
+  const safeTranscript = transcript || [];
 
   const scoreColor = 
     overallScore >= 80 ? 'text-emerald-600 border-emerald-500' :
@@ -203,19 +510,19 @@ export default function GDReportPage({ params: paramsPromise }) {
 
               {/* Strengths & Weaknesses quick tags */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-100 pt-6 mt-6">
-                {overallAnalysis.topStrength && (
+                {safeOverallAnalysis.topStrength && (
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Top Strength</span>
                     <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-xl block truncate border border-emerald-100">
-                      ★ {overallAnalysis.topStrength}
+                      ★ {safeOverallAnalysis.topStrength}
                     </span>
                   </div>
                 )}
-                {overallAnalysis.topWeakness && (
+                {safeOverallAnalysis.topWeakness && (
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Growth Area</span>
                     <span className="text-xs font-bold text-rose-700 bg-rose-50 px-3 py-1 rounded-xl block truncate border border-rose-100">
-                      ⚠ {overallAnalysis.topWeakness}
+                      ⚠ {safeOverallAnalysis.topWeakness}
                     </span>
                   </div>
                 )}
@@ -259,13 +566,13 @@ export default function GDReportPage({ params: paramsPromise }) {
           </div>
 
           {/* Action Items Interactive list */}
-          {overallAnalysis.actionItems && overallAnalysis.actionItems.length > 0 && (
+          {safeOverallAnalysis.actionItems && safeOverallAnalysis.actionItems.length > 0 && (
             <Card className="p-6 border-slate-200/80 space-y-4">
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
                 Your Custom 3-Step Action Plan
               </span>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {overallAnalysis.actionItems.map((item, idx) => (
+                {safeOverallAnalysis.actionItems.map((item, idx) => (
                   <div key={idx} className="bg-white border border-slate-150 rounded-2xl p-4 flex gap-3 shadow-sm hover:border-teal-500/20 transition-all duration-300">
                     <input 
                       type="checkbox" 
@@ -285,7 +592,7 @@ export default function GDReportPage({ params: paramsPromise }) {
           <div className="space-y-4">
             <h2 className="text-lg font-extrabold text-slate-800 tracking-tight">Recruiter Evaluation Dimensions</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Object.entries(dimensions).map(([dimId, dimData]) => (
+              {Object.entries(safeDimensions).map(([dimId, dimData]) => (
                 <DimensionScore key={dimId} dimensionId={dimId} data={dimData} />
               ))}
             </div>
@@ -308,7 +615,7 @@ export default function GDReportPage({ params: paramsPromise }) {
 
             {showTranscript && (
               <Card className="p-6 border-slate-200/80 max-h-[500px] overflow-y-auto space-y-4 bg-slate-50/30">
-                {transcript.map((t, idx) => {
+                {safeTranscript.map((t, idx) => {
                   const isStudent = t.speakerId === 'student';
                   const isMod = t.speakerId === 'moderator';
                   

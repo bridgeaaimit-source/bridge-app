@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react';
  * Props:
  *   isOpen  boolean — whether the loader is visible
  */
-export default function AnalysisLoader({ isOpen = false }) {
+export default function AnalysisLoader({ isOpen = false, statusText = '' }) {
   const steps = [
     { title: 'Processing GD Transcript', desc: 'Reconstructing conversational turns and mapping speaker timeline...' },
     { title: 'Assessing Core Soft Skills', desc: 'Analyzing confidence levels, active listening, and articulation clarity...' },
@@ -91,6 +91,13 @@ export default function AnalysisLoader({ isOpen = false }) {
             />
           </div>
         </div>
+
+        {statusText && (
+          <div className="w-full mb-6 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold px-4 py-2.5 rounded-xl animate-pulse text-left flex items-start gap-2">
+            <span className="mt-0.5">⚠️</span>
+            <span>{statusText}</span>
+          </div>
+        )}
 
         {/* Pipeline Step List */}
         <div className="w-full text-left space-y-4">
