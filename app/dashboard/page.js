@@ -261,7 +261,20 @@ export default function Dashboard() {
             setUserProfile({ college: userData.college || '', name: userData.name || '' });
             
             const score = userData.bridgeScore;
-            currentScoreVal = typeof score === 'number' ? score : parseInt(score) || 0;
+            let currentScoreVal = typeof score === 'number' ? score : parseInt(score) || 0;
+
+            // Double-safe fetch of latest score from subcollection
+            try {
+              const scoresRef = collection(db, "users", user.uid, "bridge_scores");
+              const scoreQuery = query(scoresRef, orderBy("createdAt", "desc"), limit(1));
+              const scoreSnap = await getDocs(scoreQuery);
+              if (!scoreSnap.empty) {
+                currentScoreVal = scoreSnap.docs[0].data().score || currentScoreVal;
+              }
+            } catch (err) {
+              console.error("Error double-checking latest bridge score:", err);
+            }
+
             const userStats = {
               bridgeScore: currentScoreVal,
               interviewsDone: userData.interviewsDone || 0,
@@ -421,10 +434,10 @@ export default function Dashboard() {
 
   const firstName = userName?.split(' ')[0] || 'there';
   
-  // Bridge score calculations (Support both out of 1000 and out of 100 scales)
-  const isOutOf1000 = stats.bridgeScore > 100;
+  // Bridge score calculations (Always out of 1000)
+  const isOutOf1000 = true;
   const scorePercent = stats.bridgeScore 
-    ? (isOutOf1000 ? Math.min(stats.bridgeScore / 10, 100) : Math.min(stats.bridgeScore, 100))
+    ? Math.min(stats.bridgeScore / 10, 100)
     : 0;
   const circumference = 2 * Math.PI * 45;
 
@@ -852,7 +865,7 @@ export default function Dashboard() {
               </div>
 
               <Link 
-                href="/career-gps" 
+                href="/dashboard/bridge-score" 
                 className="w-full text-center text-[10px] font-bold text-[#00C4A7] hover:underline mt-4 pt-2 border-t border-slate-50"
               >
                 View Detailed Analysis →
