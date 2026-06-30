@@ -261,7 +261,20 @@ export default function Dashboard() {
             setUserProfile({ college: userData.college || '', name: userData.name || '' });
             
             const score = userData.bridgeScore;
-            currentScoreVal = typeof score === 'number' ? score : parseInt(score) || 0;
+            let currentScoreVal = typeof score === 'number' ? score : parseInt(score) || 0;
+
+            // Double-safe fetch of latest score from subcollection
+            try {
+              const scoresRef = collection(db, "users", user.uid, "bridge_scores");
+              const scoreQuery = query(scoresRef, orderBy("createdAt", "desc"), limit(1));
+              const scoreSnap = await getDocs(scoreQuery);
+              if (!scoreSnap.empty) {
+                currentScoreVal = scoreSnap.docs[0].data().score || currentScoreVal;
+              }
+            } catch (err) {
+              console.error("Error double-checking latest bridge score:", err);
+            }
+
             const userStats = {
               bridgeScore: currentScoreVal,
               interviewsDone: userData.interviewsDone || 0,
@@ -401,7 +414,7 @@ export default function Dashboard() {
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isBypassed, mockUserData]);
 
   const getActivityIcon = (type) => {
     switch(type) {
@@ -421,10 +434,10 @@ export default function Dashboard() {
 
   const firstName = userName?.split(' ')[0] || 'there';
   
-  // Bridge score calculations (Support both out of 1000 and out of 100 scales)
-  const isOutOf1000 = stats.bridgeScore > 100;
+  // Bridge score calculations (Always out of 1000)
+  const isOutOf1000 = true;
   const scorePercent = stats.bridgeScore 
-    ? (isOutOf1000 ? Math.min(stats.bridgeScore / 10, 100) : Math.min(stats.bridgeScore, 100))
+    ? Math.min(stats.bridgeScore / 10, 100)
     : 0;
   const circumference = 2 * Math.PI * 45;
 
@@ -447,7 +460,7 @@ export default function Dashboard() {
   ];
 
   // Line Chart Data
-  const lineChartData = generateLineChartData(stats.bridgeScore || 96, timeframe);
+  const lineChartData = generateLineChartData(stats.bridgeScore || 0, timeframe);
 
   // Suggested Tasks Config (Select exactly 2 based on user stats priority)
   const getRecommendedTasks = () => {
@@ -806,10 +819,10 @@ export default function Dashboard() {
                 </svg>
                 <div className="absolute flex flex-col items-center">
                   <span className="text-3xl font-extrabold text-slate-800">
-                    {stats.bridgeScore || 96}
+                    {stats.bridgeScore !== undefined ? stats.bridgeScore : "—"}
                   </span>
                   <span className="text-[9px] font-bold text-[#00C4A7] bg-teal-50 px-2 py-0.5 rounded-full mt-1.5 uppercase tracking-wide">
-                    {getScoreRating(stats.bridgeScore || 96)}
+                    {getScoreRating(stats.bridgeScore || 0)}
                   </span>
                   <span className="text-[8px] text-slate-400 font-bold mt-1">TOP 18%</span>
                 </div>
@@ -852,7 +865,7 @@ export default function Dashboard() {
               </div>
 
               <Link 
-                href="/career-gps" 
+                href="/dashboard/bridge-score" 
                 className="w-full text-center text-[10px] font-bold text-[#00C4A7] hover:underline mt-4 pt-2 border-t border-slate-50"
               >
                 View Detailed Analysis →
