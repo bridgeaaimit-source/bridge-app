@@ -790,22 +790,23 @@ export default function AptitudePage() {
           // Update User Doc Profile
           const userRef = doc(db, "users", uid);
           const userSnap = await getDoc(userRef);
-          if (userSnap.exists()) {
+           if (userSnap.exists()) {
             const userData = userSnap.data();
             const newBest = Math.max(userData.aptitudeBestScore || 0, resultData.score);
             const newXP = (userData.totalXP || 0) + xp;
-            const interviewAvg = userData.avgScore || 0;
-            const userStreak = userData.streak || 0;
-            const bridgeScore = Math.min(1000, Math.round(newBest * 0.3 + interviewAvg * 0.5 + userStreak * 2));
             
             await updateDoc(userRef, {
               aptitudeBestScore: newBest,
               totalXP: newXP,
-              bridgeScore,
               lastAptitudeDate: new Date().toISOString(),
             });
             setBestScore(newBest);
             setTotalXP(newXP);
+
+            // Trigger backend Bridge Score recalculation
+            fetch(`/api/bridge-score?userId=${uid}`).catch(err => 
+              console.error("Error refreshing bridge score:", err)
+            );
           }
         }
       } catch (e) {
