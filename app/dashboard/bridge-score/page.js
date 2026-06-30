@@ -19,7 +19,8 @@ import {
   Sliders,
   Sparkles,
   Calendar,
-  Clock
+  Clock,
+  Award
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { onAuthStateChanged } from "firebase/auth";
