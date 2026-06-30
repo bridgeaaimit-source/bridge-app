@@ -142,7 +142,7 @@ export default function AppShell({ children, hideNavigation = false }) {
   }, [isBypassed]);
 
   useEffect(() => {
-    if (userProfile?.role !== 'admin') return;
+    if (userProfile?.role !== 'admin' || isBypassed) return;
 
     const q = query(collection(db, 'tickets'), where('status', '==', 'open'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -150,7 +150,7 @@ export default function AppShell({ children, hideNavigation = false }) {
     });
 
     return () => unsubscribe();
-  }, [userProfile?.role]);
+  }, [userProfile?.role, isBypassed]);
 
   // Listen for unread notifications
   useEffect(() => {

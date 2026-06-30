@@ -68,7 +68,7 @@ export default function SupportWidget() {
 
   // Real-time tickets listener
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    if (!currentUser?.uid || isBypassed) return;
 
     const q = query(
       collection(db, "tickets"),
@@ -92,7 +92,7 @@ export default function SupportWidget() {
     });
 
     return () => unsubscribe();
-  }, [currentUser?.uid]);
+  }, [currentUser?.uid, isBypassed]);
 
   // Calculate unread badge count
   useEffect(() => {
