@@ -30,31 +30,7 @@ export default function AnimatedBackground() {
         transition={{ duration: 15, repeat: Infinity, ease: "linear", delay: 2 }}
       />
 
-      {/* Animated Grid Trains (Tracers) */}
-      <m.div 
-        className="absolute top-[20%] h-[1px] w-[300px] bg-gradient-to-r from-transparent via-[#2DD4BF]/40 to-[#0D9488] dark:to-[#2DD4BF]"
-        style={{ filter: "drop-shadow(0 0 6px rgba(13,148,136,0.6))" }}
-        animate={{ left: ["-20%", "120%"] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-      />
-      <m.div 
-        className="absolute bottom-[30%] h-[1px] w-[400px] bg-gradient-to-l from-transparent via-[#10B981]/40 to-[#059669] dark:to-[#10B981]"
-        style={{ filter: "drop-shadow(0 0 6px rgba(5,150,105,0.6))" }}
-        animate={{ right: ["-20%", "120%"] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "linear", delay: 2 }}
-      />
-      <m.div 
-        className="absolute left-[15%] w-[1px] h-[300px] bg-gradient-to-b from-transparent via-[#2DD4BF]/40 to-[#0D9488] dark:to-[#2DD4BF]"
-        style={{ filter: "drop-shadow(0 0 6px rgba(13,148,136,0.6))" }}
-        animate={{ top: ["-20%", "120%"] }}
-        transition={{ duration: 7, repeat: Infinity, ease: "linear", delay: 1 }}
-      />
-      <m.div 
-        className="absolute right-[25%] w-[1px] h-[400px] bg-gradient-to-t from-transparent via-[#10B981]/40 to-[#059669] dark:to-[#10B981]"
-        style={{ filter: "drop-shadow(0 0 6px rgba(5,150,105,0.6))" }}
-        animate={{ bottom: ["-20%", "120%"] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "linear", delay: 4 }}
-      />
+
 
       {/* Dynamic Aurora Gradient Background Loop */}
       <m.div 

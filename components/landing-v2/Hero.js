@@ -263,7 +263,7 @@ export default function Hero() {
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-            className="relative w-full max-w-md bg-white/80 dark:bg-[#0A1211]/60 backdrop-blur-xl rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-2xl shadow-teal-900/10 dark:shadow-teal-900/20 overflow-hidden"
+            className="relative w-full max-w-md bg-white dark:bg-[#0A1211] rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-2xl shadow-teal-900/10 dark:shadow-teal-900/20 overflow-hidden"
           >
             <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-teal-600 to-emerald-500" />
             
@@ -345,7 +345,7 @@ export default function Hero() {
             </div>
 
             {/* Speech Analysis HUD */}
-            <div className="rounded-2xl border border-gray-100 bg-white/60 dark:border-white/10 dark:bg-white/5 p-4 backdrop-blur-md">
+            <div className="rounded-2xl border border-gray-100 bg-white dark:border-white/10 dark:bg-white/5 p-4">
               <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
                 <MessageSquare className="h-3.5 w-3.5 text-[#0D9488] dark:text-[#2DD4BF]" />
                 <span>LIVE TRANSCRIPT SYNTHESIS</span>
