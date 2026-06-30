@@ -138,6 +138,23 @@ export default function BridgeScoreAnalysis() {
               currentProfileBreakdown = userData.breakdown;
             }
           }
+
+          // Double-safe fetch of latest calculated score from subcollection
+          try {
+            const scoresRef = collection(db, "users", user.uid, "bridge_scores");
+            const scoreQuery = query(scoresRef, orderBy("createdAt", "desc"), limit(1));
+            const scoreSnap = await getDocs(scoreQuery);
+            if (!scoreSnap.empty) {
+              const latestData = scoreSnap.docs[0].data();
+              currentProfileScore = latestData.score || currentProfileScore;
+              if (latestData.breakdown) {
+                currentProfileBreakdown = latestData.breakdown;
+              }
+            }
+          } catch (err) {
+            console.error("Error double-checking latest bridge score for calendar details:", err);
+          }
+
           setCurrentScore(currentProfileScore);
           setCurrentBreakdown(currentProfileBreakdown);
 
