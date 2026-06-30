@@ -899,14 +899,17 @@ function SmartInterviewContent() {
               const newInterviewsDone = (userData.interviewsDone || 0) + 1;
               const overallScore = data.overall_score || 5;
               const newAvgScore = ((userData.avgScore || 0) * (userData.interviewsDone || 0) + overallScore) / newInterviewsDone;
-              const newBridgeScore = Math.min(1000, (userData.bridgeScore || 500) + (overallScore * 10));
               await updateDoc(userRef, {
                 interviewsDone: newInterviewsDone,
                 avgScore: Math.round(newAvgScore * 10) / 10,
-                bridgeScore: newBridgeScore,
                 streak: (userData.streak || 0) + 1,
                 updatedAt: new Date().toISOString()
               });
+
+              // Trigger backend Bridge Score recalculation
+              fetch(`/api/bridge-score?userId=${user.uid}`).catch(err => 
+                console.error("Error refreshing bridge score:", err)
+              );
             }
           } else {
             const mockHistory = JSON.parse(localStorage.getItem('bridge_mock_interview_history') || '[]');
