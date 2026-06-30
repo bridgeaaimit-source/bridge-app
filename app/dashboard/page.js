@@ -7,7 +7,18 @@ import {
   ChevronRight,
   ArrowUpRight,
   ArrowDownRight,
-  TrendingUp
+  TrendingUp,
+  Award,
+  Flame,
+  Star,
+  ClipboardList,
+  Lock,
+  CheckCircle2,
+  BookOpen,
+  Share2,
+  Calendar,
+  Compass,
+  Play
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { onAuthStateChanged } from "firebase/auth";
@@ -19,12 +30,20 @@ import GettingStartedChecklist from "@/components/onboarding/GettingStartedCheck
 import OnboardingTour from "@/components/OnboardingTour";
 import { m } from "framer-motion";
 import { 
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
   Radar, 
   RadarChart, 
   PolarGrid, 
   PolarAngleAxis, 
-  PolarRadiusAxis
+  PolarRadiusAxis,
+  AreaChart,
+  Area
 } from 'recharts';
+
 import {
   TrophyIcon,
   SmartInterviewIcon,
@@ -38,6 +57,7 @@ import {
   BridgeScoreIcon
 } from '@/components/DesignSystem';
 
+// Helper to generate dynamic learning history scores
 const generateDynamicHistory = (latestScore) => {
   const scoreVal = typeof latestScore === 'number' ? latestScore : parseInt(latestScore) || 0;
   
@@ -90,6 +110,61 @@ const generateDynamicHistory = (latestScore) => {
   ];
 };
 
+// Helper to generate Recharts AreaChart data based on timeframe
+const generateLineChartData = (currentScore, timeframe) => {
+  const scoreVal = typeof currentScore === 'number' ? currentScore : parseInt(currentScore) || 0;
+  const points = timeframe === 'week' ? 7 : 30;
+  const data = [];
+  const today = new Date();
+  
+  for (let i = points - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(today.getDate() - i);
+    const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    
+    // Generate a steady progress curve ending at currentScore
+    const progressFactor = 1 - (i / (points - 1)) * 0.25; // Starts at 75% of current score
+    const randomNoise = (Math.sin(i * 1.5) * 0.03); // minor wiggle
+    const score = Math.max(0, Math.round(scoreVal * (progressFactor + randomNoise)));
+    const finalScore = i === 0 ? scoreVal : score;
+    
+    data.push({
+      name: dateStr,
+      score: finalScore
+    });
+  }
+
+  // Calculate day-over-day score differences
+  for (let idx = 0; idx < data.length; idx++) {
+    const prev = idx > 0 ? data[idx - 1].score : data[idx].score;
+    data[idx].change = data[idx].score - prev;
+  }
+  
+  return data;
+};
+
+// Shaded Graph Tooltip component
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    const dataPoint = payload[0].payload;
+    const diff = dataPoint.change;
+    const diffText = diff >= 0 ? `+${diff}` : `${diff}`;
+    
+    return (
+      <div className="bg-slate-900 text-white px-3 py-2 rounded-xl text-[11px] font-bold shadow-xl border border-slate-800">
+        <p className="text-slate-400 font-semibold">{label}</p>
+        <p className="mt-1 flex items-center gap-1.5">
+          Score: <span className="text-[#00C4A7] font-extrabold">{dataPoint.score}</span>
+        </p>
+        <p className="text-[10px] text-slate-400 font-medium">
+          Change: <span className={diff >= 0 ? "text-[#00C4A7]" : "text-red-400"}>{diffText}</span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function Dashboard() {
   const router = useRouter();
   const [greeting, setGreeting] = useState("");
@@ -105,6 +180,8 @@ export default function Dashboard() {
   const [resumeUploaded, setResumeUploaded] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [scoreHistory, setScoreHistory] = useState([]);
+  const [isMounted, setIsMounted] = useState(false);
+  const [timeframe, setTimeframe] = useState("week"); // "week" or "month"
 
   const { isBypassed, mockUserData } = useAuthBypass();
 
@@ -116,14 +193,14 @@ export default function Dashboard() {
     const seconds = Math.floor((new Date() - date) / 1000);
     
     if (seconds < 60) return 'Just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
     return date.toLocaleDateString();
   };
 
   useEffect(() => {
-    // Set greeting regardless of auth mode
+    setIsMounted(true);
     const hour = new Date().getHours();
     let computedGreeting = "Good Evening";
     if (hour < 12) {
@@ -148,10 +225,9 @@ export default function Dashboard() {
       const timerBypass = setTimeout(() => {
         setUserName(mockUserData.user.name);
         setStats(mockUserData.stats);
-        setBridgeScore(mockUserData.stats.bridgeScore);
         setRecentActivity(mockUserData.recentActivity);
-        setLeaderboard(mockUserData.leaderboard);
         setScoreHistory(generateDynamicHistory(mockUserData.stats.bridgeScore));
+        setResumeUploaded(true);
       }, 0);
       return () => {
         clearTimeout(timer);
@@ -164,14 +240,11 @@ export default function Dashboard() {
       if (user) {
         console.log('🔑 Dashboard - User authenticated:', user.uid, user.email);
         try {
-          // Set user name for greeting
           setUserName(user.displayName || 'User');
           
           const userRef = doc(db, 'users', user.uid);
-          console.log('📋 Dashboard - Checking user document...');
           const userSnap = await getDoc(userRef);
           
-          // Always set default stats, then override with Firestore data if exists
           const defaultStats = {
             bridgeScore: 0,
             interviewsDone: 0,
@@ -182,15 +255,11 @@ export default function Dashboard() {
           let currentScoreVal = 0;
           
           if (userSnap.exists()) {
-            console.log('✅ Dashboard - User document exists');
             const userData = userSnap.data();
-            console.log('📊 Dashboard - User data from Firestore:', userData);
-            
-            // Set user name from Firestore (more reliable than displayName)
             setUserName(userData.name || user.displayName || 'User');
-            
             setResumeUploaded(!!userData.resumeUploaded);
             setUserProfile({ college: userData.college || '', name: userData.name || '' });
+            
             const score = userData.bridgeScore;
             currentScoreVal = typeof score === 'number' ? score : parseInt(score) || 0;
             const userStats = {
@@ -199,18 +268,8 @@ export default function Dashboard() {
               currentStreak: userData.streak || 0,
               avgScore: userData.avgScore || 0
             };
-            console.log('📊 Dashboard - Setting stats:', userStats);
             setStats(userStats);
-            setBridgeScore(userStats.bridgeScore);
           } else {
-            console.log('❌ Dashboard - No user data found, creating new user...');
-            console.log('👤 Creating user with data:', {
-              uid: user.uid,
-              name: user.displayName,
-              email: user.email,
-              photo: user.photoURL
-            });
-            
             // Create user document if it doesn't exist
             await setDoc(userRef, {
               uid: user.uid,
@@ -232,11 +291,8 @@ export default function Dashboard() {
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString()
             });
-            
-            console.log('✅ Dashboard - Successfully created new user document');
             setUserName(user.displayName || 'User');
             setStats(defaultStats);
-            setBridgeScore(0);
             currentScoreVal = 0;
           }
 
@@ -266,32 +322,7 @@ export default function Dashboard() {
           
           setRecentActivity(activities);
 
-          // Fetch real leaderboard data (simplified query)
-          const leaderboardQuery = query(
-            collection(db, 'users'),
-            orderBy('bridgeScore', 'desc'),
-            limit(10)
-          );
-          
-          const leaderboardSnapshot = await getDocs(leaderboardQuery);
-          const leaderboardData = [];
-          
-          leaderboardSnapshot.forEach((doc) => {
-            const userData = doc.data();
-            // Only include students in leaderboard
-            if (userData.role === 'student') {
-              leaderboardData.push({
-                rank: leaderboardData.length + 1,
-                name: userData.name || 'Anonymous',
-                college: userData.college || 'Unknown',
-                score: userData.bridgeScore || 0
-              });
-            }
-          });
-          
-          console.log('🏆 Dashboard - Leaderboard data:', leaderboardData);
-
-          // Fetch real score history
+          // Fetch score history
           try {
             const scoreQuery = query(
               collection(db, 'users', user.uid, 'bridge_scores'),
@@ -372,485 +403,583 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
   const getActivityIcon = (type) => {
     switch(type) {
       case 'interview': return SmartInterviewIcon;
       case 'gd': return GDPulseIcon;
-      case 'pulse': return CareerIntelligenceIcon;
-      case 'coach': return PlacementReadinessIcon;
       default: return BridgeScoreIcon;
     }
   };
 
   const getActivityColor = (type) => {
     switch(type) {
-      case 'interview': return 'text-[#14B8A6] bg-[#CCFBF1]/20';
-      case 'gd': return 'text-[#6366F1] bg-[#6366F1]/10';
-      case 'pulse': return 'text-[#06B6D4] bg-[#06B6D4]/10';
-      case 'coach': return 'text-[#8B5CF6] bg-[#8B5CF6]/10';
+      case 'interview': return 'text-[#00C4A7] bg-[#00C4A7]/10';
+      case 'gd': return 'text-purple-600 bg-purple-50';
       default: return 'text-slate-600 bg-slate-50';
     }
   };
 
-  const quickAccessItems = [
-    { label: 'Jobs', href: '/jobs', icon: JobsIcon },
-    { label: 'Aptitude Tests', href: '/aptitude', icon: AptitudeArenaIcon },
-    { label: 'Smart Mock', href: '/smart-interview', icon: SmartInterviewIcon },
-    { label: 'GD Pulse', href: '/pulse', icon: GDPulseIcon },
-    { label: 'Milestones', href: '/career-intelligence', icon: CareerIntelligenceIcon },
-    { label: 'Leaderboard', href: '/leaderboard', icon: TrophyIcon }
-  ];
-
   const firstName = userName?.split(' ')[0] || 'there';
-  const scorePercent = stats.bridgeScore ? Math.min(stats.bridgeScore / 10, 100) : 0;
+  
+  // Bridge score calculations (Support both out of 1000 and out of 100 scales)
+  const isOutOf1000 = stats.bridgeScore > 100;
+  const scorePercent = stats.bridgeScore 
+    ? (isOutOf1000 ? Math.min(stats.bridgeScore / 10, 100) : Math.min(stats.bridgeScore, 100))
+    : 0;
   const circumference = 2 * Math.PI * 45;
 
-  // Recharts Radar Data Bindings
-  const radarData = [
-    { subject: 'Aptitude', value: stats.bridgeScore ? Math.max(30, Math.round(stats.bridgeScore * 0.75) % 100) : 60 },
-    { subject: 'Communication', value: stats.avgScore ? Math.max(30, Math.round(stats.avgScore * 10)) : 70 },
-    { subject: 'Technical', value: stats.bridgeScore ? Math.max(30, Math.round(stats.bridgeScore * 0.8) % 100) : 75 },
-    { subject: 'Resume', value: stats.bridgeScore ? Math.max(30, Math.round(stats.bridgeScore * 0.65) % 100) : 65 },
-    { subject: 'GD', value: stats.bridgeScore ? Math.max(30, Math.round(stats.bridgeScore * 0.7) % 100) : 58 },
-    { subject: 'Domain', value: stats.bridgeScore ? Math.max(30, Math.round(stats.bridgeScore * 0.85) % 100) : 80 }
-  ];
-
-  // Dynamic next action suggestion
-  const getNextAction = () => {
-    if (!resumeUploaded) return { text: "Upload your resume to evaluate placement parameters", pts: 150 };
-    if (stats.interviewsDone === 0) return { text: "Complete 1 Smart Interview to unlock detailed feedback", pts: 40 };
-    if (stats.avgScore < 7) return { text: "Review interview coaching analysis guidelines", pts: 20 };
-    return { text: "Join a Live GD Pulse Battle to claim extra performance ranks", pts: 30 };
+  const getScoreRating = (score) => {
+    const s = isOutOf1000 ? score : score * 10;
+    if (s >= 900) return 'Exceptional';
+    if (s >= 800) return 'Excellent';
+    if (s >= 700) return 'Very Good';
+    if (s >= 600) return 'Good';
+    return 'Placement Prep';
   };
 
-  const nextAction = getNextAction();
+  // Mappings for stats breakdowns (radar spider web score)
+  const radarData = [
+    { subject: 'Aptitude', value: stats.bridgeScore ? Math.min(100, Math.round((stats.bridgeScore * 0.75) % 100)) : 94 },
+    { subject: 'Communication', value: stats.avgScore ? Math.min(100, Math.round(stats.avgScore * 10)) : 96 },
+    { subject: 'Technical', value: stats.bridgeScore ? Math.min(100, Math.round((stats.bridgeScore * 0.8) % 100)) : 92 },
+    { subject: 'Problem Solving', value: stats.bridgeScore ? Math.min(100, Math.round((stats.bridgeScore * 0.73) % 100)) : 97 },
+    { subject: 'Personality', value: stats.bridgeScore ? Math.min(100, Math.round((stats.bridgeScore * 0.68) % 100)) : 95 }
+  ];
+
+  // Line Chart Data
+  const lineChartData = generateLineChartData(stats.bridgeScore || 96, timeframe);
+
+  // Suggested Tasks Config (Select exactly 2 based on user stats priority)
+  const getRecommendedTasks = () => {
+    const tasks = [
+      {
+        title: "Mock Interview",
+        subtitle: "Practice system design & coding questions",
+        xp: "+100 XP",
+        time: "30 min",
+        action: () => router.push('/smart-interview'),
+        priority: stats.interviewsDone < 5 ? 3 : 1
+      },
+      {
+        title: "Aptitude Test",
+        subtitle: "Quantitative & analytical assessment",
+        xp: "+75 XP",
+        time: "20 min",
+        action: () => router.push('/aptitude'),
+        priority: stats.avgScore < 80 ? 3 : 1
+      },
+      {
+        title: "GD Practice",
+        subtitle: "Join a live group discussion room",
+        xp: "+100 XP",
+        time: "45 min",
+        action: () => router.push('/gd/ai'),
+        priority: stats.interviewsDone < 10 ? 2 : 1
+      },
+      {
+        title: "Read News",
+        subtitle: "Stay updated with tech industry trends",
+        xp: "+50 XP",
+        time: "10 min",
+        action: () => router.push('/news-pulse'),
+        priority: 1
+      }
+    ];
+
+    // Sort by priority descending, return any two
+    return tasks.sort((a, b) => b.priority - a.priority).slice(0, 2);
+  };
+
+  const currentTasks = getRecommendedTasks();
+
+  // Placement roadmap parameters
+  const isResumeCompleted = resumeUploaded;
+  const isAptitudeCompleted = stats.avgScore > 0;
+  const isInterviewCompleted = stats.interviewsDone > 0;
+  const isGDCompleted = stats.interviewsDone > 1;
+
+  const showJourneyCard = !(isResumeCompleted && isAptitudeCompleted && isInterviewCompleted && isGDCompleted);
+
+  const journeySteps = [
+    { label: "Resume Score", status: isResumeCompleted ? "Completed" : "Action Required" },
+    { label: "Aptitude", status: isAptitudeCompleted ? "Completed" : "In Progress" },
+    { label: "Interview", status: isInterviewCompleted ? "Completed" : "Pending" },
+    { label: "GD Practice", status: isGDCompleted ? "Completed" : "Pending" }
+  ];
+
+  const completedCount = journeySteps.filter(s => s.status === "Completed").length;
+  const progressPercent = (completedCount / journeySteps.length) * 100;
+
+  // Format Aptitude score nicely
+  const getDisplayAptitude = () => {
+    if (!stats.avgScore) return 96;
+    if (stats.avgScore <= 10) return Math.round(stats.avgScore * 10);
+    return Math.round(stats.avgScore);
+  };
 
   return (
     <AppShell>
       <OnboardingTour />
-      <div className="relative w-full overflow-x-hidden">
-        {/* Abstract Background Tech Art Overlay (Opacity-controlled watermark without mix-blend mode to keep scrolling smooth and lag-free) */}
-        <div 
-          className="fixed inset-0 bg-cover bg-center opacity-[0.10] pointer-events-none z-0" 
-          style={{ backgroundImage: 'url("/images/abstract_tech.png")' }} 
-        />
-        {/* Fine background grid (Fixed) */}
-        <div className="fixed inset-0 bg-[linear-gradient(to_right,#F1F5F9_1px,transparent_1px),linear-gradient(to_bottom,#F1F5F9_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-50 pointer-events-none z-0" />
-        
-        {/* Soft background glows (Fixed) */}
-        <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-[#14B8A6]/5 rounded-full blur-[140px] pointer-events-none z-0" />
-        <div className="fixed bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-100/10 rounded-full blur-[120px] pointer-events-none z-0" />
+      
+      {/* Dynamic ambient glassmesh background */}
+      <div className="fixed inset-0 bg-[linear-gradient(135deg,#f0f7ff_0%,#ffffff_100%)] opacity-30 pointer-events-none z-0" />
+      <div 
+        className="fixed inset-0 bg-cover bg-center opacity-[0.08] pointer-events-none z-0"
+        style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBcTzpqwsf9YotP3ZLEVFduk6XgAjdUsqbZFW_IEjra55hRVBf9bOqiHAQvgiIEXkGkx3eUPkQ7npDBhJFmMAGhLsdvMAfagnUdAHqlSt7aPwLTuY9zJWRDe5z-jBbbFcs5bQp-tgnUQIwqEQNstqQ-0WKYfbCm0oWWbD4TTrlC1kjyjlCwvE0okx_AGMu4Oh1bpRtbUQQ5SLI_7t07zb4wq_XaGTbt5IXr8J94RpQdzdG46Et56j9_7yKfE17dZcEWGACl_gChZ3A")' }} 
+      />
 
-        <div className="relative max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10 z-10">
-          <GettingStartedChecklist stats={stats} userProfile={userProfile} resumeUploaded={resumeUploaded} />
+      <div className="relative max-w-[1240px] mx-auto px-6 py-8 z-10">
+        <GettingStartedChecklist stats={stats} userProfile={userProfile} resumeUploaded={resumeUploaded} />
 
-        {/* ── DESIGN SYSTEM HERO AREA ── */}
-        <div className="bg-gradient-to-br from-white to-[#F8FAFC] rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-6 md:p-8 mb-8 mt-4 flex flex-col lg:flex-row items-center justify-between gap-8 relative overflow-hidden">
-          {/* Breathing ambient glow mesh inside card */}
-          <m.div
-            animate={{ 
-              scale: [1, 1.12, 1], 
-              x: [0, 8, 0], 
-              y: [0, -6, 0] 
-            }}
-            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -right-12 -top-12 w-64 h-64 bg-[#14B8A6]/5 rounded-full blur-3xl pointer-events-none"
-          />
-          <div className="flex-1 space-y-4 text-center lg:text-left">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
+          
+          {/* ── LEFT COLUMN (2/3 WIDTH) ── */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Header Greeting */}
             <div>
-              <p className="text-xs text-slate-400 font-semibold tracking-wider uppercase">{todayDate}</p>
-              <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mt-1">
-                {greeting}, {firstName} 👋
-              </h1>
-              <p className="text-sm text-slate-500 mt-2 max-w-xl">
-                BridgeAI Placement Readiness Operating System. You are currently in the <span className="font-semibold text-[#14B8A6]">Top 18% of candidates</span> in your batch.
-              </p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{todayDate || "TUESDAY, JULY 1, 2025"}</p>
+              <h2 className="text-3xl font-extrabold text-slate-900 mt-1">Good Morning, {firstName}! 👋</h2>
+              <p className="text-sm text-slate-500 mt-1.5">You're making great progress towards your dream placement. Keep up the consistency!</p>
             </div>
 
-            <div className="bg-white border border-slate-100 rounded-xl p-4 flex items-center gap-3 max-w-lg shadow-sm">
-              <div className="w-10 h-10 rounded-full bg-[#CCFBF1]/50 flex items-center justify-center text-[#0D9488] shrink-0">
-                <PlacementReadinessIcon className="w-5 h-5" />
+            {/* 4 Stats Cards Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              
+              {/* Card 1: Aptitude Score */}
+              <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Aptitude Score</p>
+                    <h4 className="text-2xl font-extrabold text-slate-800 mt-1">{getDisplayAptitude()}</h4>
+                  </div>
+                  <div className="w-8 h-8 rounded-xl bg-teal-50 flex items-center justify-center text-[#00C4A7]">
+                    <Award className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center gap-1 text-[10px]">
+                  <span className="font-bold text-[#00C4A7]">↑ 4</span>
+                  <span className="text-slate-400">this week</span>
+                </div>
               </div>
-              <div className="text-left">
-                <p className="text-xs text-slate-400 font-medium">NEXT SCORE ACTION</p>
-                <p className="text-xs font-semibold text-slate-700 mt-0.5">
-                  {nextAction.text} <span className="text-[#14B8A6]">+{nextAction.pts} pts</span>
-                </p>
+
+              {/* Card 2: Mocks Taken */}
+              <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Mocks Taken</p>
+                    <h4 className="text-2xl font-extrabold text-slate-800 mt-1">{stats.interviewsDone || 24}</h4>
+                  </div>
+                  <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center text-purple-500">
+                    <ClipboardList className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center gap-1 text-[10px]">
+                  <span className="font-bold text-purple-600">↑ 5</span>
+                  <span className="text-slate-400">this week</span>
+                </div>
               </div>
+
+              {/* Card 3: Days Streak */}
+              <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Days Streak</p>
+                    <h4 className="text-2xl font-extrabold text-slate-800 mt-1">{stats.currentStreak || 7}</h4>
+                  </div>
+                  <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500">
+                    <Flame className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-4 text-[10px]">
+                  <span className="font-semibold text-orange-500">Keep it going!</span>
+                </div>
+              </div>
+
+              {/* Card 4: Batch Rank */}
+              <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Batch Rank</p>
+                    <h4 className="text-2xl font-extrabold text-slate-800 mt-1">Top 18%</h4>
+                  </div>
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500">
+                    <Star className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center gap-1 text-[10px]">
+                  <span className="font-bold text-blue-600">↑ 4%</span>
+                  <span className="text-slate-400">this week</span>
+                </div>
+              </div>
+
             </div>
 
-            <div className="pt-2">
-              <button 
-                onClick={handleStartChallenge} 
-                className="bg-[#14B8A6] hover:bg-[#0D9488] text-white px-6 py-3.5 rounded-xl font-bold text-sm shadow-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2 mx-auto lg:mx-0"
-              >
-                <span>Start Recommended Practice</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+            {/* Placement Journey Timeline - Auto-hides when all completed */}
+            {showJourneyCard && (
+              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#00C4A7]" /> Placement Journey
+                  </h3>
+                  <button 
+                    onClick={() => router.push('/career-gps')}
+                    className="bg-slate-50 border border-slate-200/60 hover:bg-slate-100 text-slate-700 px-4 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-all"
+                  >
+                    View Roadmap
+                  </button>
+                </div>
 
-          {/* Middle: Floating Abstract Tech Art and Connection Nodes */}
-          <div className="hidden xl:flex items-center justify-center relative w-64 h-48 shrink-0 z-10 select-none">
-            {/* Concentric rotating glowing rings */}
-            <m.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="absolute w-36 h-36 border border-dashed border-teal-500/40 rounded-full flex items-center justify-center"
-            >
-              <div className="w-28 h-28 border border-dashed border-cyan-500/30 rounded-full flex items-center justify-center" />
-            </m.div>
+                <div className="relative flex flex-col md:flex-row items-center justify-between gap-6 py-2">
+                  
+                  {/* Horizontal line indicators */}
+                  <div className="hidden md:block absolute left-6 right-6 top-[22px] h-[3px] bg-slate-100 z-0" />
+                  <div className="hidden md:block absolute left-6 top-[22px] h-[3px] bg-[#00C4A7] z-10 transition-all duration-550"
+                       style={{ width: `${Math.max(10, progressPercent - 12.5)}%` }} />
 
-            <m.div
-              animate={{ rotate: -360 }}
-              transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-              className="absolute w-32 h-32 border border-slate-200/50 rounded-full"
-            />
+                  {journeySteps.map((step, idx) => {
+                    const isCompleted = step.status === "Completed";
+                    const isInProgress = step.status === "In Progress" || step.status === "Action Required";
+                    const isLocked = step.status === "Locked";
+                    
+                    return (
+                      <div key={idx} className="flex md:flex-col items-center gap-3 md:text-center z-20 w-full md:w-auto relative">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm transition-all ${
+                          isCompleted 
+                            ? "bg-[#00C4A7] text-white" 
+                            : isInProgress 
+                            ? "bg-white border-2 border-[#00C4A7] text-[#00C4A7]"
+                            : isLocked
+                            ? "bg-slate-100 text-slate-400 border border-slate-200"
+                            : "bg-white border border-slate-200 text-slate-500"
+                        }`}>
+                          {isCompleted ? "✓" : isLocked ? <Lock className="w-3 h-3" /> : idx + 1}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">{step.label}</p>
+                          <p className={`text-[9px] font-bold mt-0.5 uppercase ${
+                            isCompleted 
+                              ? "text-[#00C4A7]" 
+                              : isInProgress 
+                              ? "text-orange-500" 
+                              : "text-slate-400"
+                          }`}>{step.status}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-            {/* Floating data nodes/cubes */}
-            <m.div
-              animate={{ y: [-6, 6] }}
-              transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-              className="relative w-28 h-28 bg-gradient-to-br from-teal-400/10 to-cyan-500/10 rounded-2xl border border-teal-500/20 backdrop-blur-sm shadow-inner flex items-center justify-center"
-            >
-              {/* Inner glowing core */}
-              <m.div 
-                animate={{ scale: [0.85, 1.05, 0.85] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                className="w-12 h-12 bg-gradient-to-tr from-teal-500 to-cyan-500 rounded-lg shadow-lg flex items-center justify-center text-white font-mono text-xs font-bold"
-              >
-                AI
-              </m.div>
-            </m.div>
-
-            {/* Floating abstract code and target items */}
-            <m.div 
-              animate={{ y: [-8, 8], x: [-3, 3] }}
-              transition={{ duration: 3.2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-              className="absolute -top-1 left-4 bg-white border border-slate-100 rounded-lg p-2 shadow-md flex items-center gap-1.5"
-            >
-              <span className="text-[10px] font-bold text-teal-600 font-mono">&lt;/&gt;</span>
-              <span className="text-[9px] font-semibold text-slate-500">Validation</span>
-            </m.div>
-
-            <m.div 
-              animate={{ y: [8, -8], x: [3, -3] }}
-              transition={{ duration: 3.8, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-              className="absolute bottom-2 right-4 bg-white border border-slate-100 rounded-lg p-2 shadow-md flex items-center gap-1.5"
-            >
-              <TrendingUp className="w-3 h-3 text-[#14B8A6]" />
-              <span className="text-[9px] font-semibold text-slate-500">Employability</span>
-            </m.div>
-
-            <m.div 
-              animate={{ scale: [0.95, 1.05, 0.95] }}
-              transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute top-10 -right-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-full px-2.5 py-0.5 text-[8px] font-bold uppercase tracking-wider shadow-sm"
-            >
-              Active
-            </m.div>
-          </div>
-
-          {/* RADIUS BRIDGE SCORE GAUGE */}
-          <div className="flex flex-col items-center justify-center shrink-0 w-52 h-52 bg-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-50 relative">
-            <svg className="w-40 h-40 -rotate-90" viewBox="0 0 100 100">
-              <defs>
-                <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#14B8A6" />
-                  <stop offset="100%" stopColor="#06B6D4" />
-                </linearGradient>
-              </defs>
-              <circle cx="50" cy="50" r="45" fill="none" stroke="#E2E8F0" strokeWidth="6" />
-              <circle cx="50" cy="50" r="45" fill="none" stroke="url(#scoreGrad)"
-                strokeWidth="6" strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={circumference - (circumference * scorePercent / 100)} 
-                className="transition-all duration-1000"
-              />
-            </svg>
-            <div className="absolute flex flex-col items-center">
-              <span className="text-4xl font-extrabold text-slate-800" style={{ fontFamily: "Syne, sans-serif" }}>
-                {stats.bridgeScore || '—'}
-              </span>
-              <span className="text-[10px] text-[#0D9488] font-bold bg-[#CCFBF1]/50 px-2.5 py-1 rounded-full mt-1.5 uppercase tracking-wide">
-                BRIDGE SCORE
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* ── QUICK ACCESS BAR (HORIZONTAL RIBBON) ── */}
-        <div className="mb-8 overflow-x-auto pb-2 scrollbar-thin">
-          <div className="flex gap-3 min-w-max">
-            {quickAccessItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link 
-                  key={item.label}
-                  href={item.href}
-                  className="flex items-center gap-2.5 bg-white hover:bg-slate-50 border border-slate-200/60 rounded-xl px-4 py-2.5 shadow-sm text-xs font-semibold text-slate-700 transition-all active:scale-[0.98]"
+            {/* Performance Overview (Shaded Recharts Area Chart) */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Performance Overview</h3>
+                  <p className="text-[10px] text-slate-400">Your performance trend over the selected timeframe</p>
+                </div>
+                <select 
+                  value={timeframe}
+                  onChange={(e) => setTimeframe(e.target.value)}
+                  className="bg-slate-50 border border-slate-200/60 rounded-xl text-xs font-semibold px-3 py-1.5 focus:outline-none cursor-pointer"
                 >
-                  <Icon className="w-4 h-4 text-[#14B8A6]" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── TWO COLUMN MAIN GRID ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-
-          {/* Left Column (2/3) */}
-          <div className="lg:col-span-2 flex flex-col gap-6">
-
-            {/* TODAY'S MISSION (DUOLINGO STYLE) */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="space-y-2 text-center md:text-left">
-                <div className="inline-flex items-center gap-1.5 bg-[#CCFBF1]/50 text-[#0D9488] px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                  <StarIcon className="w-3.5 h-3.5" /> {"TODAY'S MISSION"}
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mt-2">
-                  {stats.interviewsDone < 2 ? "Complete Amazon SDE Mock Interview" : "Join Technical GD Battle"}
-                </h3>
-                <p className="text-sm text-slate-500 max-w-md">
-                  Practice data structures, communication tone, and system design variables tailored to hiring bars.
-                </p>
-                <div className="flex items-center gap-3 pt-2 justify-center md:justify-start">
-                  <span className="text-xs text-slate-400">Reward: <span className="font-semibold text-slate-700">+100 XP</span></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-200" />
-                  <span className="text-xs text-slate-400">Score Impact: <span className="font-semibold text-slate-700">+15 Pts</span></span>
-                </div>
+                  <option value="week">This Week</option>
+                  <option value="month">Last Month</option>
+                </select>
               </div>
 
-              <button 
-                onClick={handleStartChallenge} 
-                className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-6 py-3 rounded-xl hover:shadow-md transition-all shrink-0 text-xs flex items-center gap-2"
-              >
-                <span>Launch Mission</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* PLACEMENT JOURNEY TRACKER */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-6">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-6 flex items-center gap-2">
-                <PlacementReadinessIcon className="w-4 h-4 text-[#14B8A6]" /> Placement Journey Tracker
-              </h3>
-
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative">
-                {/* Horizontal line for progress */}
-                <div className="hidden md:block absolute left-4 right-4 h-0.5 bg-slate-100 top-5 z-0" />
-                
-                {[
-                  { label: "Resume Optimizer", status: resumeUploaded ? "Completed" : "Action Required" },
-                  { label: "Mock Interviews", status: stats.interviewsDone > 0 ? "Completed" : "Pending" },
-                  { label: "Aptitude Arena", status: stats.avgScore > 0 ? "Completed" : "Pending" },
-                  { label: "GD Battles", status: stats.interviewsDone > 1 ? "Completed" : "In Progress" },
-                  { label: "Recruiter Ready", status: stats.bridgeScore >= 600 ? "Completed" : "Locked" }
-                ].map((step, idx) => (
-                  <div key={step.label} className="flex md:flex-col items-center gap-3 md:text-center z-10 w-full md:w-auto">
-                    {step.status === "In Progress" ? (
-                      <div className="relative flex items-center justify-center w-10 h-10">
-                        <m.span 
-                          animate={{ scale: [1, 1.35, 1], opacity: [0.5, 0, 0.5] }}
-                          transition={{ duration: 2.2, repeat: Infinity, ease: "easeOut" }}
-                          className="absolute w-12 h-12 rounded-full bg-[#6366F1]/30 z-0"
-                        />
-                        <m.div 
-                          animate={{ scale: [1, 1.04, 1] }}
-                          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-                          className="w-10 h-10 rounded-full bg-[#6366F1] text-white flex items-center justify-center text-xs font-bold shadow-md relative z-10"
-                        >
-                          {idx + 1}
-                        </m.div>
-                      </div>
-                    ) : (
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-sm ${
-                        step.status === "Completed" 
-                          ? "bg-[#14B8A6] text-white" 
-                          : "bg-slate-100 text-slate-400 border border-slate-200"
-                      }`}>
-                        {step.status === "Completed" ? "✓" : idx + 1}
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-xs font-bold text-slate-800 mt-1">{step.label}</p>
-                      <p className={`text-[10px] font-medium mt-0.5 ${
-                        step.status === "Completed" 
-                          ? "text-[#14B8A6]" 
-                          : step.status === "In Progress" 
-                          ? "text-[#6366F1]" 
-                          : "text-slate-400"
-                      }`}>{step.status}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* SCORE HISTORY TRENDS */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-6">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <BridgeScoreIcon className="w-4 h-4 text-[#14B8A6]" /> Score Weekly Trends
-              </h3>
-              <p className="text-xs text-slate-400 mb-6">Analyze how your daily assessments feed back into the core system.</p>
-
-              <div className="flex flex-col gap-4">
-                {scoreHistory.length > 0 ? (
-                  scoreHistory.map((week, idx) => (
-                    <div key={idx} className="flex flex-col gap-2 p-4 bg-[#F8FAFC] border border-slate-100 rounded-xl">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-700">{week.weekDate}</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-extrabold text-slate-800">{week.score}</span>
-                          {week.change > 0 ? (
-                            <span className="flex items-center gap-0.5 text-[10px] font-bold text-[#14B8A6] bg-[#CCFBF1]/50 px-2 py-0.5 rounded-full">
-                              <ArrowUpRight className="w-3 h-3" /> +{week.change}
-                            </span>
-                          ) : week.change < 0 ? (
-                            <span className="flex items-center gap-0.5 text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
-                              <ArrowDownRight className="w-3 h-3" /> {week.change}
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-semibold text-slate-400 bg-slate-200/50 px-2 py-0.5 rounded-full">
-                              0
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {week.details && week.details.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5 mt-1">
-                          {week.details.map((detail, dIdx) => (
-                            <span key={dIdx} className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-md ${
-                              detail.includes("+") 
-                                ? "bg-[#CCFBF1]/40 text-[#0D9488] border border-[#CCFBF1]" 
-                                : "bg-red-50 text-red-500 border border-red-100"
-                            }`}>
-                              {detail}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-[10px] text-slate-400 italic">No score impacting activities logged</div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-6">
-                    <p className="text-xs text-slate-400">Complete an interview or assessment to calculate weekly trends.</p>
-                  </div>
+              <div className="w-full h-64 mt-4 relative">
+                {isMounted && (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={lineChartData} margin={{ top: 15, right: 15, left: -25, bottom: 5 }}>
+                      <defs>
+                        <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#00C4A7" stopOpacity={0.25}/>
+                          <stop offset="95%" stopColor="#00C4A7" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid stroke="#f1f5f9" vertical={false} />
+                      <XAxis 
+                        dataKey="name" 
+                        tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} 
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis 
+                        domain={isOutOf1000 ? [0, 1000] : [0, 100]} 
+                        ticks={isOutOf1000 ? [0, 250, 500, 750, 1000] : [0, 25, 50, 75, 100]}
+                        tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Area 
+                        type="monotone" 
+                        dataKey="score" 
+                        stroke="#00C4A7" 
+                        strokeWidth={3} 
+                        fillOpacity={1} 
+                        fill="url(#colorScore)"
+                        dot={{ r: timeframe === 'week' ? 4 : 2, strokeWidth: 2, fill: "#fff" }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Right Column (1/3) */}
-          <div className="flex flex-col gap-6">
-
-            {/* SKILLS RADAR (RECHARTS CHART) */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-6 flex flex-col items-center">
-              <div className="w-full mb-4">
-                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Skills Radar Profile</h3>
-                <p className="text-[10px] text-slate-400">6 Dimension Competency Vectors</p>
+            {/* Today's Recommended Tasks (Any Two) */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4 text-[#00C4A7]" /> Today's Recommended Tasks
+                </h3>
+                <span className="text-[10px] font-bold text-slate-400 bg-slate-50 border border-slate-200/50 px-2.5 py-1 rounded-full uppercase">
+                  2 tasks recommended
+                </span>
               </div>
 
-              <div className="w-full h-52 relative flex items-center justify-center overflow-hidden">
-                <RadarChart width={300} height={208} cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                  <PolarGrid stroke="#E2E8F0" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 10, fontWeight: 600 }} />
-                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} />
-                  <Radar name="Readiness" dataKey="value" stroke="#14B8A6" fill="#14B8A6" fillOpacity={0.2} />
-                </RadarChart>
-              </div>
-
-              <Link 
-                href="/career-intelligence" 
-                className="w-full text-center text-xs text-[#14B8A6] font-semibold bg-[#CCFBF1]/20 hover:bg-[#CCFBF1]/40 py-2.5 rounded-xl transition-all mt-4 border border-[#CCFBF1]/30"
-              >
-                View Detailed Recommendations →
-              </Link>
-            </div>
-
-            {/* STREAK CALENDAR (DUOLINGO STYLE) */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-6">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-2">
-                <StreakIcon className="w-4 h-4 text-[#14B8A6]" /> Practice Streak
-              </h3>
-              <p className="text-[10px] text-slate-400 mb-4">Complete daily tasks to protect your score multiplier.</p>
-
-              <div className="flex items-center justify-between bg-[#F8FAFC] border border-slate-100 rounded-xl p-4 mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-500">
-                    <StreakIcon className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-700">{stats.currentStreak} Day Streak</p>
-                    <p className="text-[10px] text-slate-400">Keep it going!</p>
-                  </div>
-                </div>
-                <div className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  MULTIPLIER x1.2
-                </div>
-              </div>
-
-              {/* Display streak week map placeholder */}
-              <div className="grid grid-cols-7 gap-2 text-center text-[10px] font-bold text-slate-500">
-                {['M','T','W','T','F','S','S'].map((day, idx) => (
-                  <div key={idx} className="flex flex-col gap-1.5 items-center">
-                    <span>{day}</span>
-                    {idx < stats.currentStreak ? (
-                      <m.div 
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: idx * 0.1, type: "spring", stiffness: 100 }}
-                        className="w-6 h-6 rounded-full flex items-center justify-center bg-[#14B8A6] text-white shadow-sm font-semibold"
-                      >
-                        ✓
-                      </m.div>
-                    ) : (
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center bg-slate-100 border border-slate-200 text-slate-300 font-semibold">
-                        
+              <div className="space-y-3 mt-4">
+                {currentTasks.map((task, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-4 bg-slate-50/50 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-colors duration-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-[#00C4A7]">
+                        <Compass className="w-5 h-5" />
                       </div>
-                    )}
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-800">{task.title}</h4>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{task.subtitle}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <span className="text-[10px] font-bold text-[#00C4A7] bg-teal-50 px-2 py-0.5 rounded-md">{task.xp}</span>
+                        <p className="text-[9px] text-slate-400 mt-1 font-semibold">{task.time}</p>
+                      </div>
+                      <button 
+                        onClick={task.action}
+                        className="bg-white border border-slate-200/60 hover:border-[#00C4A7] hover:text-[#00C4A7] text-slate-700 px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm transition-all"
+                      >
+                        Start Now
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
+              
+              <div className="mt-4 text-center">
+                <button 
+                  onClick={() => router.push('/career-intelligence')}
+                  className="text-[11px] font-bold text-[#00C4A7] hover:underline"
+                >
+                  View All Tasks →
+                </button>
+              </div>
             </div>
 
-            {/* RECENT ACTIVITY */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-6">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-5">Recent Activity</h3>
-              <div className="flex flex-col gap-4">
+          </div>
+
+          {/* ── RIGHT COLUMN (1/3 WIDTH) ── */}
+          <div className="space-y-6">
+            
+            {/* Bridge Score Circle Gauge & Spider Web Radar Chart */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col items-center">
+              <div className="w-full mb-2">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <Award className="w-4 h-4 text-[#00C4A7]" /> Bridge Score
+                </h3>
+              </div>
+
+              {/* Circular SVG Gauge */}
+              <div className="relative w-40 h-40 mt-2 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="#f1f5f9" strokeWidth="7" />
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="#00C4A7"
+                    strokeWidth="7" strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={circumference - (circumference * scorePercent / 100)} 
+                    className="transition-all duration-1000"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center">
+                  <span className="text-3xl font-extrabold text-slate-800">
+                    {stats.bridgeScore || 96}
+                  </span>
+                  <span className="text-[9px] font-bold text-[#00C4A7] bg-teal-50 px-2 py-0.5 rounded-full mt-1.5 uppercase tracking-wide">
+                    {getScoreRating(stats.bridgeScore || 96)}
+                  </span>
+                  <span className="text-[8px] text-slate-400 font-bold mt-1">TOP 18%</span>
+                </div>
+              </div>
+
+              {/* Spider Web Radar Chart (Aptitude & Other breakdowns) */}
+              <div className="w-full mt-6 border-t border-slate-50 pt-4 flex flex-col items-center">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider self-start mb-2">Skill Profile</p>
+                
+                <div className="w-full h-52 flex items-center justify-center relative">
+                  {isMounted && (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart cx="50%" cy="50%" outerRadius="65%" data={radarData}>
+                        <PolarGrid stroke="#f1f5f9" />
+                        <PolarAngleAxis 
+                          dataKey="subject" 
+                          tick={{ fill: '#64748b', fontSize: 9, fontWeight: 'bold' }} 
+                        />
+                        <PolarRadiusAxis 
+                          angle={30} 
+                          domain={[0, 100]} 
+                          tick={false} 
+                          axisLine={false} 
+                        />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#0F172A', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '10px' }}
+                          itemStyle={{ color: '#00C4A7', fontWeight: 'bold' }}
+                        />
+                        <Radar 
+                          name="Score" 
+                          dataKey="value" 
+                          stroke="#00C4A7" 
+                          fill="#00C4A7" 
+                          fillOpacity={0.2} 
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+
+              <Link 
+                href="/career-gps" 
+                className="w-full text-center text-[10px] font-bold text-[#00C4A7] hover:underline mt-4 pt-2 border-t border-slate-50"
+              >
+                View Detailed Analysis →
+              </Link>
+            </div>
+
+            {/* Practice Streak */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 mb-2">
+                <Flame className="w-4 h-4 text-orange-500" /> Practice Streak
+              </h3>
+              <p className="text-[10px] font-extrabold text-slate-700">{stats.currentStreak || 7} Day Streak</p>
+              <p className="text-[9px] text-slate-400 mt-0.5">Amazing consistency! Protect your score multiplier.</p>
+
+              {/* Duolingo Calendar Map */}
+              <div className="grid grid-cols-7 gap-2 text-center text-[9px] font-bold text-slate-500 mt-4 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                {['M','T','W','T','F','S','S'].map((day, idx) => {
+                  const limitVal = stats.currentStreak || 7;
+                  const isChecked = idx < limitVal;
+                  
+                  return (
+                    <div key={idx} className="flex flex-col gap-1.5 items-center">
+                      <span>{day}</span>
+                      {isChecked ? (
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center bg-[#00C4A7] text-white shadow-sm text-[10px]">
+                          ✓
+                        </div>
+                      ) : (
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center bg-white border border-slate-200 text-slate-300">
+                          
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Recent Activity</h3>
+                <button className="text-[10px] font-bold text-[#00C4A7] hover:underline">View All</button>
+              </div>
+
+              <div className="space-y-4 mt-2">
                 {recentActivity.length > 0 ? (
-                  recentActivity.slice(0, 4).map((activity, i) => {
+                  recentActivity.slice(0, 3).map((activity, i) => {
                     const Icon = getActivityIcon(activity.type);
                     return (
-                      <div key={i} className="flex items-start gap-3">
+                      <div key={i} className="flex items-start gap-3 group">
                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${getActivityColor(activity.type)}`}>
                           <Icon className="w-4 h-4" />
                         </div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-800">{activity.title}</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">{activity.score ? `Scored ${activity.score} • ` : ''}{activity.time}</p>
+                        <div className="flex-grow border-b border-slate-50 pb-2">
+                          <p className="text-xs font-bold text-slate-850">{activity.title}</p>
+                          <p className="text-[9px] text-slate-400 mt-0.5">
+                            {activity.score ? `Scored ${activity.score} • ` : ''}{activity.time}
+                          </p>
                         </div>
                       </div>
                     );
                   })
                 ) : (
-                  <div className="text-center py-6">
-                    <p className="text-xs text-slate-400 mb-3">No activity logged yet — start your first mock!</p>
-                    <Link href="/smart-interview" className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#14B8A6] text-white text-xs rounded-xl font-bold hover:shadow-sm">
-                      Take first mock <ChevronRight className="w-3 h-3" />
-                    </Link>
+                  <div className="flex gap-3 group">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-purple-600 bg-purple-50">
+                      <SmartInterviewIcon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-grow border-b border-slate-50 pb-2">
+                      <p className="text-xs font-bold text-slate-800">Mock Interview Completed</p>
+                      <p className="text-[9px] text-slate-400 mt-0.5">Frontend Developer Role</p>
+                      <span className="text-[8px] text-slate-400 font-bold uppercase">2h ago</span>
+                    </div>
                   </div>
+                )}
+                
+                {recentActivity.length === 0 && (
+                  <>
+                    <div className="flex gap-3 group">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-[#00C4A7] bg-[#00C4A7]/10">
+                        <GDPulseIcon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-grow border-b border-slate-50 pb-2">
+                        <p className="text-xs font-bold text-slate-800">GD Practice Session</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">Technical GD - AI Ethics</p>
+                        <span className="text-[8px] text-slate-400 font-bold uppercase">5h ago</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 group">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-blue-500 bg-blue-50">
+                        <Compass className="w-4 h-4" />
+                      </div>
+                      <div className="flex-grow pb-2">
+                        <p className="text-xs font-bold text-slate-800">Resume Updated</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">Software Engineer Resume</p>
+                        <span className="text-[8px] text-slate-400 font-bold uppercase">1d ago</span>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
+
+            {/* Recommended for You */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Recommended for You</h3>
+                <button className="text-[10px] font-bold text-[#00C4A7] hover:underline">View All</button>
+              </div>
+
+              <div className="flex gap-3 bg-slate-50/50 border border-slate-100 rounded-2xl p-4">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div className="flex-grow">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md uppercase">Advanced</span>
+                    <span className="text-[9px] font-bold text-orange-500">★ 4.8</span>
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-800 mt-1.5">System Design Masterclass</h4>
+                  <p className="text-[9px] text-slate-400 font-semibold mt-1">2.5k students enrolled</p>
+                </div>
+              </div>
+            </div>
+
           </div>
-        </div>
+
         </div>
       </div>
     </AppShell>
