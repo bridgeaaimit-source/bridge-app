@@ -414,7 +414,7 @@ export default function Dashboard() {
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isBypassed, mockUserData]);
 
   const getActivityIcon = (type) => {
     switch(type) {
@@ -460,7 +460,7 @@ export default function Dashboard() {
   ];
 
   // Line Chart Data
-  const lineChartData = generateLineChartData(stats.bridgeScore || 96, timeframe);
+  const lineChartData = generateLineChartData(stats.bridgeScore || 0, timeframe);
 
   // Suggested Tasks Config (Select exactly 2 based on user stats priority)
   const getRecommendedTasks = () => {
@@ -819,10 +819,10 @@ export default function Dashboard() {
                 </svg>
                 <div className="absolute flex flex-col items-center">
                   <span className="text-3xl font-extrabold text-slate-800">
-                    {stats.bridgeScore || 96}
+                    {stats.bridgeScore !== undefined ? stats.bridgeScore : "—"}
                   </span>
                   <span className="text-[9px] font-bold text-[#00C4A7] bg-teal-50 px-2 py-0.5 rounded-full mt-1.5 uppercase tracking-wide">
-                    {getScoreRating(stats.bridgeScore || 96)}
+                    {getScoreRating(stats.bridgeScore || 0)}
                   </span>
                   <span className="text-[8px] text-slate-400 font-bold mt-1">TOP 18%</span>
                 </div>
