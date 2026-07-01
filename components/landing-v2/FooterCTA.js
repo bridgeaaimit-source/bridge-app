@@ -131,8 +131,12 @@ export default function FooterCTA() {
           <div>
             <p className="font-bold text-gray-900 dark:text-white mb-4">Company</p>
             <ul className="space-y-3 font-medium">
+              <li>
+                <Link href="/about" className="text-gray-500 dark:text-slate-400 hover:text-[#0D9488] dark:hover:text-[#2DD4BF] transition-colors cursor-pointer">
+                  About
+                </Link>
+              </li>
               {[
-                "About",
                 "Blog",
                 "Careers",
                 "Press"

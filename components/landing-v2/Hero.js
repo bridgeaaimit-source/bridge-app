@@ -81,7 +81,7 @@ export default function Hero() {
   const scale = useTransform(scrollY, [0, 600], [1.02, 0.90]);
   const mockupY = useTransform(scrollY, [0, 600], [0, 40]);
   const gridY = useTransform(scrollY, [0, 600], [0, -40]);
-  const heroOpacity = useTransform(scrollY, [0, 500], [1, 0]);
+  const heroOpacity = 1;
   const heroScale = useTransform(scrollY, [0, 500], [1, 0.95]);
   const heroY = useTransform(scrollY, [0, 500], [0, -30]);
 
