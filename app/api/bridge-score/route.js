@@ -1,5 +1,6 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { calculateBridgeScore } from '@/lib/bridgeScoreEngine';
+import { calculateCurrentStreak } from '@/lib/refreshBridgeScore';
 import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -99,6 +100,8 @@ export async function GET(request) {
 
     const bridgeScoreResult = calculateBridgeScore(candidateData);
 
+    const calculatedStreak = await calculateCurrentStreak(userId, adminDb);
+
     // Save the new score calculation asynchronously (fire and forget)
     // Only save if it's a valid calculated score (not null from empty data)
     if (bridgeScoreResult.score !== null) {
@@ -110,12 +113,16 @@ export async function GET(request) {
         }),
         userRef.update({
           bridgeScore: bridgeScoreResult.score,
-          breakdown: bridgeScoreResult.breakdown
+          breakdown: bridgeScoreResult.breakdown,
+          streak: calculatedStreak
         })
       ]).catch(console.error);
     }
 
-    return NextResponse.json(bridgeScoreResult);
+    return NextResponse.json({
+      ...bridgeScoreResult,
+      streak: calculatedStreak
+    });
 
   } catch (error) {
     console.error('Error calculating Bridge Score:', error);

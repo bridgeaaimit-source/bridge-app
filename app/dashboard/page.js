@@ -23,7 +23,7 @@ import {
 import AppShell from "@/components/AppShell";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { doc, collection, query, orderBy, limit, getDocs, getDoc, setDoc } from "firebase/firestore";
+import { doc, collection, query, orderBy, limit, getDocs, getDoc, setDoc, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
 import GettingStartedChecklist from "@/components/onboarding/GettingStartedChecklist";
@@ -282,6 +282,20 @@ export default function Dashboard() {
               avgScore: userData.avgScore || 0
             };
             setStats(userStats);
+
+            // Trigger background recalculation of Bridge Score & Streak
+            fetch(`/api/bridge-score?userId=${user.uid}`)
+              .then(res => res.json())
+              .then(data => {
+                if (data && data.score !== undefined) {
+                  setStats(prev => ({
+                    ...prev,
+                    bridgeScore: data.score || prev.bridgeScore,
+                    currentStreak: data.streak !== undefined ? data.streak : prev.currentStreak
+                  }));
+                }
+              })
+              .catch(err => console.error("Error refreshing bridge stats on load:", err));
           } else {
             // Create user document if it doesn't exist
             await setDoc(userRef, {
@@ -309,31 +323,65 @@ export default function Dashboard() {
             currentScoreVal = 0;
           }
 
-          // Fetch recent interview sessions
-          const sessionsQuery = query(
-            collection(db, 'interviews', user.uid, 'sessions'),
-            orderBy('date', 'desc'),
-            limit(5)
-          );
-          
-          const sessionsSnapshot = await getDocs(sessionsQuery);
+          // Fetch recent completed activities in parallel (Interviews, GDs, Aptitudes)
           const activities = [];
-          
-          sessionsSnapshot.forEach((doc) => {
-            const sessionData = doc.data();
-            const date = new Date(sessionData.date);
-            const timeAgo = getTimeAgo(date);
-            
-            activities.push({
-              type: 'interview',
-              title: `${sessionData.domain} Interview`,
-              time: timeAgo,
-              score: sessionData.score,
-              date: sessionData.date
+          try {
+            const interviewsRef = collection(db, 'users', user.uid, 'interview_feedback');
+            const interviewsQuery = query(interviewsRef, orderBy('createdAt', 'desc'), limit(5));
+            const gdRef = collection(db, 'users', user.uid, 'gd_sessions');
+            const gdQuery = query(gdRef, orderBy('createdAt', 'desc'), limit(5));
+            const aptRef = collection(db, 'aptitudeScores');
+            const aptQuery = query(aptRef, where('uid', '==', user.uid), orderBy('completedAt', 'desc'), limit(5));
+
+            const [interviewsSnap, gdSnap, aptSnap] = await Promise.all([
+              getDocs(interviewsQuery).catch(() => ({ empty: true, docs: [] })),
+              getDocs(gdQuery).catch(() => ({ empty: true, docs: [] })),
+              getDocs(aptQuery).catch(() => ({ empty: true, docs: [] }))
+            ]);
+
+            interviewsSnap.docs?.forEach(doc => {
+              const data = doc.data();
+              const dateVal = data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt)) : new Date();
+              activities.push({
+                type: 'interview',
+                title: `Mock Interview: ${data.round || data.type || 'Standard'}`,
+                time: getTimeAgo(dateVal),
+                score: data.feedback?.scores?.answer_quality || data.feedback?.overall_score || data.score || 0,
+                date: dateVal
+              });
             });
-          });
-          
-          setRecentActivity(activities);
+
+            gdSnap.docs?.forEach(doc => {
+              const data = doc.data();
+              if (data.status === 'REPORT_READY') {
+                const dateVal = data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt)) : new Date();
+                activities.push({
+                  type: 'gd',
+                  title: `Group Discussion: ${data.topic || 'AI Evaluation'}`,
+                  time: getTimeAgo(dateVal),
+                  score: data.score || 0,
+                  date: dateVal
+                });
+              }
+            });
+
+            aptSnap.docs?.forEach(doc => {
+              const data = doc.data();
+              const dateVal = data.completedAt ? (data.completedAt.toDate ? data.completedAt.toDate() : new Date(data.completedAt)) : new Date();
+              activities.push({
+                type: 'aptitude',
+                title: `Aptitude Test: ${data.section || 'General'}`,
+                time: getTimeAgo(dateVal),
+                score: data.score || 0,
+                date: dateVal
+              });
+            });
+
+            activities.sort((a, b) => b.date - a.date);
+          } catch (err) {
+            console.error("Error loading recent activities:", err);
+          }
+          setRecentActivity(activities.slice(0, 5));
 
           // Fetch score history
           try {
@@ -420,6 +468,7 @@ export default function Dashboard() {
     switch(type) {
       case 'interview': return SmartInterviewIcon;
       case 'gd': return GDPulseIcon;
+      case 'aptitude': return AptitudeArenaIcon;
       default: return BridgeScoreIcon;
     }
   };
@@ -428,6 +477,7 @@ export default function Dashboard() {
     switch(type) {
       case 'interview': return 'text-[#00C4A7] bg-[#00C4A7]/10';
       case 'gd': return 'text-purple-600 bg-purple-50';
+      case 'aptitude': return 'text-blue-600 bg-blue-50';
       default: return 'text-slate-600 bg-slate-50';
     }
   };
@@ -552,7 +602,7 @@ export default function Dashboard() {
             {/* Header Greeting */}
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{todayDate || "TUESDAY, JULY 1, 2025"}</p>
-              <h2 className="text-3xl font-extrabold text-slate-900 mt-1">Good Morning, {firstName}! 👋</h2>
+              <h2 className="text-3xl font-extrabold text-slate-900 mt-1">{greeting}, {firstName}!</h2>
               <p className="text-sm text-slate-500 mt-1.5">You're making great progress towards your dream placement. Keep up the consistency!</p>
             </div>
 
@@ -969,27 +1019,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Recommended for You */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Recommended for You</h3>
-                <button className="text-[10px] font-bold text-[#00C4A7] hover:underline">View All</button>
-              </div>
 
-              <div className="flex gap-3 bg-slate-50/50 border border-slate-100 rounded-2xl p-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <div className="flex-grow">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md uppercase">Advanced</span>
-                    <span className="text-[9px] font-bold text-orange-500">★ 4.8</span>
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-800 mt-1.5">System Design Masterclass</h4>
-                  <p className="text-[9px] text-slate-400 font-semibold mt-1">2.5k students enrolled</p>
-                </div>
-              </div>
-            </div>
 
           </div>
 
