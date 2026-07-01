@@ -65,7 +65,7 @@ export default function Navbar() {
             ["/students", "For Students"],
             ["/#features", "Platform"],
             ["/#pricing", "Pricing"],
-            ["/#about-us", "About Us"],
+            ["/about", "About Us"],
           ].map(([href, label]) => {
             const isExternal = href.startsWith('/') && !href.startsWith('/#');
             return isExternal ? (
@@ -146,7 +146,7 @@ export default function Navbar() {
                 ["/students", "For Students"],
                 ["/#features", "Platform"],
                 ["/#pricing", "Pricing"],
-                ["/#about-us", "About Us"],
+                ["/about", "About Us"],
               ].map(([href, label]) => {
                 const isExternal = href.startsWith('/') && !href.startsWith('/#');
                 return isExternal ? (

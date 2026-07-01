@@ -13,7 +13,6 @@ const GDShowcase = dynamic(() => import("@/components/landing-v2/GDShowcase"));
 const AudienceSegmentation = dynamic(() => import("@/components/landing-v2/AudienceSegmentation"));
 const ProductDemo = dynamic(() => import("@/components/landing-v2/ProductDemo"));
 const PricingPreview = dynamic(() => import("@/components/landing-v2/PricingPreview"));
-const TrustSection = dynamic(() => import("@/components/landing-v2/TrustSection"));
 const FooterCTA = dynamic(() => import("@/components/landing-v2/FooterCTA"));
 
 export default function Home() {
@@ -67,10 +66,7 @@ export default function Home() {
           <PricingPreview />
         </ScrollReveal>
 
-        {/* 10. Trust & Credibility Section */}
-        <ScrollReveal margin="-120px">
-          <TrustSection />
-        </ScrollReveal>
+
 
         {/* Footer & Address Block */}
         <FooterCTA />

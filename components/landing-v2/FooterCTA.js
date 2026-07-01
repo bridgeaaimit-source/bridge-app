@@ -131,8 +131,12 @@ export default function FooterCTA() {
           <div>
             <p className="font-bold text-gray-900 dark:text-white mb-4">Company</p>
             <ul className="space-y-3 font-medium">
+              <li>
+                <Link href="/about" className="text-gray-500 dark:text-slate-400 hover:text-[#0D9488] dark:hover:text-[#2DD4BF] transition-colors cursor-pointer">
+                  About
+                </Link>
+              </li>
               {[
-                "About",
                 "Blog",
                 "Careers",
                 "Press"
@@ -147,15 +151,12 @@ export default function FooterCTA() {
           <div>
             <p className="font-bold text-gray-900 dark:text-white mb-4">Contact Us</p>
             <div className="space-y-3 text-xs leading-relaxed">
-              <span className="block font-bold text-gray-900 dark:text-white">Bridgeconnex Technologies Private Limited</span>
               <span className="block text-gray-500 dark:text-slate-400">
-                Unit No 441, Fourth Floor,<br />
-                Lodha Signet 1, Kolshet Road,<br />
-                Thane, Maharashtra, India
+                Pune, Maharashtra, India
               </span>
               <span className="block text-gray-500 dark:text-slate-400">
-                Phone: <a href="tel:+919920580247" className="hover:text-[#0D9488] font-bold">+91 99205 80247</a><br />
-                Email: <a href="mailto:sales@bridgeai.in" className="hover:text-[#0D9488] font-bold">sales@bridgeai.in</a>
+                Phone: <a href="tel:+919571657890" className="hover:text-[#0D9488] font-bold">+919571657890</a><br />
+                Email: <a href="mailto:bridgeaimit@gmail.com" className="hover:text-[#0D9488] font-bold">bridgeaimit@gmail.com</a>
               </span>
             </div>
           </div>

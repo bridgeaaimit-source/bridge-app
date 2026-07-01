@@ -53,34 +53,26 @@ export default function TrustSection() {
               
               <div className="space-y-4 text-xs font-medium text-gray-600 dark:text-slate-300">
                 <div className="flex gap-3">
-                  <Building className="h-5 w-5 text-[#0D9488] flex-shrink-0" />
-                  <div>
-                    <span className="block font-bold text-gray-900 dark:text-white">Registered Entity Name</span>
-                    <span>Bridgeconnex Technologies Private Limited</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
                   <MapPin className="h-5 w-5 text-[#0D9488] flex-shrink-0" />
                   <div>
-                    <span className="block font-bold text-gray-900 dark:text-white">Registered Office Address</span>
-                    <span>Unit No 441, Fourth Floor, Lodha Signet 1, Kolshet Road, Thane, Maharashtra, India</span>
+                    <span className="block font-bold text-gray-900 dark:text-white">Office Address</span>
+                    <span>Pune, Maharashtra, India</span>
                   </div>
                 </div>
 
                 <div className="flex gap-3">
                   <Phone className="h-5 w-5 text-[#0D9488] flex-shrink-0" />
                   <div>
-                    <span className="block font-bold text-gray-900 dark:text-white">Corporate Support Hotline</span>
-                    <a href="tel:+919920580247" className="hover:text-teal-400 font-semibold">+91 99205 80247</a>
+                    <span className="block font-bold text-gray-900 dark:text-white">Support Hotline</span>
+                    <a href="tel:+919571657890" className="hover:text-teal-400 font-semibold">+919571657890</a>
                   </div>
                 </div>
 
                 <div className="flex gap-3">
                   <Mail className="h-5 w-5 text-[#0D9488] flex-shrink-0" />
                   <div>
-                    <span className="block font-bold text-gray-900 dark:text-white">Corporate Inquiry Email</span>
-                    <a href="mailto:sales@bridgeai.in" className="hover:text-teal-400 font-semibold">sales@bridgeai.in</a>
+                    <span className="block font-bold text-gray-900 dark:text-white">Inquiry Email</span>
+                    <a href="mailto:bridgeaimit@gmail.com" className="hover:text-teal-400 font-semibold">bridgeaimit@gmail.com</a>
                   </div>
                 </div>
               </div>

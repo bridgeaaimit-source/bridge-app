@@ -5,20 +5,12 @@ import Navbar from "@/components/landing-v2/Navbar";
 import FooterCTA from "@/components/landing-v2/FooterCTA";
 import AnimatedBackground from "@/components/landing-v2/AnimatedBackground";
 import { m } from "framer-motion";
-import { Shield, BarChart3, Users, Calculator, ArrowRight } from "lucide-react";
+import { Shield, BarChart3, Users, ArrowRight } from "lucide-react";
 
 export default function CollegesPage() {
   useEffect(() => {
     document.title = "BridgeAI — Placement Readiness Analytics for Colleges";
   }, []);
-  const [batchSize, setBatchSize] = useState(250);
-  const [avgSalary, setAvgSalary] = useState(6.5); // in Lakhs Per Annum
-
-  // Simulating placement percentage increase from 70% to 92% (TPO average improvements)
-  const currentPlacements = Math.round(batchSize * 0.7);
-  const projectedPlacements = Math.round(batchSize * 0.92);
-  const incrementalPlacements = projectedPlacements - currentPlacements;
-  const incrementalCTC = (incrementalPlacements * avgSalary).toFixed(1);
 
   // Form State
   const [formData, setFormData] = useState({ name: "", email: "", college: "", phone: "", size: "100-500" });
@@ -54,7 +46,7 @@ export default function CollegesPage() {
           >
             Empower Your Campus. <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0D9488] to-teal-500 dark:from-teal-400 dark:to-teal-300">
-              Maximize Placement ROI.
+              Maximize Placement Success.
             </span>
           </m.h1>
 
@@ -80,15 +72,6 @@ export default function CollegesPage() {
                 whileTap={{ scale: 0.98 }}
               >
                 Book Demo <ArrowRight className="h-4 w-4" />
-              </m.span>
-            </a>
-            <a href="#calculator" className="cursor-pointer">
-              <m.span
-                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-8 py-3.5 text-sm font-semibold text-gray-700 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
-                whileHover={{ scale: 1.02, y: -0.5 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Calculate ROI
               </m.span>
             </a>
           </m.div>
@@ -129,73 +112,21 @@ export default function CollegesPage() {
           </div>
         </section>
 
-        {/* Interactive ROI Calculator Section */}
-        <section id="calculator" className="py-20 px-4 sm:px-6 lg:px-8 max-w-[1000px] mx-auto border-t border-gray-150 dark:border-white/5">
-          <div className="bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-3xl p-6 sm:p-10 shadow-sm relative overflow-hidden">
+        {/* How We Help Campuses Section */}
+        <section id="how-we-help" className="py-20 px-4 sm:px-6 lg:px-8 max-w-[1000px] mx-auto border-t border-gray-150 dark:border-white/5">
+          <div className="bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-3xl p-6 sm:p-10 shadow-sm relative overflow-hidden text-center">
             <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-teal-500 to-[#0D9488]" />
             
-            <div className="text-center mb-10">
+            <div className="max-w-2xl mx-auto">
               <span className="inline-flex items-center gap-1 bg-teal-500/10 border border-teal-500/25 px-2.5 py-1 rounded-full text-[10px] font-bold text-[#0D9488] dark:text-teal-400 tracking-wide">
-                <Calculator className="h-3.5 w-3.5" /> ROI Predictor Tool
+                Supporting Campus Placements
               </span>
               <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white mt-3">
-                Simulate Your Campus Performance Lift
+                How We Empower Institutions & Training Cells
               </h2>
-              <p className="text-xs text-gray-500 dark:text-slate-400 mt-2 max-w-md mx-auto leading-relaxed">
-                Estimate how many more students can crack placements and the overall batch value lift by using BridgeAI.
+              <p className="text-sm text-gray-600 dark:text-slate-300 mt-6 leading-relaxed font-medium">
+                BridgeAI bridges the gap between academic preparation and real-world corporate expectations. We partner with institutions to provide automated, campus-wide mock interview campaigns, diagnostic aptitude assessments, and interactive group discussion simulations. By equipping training and placement cells with comprehensive competency dashboards, we enable colleges to identify skill gaps early, run targeted training, and secure better corporate opportunities for every student.
               </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-              {/* Inputs */}
-              <div className="md:col-span-6 space-y-6">
-                <div>
-                  <div className="flex justify-between text-xs font-semibold mb-2">
-                    <span className="text-gray-700 dark:text-slate-300">Total Batch Size</span>
-                    <span className="text-teal-500 font-bold">{batchSize} students</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="50"
-                    max="1000"
-                    step="10"
-                    value={batchSize}
-                    onChange={(e) => setBatchSize(parseInt(e.target.value))}
-                    className="w-full cursor-pointer"
-                  />
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs font-semibold mb-2">
-                    <span className="text-gray-700 dark:text-slate-300">Average Salary Offer</span>
-                    <span className="text-teal-500 font-bold">₹{avgSalary} LPA</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="3"
-                    max="20"
-                    step="0.5"
-                    value={avgSalary}
-                    onChange={(e) => setAvgSalary(parseFloat(e.target.value))}
-                    className="w-full cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              {/* Outputs */}
-              <div className="md:col-span-6 bg-[#0D524C]/10 border border-[#0D9488]/20 rounded-2xl p-6 space-y-4">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-600 dark:text-slate-300 font-semibold">Projected Placement Rate</span>
-                  <span className="text-teal-400 font-black">92% <span className="text-[10px] text-gray-400 font-bold">(from 70%)</span></span>
-                </div>
-                <div className="flex justify-between items-center text-xs border-t border-gray-150 dark:border-white/5 pt-3">
-                  <span className="text-gray-600 dark:text-slate-300 font-semibold">Additional Students Placed</span>
-                  <span className="text-white font-black">+{incrementalPlacements} students</span>
-                </div>
-                <div className="flex justify-between items-center text-xs border-t border-gray-150 dark:border-white/5 pt-3">
-                  <span className="text-gray-600 dark:text-slate-300 font-semibold">Simulated Batch CTC Lift</span>
-                  <span className="text-teal-400 text-lg font-black">₹{incrementalCTC} Lakhs</span>
-                </div>
-              </div>
             </div>
           </div>
         </section>
