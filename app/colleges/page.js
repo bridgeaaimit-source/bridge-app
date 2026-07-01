@@ -15,10 +15,25 @@ export default function CollegesPage() {
   // Form State
   const [formData, setFormData] = useState({ name: "", email: "", college: "", phone: "", size: "100-500" });
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/send-demo-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...formData, type: "college" }),
+      });
+      if (res.ok) {
+        setSubmitted(true);
+      }
+    } catch (err) {
+      console.error("Demo submission failed:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -210,9 +225,10 @@ export default function CollegesPage() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-[#0D524C] hover:bg-[#0A3D36] py-3 text-sm font-bold text-white shadow-md cursor-pointer transition-all mt-4"
+                  disabled={loading}
+                  className="w-full rounded-xl bg-[#0D524C] hover:bg-[#0A3D36] py-3 text-sm font-bold text-white shadow-md cursor-pointer transition-all mt-4 disabled:opacity-50"
                 >
-                  Book Demo Now &rarr;
+                  {loading ? "Submitting Request..." : "Book Demo Now \u2192"}
                 </button>
               </form>
             )}
