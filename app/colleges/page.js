@@ -46,7 +46,7 @@ export default function CollegesPage() {
           >
             Empower Your Campus. <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0D9488] to-teal-500 dark:from-teal-400 dark:to-teal-300">
-              Maximize Placement ROI.
+              Maximize Placement Success.
             </span>
           </m.h1>
 
@@ -72,15 +72,6 @@ export default function CollegesPage() {
                 whileTap={{ scale: 0.98 }}
               >
                 Book Demo <ArrowRight className="h-4 w-4" />
-              </m.span>
-            </a>
-            <a href="#calculator" className="cursor-pointer">
-              <m.span
-                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-8 py-3.5 text-sm font-semibold text-gray-700 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
-                whileHover={{ scale: 1.02, y: -0.5 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Calculate ROI
               </m.span>
             </a>
           </m.div>

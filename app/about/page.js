@@ -5,7 +5,6 @@ import Navbar from "@/components/landing-v2/Navbar";
 import FooterCTA from "@/components/landing-v2/FooterCTA";
 import AnimatedBackground from "@/components/landing-v2/AnimatedBackground";
 import { m } from "framer-motion";
-import { Target, Compass } from "lucide-react";
 
 export default function AboutUsPage() {
   useEffect(() => {
@@ -17,7 +16,7 @@ export default function AboutUsPage() {
       <AnimatedBackground />
       <Navbar />
 
-      <main className="relative z-10 pt-32 sm:pt-40 pb-20 px-4 sm:px-6 lg:px-8 max-w-[1000px] mx-auto">
+      <main className="relative z-10 pt-32 sm:pt-40 pb-24 px-4 sm:px-6 lg:px-8 max-w-[800px] mx-auto">
         
         {/* Centered Logo Container */}
         <m.div 
@@ -42,50 +41,51 @@ export default function AboutUsPage() {
           </p>
         </m.div>
 
-        {/* Vision & Mission Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
+        {/* Vision & Mission Typographic Flow */}
+        <div className="space-y-16 text-gray-700 dark:text-slate-300 leading-relaxed font-medium">
           
-          {/* Our Vision Card */}
-          <m.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+          {/* Our Vision Section */}
+          <m.section
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white dark:bg-[#0A1211]/50 border border-gray-200 dark:border-white/5 rounded-3xl p-8 sm:p-10 shadow-sm relative overflow-hidden flex flex-col justify-between"
+            className="space-y-6"
           >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-500 to-[#0D9488]" />
-            <div>
-              <div className="h-12 w-12 rounded-xl bg-teal-50 dark:bg-white/5 flex items-center justify-center mb-6">
-                <Compass className="h-6 w-6 text-[#0D9488] dark:text-teal-400" />
-              </div>
-              <h2 className="font-display text-2xl font-black text-gray-900 dark:text-white mb-4">
-                Our Vision
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed font-medium">
-                To democratize professional placement readiness, enabling students from every corner of India to discover, hone, and validate their industry competency. We envision a future where skills speak louder than credentials, and where every ambitious student has an equal, frictionless bridge to their dream career.
+            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white" style={{ fontFamily: "Syne, sans-serif" }}>
+              Our Vision
+            </h2>
+            <div className="space-y-4 text-base">
+              <p>
+                Every career begins with ambition, but ambition alone isn't enough. Too many talented students step into the job market without the guidance, confidence, or opportunities they deserve. They aren't held back by their potential, but by the gap between education and employment.
+              </p>
+              <p>
+                At BridgeAI, we envision a future where every student, regardless of their college or background, has an equal opportunity to prove what they're capable of. A future where skills speak louder than resumes, preparation replaces uncertainty, and talent is recognized for its true potential. We believe careers should be built on ability, not circumstance, and we're committed to creating a world where every student has a fair chance to succeed.
               </p>
             </div>
-          </m.div>
+          </m.section>
 
-          {/* Our Mission Card */}
-          <m.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
+          {/* Our Mission Section */}
+          <m.section
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white dark:bg-[#0A1211]/50 border border-gray-200 dark:border-white/5 rounded-3xl p-8 sm:p-10 shadow-sm relative overflow-hidden flex flex-col justify-between"
+            className="space-y-6"
           >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-500 to-[#0D9488]" />
-            <div>
-              <div className="h-12 w-12 rounded-xl bg-teal-50 dark:bg-white/5 flex items-center justify-center mb-6">
-                <Target className="h-6 w-6 text-[#0D9488] dark:text-teal-400" />
-              </div>
-              <h2 className="font-display text-2xl font-black text-gray-900 dark:text-white mb-4">
-                Our Mission
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed font-medium">
-                To construct the ultimate AI-driven skills validation infrastructure. By delivering real-time, personalized mock evaluations and verified placement readiness credentials, we empower campuses to train better, recruiters to hire faster, and students to unlock their true career potential.
+            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white" style={{ fontFamily: "Syne, sans-serif" }}>
+              Our Mission
+            </h2>
+            <div className="space-y-4 text-base">
+              <p>
+                We are building BridgeAI to make career readiness accessible, measurable, and personalized for every student. Through AI powered mock interviews, group discussions, resume intelligence, personalized learning paths, and real time feedback, we help students prepare for the moments that define their future.
+              </p>
+              <p>
+                Our mission extends beyond students. We enable colleges to better understand placement readiness and help recruiters identify talent based on demonstrated skills rather than assumptions. Every feature we build is designed to reduce uncertainty, build confidence, and create meaningful connections between education and employment.
+              </p>
+              <p className="font-extrabold text-gray-900 dark:text-white text-lg">
+                BridgeAI isn't just preparing students for interviews. We're preparing them for careers.
               </p>
             </div>
-          </m.div>
+          </m.section>
 
         </div>
 
