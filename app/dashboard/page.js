@@ -755,7 +755,7 @@ export default function Dashboard() {
                           <stop offset="95%" stopColor="#00C4A7" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid stroke="#f1f5f9" vertical={false} />
+                      <CartesianGrid stroke="#cbd5e1" vertical={false} />
                       <XAxis 
                         dataKey="name" 
                         tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} 
@@ -873,13 +873,13 @@ export default function Dashboard() {
 
               {/* Spider Web Radar Chart (Aptitude & Other breakdowns) */}
               <div className="w-full mt-6 border-t border-slate-50 pt-4 flex flex-col items-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider self-start mb-2">Skill Profile</p>
+                <p className="text-[10px] font-extrabold text-slate-800 uppercase tracking-wider self-start mb-2">Skill Profile</p>
                 
                 <div className="w-full h-52 flex items-center justify-center relative">
                   {isMounted && (
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart cx="50%" cy="50%" outerRadius="65%" data={radarData}>
-                        <PolarGrid stroke="#f1f5f9" />
+                        <PolarGrid stroke="#cbd5e1" />
                         <PolarAngleAxis 
                           dataKey="subject" 
                           tick={{ fill: '#64748b', fontSize: 9, fontWeight: 'bold' }} 
