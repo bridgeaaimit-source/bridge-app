@@ -9,6 +9,7 @@ import { Canvas, Button, Card, typography } from '@/components/DesignSystem';
 import CategoryGrid from '@/components/gd-ai/CategoryGrid';
 import PastSessions from '@/components/gd-ai/PastSessions';
 import toast from 'react-hot-toast';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function GDAIHubPage() {
   const router = useRouter();
@@ -46,16 +47,32 @@ export default function GDAIHubPage() {
 
     // Fetch score
     setLoadingScore(true);
+
+    // 1. Fetch baseline score from Firestore user doc first
+    const userRef = doc(db, 'users', uid);
+    getDoc(userRef)
+      .then((snap) => {
+        if (snap.exists()) {
+          const score = snap.data().bridgeScore;
+          if (score !== undefined && score !== null) {
+            setBridgeScore(score);
+          }
+        }
+      })
+      .catch((err) => console.error('Error fetching user baseline score:', err));
+
     fetch(`/api/bridge-score?userId=${uid}`)
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch score');
         return res.json();
       })
       .then((data) => {
-        setBridgeScore(data.score);
+        if (data && data.score !== null && data.score !== undefined) {
+          setBridgeScore(data.score);
+        }
       })
       .catch((err) => {
-        console.error('Error fetching bridge score:', err);
+        console.error('Error fetching bridge score API:', err);
       })
       .finally(() => {
         setLoadingScore(false);

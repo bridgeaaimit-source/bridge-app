@@ -6,8 +6,9 @@ import AppShell from '@/components/AppShell';
 import { Canvas, Card, Button } from '@/components/DesignSystem';
 import DimensionScore from '@/components/gd-ai/DimensionScore';
 import { useAuthBypass } from '@/hooks/useAuthBypass';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import toast from 'react-hot-toast';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function GDReportPage({ params: paramsPromise }) {
   const params = use(paramsPromise);
@@ -155,27 +156,43 @@ export default function GDReportPage({ params: paramsPromise }) {
     const MAX_ATTEMPTS = 6; // 6 × 2.5s = 15s
     let previousScore = null;
 
-    const poll = async () => {
-      try {
-        const res = await fetch(`/api/bridge-score?userId=${uid}`);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.score !== null && data.score !== undefined) {
-          if (previousScore === null) {
-            // First fetch — this is the baseline (pre-refresh may already be updated)
-            previousScore = data.score;
-          }
-          setBridgeScore({ current: data.score, previous: previousScore, delta: data.score - previousScore });
-          setBridgeScoreLoading(false);
-          clearInterval(poller);
-        }
-      } catch { /* silent */ }
-      attempts++;
-      if (attempts >= MAX_ATTEMPTS) {
-        clearInterval(poller);
-        setBridgeScoreLoading(false); // hide loading state gracefully
-      }
-    };
+     const poll = async () => {
+       try {
+         const res = await fetch(`/api/bridge-score?userId=${uid}`);
+         if (!res.ok) throw new Error('API failed');
+         const data = await res.json();
+         if (data.score !== null && data.score !== undefined) {
+           if (previousScore === null) {
+             // First fetch — this is the baseline (pre-refresh may already be updated)
+             previousScore = data.score;
+           }
+           setBridgeScore({ current: data.score, previous: previousScore, delta: data.score - previousScore });
+           setBridgeScoreLoading(false);
+           clearInterval(poller);
+           return;
+         }
+       } catch {
+         // Fallback to Firestore user profile bridgeScore
+         try {
+           const userRef = doc(db, 'users', uid);
+           const snap = await getDoc(userRef);
+           if (snap.exists()) {
+             const score = snap.data().bridgeScore;
+             if (score !== undefined && score !== null) {
+               setBridgeScore({ current: score, previous: score, delta: 0 });
+               setBridgeScoreLoading(false);
+               clearInterval(poller);
+               return;
+             }
+           }
+         } catch { /* silent */ }
+       }
+       attempts++;
+       if (attempts >= MAX_ATTEMPTS) {
+         clearInterval(poller);
+         setBridgeScoreLoading(false); // hide loading state gracefully
+       }
+     };
 
     // Small initial delay to let the background refresh write complete first
     const poller = setInterval(poll, 2500);
