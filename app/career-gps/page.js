@@ -54,7 +54,7 @@ function MarketFitRing({ score, loading }) {
     <div className="flex flex-col items-center">
       <div className="relative w-36 h-36">
         <svg className="w-full h-full -rotate-90" viewBox="0 0 128 128">
-          <circle cx="64" cy="64" r={radius} fill="none" stroke="#F0FDFA" strokeWidth="10" />
+          <circle cx="64" cy="64" r={radius} fill="none" stroke="#cbd5e1" strokeWidth="10" />
           <circle
             cx="64" cy="64" r={radius}
             fill="none"

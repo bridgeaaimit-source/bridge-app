@@ -439,13 +439,13 @@ export default function BridgeScoreAnalysis() {
             <div className="lg:col-span-1 flex flex-col gap-6">
               
               {/* Score Circular Display Card */}
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] p-6 text-center flex flex-col items-center">
+              <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl shadow-sm p-6 text-center flex flex-col items-center">
                 <h3 className="font-bold text-gray-800 text-lg w-full text-left mb-6" style={{ fontFamily: "Syne, sans-serif" }}>
                   Current Index
                 </h3>
                 <div className="relative w-48 h-48 flex items-center justify-center mb-6">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="44" fill="none" stroke="#F3F4F6" strokeWidth="8" />
+                    <circle cx="50" cy="50" r="44" fill="none" stroke="#cbd5e1" strokeWidth="8" />
                     <circle 
                       cx="50" 
                       cy="50" 
@@ -471,7 +471,7 @@ export default function BridgeScoreAnalysis() {
                     { label: "Competence (Interviews)", value: currentBreakdown.competence, max: 400, icon: Mic, color: "bg-purple-50 text-purple-600" },
                     { label: "Communication (GD & Speech)", value: currentBreakdown.communication, max: 250, icon: MessageSquare, color: "bg-teal-50 text-teal-600" }
                   ].map(({ label, value, max, icon: Icon, color }) => (
-                    <div key={label} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                    <div key={label} className="flex items-center justify-between p-3 bg-slate-50/50 backdrop-blur-sm rounded-xl">
                       <div className="flex items-center gap-2">
                         <div className={`p-1.5 rounded-lg ${color}`}>
                            <Icon className="w-4 h-4" />
@@ -485,7 +485,7 @@ export default function BridgeScoreAnalysis() {
               </div>
 
               {/* Actionable Focus Areas Card */}
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] p-6">
+              <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl shadow-sm p-6">
                 <h3 className="font-bold text-gray-800 text-lg mb-4 flex items-center gap-2" style={{ fontFamily: "Syne, sans-serif" }}>
                   <Activity className="w-5 h-5 text-[#0D9488]" /> Focus Areas
                 </h3>
@@ -514,7 +514,7 @@ export default function BridgeScoreAnalysis() {
             <div className="lg:col-span-2 space-y-6">
               
               {/* Placement Activity Calendar Card */}
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] p-6">
+              <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl shadow-sm p-6">
                 
                 {/* Header Month Selector */}
                 <div className="flex items-center justify-between mb-6">
@@ -575,10 +575,10 @@ export default function BridgeScoreAnalysis() {
                           !dayObj.isCurrentMonth 
                             ? "bg-slate-50/50 border-slate-50 text-slate-300 pointer-events-none" 
                             : isSelected
-                              ? "bg-teal-50 border-[#0D9488] ring-2 ring-[#0D9488]/20 text-[#0D9488] font-extrabold shadow-sm"
+                              ? "bg-[#00C4A7]/10 border-[#00C4A7] ring-2 ring-[#00C4A7]/20 text-[#00C4A7] font-extrabold shadow-sm"
                               : hasActivities
-                                ? "bg-[#E6FBF7] hover:bg-[#CCFBF1] border-[#B2F5EA] text-[#0D9488] font-bold"
-                                : "bg-white hover:bg-slate-50 border-slate-100 text-slate-700 hover:border-slate-200"
+                                ? "bg-[#00C4A7]/10 hover:bg-[#00C4A7]/20 border-[#00C4A7]/30 text-[#00C4A7] font-bold"
+                                : "bg-white/40 hover:bg-white/60 border-white/20 text-slate-700 hover:border-white/40"
                         }`}
                       >
                         <span className="text-xs">{dayNum}</span>
@@ -619,7 +619,7 @@ export default function BridgeScoreAnalysis() {
               </div>
 
               {/* Day Details Panel */}
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] p-6">
+              <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl shadow-sm p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-50 mb-6">
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Selected Day Audit</span>
@@ -636,7 +636,7 @@ export default function BridgeScoreAnalysis() {
                 </div>
 
                 {/* Sub-scores breakdown for the selected day */}
-                <div className="grid grid-cols-3 gap-3 py-3 px-4 bg-slate-50 rounded-xl text-center mb-6">
+                <div className="grid grid-cols-3 gap-3 py-3 px-4 bg-slate-50/50 backdrop-blur-sm rounded-xl text-center mb-6">
                   <div>
                     <div className="text-[10px] text-slate-400 uppercase font-bold">Cognitive</div>
                     <div className="text-xs font-extrabold text-slate-800 mt-1">
