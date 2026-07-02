@@ -852,7 +852,7 @@ export default function Dashboard() {
               {/* Circular SVG Gauge */}
               <div className="relative w-40 h-40 mt-2 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="45" fill="none" stroke="#f1f5f9" strokeWidth="7" />
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="#cbd5e1" strokeWidth="7" />
                   <circle cx="50" cy="50" r="45" fill="none" stroke="#00C4A7"
                     strokeWidth="7" strokeLinecap="round"
                     strokeDasharray={circumference}
