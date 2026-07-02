@@ -873,7 +873,7 @@ export default function Dashboard() {
 
               {/* Spider Web Radar Chart (Aptitude & Other breakdowns) */}
               <div className="w-full mt-6 border-t border-slate-50 pt-4 flex flex-col items-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider self-start mb-2">Skill Profile</p>
+                <p className="text-[10px] font-extrabold text-slate-800 uppercase tracking-wider self-start mb-2">Skill Profile</p>
                 
                 <div className="w-full h-52 flex items-center justify-center relative">
                   {isMounted && (
