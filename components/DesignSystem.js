@@ -125,52 +125,32 @@ export function Skeleton({ className = "" }) {
 
 // ─── PREMIUM SVG ILLUSTRATIONS & ICONOGRAPHY ───
 
+export function HouseIcon({ className = "w-6 h-6" }) {
+  return <img src="/images/icons/house.png" alt="Home" className={className} />;
+}
+
 export function SmartInterviewIcon({ className = "w-6 h-6" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-      <line x1="8" y1="21" x2="16" y2="21" />
-      <line x1="12" y1="17" x2="12" y2="21" />
-      <path d="M12 7v4" />
-      <path d="M9 9h6" />
-    </svg>
-  );
+  return <img src="/images/icons/videoconference.png" alt="Smart Interview" className={className} />;
 }
 
 export function GDPulseIcon({ className = "w-6 h-6" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 6.1A2.9 2.9 0 0 0 14.1 3a3 3 0 0 0-2.9 2.6A3 3 0 0 0 9 3a3 3 0 0 0-3 3c0 .8.3 1.5.8 2.1l-2.2 2.2a3 3 0 1 0 4.2 4.2l2.2-2.2c.6.5 1.3.8 2.1.8a3 3 0 0 0 3-3c0-.8-.3-1.5-.8-2.1l2.2-2.2c.5.6 1.2.9 2.1.9a3 3 0 0 0 0-6Z" />
-    </svg>
-  );
+  return <img src="/images/icons/user-three.png" alt="GD Pulse" className={className} />;
+}
+
+export function NewspaperClippingIcon({ className = "w-6 h-6" }) {
+  return <img src="/images/icons/newspaper-clipping.png" alt="News Pulse" className={className} />;
 }
 
 export function AptitudeArenaIcon({ className = "w-6 h-6" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 6v6l4 2" />
-    </svg>
-  );
+  return <img src="/images/icons/pencil-circle.png" alt="Aptitude Arena" className={className} />;
 }
 
 export function CareerIntelligenceIcon({ className = "w-6 h-6" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 2 7 12 12 22 7 12 2" />
-      <polyline points="2 17 12 22 22 17" />
-      <polyline points="2 12 12 17 22 12" />
-    </svg>
-  );
+  return <img src="/images/icons/head-circuit.png" alt="Career Intelligence" className={className} />;
 }
 
 export function JobsIcon({ className = "w-6 h-6" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-    </svg>
-  );
+  return <img src="/images/icons/briefcase.png" alt="Jobs" className={className} />;
 }
 
 export function RecruitersIcon({ className = "w-6 h-6" }) {
@@ -185,22 +165,11 @@ export function RecruitersIcon({ className = "w-6 h-6" }) {
 }
 
 export function PlacementReadinessIcon({ className = "w-6 h-6" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
+  return <img src="/images/icons/compass.png" alt="Career GPS" className={className} />;
 }
 
 export function BridgeScoreIcon({ className = "w-6 h-6" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 20V10" />
-      <path d="M12 20V4" />
-      <path d="M6 20v-6" />
-    </svg>
-  );
+  return <img src="/images/icons/chart-bar.png" alt="Bridge Score" className={className} />;
 }
 
 export function StreakIcon({ className = "w-6 h-6" }) {
@@ -212,15 +181,11 @@ export function StreakIcon({ className = "w-6 h-6" }) {
 }
 
 export function TrophyIcon({ className = "w-6 h-6" }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-      <path d="M4 22h16" />
-      <path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34" />
-      <path d="M12 2a6 6 0 0 1 6 6v5a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8a6 6 0 0 1 6-6z" />
-    </svg>
-  );
+  return <img src="/images/icons/trophy.png" alt="Leaderboard" className={className} />;
+}
+
+export function UserIcon({ className = "w-6 h-6" }) {
+  return <img src="/images/icons/user.png" alt="Profile" className={className} />;
 }
 
 export function TargetIcon({ className = "w-6 h-6" }) {

@@ -12,13 +12,14 @@ import {
   MessageSquare,
   Menu,
   ChevronLeft,
-  ChevronRight,
-  Newspaper
+  ChevronRight
 } from 'lucide-react';
 
 import {
+  HouseIcon,
   SmartInterviewIcon,
   GDPulseIcon,
+  NewspaperClippingIcon,
   AptitudeArenaIcon,
   CareerIntelligenceIcon,
   JobsIcon,
@@ -26,22 +27,9 @@ import {
   PlacementReadinessIcon,
   BridgeScoreIcon,
   TrophyIcon,
+  UserIcon,
   ShieldIcon
 } from '@/components/DesignSystem';
-
-const HomeIcon = (props) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-    <polyline points="9 22 9 12 15 12 15 22" />
-  </svg>
-);
-
-const UserIcon = (props) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);
 
 const DrivesIcon = (props) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -261,10 +249,10 @@ export default function AppShell({ children, hideNavigation = false }) {
     {
       title: 'PLACEMENT PREP',
       items: [
-        { href: '/dashboard', icon: HomeIcon, label: 'Home', group: ['/dashboard'], tour: 'dashboard' },
+        { href: '/dashboard', icon: HouseIcon, label: 'Home', group: ['/dashboard'], tour: 'dashboard' },
         { href: '/smart-interview', icon: SmartInterviewIcon, label: 'Smart Interview', group: ['/smart-interview', '/interview', '/device-test'], tour: 'smart-interview' },
         { href: '/gd/ai', icon: GDPulseIcon, label: 'GD Pulse', group: ['/gd/ai', '/pulse', '/gd', '/coach'], tour: 'gd-practice' },
-        { href: '/news-pulse', icon: Newspaper, label: 'News Pulse', group: ['/news-pulse'] },
+        { href: '/news-pulse', icon: NewspaperClippingIcon, label: 'News Pulse', group: ['/news-pulse'] },
         { href: '/aptitude', icon: AptitudeArenaIcon, label: 'Aptitude Arena', group: ['/aptitude'] }
       ]
     },
@@ -296,7 +284,7 @@ export default function AppShell({ children, hideNavigation = false }) {
   ];
 
   const mobileNav = [
-    { href: '/dashboard', icon: HomeIcon, label: 'Home', group: ['/dashboard'] },
+    { href: '/dashboard', icon: HouseIcon, label: 'Home', group: ['/dashboard'] },
     { href: '/smart-interview', icon: SmartInterviewIcon, label: 'Interview', group: ['/smart-interview', '/interview', '/device-test'] },
     { href: '/gd/ai', icon: GDPulseIcon, label: 'GD Pulse', group: ['/gd/ai', '/pulse', '/gd', '/coach'] },
     { href: '/leaderboard', icon: TrophyIcon, label: 'Rank', group: ['/leaderboard'] },
@@ -399,7 +387,7 @@ export default function AppShell({ children, hideNavigation = false }) {
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <Icon className={`w-4 h-4 flex-shrink-0 transition-transform group-hover:scale-105 ${active ? 'text-[#14B8A6]' : 'text-slate-500'}`} />
+                        <Icon className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-105 ${active ? 'text-[#14B8A6]' : 'text-slate-500'}`} />
                         {!collapsed && <span>{item.label}</span>}
                       </div>
                       {item.badge !== undefined && item.badge > 0 && !collapsed && (
@@ -548,10 +536,10 @@ export default function AppShell({ children, hideNavigation = false }) {
             >
               {active ? (
                 <div className="w-10 h-10 rounded-full bg-[#008378] flex items-center justify-center text-white -mt-1 shadow-sm">
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-6 h-6" />
                 </div>
               ) : (
-                <Icon className="w-5 h-5" />
+                <Icon className="w-6 h-6" />
               )}
               <span className="text-[10px] font-semibold" >{item.label}</span>
             </Link>
