@@ -9,7 +9,7 @@ import { Canvas, Button, Card, typography } from '@/components/DesignSystem';
 import CategoryGrid from '@/components/gd-ai/CategoryGrid';
 import PastSessions from '@/components/gd-ai/PastSessions';
 import toast from 'react-hot-toast';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
 export default function GDAIHubPage() {
   const router = useRouter();
@@ -51,12 +51,24 @@ export default function GDAIHubPage() {
     // 1. Fetch baseline score from Firestore user doc first
     const userRef = doc(db, 'users', uid);
     getDoc(userRef)
-      .then((snap) => {
+      .then(async (snap) => {
         if (snap.exists()) {
-          const score = snap.data().bridgeScore;
-          if (score !== undefined && score !== null) {
-            setBridgeScore(score);
+          const userData = snap.data();
+          let currentScoreVal = typeof userData.bridgeScore === 'number' ? userData.bridgeScore : parseInt(userData.bridgeScore) || 0;
+          
+          // Double-safe fetch of latest score from subcollection
+          try {
+            const scoresRef = collection(db, "users", uid, "bridge_scores");
+            const scoreQuery = query(scoresRef, orderBy("createdAt", "desc"), limit(1));
+            const scoreSnap = await getDocs(scoreQuery);
+            if (!scoreSnap.empty) {
+              currentScoreVal = scoreSnap.docs[0].data().score || currentScoreVal;
+            }
+          } catch (err) {
+            console.error("Error double-checking latest bridge score in GD Setup:", err);
           }
+          
+          setBridgeScore(currentScoreVal);
         }
       })
       .catch((err) => console.error('Error fetching user baseline score:', err));

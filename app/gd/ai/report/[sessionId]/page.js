@@ -8,7 +8,7 @@ import DimensionScore from '@/components/gd-ai/DimensionScore';
 import { useAuthBypass } from '@/hooks/useAuthBypass';
 import { auth, db } from '@/lib/firebase';
 import toast from 'react-hot-toast';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
 export default function GDReportPage({ params: paramsPromise }) {
   const params = use(paramsPromise);
@@ -172,20 +172,31 @@ export default function GDReportPage({ params: paramsPromise }) {
            return;
          }
        } catch {
-         // Fallback to Firestore user profile bridgeScore
-         try {
-           const userRef = doc(db, 'users', uid);
-           const snap = await getDoc(userRef);
-           if (snap.exists()) {
-             const score = snap.data().bridgeScore;
-             if (score !== undefined && score !== null) {
-               setBridgeScore({ current: score, previous: score, delta: 0 });
-               setBridgeScoreLoading(false);
-               clearInterval(poller);
-               return;
-             }
-           }
-         } catch { /* silent */ }
+          // Fallback to Firestore user profile bridgeScore
+          try {
+            const userRef = doc(db, 'users', uid);
+            const snap = await getDoc(userRef);
+            if (snap.exists()) {
+              const userData = snap.data();
+              let currentScoreVal = typeof userData.bridgeScore === 'number' ? userData.bridgeScore : parseInt(userData.bridgeScore) || 0;
+              
+              try {
+                const scoresRef = collection(db, "users", uid, "bridge_scores");
+                const scoreQuery = query(scoresRef, orderBy("createdAt", "desc"), limit(1));
+                const scoreSnap = await getDocs(scoreQuery);
+                if (!scoreSnap.empty) {
+                  currentScoreVal = scoreSnap.docs[0].data().score || currentScoreVal;
+                }
+              } catch (err) {
+                console.error("Error double-checking latest bridge score in GD Report:", err);
+              }
+              
+              setBridgeScore({ current: currentScoreVal, previous: currentScoreVal, delta: 0 });
+              setBridgeScoreLoading(false);
+              clearInterval(poller);
+              return;
+            }
+          } catch { /* silent */ }
        }
        attempts++;
        if (attempts >= MAX_ATTEMPTS) {
