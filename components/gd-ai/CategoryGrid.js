@@ -91,7 +91,7 @@ export default function CategoryGrid({ onSelectCategory }) {
         <button
           key={cat.id}
           onClick={() => onSelectCategory?.(cat.id, cat.name)}
-          className="text-left bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-teal-500/50 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between h-full group focus:outline-none focus:ring-2 focus:ring-teal-500"
+          className="text-left bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-5 shadow-sm hover:shadow-md hover:border-[#00C4A7]/50 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between h-full group focus:outline-none focus:ring-2 focus:ring-[#00C4A7]"
         >
           <div>
             {/* Icon + Difficulty pill */}

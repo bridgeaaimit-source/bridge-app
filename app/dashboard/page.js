@@ -584,13 +584,6 @@ export default function Dashboard() {
     <AppShell>
       <OnboardingTour />
       
-      {/* Dynamic ambient glassmesh background */}
-      <div className="fixed inset-0 bg-[linear-gradient(135deg,#f0f7ff_0%,#ffffff_100%)] opacity-30 pointer-events-none z-0" />
-      <div 
-        className="fixed inset-0 bg-cover bg-center opacity-[0.08] pointer-events-none z-0"
-        style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBcTzpqwsf9YotP3ZLEVFduk6XgAjdUsqbZFW_IEjra55hRVBf9bOqiHAQvgiIEXkGkx3eUPkQ7npDBhJFmMAGhLsdvMAfagnUdAHqlSt7aPwLTuY9zJWRDe5z-jBbbFcs5bQp-tgnUQIwqEQNstqQ-0WKYfbCm0oWWbD4TTrlC1kjyjlCwvE0okx_AGMu4Oh1bpRtbUQQ5SLI_7t07zb4wq_XaGTbt5IXr8J94RpQdzdG46Et56j9_7yKfE17dZcEWGACl_gChZ3A")' }} 
-      />
-
       <div className="relative max-w-[1240px] mx-auto px-6 py-8 z-10">
         <GettingStartedChecklist stats={stats} userProfile={userProfile} resumeUploaded={resumeUploaded} />
 
@@ -610,7 +603,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               
               {/* Card 1: Aptitude Score */}
-              <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300">
+              <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-2xl p-4 shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Aptitude Score</p>
@@ -627,7 +620,7 @@ export default function Dashboard() {
               </div>
 
               {/* Card 2: Mocks Taken */}
-              <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300">
+              <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-2xl p-4 shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Mocks Taken</p>
@@ -644,7 +637,7 @@ export default function Dashboard() {
               </div>
 
               {/* Card 3: Days Streak */}
-              <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300">
+              <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-2xl p-4 shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Days Streak</p>
@@ -660,7 +653,7 @@ export default function Dashboard() {
               </div>
 
               {/* Card 4: Batch Rank */}
-              <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300">
+              <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-2xl p-4 shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Batch Rank</p>
@@ -680,7 +673,7 @@ export default function Dashboard() {
 
             {/* Placement Journey Timeline - Auto-hides when all completed */}
             {showJourneyCard && (
-              <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+              <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-[#00C4A7]" /> Placement Journey
@@ -736,7 +729,7 @@ export default function Dashboard() {
             )}
 
             {/* Performance Overview (Shaded Recharts Area Chart) */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+            <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Performance Overview</h3>
@@ -794,7 +787,7 @@ export default function Dashboard() {
             </div>
 
             {/* Today's Recommended Tasks (Any Two) */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+            <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                   <ClipboardList className="w-4 h-4 text-[#00C4A7]" /> Today's Recommended Tasks
@@ -849,7 +842,7 @@ export default function Dashboard() {
           <div className="space-y-6">
             
             {/* Bridge Score Circle Gauge & Spider Web Radar Chart */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col items-center">
+            <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 shadow-sm flex flex-col items-center">
               <div className="w-full mb-2">
                 <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                   <Award className="w-4 h-4 text-[#00C4A7]" /> Bridge Score
@@ -923,7 +916,7 @@ export default function Dashboard() {
             </div>
 
             {/* Practice Streak */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+            <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 shadow-sm">
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 mb-2">
                 <Flame className="w-4 h-4 text-orange-500" /> Practice Streak
               </h3>
@@ -955,7 +948,7 @@ export default function Dashboard() {
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+            <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Recent Activity</h3>
                 <button className="text-[10px] font-bold text-[#00C4A7] hover:underline">View All</button>

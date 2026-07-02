@@ -297,7 +297,7 @@ export default function JobsPage() {
     return (
       <AppShell>
         <div className="max-w-[600px] mx-auto px-4 py-16">
-          <div className="bg-white rounded-3xl p-8 shadow-[0_4px_30px_rgba(13,148,136,0.1)] border border-gray-100 text-center">
+          <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-8 shadow-sm text-center">
             <div className="w-16 h-16 bg-[#CCFBF1] rounded-2xl flex items-center justify-center mx-auto mb-5">
               <Briefcase className="w-8 h-8 text-[#0D9488]" />
             </div>
@@ -309,7 +309,7 @@ export default function JobsPage() {
               <p className="text-xs text-gray-400 mt-1">PDF, DOC, DOCX · Max 5MB</p>
               <input type="file" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} className="hidden" />
             </label>
-            <div className="p-4 bg-[#F0FDFA] rounded-xl border border-[#CCFBF1]">
+            <div className="p-4 bg-teal-50/40 backdrop-blur-sm rounded-xl border border-teal-200/30">
               <p className="text-sm text-[#0D9488]">💡 AI reads your resume and matches you to the best opportunities across domains and companies.</p>
             </div>
           </div>
@@ -368,7 +368,7 @@ export default function JobsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Left Sidebar - Filters */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 shadow-sm">
                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <Filter className="w-4 h-4" />
                   Filters
@@ -453,7 +453,7 @@ export default function JobsPage() {
                 </div>
               )}
               {/* Market Insights */}
-              <div className="bg-white rounded-2xl p-6 shadow-[0_4px_20px_rgba(13,148,136,0.06)] border border-gray-100 mb-6">
+              <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 shadow-sm mb-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Market Insights</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center">
@@ -487,7 +487,7 @@ export default function JobsPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {jobs.map((job, index) => (
-                    <div key={job.id || index} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <div key={job.id || index} className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow">
                       {/* Header */}
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3">
@@ -535,7 +535,7 @@ export default function JobsPage() {
 
                         {/* Match Reasons - Personalized */}
                         {job.match_reasons && job.match_reasons.length > 0 && (
-                          <div className="bg-green-50 rounded-lg p-3">
+                          <div className="bg-green-50/40 backdrop-blur-sm rounded-xl p-3 border border-green-200/30">
                             <div className="text-xs font-semibold text-green-700 mb-2">Why this matches you:</div>
                             <ul className="space-y-1">
                               {job.match_reasons.slice(0, 2).map((reason, i) => (
@@ -622,7 +622,7 @@ export default function JobsPage() {
 
         {activeTab === 'smartapply' && (
           <div className="max-w-3xl mx-auto">
-            <div className="bg-white rounded-2xl p-8 shadow-[0_4px_20px_rgba(13,148,136,0.06)] border border-gray-100">
+            <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-8 shadow-sm">
               <h2 className="text-2xl font-bold text-gray-900 mb-6" style={{fontFamily:'Syne,sans-serif'}}>Smart Apply</h2>
               
               {/* Mode Toggle */}
@@ -753,7 +753,7 @@ export default function JobsPage() {
 
                   {/* Strengths & Gaps */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <div className="bg-green-50/40 backdrop-blur-sm rounded-xl p-4 border border-green-200/30">
                       <h4 className="font-semibold text-green-700 mb-3 flex items-center gap-2">
                         <CheckCircle className="w-4 h-4" />
                         Your Strengths
@@ -768,7 +768,7 @@ export default function JobsPage() {
                       </ul>
                     </div>
 
-                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <div className="bg-orange-50/40 backdrop-blur-sm rounded-xl p-4 border border-orange-200/30">
                       <h4 className="font-semibold text-orange-700 mb-3 flex items-center gap-2">
                         <AlertCircle className="w-4 h-4" />
                         Areas to Improve
@@ -785,7 +785,7 @@ export default function JobsPage() {
                   </div>
 
                   {/* Preparation Plan */}
-                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="bg-white/40 backdrop-blur-sm rounded-xl p-4 border border-white/30">
                     <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                       <Target className="w-4 h-4" />
                       Preparation Plan ({smartApplyResult.preparation_time})
@@ -801,7 +801,7 @@ export default function JobsPage() {
                   </div>
 
                   {/* Interview Questions */}
-                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="bg-white/40 backdrop-blur-sm rounded-xl p-4 border border-white/30">
                     <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                       <MessageSquare className="w-4 h-4" />
                       Likely Interview Questions
@@ -841,7 +841,7 @@ export default function JobsPage() {
 
         {activeTab === 'postjob' && (
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+            <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-8 shadow-sm">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Post a Job</h2>
               
               <form className="space-y-6" onSubmit={(e) => {

@@ -195,7 +195,7 @@ export default function NewsPulsePage() {
 
   return (
     <AppShell>
-      <div className="min-h-screen bg-[#fcf8ff]">
+      <div className="min-h-screen">
 
         {/* ── Page Header ── */}
         <div className="max-w-[1200px] mx-auto px-4 md:px-10 pt-8 pb-4">
@@ -231,10 +231,10 @@ export default function NewsPulsePage() {
               </div>
             </div>
           ) : gdInsights && (
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl overflow-hidden shadow-sm">
 
               {/* Topic Header */}
-              <div className="bg-gradient-to-r from-[#0D9488] to-[#0891B2] px-6 py-5">
+              <div className="bg-gradient-to-r from-[#00C4A7] to-[#00b296] px-6 py-5">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
@@ -278,7 +278,7 @@ export default function NewsPulsePage() {
                 {/* Pros & Cons */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Pros */}
-                  <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+                  <div className="bg-green-50/40 backdrop-blur-md rounded-2xl p-4 border border-green-200/30">
                     <h3 className="text-sm font-bold text-green-800 mb-3 flex items-center gap-2">
                       <CheckCircle className="w-4 h-4" /> Arguments FOR
                     </h3>
@@ -292,7 +292,7 @@ export default function NewsPulsePage() {
                     </ul>
                   </div>
                   {/* Cons */}
-                  <div className="bg-red-50 rounded-xl p-4 border border-red-100">
+                  <div className="bg-red-50/40 backdrop-blur-md rounded-2xl p-4 border border-red-200/30">
                     <h3 className="text-sm font-bold text-red-800 mb-3 flex items-center gap-2">
                       <AlertCircle className="w-4 h-4" /> Arguments AGAINST
                     </h3>
@@ -310,7 +310,7 @@ export default function NewsPulsePage() {
                 {/* Key Facts + How to Start */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {gdInsights.key_facts?.length > 0 && (
-                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                    <div className="bg-blue-50/40 backdrop-blur-md rounded-2xl p-4 border border-blue-200/30">
                       <h3 className="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2">
                         <BarChart2 className="w-4 h-4" /> Key Facts & Data
                       </h3>
@@ -324,7 +324,7 @@ export default function NewsPulsePage() {
                     </div>
                   )}
                   {gdInsights.how_to_start && (
-                    <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                    <div className="bg-purple-50/40 backdrop-blur-md rounded-2xl p-4 border border-purple-200/30">
                       <h3 className="text-sm font-bold text-purple-800 mb-3 flex items-center gap-2">
                         <Target className="w-4 h-4" /> How to Start Speaking
                       </h3>
@@ -335,7 +335,7 @@ export default function NewsPulsePage() {
 
                 {/* Example Argument */}
                 {gdInsights.example_argument && (
-                  <div className="bg-[#F0FDFA] rounded-xl p-4 border border-teal-200">
+                  <div className="bg-teal-50/40 backdrop-blur-md rounded-2xl p-4 border border-teal-200/30">
                     <h3 className="text-sm font-bold text-teal-800 mb-2 flex items-center gap-2">
                       <Lightbulb className="w-4 h-4" /> Winning Argument (use this in GD)
                     </h3>
@@ -346,7 +346,7 @@ export default function NewsPulsePage() {
                 {/* Power Phrase + Interview connection */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {gdInsights.power_phrase && (
-                    <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200 flex items-start gap-3">
+                    <div className="bg-yellow-50/40 backdrop-blur-md rounded-2xl p-4 border border-yellow-200/30 flex items-start gap-3">
                       <Star className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
                       <div>
                         <div className="text-xs font-bold text-yellow-800 mb-1">Power Phrase</div>
@@ -355,7 +355,7 @@ export default function NewsPulsePage() {
                     </div>
                   )}
                   {gdInsights.interview_connection && (
-                    <div className="bg-orange-50 rounded-xl p-4 border border-orange-200 flex items-start gap-3">
+                    <div className="bg-orange-50/40 backdrop-blur-md rounded-2xl p-4 border border-orange-200/30 flex items-start gap-3">
                       <Sparkles className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
                       <div>
                         <div className="text-xs font-bold text-orange-800 mb-1">Interview Link</div>
@@ -423,7 +423,7 @@ export default function NewsPulsePage() {
                         window.open(article.url, '_blank', 'noopener,noreferrer');
                       }
                     }}
-                    className={`bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.05)] hover:shadow-[0_4px_20px_rgba(13,148,136,0.12)] hover:border-[#CCFBF1] transition-all group overflow-hidden ${
+                    className={`bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl shadow-sm hover:shadow-md transition-all group overflow-hidden ${
                       article.url && article.url !== '#' ? 'cursor-pointer' : ''
                     }`}
                   >
@@ -477,7 +477,7 @@ export default function NewsPulsePage() {
           </div>
 
           {/* Top Companies sidebar-style row */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 shadow-sm">
             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Building2 className="w-4 h-4 text-[#0D9488]" /> Top Hiring Companies
             </h3>
@@ -489,7 +489,7 @@ export default function NewsPulsePage() {
                 { name: 'TCS', jobs: 423, trend: 'up' },
                 { name: 'Infosys', jobs: 378, trend: 'stable' },
               ].map((c, i) => (
-                <div key={i} className="flex flex-col items-center justify-center p-3 bg-gray-50 rounded-xl border border-gray-100 text-center hover:border-[#0D9488]/30 transition-all">
+                <div key={i} className="flex flex-col items-center justify-center p-3 bg-slate-50/50 backdrop-blur-sm rounded-2xl border border-slate-100 text-center hover:border-[#00C4A7]/30 transition-all">
                   <div className="font-semibold text-gray-900 text-sm">{c.name}</div>
                   <div className="text-xs text-gray-500 mt-0.5">{c.jobs} positions</div>
                   <div className="mt-1.5">
