@@ -239,8 +239,8 @@ function StageSelector({ active, onChange }) {
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
           className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl border-2 font-semibold text-sm transition-colors ${
             active === s.id
-              ? "bg-[#0D9488] border-[#0D9488] text-white shadow-[0_4px_16px_rgba(13,148,136,0.3)]"
-              : "bg-white border-[#CCFBF1] text-gray-600 hover:border-[#0D9488] hover:text-[#0D9488]"
+              ? "bg-[#00C4A7] border-[#00C4A7] text-white shadow-md shadow-[#00C4A7]/20"
+              : "bg-white/70 backdrop-blur-md border-white/30 text-gray-650 hover:border-[#00C4A7] hover:text-[#00C4A7]"
           }`}
         >
           <span className="text-xl">{s.icon}</span>
@@ -258,8 +258,8 @@ function Stage10th({ stageData }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {(stageData?.streams || []).map((s, i) => (
           <m.div key={s.name} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-            whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(13,148,136,0.15)" }}
-            className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+            whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(0,196,167,0.15)" }}
+            className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-5 shadow-sm">
             <div className="font-bold text-gray-900 mb-1" style={{ fontFamily: "Syne, sans-serif" }}>{s.name}</div>
             <div className="text-xs text-[#0D9488] font-semibold mb-3">{s.trend}</div>
             <div className="flex items-center justify-between mb-3">
@@ -287,8 +287,8 @@ function Stage12th({ stageData }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {(stageData?.degrees || []).map((d, i) => (
           <m.div key={d.name} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-            whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(13,148,136,0.15)" }}
-            className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+            whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(0,196,167,0.15)" }}
+            className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-5 shadow-sm">
             <div className="font-bold text-gray-900 mb-1" style={{ fontFamily: "Syne, sans-serif" }}>{d.name}</div>
             <div className="flex items-center justify-between mb-3">
               <div><span className="text-xs text-gray-400">ROI</span><div className="font-bold text-[#0D9488]">{d.roi}</div></div>
@@ -312,8 +312,8 @@ function StagePostGrad({ stageData }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {(stageData?.paths || []).map((p, i) => (
           <m.div key={p.name} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-            whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(13,148,136,0.15)" }}
-            className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+            whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(0,196,167,0.15)" }}
+            className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-5 shadow-sm">
             <div className="font-bold text-gray-900 mb-3" style={{ fontFamily: "Syne, sans-serif" }}>{p.name}</div>
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div className="bg-[#F0FDFA] rounded-xl p-2 text-center"><div className="text-xs text-gray-500">ROI timeline</div><div className="font-bold text-[#0D9488] text-sm">{p.roi}</div></div>
@@ -331,7 +331,7 @@ function StagePostGrad({ stageData }) {
 function StageCareerIntelligence({ stageData }) {
   return (
     <m.div key="career-intelligence" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.3 }}>
-      <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+      <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 shadow-sm">
         <div className="text-center mb-6">
           <div className="text-4xl mb-2">🧠</div>
           <h3 className="font-bold text-gray-900 text-xl mb-1" style={{ fontFamily: "Syne, sans-serif" }}>Career Intelligence</h3>
@@ -366,7 +366,7 @@ function Recommendations({ recs, loading }) {
           viewport={{ once: true }}
           transition={{ delay: i * 0.08 }}
           whileHover={{ y: -2, boxShadow: "0 8px 24px rgba(13,148,136,0.12)" }}
-          className={`flex items-start gap-3 p-4 rounded-xl border bg-white block ${r.urgent ? "border-[#CCFBF1]" : "border-gray-100"}`}
+          className={`flex items-start gap-3 p-4 rounded-2xl border backdrop-blur-sm block ${r.urgent ? "bg-[#00C4A7]/10 border-[#00C4A7]/30 text-[#00C4A7]" : "bg-white/40 border-white/30 text-slate-700"}`}
         >
           <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${r.urgent ? "bg-[#CCFBF1]" : "bg-gray-100"}`}>
             {r.urgent ? <Zap className="w-4 h-4 text-[#0D9488]" /> : <BookOpen className="w-4 h-4 text-gray-500" />}
@@ -436,8 +436,8 @@ export default function CareerGPSPage() {
             {/* Left column */}
             <div className="lg:col-span-1 space-y-6">
               {/* Market Fit Score */}
-              <m.div variants={item} whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(13,148,136,0.15)" }}
-                className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] p-6">
+              <m.div variants={item} whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(0,196,167,0.15)" }}
+                className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl shadow-sm p-6">
                 <MarketFitRing score={gpsData?.marketFitScore} loading={loading} />
                 <div className="mt-5 pt-5 border-t border-gray-100">
                   <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Score Breakdown</div>
@@ -446,7 +446,7 @@ export default function CareerGPSPage() {
               </m.div>
 
               {/* Recommendations */}
-              <m.div variants={item} className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] overflow-hidden">
+              <m.div variants={item} className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
                   <Target className="w-5 h-5 text-[#0D9488]" />
                   <h2 className="font-bold text-gray-900" style={{ fontFamily: "Syne, sans-serif" }}>Your Action Plan</h2>
@@ -460,7 +460,7 @@ export default function CareerGPSPage() {
             {/* Right column */}
             <div className="lg:col-span-2 space-y-6">
               {/* Journey Timeline */}
-              <m.div variants={item} className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] overflow-hidden">
+              <m.div variants={item} className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
                   <span className="text-lg">🗺️</span>
                   <h2 className="font-bold text-gray-900" style={{ fontFamily: "Syne, sans-serif" }}>Your Journey</h2>
@@ -471,7 +471,7 @@ export default function CareerGPSPage() {
               </m.div>
 
               {/* Skill Gaps */}
-              <m.div variants={item} className="bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(13,148,136,0.06)] overflow-hidden">
+              <m.div variants={item} className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-amber-500" />
                   <h2 className="font-bold text-gray-900" style={{ fontFamily: "Syne, sans-serif" }}>Skill Gaps</h2>

@@ -21,10 +21,13 @@ export default function DeviceTestPanel({ startInterview, loading }) {
 
   return (
     <AppShell>
-      <div className="max-w-[700px] mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{fontFamily:'Syne,sans-serif'}}>Verify Your Setup</h1>
-          <p className="text-sm text-gray-500">Ensure camera and microphone are configured correctly for voice transcription.</p>
+
+      <div className="relative max-w-[800px] mx-auto px-6 py-12 z-10">
+        
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 mb-2">Verify Your Setup</h1>
+          <p className="text-sm text-slate-500 font-semibold">Ensure camera and microphone are configured correctly for voice transcription.</p>
         </div>
 
         <div className="space-y-6">
@@ -38,13 +41,13 @@ export default function DeviceTestPanel({ startInterview, loading }) {
           />
 
           {(state.config.mode === 'video' ? allPass : corePass) ? (
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center space-y-4 animate-fade-in">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600">
+            <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 text-center space-y-4 animate-fade-in shadow-sm">
+              <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto text-green-600">
                 <CheckCircle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-bold text-green-950 text-lg">Setup Verified!</h3>
-                <p className="text-xs text-green-700">Everything is working correctly. {"You're"} ready to start!</p>
+                <h3 className="font-extrabold text-slate-800 text-lg">Setup Verified!</h3>
+                <p className="text-xs text-slate-400 font-bold mt-1">Everything is working correctly. You're ready to start!</p>
               </div>
               <button
                 onClick={() => {
@@ -54,7 +57,7 @@ export default function DeviceTestPanel({ startInterview, loading }) {
                   startInterview(true);
                 }}
                 disabled={loading}
-                className="w-full bg-[#0D9488] text-white py-4 rounded-xl font-semibold hover:bg-[#0F766E] transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full bg-[#00C4A7] text-white py-4 rounded-xl font-bold hover:bg-[#00b296] transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? (
                   <>
@@ -69,8 +72,8 @@ export default function DeviceTestPanel({ startInterview, loading }) {
               </button>
             </div>
           ) : (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5 text-center space-y-3">
-              <p className="text-sm text-yellow-800 font-semibold">Please complete the verification checks above to start.</p>
+            <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 text-center space-y-3 shadow-sm">
+              <p className="text-xs text-amber-600 font-bold">Please complete the verification checks above to start.</p>
               <button
                 onClick={() => {
                   if (typeof window !== 'undefined') {
@@ -79,7 +82,7 @@ export default function DeviceTestPanel({ startInterview, loading }) {
                   startInterview(true);
                 }}
                 disabled={loading}
-                className="text-xs text-gray-500 hover:text-gray-700 underline flex items-center gap-1 mx-auto disabled:opacity-50"
+                className="text-xs text-slate-400 hover:text-slate-600 font-bold underline flex items-center gap-1 mx-auto disabled:opacity-50"
               >
                 Skip verification and start anyway
               </button>
@@ -89,7 +92,7 @@ export default function DeviceTestPanel({ startInterview, loading }) {
           <button
             onClick={() => dispatch({ type: 'SET_STATUS', payload: 'setup' })}
             disabled={loading}
-            className="w-full py-3 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-3 bg-white border border-slate-200/60 hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm"
           >
             <ChevronLeft className="w-4 h-4" /> Back to Parameters Setup
           </button>

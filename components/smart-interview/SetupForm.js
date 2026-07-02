@@ -41,7 +41,8 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
 
   return (
     <AppShell>
-      <div className="max-w-[1000px] mx-auto px-4 md:px-10 py-6 md:py-10">
+
+      <div className="relative max-w-[1240px] mx-auto px-6 py-8 z-10">
         
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10 border-b border-slate-100 pb-6">
@@ -63,7 +64,7 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
         <div className="mb-10 space-y-2">
           <div className="flex justify-between text-xs font-bold text-slate-400 tracking-wider">
             <span>STEP {step} OF 4</span>
-            <span className="text-[#14B8A6]">{step === 1 ? 'ROUND TYPE' : step === 2 ? 'PARAMETERS' : step === 3 ? 'BASE MATERIAL' : 'LAUNCH BRIEF'}</span>
+          <span className="text-[#00C4A7]">{step === 1 ? 'ROUND TYPE' : step === 2 ? 'PARAMETERS' : step === 3 ? 'BASE MATERIAL' : 'LAUNCH BRIEF'}</span>
           </div>
           <ProgressBar progress={(step / 4) * 100} />
         </div>
@@ -97,21 +98,21 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
                 <div 
                   key={item.r}
                   onClick={() => dispatch({ type: 'SET_CONFIG', payload: { round: item.r } })}
-                  className={`border rounded-2xl p-6 cursor-pointer transition-all ${
+                  className={`bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 cursor-pointer shadow-sm hover:shadow-md transition-all duration-300 ${
                     state.config.round === item.r 
-                      ? 'border-[#14B8A6] bg-[#CCFBF1]/15 shadow-sm' 
-                      : 'border-slate-200 bg-white hover:bg-slate-50/50'
+                      ? 'border-[#00C4A7] ring-2 ring-[#00C4A7]/10 bg-white/90' 
+                      : 'border-slate-100 hover:-translate-y-0.5'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-slate-800 text-base">{item.title}</h3>
-                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                      state.config.round === item.r ? 'border-[#14B8A6] bg-[#14B8A6] text-white' : 'border-slate-300'
+                    <h3 className="font-extrabold text-slate-800 text-base">{item.title}</h3>
+                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
+                      state.config.round === item.r ? 'border-[#00C4A7] bg-[#00C4A7] text-white' : 'border-slate-200 bg-white'
                     }`}>
                       {state.config.round === item.r && "✓"}
                     </div>
                   </div>
-                  <p className="text-xs text-slate-500 mt-2.5 leading-relaxed">{item.desc}</p>
+                  <p className="text-xs text-slate-500 mt-2.5 leading-relaxed font-medium">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -143,21 +144,21 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
                   <div 
                     key={item.d}
                     onClick={() => setDifficulty(item.d)}
-                    className={`border rounded-2xl p-5 cursor-pointer transition-all ${
+                    className={`bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-5 cursor-pointer shadow-sm hover:shadow-md transition-all duration-300 ${
                       difficulty === item.d 
-                        ? 'border-[#6366F1] bg-[#6366F1]/5 shadow-sm' 
-                        : 'border-slate-200 bg-white hover:bg-slate-50'
+                        ? 'border-[#6366F1] ring-2 ring-[#6366F1]/10 bg-white/90' 
+                        : 'border-slate-100 hover:-translate-y-0.5'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs uppercase tracking-wider text-slate-700">{item.d}</span>
-                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                        difficulty === item.d ? 'border-[#6366F1] bg-[#6366F1] text-white' : 'border-slate-300'
+                      <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">{item.d}</span>
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+                        difficulty === item.d ? 'border-[#6366F1] bg-[#6366F1] text-white' : 'border-slate-200 bg-white'
                       }`}>
                         {difficulty === item.d && "✓"}
                       </div>
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">{item.desc}</p>
+                    <p className="text-[11px] text-slate-500 mt-2 leading-relaxed font-medium">{item.desc}</p>
                   </div>
                 ))}
               </div>
@@ -179,20 +180,20 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
                     <div 
                       key={item.m}
                       onClick={() => dispatch({ type: 'SET_CONFIG', payload: { mode: item.m } })}
-                      className={`border rounded-2xl p-5 cursor-pointer flex items-center gap-4 transition-all ${
+                      className={`bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-5 cursor-pointer flex items-center gap-4 shadow-sm hover:shadow-md transition-all duration-300 ${
                         state.config.mode === item.m 
-                          ? 'border-[#14B8A6] bg-[#CCFBF1]/15 shadow-sm' 
-                          : 'border-slate-200 bg-white hover:bg-slate-50'
+                          ? 'border-[#00C4A7] ring-2 ring-[#00C4A7]/10 bg-white/90' 
+                          : 'border-slate-100 hover:-translate-y-0.5'
                       }`}
                     >
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                        state.config.mode === item.m ? 'bg-[#14B8A6] text-white' : 'bg-slate-100 text-slate-500'
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ${
+                        state.config.mode === item.m ? 'bg-[#00C4A7] text-white' : 'bg-slate-50 text-slate-500'
                       }`}>
                         <Icon className="w-5 h-5" />
                       </div>
                       <div className="text-left">
-                        <span className="font-bold text-slate-800 text-sm block">{item.label}</span>
-                        <span className="text-[10px] text-slate-400 mt-0.5 block">{item.desc}</span>
+                        <span className="font-extrabold text-slate-800 text-sm block">{item.label}</span>
+                        <span className="text-[10px] text-slate-400 mt-0.5 block font-semibold">{item.desc}</span>
                       </div>
                     </div>
                   );
@@ -218,29 +219,29 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
           <div className="space-y-6">
             <div>
               <h2 className="text-xl font-bold text-slate-900">Upload Target Base Material</h2>
-              <p className="text-slate-500 text-sm mt-1">We tailor questions dynamically to your resume claims and target job requirements.</p>
+              <p className="text-slate-550 text-sm mt-1">We tailor questions dynamically to your resume claims and target job requirements.</p>
             </div>
 
             {/* Resume Upload Box */}
             <div className="space-y-3">
               <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase">RESUME (PDF, DOCX)</label>
-              <label htmlFor="resume-upload" className={`relative border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all group ${
-                state.config.resumeBase64 ? 'border-[#14B8A6] bg-[#CCFBF1]/5' : 'border-slate-200 hover:border-[#14B8A6]/60 bg-white'
+              <label htmlFor="resume-upload" className={`relative bg-white/60 backdrop-blur-sm border-2 border-dashed rounded-3xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 group shadow-sm ${
+                state.config.resumeBase64 ? 'border-[#00C4A7] bg-[#00C4A7]/5' : 'border-slate-200 hover:border-[#00C4A7]/60'
               }`}>
-                <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 transition-colors ${
-                  state.config.resumeBase64 ? 'bg-[#14B8A6] text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-[#14B8A6] group-hover:text-white'
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 transition-colors duration-300 ${
+                  state.config.resumeBase64 ? 'bg-[#00C4A7] text-white' : 'bg-slate-50 text-slate-500 group-hover:bg-[#00C4A7] group-hover:text-white'
                 }`}>
                   {resumeFileName ? <CheckCircle className="w-7 h-7" /> : <Upload className="w-7 h-7" />}
                 </div>
                 {resumeFileName ? (
                   <>
-                    <p className="font-bold text-slate-800 text-sm">{resumeFileName}</p>
-                    <p className="text-xs text-slate-400 mt-1.5">Click to replace file</p>
+                    <p className="font-extrabold text-slate-800 text-sm">{resumeFileName}</p>
+                    <p className="text-xs text-slate-400 mt-1.5 font-semibold">Click to replace file</p>
                   </>
                 ) : (
                   <>
-                    <p className="font-bold text-slate-800 text-sm">Upload your Resume</p>
-                    <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">Drag & drop your PDF/DOCX here. Questions will adapt to your projects.</p>
+                    <p className="font-extrabold text-slate-800 text-sm">Upload your Resume</p>
+                    <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed font-semibold">Drag & drop your PDF/DOCX here. Questions will adapt to your claims.</p>
                   </>
                 )}
                 <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} className="hidden" id="resume-upload" />
@@ -291,7 +292,7 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
               <p className="text-slate-500 text-sm mt-1">Review parameters and outcomes prior to session launch.</p>
             </div>
 
-            <div className="bg-[#F8FAFC] border border-slate-200/60 rounded-2xl p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6 shadow-sm">
               <div className="space-y-4">
                 <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase">INTERVIEW PROPERTIES</h3>
                 <div className="space-y-3">
@@ -331,7 +332,7 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
                   </div>
                   <div className="flex justify-between">
                     <span>⚡ Bridge Score Impact:</span>
-                    <span className="font-bold text-slate-700 text-[#14B8A6]">{difficulty === 'Beginner' ? '+10 Pts' : difficulty === 'Intermediate' ? '+25 Pts' : '+40 Pts'}</span>
+                    <span className="font-extrabold text-[#00C4A7]">{difficulty === 'Beginner' ? '+10 Pts' : difficulty === 'Intermediate' ? '+25 Pts' : '+40 Pts'}</span>
                   </div>
                   <p className="text-[10px] text-slate-400 mt-2 leading-normal">
                     This interview calculates real-time integrity alerts. Switching tabs or exiting fullscreen may negatively affect your evaluation metrics.

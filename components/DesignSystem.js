@@ -34,7 +34,7 @@ export function Card({ children, className = "", onClick }) {
   return (
     <div 
       onClick={onClick}
-      className={`bg-white rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-6 transition-all duration-300 ${onClick ? 'cursor-pointer hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:translate-y-[-2px]' : ''} ${className}`}
+      className={`bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl shadow-sm p-6 transition-all duration-300 ${onClick ? 'cursor-pointer hover:shadow-md hover:translate-y-[-2px]' : ''} ${className}`}
     >
       {children}
     </div>
@@ -54,7 +54,7 @@ export function Button({
   const baseStyle = "active:scale-[0.98] transition-all px-5 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 select-none disabled:opacity-50 disabled:cursor-not-allowed";
   
   const variants = {
-    teal: "bg-[#14B8A6] text-white hover:bg-[#0D9488]",
+    teal: "bg-[#00C4A7] text-white hover:bg-[#00b296]",
     cyan: "bg-[#06B6D4] text-white hover:bg-[#0891B2]",
     indigo: "bg-[#6366F1] text-white hover:bg-[#4F46E5]",
     outline: "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
@@ -77,7 +77,7 @@ export function Button({
 export function Input({ className = "", ...props }) {
   return (
     <input 
-      className={`w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#14B8A6] focus:border-transparent transition-all placeholder-slate-400 ${className}`}
+      className={`w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C4A7] focus:border-transparent transition-all placeholder-slate-400 ${className}`}
       {...props}
     />
   );
@@ -86,7 +86,7 @@ export function Input({ className = "", ...props }) {
 export function Select({ children, className = "", ...props }) {
   return (
     <select 
-      className={`w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#14B8A6] focus:border-transparent transition-all ${className}`}
+      className={`w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C4A7] focus:border-transparent transition-all ${className}`}
       {...props}
     >
       {children}
@@ -97,7 +97,7 @@ export function Select({ children, className = "", ...props }) {
 export function Textarea({ className = "", ...props }) {
   return (
     <textarea 
-      className={`w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#14B8A6] focus:border-transparent transition-all placeholder-slate-400 resize-none ${className}`}
+      className={`w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#00C4A7] focus:border-transparent transition-all placeholder-slate-400 resize-none ${className}`}
       {...props}
     />
   );
@@ -110,7 +110,7 @@ export function ProgressBar({ progress }) {
   return (
     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
       <div 
-        className="h-full bg-gradient-to-r from-[#14B8A6] to-[#06B6D4] transition-all duration-500 ease-out" 
+        className="h-full bg-gradient-to-r from-[#00C4A7] to-[#38bdf8] transition-all duration-500 ease-out" 
         style={{ width: `${boundedProgress}%` }}
       />
     </div>

@@ -1069,10 +1069,11 @@ function SmartInterviewContent() {
 
     return (
       <AppShell hideNavigation={true}>
-        <div className="max-w-[1000px] mx-auto px-4 md:px-10 py-6 md:py-10">
+
+        <div className="relative max-w-[1240px] mx-auto px-6 py-8 z-10">
           
           {/* Top Control Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-6 border-b border-slate-100 pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6 border-b border-slate-200 pb-4">
             <div className="flex items-center gap-3">
               {isRecording && (
                 <div className="flex items-center gap-2 bg-red-50 border border-red-200 px-3.5 py-1.5 rounded-full">
@@ -1080,8 +1081,8 @@ function SmartInterviewContent() {
                   <span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">Recording</span>
                 </div>
               )}
-              <div className="flex items-center gap-2 bg-[#CCFBF1]/50 px-3.5 py-1.5 rounded-full">
-                <span className="text-[10px] font-bold text-[#0D9488] uppercase tracking-wider">Question {state.engine.questionNumber}</span>
+              <div className="flex items-center gap-2 bg-[#00C4A7]/10 px-3.5 py-1.5 rounded-full">
+                <span className="text-[10px] font-bold text-[#00C4A7] uppercase tracking-wider">Question {state.engine.questionNumber}</span>
                 <span className="text-[10px] text-slate-400 font-semibold">• {state.config.round}</span>
               </div>
               {state.integrity.isFullscreen && (
@@ -1108,10 +1109,10 @@ function SmartInterviewContent() {
           </div>
 
           {/* INTERVIEW PROGRESS TIMELINE */}
-          <div className="bg-white border border-slate-100 rounded-2xl p-5 mb-6 shadow-[0_8px_30px_rgb(0,0,0,0.01)]">
-            <div className="flex justify-between items-center text-xs font-bold text-slate-400 tracking-wider mb-3 uppercase">
+          <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 mb-6 shadow-sm">
+            <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 tracking-wider mb-4 uppercase">
               <span>Interview Timeline Progress</span>
-              <span className="text-[#14B8A6]">{estimatedQuestionsRemaining} Questions Est. Remaining</span>
+              <span className="text-[#00C4A7]">{estimatedQuestionsRemaining} Questions Est. Remaining</span>
             </div>
             <div className="flex gap-2 items-center overflow-x-auto pb-1.5">
               {[...Array(totalExpectedQuestions)].map((_, i) => {
@@ -1122,7 +1123,7 @@ function SmartInterviewContent() {
                   <div key={i} className="flex items-center gap-2 shrink-0">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                       completed 
-                        ? 'bg-[#14B8A6] text-white shadow-sm' 
+                        ? 'bg-[#00C4A7] text-white shadow-sm' 
                         : active 
                         ? 'bg-[#6366F1] text-white ring-4 ring-[#6366F1]/10' 
                         : 'bg-slate-50 border border-slate-200 text-slate-400'
@@ -1130,7 +1131,7 @@ function SmartInterviewContent() {
                       {completed ? "✓" : qIndex}
                     </div>
                     {qIndex < totalExpectedQuestions && (
-                      <div className={`w-6 h-0.5 ${completed ? 'bg-[#14B8A6]' : 'bg-slate-100'}`} />
+                      <div className={`w-6 h-0.5 ${completed ? 'bg-[#00C4A7]' : 'bg-slate-100'}`} />
                     )}
                   </div>
                 );
@@ -1141,7 +1142,7 @@ function SmartInterviewContent() {
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-2xl p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100">
+              <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow duration-300">
                 
                 {state.engine.interviewerThought && (
                   <div className="bg-[#F8FAFC] border border-slate-200/60 rounded-xl p-4 mb-4 animate-fade-in">
@@ -1151,16 +1152,16 @@ function SmartInterviewContent() {
                 )}
 
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-[#CCFBF1]/40 rounded-full flex items-center justify-center text-[#0D9488] shrink-0">
+                  <div className="w-12 h-12 bg-[#00C4A7]/10 rounded-full flex items-center justify-center text-[#00C4A7] shrink-0">
                     <Brain className="w-6 h-6" />
                   </div>
                   <div>
-                    <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">AI Recruiter Panel</div>
-                    <div className="font-bold text-slate-800 text-base">{state.config.jobRole} Role</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">AI Recruiter Panel</div>
+                    <div className="font-extrabold text-slate-800 text-base">{state.config.jobRole} Role</div>
                   </div>
                   <button
                     onClick={() => speakText(state.engine.currentQuestion)}
-                    className="ml-auto p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors border border-slate-200/60"
+                    className="ml-auto p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-650 transition-colors border border-slate-200/60"
                     title="Repeat question"
                   >
                     <Volume2 className="w-4 h-4" />
@@ -1177,7 +1178,7 @@ function SmartInterviewContent() {
                       <div
                         className={`max-w-lg px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                           msg.role === 'user'
-                            ? 'bg-[#14B8A6] text-white font-medium shadow-sm rounded-tr-none'
+                            ? 'bg-[#00C4A7] text-white font-medium shadow-sm rounded-tr-none'
                             : 'bg-[#F8FAFC] border border-slate-200/50 text-slate-800 font-medium rounded-tl-none'
                         }`}
                       >
@@ -1204,7 +1205,7 @@ function SmartInterviewContent() {
                     <div className="flex flex-col items-center justify-center p-8 bg-[#F8FAFC] rounded-2xl border border-slate-100 text-center space-y-4 animate-fade-in">
                       <div className="flex items-end justify-center gap-1.5 h-10">
                         {[...Array(8)].map((_, i) => (
-                          <div key={i} className="w-1.5 bg-[#14B8A6] rounded-full animate-pulse" style={{
+                          <div key={i} className="w-1.5 bg-[#00C4A7] rounded-full animate-pulse" style={{
                             height: `${Math.max(20, Math.sin(i * 0.4) * 100)}%`,
                             animationDelay: `${i * 0.12}s`,
                             animationDuration: '1s'
@@ -1213,7 +1214,7 @@ function SmartInterviewContent() {
                       </div>
                       <div>
                         <p className="font-bold text-slate-800 text-sm">Interviewer is speaking...</p>
-                        <p className="text-xs text-slate-400 mt-1">Please listen carefully to the question prompt.</p>
+                        <p className="text-xs text-slate-400 mt-1 font-semibold">Please listen carefully to the question prompt.</p>
                       </div>
                       <button 
                         onClick={() => { 
@@ -1228,7 +1229,7 @@ function SmartInterviewContent() {
                           setIsThinking(true);
                           setThinkingTimeLeft(5);
                         }} 
-                        className="text-xs text-[#14B8A6] hover:underline font-bold"
+                        className="text-xs text-[#00C4A7] hover:underline font-bold"
                       >
                         Skip voice and start thinking
                       </button>
@@ -1238,18 +1239,21 @@ function SmartInterviewContent() {
                       <div className="relative w-16 h-16 flex items-center justify-center">
                         <svg className="absolute w-full h-full -rotate-90" viewBox="0 0 100 100">
                           <circle cx="50" cy="50" r="45" fill="none" stroke="#E2E8F0" strokeWidth="6" />
-                          <circle cx="50" cy="50" r="45" fill="none" stroke="#14B8A6" strokeWidth="6" 
+                          <circle cx="50" cy="50" r="45" fill="none" stroke="#00C4A7" strokeWidth="6" 
                             strokeDasharray={2 * Math.PI * 45} 
                             strokeDashoffset={2 * Math.PI * 45 * (1 - thinkingTimeLeft / 5)} 
                             strokeLinecap="round" className="transition-all duration-1000" />
                         </svg>
-                        <span className="text-2xl font-extrabold text-[#14B8A6]">{thinkingTimeLeft}</span>
+                        <span className="text-2xl font-extrabold text-[#00C4A7]">{thinkingTimeLeft}</span>
                       </div>
                       <div>
                         <p className="font-bold text-slate-800 text-sm">Comprehending Question...</p>
-                        <p className="text-xs text-slate-400 mt-1">Take a moment to formulate your response outline.</p>
+                        <p className="text-xs text-slate-400 mt-1 font-semibold">Take a moment to formulate your response outline.</p>
                       </div>
-                      <button onClick={() => { setIsThinking(false); startRecordingState(true); }} className="text-xs text-[#14B8A6] hover:underline font-bold">
+                      <button 
+                        onClick={() => { setIsThinking(false); startRecordingState(true); }} 
+                        className="text-xs text-[#00C4A7] hover:underline font-bold"
+                      >
                         Skip countdown and speak now
                       </button>
                     </div>
@@ -1304,7 +1308,7 @@ function SmartInterviewContent() {
                         className={`w-full py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
                           isNextLocked 
                             ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200/60' 
-                            : 'bg-[#14B8A6] text-white hover:bg-[#0D9488] shadow-sm hover:scale-[1.01]'
+                            : 'bg-[#00C4A7] text-white hover:bg-[#00b296] shadow-sm hover:scale-[1.01]'
                         }`}
                       >
                         {isNextLocked ? (
@@ -1339,8 +1343,8 @@ function SmartInterviewContent() {
                 </div>
               )}
 
-              <div className="bg-white rounded-2xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100">
-                <h3 className="font-bold text-[#14B8A6] mb-4 text-xs uppercase tracking-wider flex items-center gap-2">
+              <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 shadow-sm">
+                <h3 className="font-extrabold text-[#00C4A7] mb-4 text-[10px] uppercase tracking-wider flex items-center gap-2">
                   <TrendingUp className="w-4 h-4" /> Assessment Tips
                 </h3>
                 <div className="space-y-3">
@@ -1386,17 +1390,18 @@ function SmartInterviewContent() {
   if (state.status === 'history') {
     return (
       <AppShell>
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8 flex items-center justify-between">
+
+        <div className="relative max-w-[1240px] mx-auto px-6 py-8 z-10">
+          <div className="mb-8 flex items-center justify-between border-b border-slate-100 pb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Interview History</h1>
-              <p className="text-gray-600 mt-1">View your previous interview feedback</p>
+              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Interview History</h1>
+              <p className="text-slate-550 text-sm mt-1">View your previous interview feedback and benchmark trends</p>
             </div>
             <button
               onClick={() => dispatch({ type: 'SET_STATUS', payload: 'setup' })}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200/60 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold shadow-sm transition-colors"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4" />
               Back to Setup
             </button>
           </div>
@@ -1404,18 +1409,18 @@ function SmartInterviewContent() {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
-                <div className="w-8 h-8 animate-spin rounded-full border-2 border-[#0D9488] border-t-transparent mx-auto mb-4"></div>
-                <div className="text-gray-600">Loading history...</div>
+                <div className="w-8 h-8 animate-spin rounded-full border-2 border-[#00C4A7] border-t-transparent mx-auto mb-4"></div>
+                <div className="text-slate-500 font-semibold text-xs">Loading history...</div>
               </div>
             </div>
           ) : feedbackHistory.length === 0 ? (
-            <div className="text-center py-12">
-              <History className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Interview History</h3>
-              <p className="text-gray-600 mb-6">Complete your first interview to see feedback here</p>
+            <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-8 text-center py-12 shadow-sm animate-fade-in">
+              <History className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-xl font-extrabold text-slate-800 mb-2">No Interview History</h3>
+              <p className="text-slate-550 text-xs font-semibold mb-6">Complete your first interview to see feedback here</p>
               <button
                 onClick={() => dispatch({ type: 'SET_STATUS', payload: 'setup' })}
-                className="px-6 py-3 bg-[#0D9488] text-white rounded-lg hover:bg-[#0F766E] transition-colors"
+                className="px-6 py-3.5 bg-[#00C4A7] hover:bg-[#00b296] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 mx-auto"
               >
                 Start Interview
               </button>
@@ -1425,19 +1430,19 @@ function SmartInterviewContent() {
               {feedbackHistory.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
+                  className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer hover:-translate-y-0.5"
                   onClick={() => viewHistoricalFeedback(item)}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{item.jobRole}</h3>
-                      <p className="text-sm text-gray-600">{item.round}</p>
+                      <h3 className="text-lg font-extrabold text-slate-800">{item.jobRole}</h3>
+                      <p className="text-xs text-slate-400 font-semibold mt-0.5">{item.round}</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold gradient-text">
+                      <div className="text-2xl font-extrabold text-[#00C4A7]">
                         {item.feedback?.placement_chance || item.feedback?.placementChance || 0}%
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-[10px] text-slate-400 font-semibold mt-0.5">
                         {new Date(item.timestamp).toLocaleDateString()}
                       </div>
                     </div>
@@ -1447,23 +1452,23 @@ function SmartInterviewContent() {
                     {Object.entries(item.feedback?.scores || {}).map(([key, value]) => {
                       const scoreValue = typeof value === 'object' && value !== null && 'score' in value ? value.score : value;
                       return (
-                        <div key={key} className="text-center">
-                          <div className="text-sm font-semibold text-gray-900">{scoreValue}/10</div>
-                          <div className="text-[10px] text-gray-500 capitalize">{key.replace('_', ' ')}</div>
+                        <div key={key} className="text-center py-2 bg-slate-50/50 border border-slate-100 rounded-xl">
+                          <div className="text-sm font-bold text-slate-800">{scoreValue}/10</div>
+                          <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wide mt-0.5">{key.replace('_', ' ')}</div>
                         </div>
                       );
                     })}
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                      (item.feedback?.placement_chance || item.feedback?.placementChance || 0) >= 75 ? 'bg-green-100 text-green-700' :
-                      (item.feedback?.placement_chance || item.feedback?.placementChance || 0) >= 50 ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-50 pt-4">
+                    <span className={`inline-flex items-center px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+                      (item.feedback?.placement_chance || item.feedback?.placementChance || 0) >= 75 ? 'bg-green-50 text-green-700 border border-green-100' :
+                      (item.feedback?.placement_chance || item.feedback?.placementChance || 0) >= 50 ? 'bg-yellow-50 text-yellow-700 border border-yellow-100' :
+                      'bg-red-50 text-red-700 border border-red-100'
                     }`}>
                       {item.feedback?.verdict}
                     </span>
-                    <span className="text-sm text-[#0D9488] font-medium">Click to view details →</span>
+                    <span className="text-[10px] text-[#00C4A7] font-bold uppercase tracking-wider hover:underline">Click to view details →</span>
                   </div>
                 </div>
               ))}

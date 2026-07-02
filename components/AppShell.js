@@ -294,7 +294,13 @@ export default function AppShell({ children, hideNavigation = false }) {
   const isGroupActive = (group) => group.some(p => pathname === p || pathname.startsWith(p + '/'));
 
   return (
-    <div className="min-h-screen h-screen overflow-hidden bg-[#fcf8ff] flex flex-col md:flex-row">
+    <div className="min-h-screen h-screen overflow-hidden bg-[#fcf8ff] flex flex-col md:flex-row relative">
+      {/* Dynamic ambient glassmesh background */}
+      <div className="fixed inset-0 bg-[linear-gradient(135deg,#0A8FDD_0%,#11B6C8_50%,#14C7B8_100%)] opacity-[0.15] pointer-events-none z-0" />
+      <div 
+        className="fixed inset-0 bg-cover bg-center opacity-[0.08] pointer-events-none z-0"
+        style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBcTzpqwsf9YotP3ZLEVFduk6XgAjdUsqbZFW_IEjra55hRVBf9bOqiHAQvgiIEXkGkx3eUPkQ7npDBhJFmMAGhLsdvMAfagnUdAHqlSt7aPwLTuY9zJWRDe5z-jBbbFcs5bQp-tgnUQIwqEQNstqQ-0WKYfbCm0oWWbD4TTrlC1kjyjlCwvE0okx_AGMu4Oh1bpRtbUQQ5SLI_7t07zb4wq_XaGTbt5IXr8J94RpQdzdG46Et56j9_7yKfE17dZcEWGACl_gChZ3A")' }} 
+      />
 
       {/* ── Mobile Top App Bar ── */}
       {!hideNavigation && (
@@ -441,7 +447,7 @@ export default function AppShell({ children, hideNavigation = false }) {
         <div className="fixed inset-0 z-[100] bg-white flex items-center justify-center p-6">
           <div className="max-w-md w-full text-center">
             <h1 className="text-2xl font-extrabold text-[#14B8A6] mb-8" style={{fontFamily:'Syne,sans-serif'}}>BridgeAI</h1>
-            <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 p-8">
+            <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl shadow-sm p-8">
               <div className="w-16 h-16 bg-[#CCFBF1]/50 rounded-full flex items-center justify-center mx-auto mb-5">
                 <Upload className="w-7 h-7 text-[#14B8A6]" />
               </div>
@@ -512,7 +518,7 @@ export default function AppShell({ children, hideNavigation = false }) {
       )}
 
       {/* ── Main Content ── */}
-      <main className={`flex-1 min-h-0 overflow-y-auto ${
+      <main className={`flex-1 min-h-0 overflow-y-auto relative z-10 ${
         hideNavigation 
           ? "w-full pt-0 pb-0 ml-0" 
           : `${collapsed ? 'md:ml-20' : 'md:ml-64'} pt-16 md:pt-0 pb-24 md:pb-0`
