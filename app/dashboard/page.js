@@ -182,6 +182,15 @@ export default function Dashboard() {
   const [scoreHistory, setScoreHistory] = useState([]);
   const [isMounted, setIsMounted] = useState(false);
   const [timeframe, setTimeframe] = useState("week"); // "week" or "month"
+  const [weeklyStreakDays, setWeeklyStreakDays] = useState([
+    { dayName: 'M', checked: false, isToday: false },
+    { dayName: 'T', checked: false, isToday: false },
+    { dayName: 'W', checked: false, isToday: false },
+    { dayName: 'T', checked: false, isToday: false },
+    { dayName: 'F', checked: false, isToday: false },
+    { dayName: 'S', checked: false, isToday: false },
+    { dayName: 'S', checked: false, isToday: false }
+  ]);
 
   const { isBypassed, mockUserData } = useAuthBypass();
 
@@ -293,6 +302,9 @@ export default function Dashboard() {
                     bridgeScore: data.score || prev.bridgeScore,
                     currentStreak: data.streak !== undefined ? data.streak : prev.currentStreak
                   }));
+                  if (data.streak !== undefined) {
+                    setDoc(userRef, { streak: data.streak }, { merge: true }).catch(() => {});
+                  }
                 }
               })
               .catch(err => console.error("Error refreshing bridge stats on load:", err));
@@ -382,6 +394,69 @@ export default function Dashboard() {
             console.error("Error loading recent activities:", err);
           }
           setRecentActivity(activities.slice(0, 5));
+
+          // Calculate current streak directly from fetched activities
+          const datesSet = new Set();
+          activities.forEach(act => {
+            if (act.date) {
+              datesSet.add(act.date.toISOString().split('T')[0]);
+            }
+          });
+
+          let calculatedStreak = 0;
+          const sortedDates = Array.from(datesSet).sort().reverse();
+          if (sortedDates.length > 0) {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            
+            const latestActiveDate = sortedDates[0];
+            if (latestActiveDate === todayStr || latestActiveDate === yesterdayStr) {
+              let streakCount = 0;
+              let checkDate = new Date(latestActiveDate);
+              while (true) {
+                const checkStr = checkDate.toISOString().split('T')[0];
+                if (datesSet.has(checkStr)) {
+                  streakCount++;
+                  checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                  break;
+                }
+              }
+              calculatedStreak = streakCount;
+            }
+          }
+
+          // Calculate weekly streak days checks
+          const today = new Date();
+          const currentDay = today.getDay(); // 0 is Sunday, 1 is Monday, etc.
+          const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+          const monday = new Date(today);
+          monday.setDate(today.getDate() + distanceToMonday);
+
+          const updatedWeekDays = [];
+          const dayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+          for (let i = 0; i < 7; i++) {
+            const dayDate = new Date(monday);
+            dayDate.setDate(monday.getDate() + i);
+            const dayStr = dayDate.toISOString().split('T')[0];
+            updatedWeekDays.push({
+              dayName: dayNames[i],
+              checked: datesSet.has(dayStr),
+              isToday: dayStr === today.toISOString().split('T')[0]
+            });
+          }
+
+          setWeeklyStreakDays(updatedWeekDays);
+          setStats(prev => ({
+            ...prev,
+            currentStreak: calculatedStreak
+          }));
+
+          // Sync recalculated streak back to user profile in Firestore
+          const uRef = doc(db, 'users', user.uid);
+          setDoc(uRef, { streak: calculatedStreak }, { merge: true }).catch(() => {});
 
           // Fetch score history
           try {
@@ -641,7 +716,7 @@ export default function Dashboard() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Days Streak</p>
-                    <h4 className="text-2xl font-extrabold text-slate-800 mt-1">{stats.currentStreak || 7}</h4>
+                    <h4 className="text-2xl font-extrabold text-slate-800 mt-1">{stats.currentStreak}</h4>
                   </div>
                   <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500">
                     <Flame className="w-4 h-4" />
@@ -920,19 +995,16 @@ export default function Dashboard() {
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 mb-2">
                 <Flame className="w-4 h-4 text-orange-500" /> Practice Streak
               </h3>
-              <p className="text-[10px] font-extrabold text-slate-700">{stats.currentStreak || 7} Day Streak</p>
+              <p className="text-[10px] font-extrabold text-slate-700">{stats.currentStreak} Day Streak</p>
               <p className="text-[9px] text-slate-400 mt-0.5">Amazing consistency! Protect your score multiplier.</p>
 
               {/* Duolingo Calendar Map */}
               <div className="grid grid-cols-7 gap-2 text-center text-[9px] font-bold text-slate-500 mt-4 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                {['M','T','W','T','F','S','S'].map((day, idx) => {
-                  const limitVal = stats.currentStreak || 7;
-                  const isChecked = idx < limitVal;
-                  
+                {weeklyStreakDays.map((dayObj, idx) => {
                   return (
                     <div key={idx} className="flex flex-col gap-1.5 items-center">
-                      <span>{day}</span>
-                      {isChecked ? (
+                      <span className={dayObj.isToday ? "text-orange-500" : ""}>{dayObj.dayName}</span>
+                      {dayObj.checked ? (
                         <div className="w-6 h-6 rounded-full flex items-center justify-center bg-[#00C4A7] text-white shadow-sm text-[10px]">
                           ✓
                         </div>
