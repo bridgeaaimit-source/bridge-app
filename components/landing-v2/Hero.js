@@ -263,7 +263,7 @@ export default function Hero() {
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-            className="relative w-full max-w-md bg-gradient-to-br from-[#060E0D]/25 to-[#030706]/35 rounded-3xl border border-white/10 dark:border-teal-500/20 p-6 shadow-[0_0_50px_rgba(0,196,167,0.15)] overflow-hidden backdrop-blur-2xl transition-all duration-300 hover:backdrop-blur-none"
+            className="relative w-full max-w-md bg-gradient-to-br from-[#060E0D]/25 to-[#030706]/35 rounded-3xl border border-white/10 dark:border-teal-500/20 p-6 shadow-[0_0_50px_rgba(0,196,167,0.15)] overflow-hidden backdrop-blur-2xl transition-all duration-300 hover:backdrop-filter-none hover:[backdrop-filter:none] hover:from-[#060E0D]/95 hover:to-[#030706]/98 group"
           >
             {/* Glowing top line highlight */}
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#00C4A7] to-transparent shadow-[0_1px_15px_rgba(0,196,167,0.6)]" />
@@ -349,7 +349,7 @@ export default function Hero() {
             </div>
  
             {/* Speech Analysis HUD */}
-            <div className="rounded-2xl border border-white/5 dark:border-teal-950/30 bg-[#030605]/35 p-4 relative z-10 backdrop-blur-md">
+            <div className="rounded-2xl border border-white/5 dark:border-teal-950/30 bg-[#030605]/35 p-4 relative z-10 backdrop-blur-md transition-all duration-300 group-hover:backdrop-filter-none group-hover:[backdrop-filter:none] group-hover:bg-[#030605]/85">
               <div className="flex items-center gap-2 mb-2 text-[10px] font-extrabold text-[#00C4A7]/75 tracking-wider">
                 <MessageSquare className="h-3.5 w-3.5 text-[#00C4A7]" />
                 <span>LIVE TRANSCRIPT SYNTHESIS</span>
