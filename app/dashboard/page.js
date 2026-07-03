@@ -650,7 +650,7 @@ export default function Dashboard() {
 
   // Format Aptitude score nicely
   const getDisplayAptitude = () => {
-    if (!stats.avgScore) return 96;
+    if (!stats.avgScore) return 0;
     if (stats.avgScore <= 10) return Math.round(stats.avgScore * 10);
     return Math.round(stats.avgScore);
   };
@@ -682,15 +682,21 @@ export default function Dashboard() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Aptitude Score</p>
-                    <h4 className="text-2xl font-extrabold text-slate-800 mt-1">{getDisplayAptitude()}</h4>
+                    <h4 className="text-2xl font-extrabold text-slate-800 mt-1">{getDisplayAptitude() || '0'}</h4>
                   </div>
                   <div className="w-8 h-8 rounded-xl bg-teal-50 flex items-center justify-center text-[#00C4A7]">
                     <Award className="w-4 h-4" />
                   </div>
                 </div>
                 <div className="mt-4 flex items-center gap-1 text-[10px]">
-                  <span className="font-bold text-[#00C4A7]">↑ 4</span>
-                  <span className="text-slate-400">this week</span>
+                  {stats.avgScore > 0 ? (
+                    <>
+                      <span className="font-bold text-[#00C4A7]">↑ 4</span>
+                      <span className="text-slate-400">this week</span>
+                    </>
+                  ) : (
+                    <span className="text-slate-400">No tests taken yet</span>
+                  )}
                 </div>
               </div>
 
@@ -699,15 +705,21 @@ export default function Dashboard() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Mocks Taken</p>
-                    <h4 className="text-2xl font-extrabold text-slate-800 mt-1">{stats.interviewsDone || 24}</h4>
+                    <h4 className="text-2xl font-extrabold text-slate-800 mt-1">{stats.interviewsDone || 0}</h4>
                   </div>
                   <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center text-purple-500">
                     <ClipboardList className="w-4 h-4" />
                   </div>
                 </div>
                 <div className="mt-4 flex items-center gap-1 text-[10px]">
-                  <span className="font-bold text-purple-600">↑ 5</span>
-                  <span className="text-slate-400">this week</span>
+                  {stats.interviewsDone > 0 ? (
+                    <>
+                      <span className="font-bold text-purple-600">↑ 5</span>
+                      <span className="text-slate-400">this week</span>
+                    </>
+                  ) : (
+                    <span className="text-slate-400">No mocks taken yet</span>
+                  )}
                 </div>
               </div>
 
@@ -732,15 +744,23 @@ export default function Dashboard() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Batch Rank</p>
-                    <h4 className="text-2xl font-extrabold text-slate-800 mt-1">Top 18%</h4>
+                    <h4 className="text-2xl font-extrabold text-slate-800 mt-1">
+                      {stats.bridgeScore > 0 ? "Top 18%" : "—"}
+                    </h4>
                   </div>
                   <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500">
                     <Star className="w-4 h-4" />
                   </div>
                 </div>
                 <div className="mt-4 flex items-center gap-1 text-[10px]">
-                  <span className="font-bold text-blue-600">↑ 4%</span>
-                  <span className="text-slate-400">this week</span>
+                  {stats.bridgeScore > 0 ? (
+                    <>
+                      <span className="font-bold text-blue-600">↑ 4%</span>
+                      <span className="text-slate-400">this week</span>
+                    </>
+                  ) : (
+                    <span className="text-slate-400">Pending evaluation</span>
+                  )}
                 </div>
               </div>
 
@@ -924,70 +944,91 @@ export default function Dashboard() {
                 </h3>
               </div>
 
-              {/* Circular SVG Gauge */}
-              <div className="relative w-40 h-40 mt-2 flex items-center justify-center">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="45" fill="none" stroke="#cbd5e1" strokeWidth="7" />
-                  <circle cx="50" cy="50" r="45" fill="none" stroke="#00C4A7"
-                    strokeWidth="7" strokeLinecap="round"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={circumference - (circumference * scorePercent / 100)} 
-                    className="transition-all duration-1000"
-                  />
-                </svg>
-                <div className="absolute flex flex-col items-center">
-                  <span className="text-3xl font-extrabold text-slate-800">
-                    {stats.bridgeScore !== undefined ? stats.bridgeScore : "—"}
-                  </span>
-                  <span className="text-[9px] font-bold text-[#00C4A7] bg-teal-50 px-2 py-0.5 rounded-full mt-1.5 uppercase tracking-wide">
-                    {getScoreRating(stats.bridgeScore || 0)}
-                  </span>
-                  <span className="text-[8px] text-slate-400 font-bold mt-1">TOP 18%</span>
+              {!resumeUploaded ? (
+                <div className="flex flex-col items-center justify-center text-center py-8 px-4 w-full">
+                  <div className="w-14 h-14 bg-teal-50 text-[#00C4A7] rounded-full flex items-center justify-center mb-4">
+                    <Award className="w-7 h-7 animate-pulse" />
+                  </div>
+                  <p className="text-xs text-slate-600 font-semibold mb-5 leading-relaxed">
+                    Upload your resume to unlock your personalised Bridge Score.
+                  </p>
+                  <Link 
+                    href="/profile"
+                    className="bg-[#00C4A7] hover:bg-[#008378] text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-sm transition-all w-full"
+                  >
+                    Upload Resume
+                  </Link>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {/* Circular SVG Gauge */}
+                  <div className="relative w-40 h-40 mt-2 flex items-center justify-center">
+                    <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r="45" fill="none" stroke="#cbd5e1" strokeWidth="7" />
+                      <circle cx="50" cy="50" r="45" fill="none" stroke="#00C4A7"
+                        strokeWidth="7" strokeLinecap="round"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={circumference - (circumference * scorePercent / 100)} 
+                        className="transition-all duration-1000"
+                      />
+                    </svg>
+                    <div className="absolute flex flex-col items-center">
+                      <span className="text-3xl font-extrabold text-slate-800">
+                        {stats.bridgeScore !== undefined ? stats.bridgeScore : "—"}
+                      </span>
+                      <span className="text-[9px] font-bold text-[#00C4A7] bg-teal-50 px-2 py-0.5 rounded-full mt-1.5 uppercase tracking-wide">
+                        {getScoreRating(stats.bridgeScore || 0)}
+                      </span>
+                      <span className="text-[8px] text-slate-400 font-bold mt-1">
+                        {stats.bridgeScore > 0 ? "TOP 18%" : "—"}
+                      </span>
+                    </div>
+                  </div>
 
-              {/* Spider Web Radar Chart (Aptitude & Other breakdowns) */}
-              <div className="w-full mt-6 border-t border-slate-50 pt-4 flex flex-col items-center">
-                <p className="text-[10px] font-extrabold text-slate-800 uppercase tracking-wider self-start mb-2">Skill Profile</p>
-                
-                <div className="w-full h-52 flex items-center justify-center relative">
-                  {isMounted && (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart cx="50%" cy="50%" outerRadius="65%" data={radarData}>
-                        <PolarGrid stroke="#cbd5e1" />
-                        <PolarAngleAxis 
-                          dataKey="subject" 
-                          tick={{ fill: '#64748b', fontSize: 9, fontWeight: 'bold' }} 
-                        />
-                        <PolarRadiusAxis 
-                          angle={30} 
-                          domain={[0, 100]} 
-                          tick={false} 
-                          axisLine={false} 
-                        />
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: '#0F172A', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '10px' }}
-                          itemStyle={{ color: '#00C4A7', fontWeight: 'bold' }}
-                        />
-                        <Radar 
-                          name="Score" 
-                          dataKey="value" 
-                          stroke="#00C4A7" 
-                          fill="#00C4A7" 
-                          fillOpacity={0.2} 
-                        />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-              </div>
+                  {/* Spider Web Radar Chart (Aptitude & Other breakdowns) */}
+                  <div className="w-full mt-6 border-t border-slate-50 pt-4 flex flex-col items-center">
+                    <p className="text-[10px] font-extrabold text-slate-800 uppercase tracking-wider self-start mb-2">Skill Profile</p>
+                    
+                    <div className="w-full h-52 flex items-center justify-center relative">
+                      {isMounted && (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RadarChart cx="50%" cy="50%" outerRadius="65%" data={radarData}>
+                            <PolarGrid stroke="#cbd5e1" />
+                            <PolarAngleAxis 
+                              dataKey="subject" 
+                              tick={{ fill: '#64748b', fontSize: 9, fontWeight: 'bold' }} 
+                            />
+                            <PolarRadiusAxis 
+                              angle={30} 
+                              domain={[0, 100]} 
+                              tick={false} 
+                              axisLine={false} 
+                            />
+                            <Tooltip 
+                              contentStyle={{ backgroundColor: '#0F172A', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '10px' }}
+                              itemStyle={{ color: '#00C4A7', fontWeight: 'bold' }}
+                            />
+                            <Radar 
+                              name="Score" 
+                              dataKey="value" 
+                              stroke="#00C4A7" 
+                              fill="#00C4A7" 
+                              fillOpacity={0.2} 
+                            />
+                          </RadarChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+                  </div>
 
-              <Link 
-                href="/dashboard/bridge-score" 
-                className="w-full text-center text-[10px] font-bold text-[#00C4A7] hover:underline mt-4 pt-2 border-t border-slate-50"
-              >
-                View Detailed Analysis →
-              </Link>
+                  <Link 
+                    href="/dashboard/bridge-score" 
+                    className="w-full text-center text-[10px] font-bold text-[#00C4A7] hover:underline mt-4 pt-2 border-t border-slate-50"
+                  >
+                    View Detailed Analysis →
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Practice Streak */}
@@ -1045,15 +1086,14 @@ export default function Dashboard() {
                     );
                   })
                 ) : (
-                  <div className="flex gap-3 group">
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-purple-600 bg-purple-50">
-                      <SmartInterviewIcon className="w-4 h-4" />
-                    </div>
-                    <div className="flex-grow border-b border-slate-50 pb-2">
-                      <p className="text-xs font-bold text-slate-800">Mock Interview Completed</p>
-                      <p className="text-[9px] text-slate-400 mt-0.5">Frontend Developer Role</p>
-                      <span className="text-[8px] text-slate-400 font-bold uppercase">2h ago</span>
-                    </div>
+                  <div className="text-center py-6 px-4 bg-slate-50/50 border border-dashed border-slate-200 rounded-2xl w-full">
+                    <p className="text-xs text-slate-500 font-semibold">No interviews completed yet.</p>
+                    <button 
+                      onClick={handleStartChallenge}
+                      className="text-[10px] text-[#00C4A7] hover:underline font-bold mt-2"
+                    >
+                      Take your first mock interview →
+                    </button>
                   </div>
                 )}
                 

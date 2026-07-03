@@ -68,6 +68,7 @@ export default function AppShell({ children, hideNavigation = false }) {
   const [resumeUploaded, setResumeUploaded] = useState(null); // null = loading
   const [resumeFile, setResumeFile] = useState(null);
   const [uploadingResume, setUploadingResume] = useState(false);
+  const [resumeLater, setResumeLater] = useState(false);
   const [openTicketsCount, setOpenTicketsCount] = useState(0);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -213,6 +214,7 @@ export default function AppShell({ children, hideNavigation = false }) {
       // Score resume via AI
       let bridgeScore = 0;
       let scoreData = null;
+      let isResumeValid = true;
       try {
         const scoreRes = await fetch('/api/jobs', {
           method: 'POST',
@@ -221,10 +223,30 @@ export default function AppShell({ children, hideNavigation = false }) {
         });
         if (scoreRes.ok) {
           scoreData = await scoreRes.json();
-          bridgeScore = scoreData.bridge_score || 0;
-          setResumeScore(scoreData);
+          if (scoreData.is_resume === false) {
+            alert(scoreData.error || 'The uploaded file does not appear to be a valid resume.');
+            isResumeValid = false;
+          } else {
+            bridgeScore = scoreData.bridge_score || 0;
+            setResumeScore(scoreData);
+          }
+        } else {
+          const errData = await scoreRes.json().catch(() => ({}));
+          alert(errData.error || 'Failed to analyze resume. Please ensure you upload a valid resume.');
+          isResumeValid = false;
         }
-      } catch (scoreErr) { console.error('Resume scoring failed', scoreErr); }
+      } catch (scoreErr) {
+        console.error('Resume scoring failed', scoreErr);
+        alert('Error connecting to resume scoring server. Please try again.');
+        isResumeValid = false;
+      }
+
+      if (!isResumeValid) {
+        setResumeFile(null);
+        setUploadingResume(false);
+        return;
+      }
+
       const updateData = { resumeUploaded: true, resumeFileName: file.name, resumeBase64: dataUrl, bridgeScore, resumeScore: scoreData, updatedAt: new Date().toISOString() };
       if (snap.exists()) {
         await updateDoc(userRef, updateData);
@@ -306,7 +328,12 @@ export default function AppShell({ children, hideNavigation = false }) {
       {!hideNavigation && (
         <header className="md:hidden flex justify-between items-center w-full px-6 h-16 bg-white shadow-sm fixed top-0 z-40">
         <Link href="/dashboard">
-          <img src="/images/logo_navbar_48h.png" alt="BridgeAI" className="h-8 w-auto" />
+          <img 
+            src="/images/logo_transparent.png" 
+            srcSet="/images/logo_transparent.png 1x, /images/logo_640x276_retina.png 2x"
+            alt="BridgeAI" 
+            className="h-8 w-auto object-contain" 
+          />
         </Link>
         <div className="flex items-center gap-2">
           <button className="p-2 rounded-full hover:bg-[#CCFBF1]/30 transition-colors text-gray-500 relative">
@@ -443,10 +470,15 @@ export default function AppShell({ children, hideNavigation = false }) {
       )}
 
       {/* ── Resume Gate ── */}
-      {!isBypassed && resumeUploaded === false && currentUser && (
+      {!isBypassed && resumeUploaded === false && !resumeLater && currentUser && (
         <div className="fixed inset-0 z-[100] bg-white flex items-center justify-center p-6">
           <div className="max-w-md w-full text-center">
-            <h1 className="text-2xl font-extrabold text-[#14B8A6] mb-8" style={{fontFamily:'Syne,sans-serif'}}>BridgeAI</h1>
+            <img 
+              src="/images/logo_transparent.png" 
+              srcSet="/images/logo_transparent.png 1x, /images/logo_640x276_retina.png 2x"
+              alt="BridgeAI Logo" 
+              className="h-10 mx-auto mb-8 object-contain" 
+            />
             <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl shadow-sm p-8">
               <div className="w-16 h-16 bg-[#CCFBF1]/50 rounded-full flex items-center justify-center mx-auto mb-5">
                 <Upload className="w-7 h-7 text-[#14B8A6]" />
@@ -475,6 +507,16 @@ export default function AppShell({ children, hideNavigation = false }) {
               </label>
               {uploadingResume && <p className="text-xs text-[#14B8A6] mt-3 font-semibold">AI is scoring your resume — this takes ~10 seconds...</p>}
               {!uploadingResume && <p className="text-xs text-slate-400 mt-3">Max 5MB · PDF, DOC, or DOCX</p>}
+              
+              {!uploadingResume && (
+                <button
+                  type="button"
+                  onClick={() => setResumeLater(true)}
+                  className="mt-6 text-xs font-bold text-[#14B8A6] hover:text-[#0D9488] transition-colors"
+                >
+                  Give resume later
+                </button>
+              )}
             </div>
           </div>
         </div>

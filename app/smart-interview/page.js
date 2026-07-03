@@ -2,11 +2,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
 export const dynamic = "force-dynamic";
-import { ChevronLeft, Brain, Mic, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause, Volume2, Lightbulb, Star, History, Download, DownloadCloud, Book, Camera, XCircle, ChevronDown, ChevronRight, RefreshCw, ArrowRight, Globe, SkipForward } from "lucide-react";
+import { ChevronLeft, Brain, Mic, Upload, FileText, Send, CheckCircle, AlertCircle, TrendingUp, Award, Target, MessageSquare, X, Play, Pause, Volume2, Lightbulb, Star, History, Download, DownloadCloud, Book, Camera, XCircle, ChevronDown, ChevronRight, RefreshCw, ArrowRight, Globe, SkipForward, Lock } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { auth, db } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import { doc, setDoc, collection, addDoc, query, orderBy, limit, getDocs, getDoc, updateDoc } from "firebase/firestore";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
 import { useAssemblyAI as useDeepgramTranscription } from "@/hooks/useAssemblyAI";
@@ -77,6 +78,8 @@ function SmartInterviewContent() {
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [feedbackHistory, setFeedbackHistory] = useState([]);
   const [startError, setStartError] = useState('');
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [dbResumeUploaded, setDbResumeUploaded] = useState(false);
 
   // In-flight request dedup guards — prevent duplicate concurrent API calls
   const isStartingRef = useRef(false);
@@ -204,6 +207,48 @@ function SmartInterviewContent() {
     document.addEventListener('fullscreenchange', onFsChange);
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, [state.status, handleViolation]);
+
+  // Load previously uploaded resume from Firestore on mount
+  useEffect(() => {
+    if (isBypassed) {
+      setDbResumeUploaded(true);
+      setProfileLoaded(true);
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            setDbResumeUploaded(!!userData.resumeUploaded);
+            if (userData.resumeUploaded && userData.resumeBase64 && userData.resumeFileName) {
+              const base64Content = userData.resumeBase64.includes(',') 
+                ? userData.resumeBase64.split(',')[1] 
+                : userData.resumeBase64;
+              dispatch({
+                type: 'SET_CONFIG',
+                payload: {
+                  resumeBase64: base64Content,
+                  resumeFileName: userData.resumeFileName
+                }
+              });
+            }
+          }
+        } catch (e) {
+          console.error('Error preloading user resume:', e);
+        } finally {
+          setProfileLoaded(true);
+        }
+      } else {
+        setProfileLoaded(true);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [isBypassed, dispatch]);
 
   // Browser setups
   useEffect(() => {
@@ -401,10 +446,47 @@ function SmartInterviewContent() {
       return;
     }
 
-    const toastId = toast.loading('Reading resume...');
+    const toastId = toast.loading('Uploading and validating resume...');
 
     try {
       const base64 = await fileToBase64(file);
+
+      // Validate and score resume via /api/jobs score_resume action
+      const scoreRes = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'score_resume', resume_base64: base64 })
+      });
+
+      if (!scoreRes.ok) {
+        const errData = await scoreRes.json().catch(() => ({}));
+        toast.error(errData.error || 'Failed to validate resume.', { id: toastId });
+        return;
+      }
+
+      const scoreData = await scoreRes.json();
+      if (scoreData.is_resume === false) {
+        toast.error(scoreData.error || 'The uploaded file does not appear to be a valid resume.', { id: toastId });
+        return;
+      }
+
+      // Save to Firestore
+      const user = isBypassed ? { uid: 'test-user-123' } : auth.currentUser;
+      if (user) {
+        const dataUrl = `data:application/pdf;base64,${base64}`;
+        const updateData = {
+          resumeUploaded: true,
+          resumeFileName: file.name,
+          resumeBase64: dataUrl,
+          bridgeScore: scoreData.bridge_score || 0,
+          updatedAt: new Date().toISOString()
+        };
+        if (!isBypassed) {
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, updateData);
+        }
+      }
+
       dispatch({
         type: 'SET_CONFIG',
         payload: {
@@ -419,7 +501,7 @@ function SmartInterviewContent() {
       const res = await fetch('/api/parse-resume', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resume_base64: base64, file_type: fileExt, file_name: file.name, userId: auth.currentUser?.uid }),
+        body: JSON.stringify({ resume_base64: base64, file_type: fileExt, file_name: file.name, userId: user?.uid }),
       });
       const data = await res.json();
       if (res.ok && data.resumeText) {
@@ -428,9 +510,10 @@ function SmartInterviewContent() {
         dispatch({ type: 'SET_CONFIG', payload: { resumeText: `Resume: ${file.name}` } });
       }
 
-      toast.success('Resume read successfully!', { id: toastId });
+      setDbResumeUploaded(true);
+      toast.success('Resume validated and loaded successfully!', { id: toastId });
     } catch (error) {
-      toast.error('Failed to upload resume', { id: toastId });
+      toast.error('Failed to upload and validate resume', { id: toastId });
       console.error('Resume upload error:', error);
     }
   };
@@ -1054,6 +1137,33 @@ function SmartInterviewContent() {
 
   // SETUP SCREEN
   if (state.status === 'setup') {
+    if (profileLoaded && !dbResumeUploaded) {
+      return (
+        <AppShell>
+          <div className="relative max-w-xl mx-auto px-6 py-16 text-center z-10">
+            <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl shadow-sm p-8 flex flex-col items-center">
+              <div className="w-16 h-16 bg-[#CCFBF1]/50 rounded-full flex items-center justify-center mb-5">
+                <Lock className="w-7 h-7 text-[#14B8A6]" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Smart Practice is Locked</h2>
+              <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+                Smart Interviews remain disabled until your resume is uploaded. Please upload a valid resume to unlock personalized mock interviews.
+              </p>
+              
+              <label className={`w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-white cursor-pointer transition-all ${loading ? 'bg-slate-300 cursor-not-allowed' : 'bg-[#14B8A6] hover:bg-[#0D9488]'}`}>
+                {loading ? (
+                  <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Validating resume...</>
+                ) : (
+                  <><Upload className="w-4 h-4" /> Upload Resume to Unlock (PDF)</>
+                )}
+                <input type="file" accept=".pdf" className="hidden" onChange={handleResumeUpload} disabled={loading} />
+              </label>
+              <p className="text-xs text-slate-400 mt-3 font-medium">Max 5MB · PDF format only</p>
+            </div>
+          </div>
+        </AppShell>
+      );
+    }
     return <SetupForm startInterview={startInterview} loadFeedbackHistory={loadFeedbackHistory} handleResumeUpload={handleResumeUpload} loading={loading} />;
   }
 

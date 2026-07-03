@@ -156,10 +156,26 @@ Return ONLY valid JSON:
 
   // ACTION: Score resume quality → initial Bridge Score
   if (action === 'score_resume') {
-    const scorePrompt = `You are evaluating a student resume for quality and career readiness.
+    const scorePrompt = `You are evaluating an uploaded document.
+First, perform a CRITICAL VALIDATION to verify if the uploaded document is actually a resume/CV. Do NOT rely only on the filename. Inspect the document content text carefully.
 
-Score this resume across these dimensions and return ONLY valid JSON (no extra text):
+A valid resume or CV MUST contain standard resume keywords (e.g., Resume, Curriculum Vitae, CV, Experience, Education, Skills, Projects, Internship, Certification, Professional Summary, Work Experience, Achievements, Languages, Technical Skills, Extracurricular Activities).
+
+You MUST reject the document (set "is_resume": false in JSON) if any of the following apply:
+1. The document text contains keywords indicating it is a bill, receipt, statement, or other non-resume document (e.g., Invoice, Bill, Receipt, Medical, Prescription, Laboratory, Hospital, Report, Bank Statement, Electricity Bill, Water Bill, Passport, PAN, Aadhaar, Certificate only, Random scanned documents).
+2. The document has almost no resume structure (no education, skills, or experience/projects sections).
+3. The extracted text is too short, or mostly contains tables/numbers (like financial transaction logs or medical bills).
+4. No clear contact details, education history, or professional sections are detected.
+
+If validation fails, you MUST return JSON in this exact structure (no other fields, no extra text):
 {
+  "is_resume": false,
+  "error": "This doesn't appear to be a resume. Please upload your resume in PDF or DOC format."
+}
+
+If the document is a valid resume or CV, evaluate it for quality and career readiness, and return JSON in this exact structure:
+{
+  "is_resume": true,
   "overall_score": <integer 0-100>,
   "bridge_score": <integer 0-200, calculated as overall_score * 2>,
   "breakdown": {
@@ -173,7 +189,7 @@ Score this resume across these dimensions and return ONLY valid JSON (no extra t
   "verdict": "Brief 1-line verdict on this resume"
 }
 
-Be honest and fair. A blank or minimal resume should score 10-30. A strong MBA/engineering resume with projects and internships should score 70-90.`;
+Be honest and fair. A blank or minimal resume should score 10-30. A strong MBA/engineering resume with projects and internships should score 70-90. Return ONLY valid JSON (no extra text).`;
 
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',

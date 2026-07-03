@@ -63,7 +63,7 @@ export default function OnboardingTour() {
         {
           popover: {
             title: '👋 Welcome to BridgeAI!',
-            description: `<div style="text-align:center;padding:8px 0"><img src="/images/logo_navbar_48h.png" style="height:48px;margin:0 auto 12px;display:block"/><p style="font-size:14px;color:#44445A;line-height:1.6">India's smartest AI-powered placement prep platform — built for students from Tier 2 &amp; 3 colleges.</p><p style="font-size:13px;color:#0D9488;margin-top:8px;font-weight:600">Let us show you around in 60 seconds 🚀</p></div>`,
+            description: `<div style="text-align:center;padding:8px 0"><img src="/images/logo_transparent.png" srcset="/images/logo_transparent.png 1x, /images/logo_640x276_retina.png 2x" style="height:48px;margin:0 auto 12px;display:block"/><p style="font-size:14px;color:#44445A;line-height:1.6">India's smartest AI-powered placement prep platform — built for students from Tier 2 &amp; 3 colleges.</p><p style="font-size:13px;color:#0D9488;margin-top:8px;font-weight:600">Let us show you around in 60 seconds 🚀</p></div>`,
             showButtons: ['next', 'close'],
             nextBtnText: "Let's Go! →",
             align: 'center',
