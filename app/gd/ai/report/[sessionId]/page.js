@@ -594,7 +594,7 @@ export default function GDReportPage({ params: paramsPromise }) {
               </div>
 
               {/* Strengths & Weaknesses quick tags */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-100 pt-6 mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 border-t border-slate-100 pt-6 mt-6">
                 {safeOverallAnalysis.topStrength ? (
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Top Strength</span>
@@ -667,7 +667,7 @@ export default function GDReportPage({ params: paramsPromise }) {
           )}
 
           {/* Highlights: Strongest Moment & Growth Opportunity */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Strongest Moment */}
             <Card className="p-6 border-slate-200/80 bg-emerald-50/20 border-emerald-100 flex flex-col justify-between">
               <div className="space-y-3">
@@ -707,7 +707,7 @@ export default function GDReportPage({ params: paramsPromise }) {
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
                 Your Custom 3-Step Action Plan
               </span>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {safeOverallAnalysis.actionItems.map((item, idx) => (
                   <div key={idx} className="bg-white border border-slate-150 rounded-2xl p-4 flex gap-3 shadow-sm hover:border-teal-500/20 transition-all duration-300">
                     <input 
@@ -735,7 +735,7 @@ export default function GDReportPage({ params: paramsPromise }) {
           <div className="space-y-4">
             <h2 className="text-lg font-extrabold text-slate-800 tracking-tight">Recruiter Evaluation Dimensions</h2>
             {Object.keys(safeDimensions).length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {Object.entries(safeDimensions).map(([dimId, dimData]) => (
                   <DimensionScore key={dimId} dimensionId={dimId} data={dimData} />
                 ))}

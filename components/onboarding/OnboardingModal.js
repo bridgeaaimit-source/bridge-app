@@ -114,7 +114,10 @@ export default function OnboardingModal({ isOpen, userName, onComplete, onSkip }
             {step === 0 && (
               <m.div key="s0" custom={dir} variants={slideVariants} initial="enter" animate="center" exit="exit"
                 transition={{ duration: 0.22 }} className="text-center">
-                <m.img src="/images/logo_400w.png" alt="BridgeAI"
+                <m.img 
+                  src="/images/logo_transparent.png" 
+                  srcSet="/images/logo_transparent.png 1x, /images/logo_640x276_retina.png 2x"
+                  alt="BridgeAI"
                   initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }}
                   className="h-14 mx-auto mb-6 object-contain" />
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">Welcome to BridgeAI, {firstName} 👋</h2>

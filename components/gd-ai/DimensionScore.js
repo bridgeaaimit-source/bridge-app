@@ -16,11 +16,13 @@ export default function DimensionScore({ dimensionId, data }) {
   const titles = {
     communication: 'Communication Clarity',
     leadership: 'Leadership & Structuring',
+    leadershipCollaboration: 'Leadership & Collaboration',
     confidence: 'Voice & Confidence',
     criticalThinking: 'Critical Thinking',
     listening: 'Active Listening',
     persuasiveness: 'Persuasiveness & Impact',
     participation: 'Participation Balance',
+    participationQuality: 'Participation Quality',
     collaboration: 'Collaboration & Building',
     evidenceUsage: 'Evidence & Data Usage',
   };

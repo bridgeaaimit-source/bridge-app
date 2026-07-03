@@ -154,6 +154,7 @@ export default function ProfilePage() {
       });
       const base64 = dataUrl.split(',')[1];
       let bridgeScore = userData.bridgeScore;
+      let isResumeValid = true;
       try {
         const scoreRes = await fetch('/api/jobs', {
           method: 'POST',
@@ -162,9 +163,27 @@ export default function ProfilePage() {
         });
         if (scoreRes.ok) {
           const scoreData = await scoreRes.json();
-          bridgeScore = scoreData.bridge_score || bridgeScore;
+          if (scoreData.is_resume === false) {
+            toast.error(scoreData.error || 'The uploaded file does not appear to be a valid resume.', { id: toastId });
+            isResumeValid = false;
+          } else {
+            bridgeScore = scoreData.bridge_score || bridgeScore;
+          }
+        } else {
+          const errData = await scoreRes.json().catch(() => ({}));
+          toast.error(errData.error || 'Failed to analyze resume.', { id: toastId });
+          isResumeValid = false;
         }
-      } catch {}
+      } catch (err) {
+        toast.error('Failed to communicate with resume validation server.', { id: toastId });
+        isResumeValid = false;
+      }
+
+      if (!isResumeValid) {
+        setResumeUploading(false);
+        return;
+      }
+
       const userRef = doc(db, 'users', currentUser.uid);
       await updateDoc(userRef, { resumeUploaded: true, resumeFileName: file.name, resumeBase64: dataUrl, bridgeScore, updatedAt: new Date().toISOString() });
       setResumeFileName(file.name);

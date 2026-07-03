@@ -95,9 +95,10 @@ export default function LoginPage() {
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
               <img 
-                src="/images/logo_400w.png" 
+                src="/images/logo_transparent.png" 
+                srcSet="/images/logo_transparent.png 1x, /images/logo_640x276_retina.png 2x"
                 alt="BridgeAI"
-                style={{height:'56px',width:'auto',display:'block',margin:'0 auto'}}
+                style={{height:'56px',width:'auto',display:'block',margin:'0 auto',objectFit:'contain'}}
               />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
