@@ -235,7 +235,7 @@ export default function Hero() {
         >
           
           {/* Role Tabs */}
-          <div className="flex w-full max-w-md bg-[#060E0D]/60 border border-[#00C4A7]/20 p-1 rounded-full mb-6 shadow-lg overflow-x-auto backdrop-blur-md">
+          <div className="flex w-full max-w-md bg-[#060E0D]/20 border border-[#00C4A7]/15 p-1 rounded-full mb-6 shadow-lg overflow-x-auto backdrop-blur-xl">
             {Object.keys(ROLE_DATA).map((roleKey) => (
               <button
                 key={roleKey}
@@ -247,7 +247,7 @@ export default function Hero() {
                 {activeTab === roleKey && (
                   <m.div
                     layoutId="activeHeroTab"
-                    className="absolute inset-0 bg-[#051C18]/85 rounded-full border border-[#00C4A7] shadow-[0_0_12px_rgba(0,196,167,0.35)]"
+                    className="absolute inset-0 bg-[#00C4A7]/15 rounded-full border border-[#00C4A7]/40 shadow-[0_0_12px_rgba(0,196,167,0.25)]"
                     transition={{ type: "spring", stiffness: 550, damping: 35 }}
                   />
                 )}
@@ -263,7 +263,7 @@ export default function Hero() {
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-            className="relative w-full max-w-md bg-gradient-to-br from-[#060E0D]/95 to-[#030706]/98 rounded-3xl border border-[#00C4A7]/20 p-6 shadow-[0_0_40px_rgba(0,196,167,0.12)] overflow-hidden backdrop-blur-xl"
+            className="relative w-full max-w-md bg-gradient-to-br from-[#060E0D]/25 to-[#030706]/35 rounded-3xl border border-white/10 dark:border-teal-500/20 p-6 shadow-[0_0_50px_rgba(0,196,167,0.15)] overflow-hidden backdrop-blur-2xl"
           >
             {/* Glowing top line highlight */}
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#00C4A7] to-transparent shadow-[0_1px_15px_rgba(0,196,167,0.6)]" />
@@ -349,7 +349,7 @@ export default function Hero() {
             </div>
  
             {/* Speech Analysis HUD */}
-            <div className="rounded-2xl border border-teal-950/40 bg-[#030605]/85 p-4 relative z-10">
+            <div className="rounded-2xl border border-white/5 dark:border-teal-950/30 bg-[#030605]/35 p-4 relative z-10 backdrop-blur-md">
               <div className="flex items-center gap-2 mb-2 text-[10px] font-extrabold text-[#00C4A7]/75 tracking-wider">
                 <MessageSquare className="h-3.5 w-3.5 text-[#00C4A7]" />
                 <span>LIVE TRANSCRIPT SYNTHESIS</span>
