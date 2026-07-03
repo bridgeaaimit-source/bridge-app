@@ -125,7 +125,7 @@ export default function Hero() {
           >
             <span className="inline-flex items-center gap-2 rounded-full border border-teal-600/10 bg-teal-500/5 px-4 py-1.5 text-xs font-semibold text-[#0D524C]">
               <Sparkles className="h-3.5 w-3.5" />
-              India's AI-Powered Placement Readiness & Campus Hiring Platform
+              {"India's AI-Powered Placement Readiness & Campus Hiring Platform"}
             </span>
           </m.div>
 
@@ -235,84 +235,88 @@ export default function Hero() {
         >
           
           {/* Role Tabs */}
-          <div className="flex w-full max-w-md bg-white border border-gray-200 dark:bg-white/5 dark:border-white/10 p-1 rounded-2xl mb-6 shadow-sm overflow-x-auto backdrop-blur-md">
+          <div className="flex w-full max-w-md bg-[#060E0D]/60 border border-[#00C4A7]/20 p-1 rounded-full mb-6 shadow-lg overflow-x-auto backdrop-blur-md">
             {Object.keys(ROLE_DATA).map((roleKey) => (
               <button
                 key={roleKey}
                 onClick={() => setActiveTab(roleKey)}
-                className={`relative flex-1 py-2 px-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all cursor-pointer min-w-[80px] ${
-                  activeTab === roleKey ? "text-gray-900 dark:text-white" : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                className={`relative flex-1 py-2 px-3 text-[11px] sm:text-xs font-bold rounded-full transition-all cursor-pointer min-w-[80px] ${
+                  activeTab === roleKey ? "text-white" : "text-slate-400 hover:text-white"
                 }`}
               >
                 {activeTab === roleKey && (
                   <m.div
                     layoutId="activeHeroTab"
-                    className="absolute inset-0 bg-[#F0FDFA] dark:bg-[#0D9488]/20 rounded-xl border border-teal-100 dark:border-teal-500/20"
+                    className="absolute inset-0 bg-[#051C18]/85 rounded-full border border-[#00C4A7] shadow-[0_0_12px_rgba(0,196,167,0.35)]"
                     transition={{ type: "spring", stiffness: 550, damping: 35 }}
                   />
                 )}
-                <span className="relative z-10 capitalize">
-                  {roleKey === "pm" ? "Product Mgmt" : roleKey === "engineering" ? "Tech" : roleKey}
+                <span className="relative z-10">
+                  {roleKey === "consulting" ? "Consulting" : roleKey === "pm" ? "Product Mgmt" : roleKey === "leadership" ? "Leadership" : "Tech"}
                 </span>
               </button>
             ))}
           </div>
-
+ 
           {/* Interactive Widget Box */}
           <m.div 
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-            className="relative w-full max-w-md bg-white dark:bg-[#0A1211] rounded-3xl border border-gray-200 dark:border-white/10 p-6 shadow-2xl shadow-teal-900/10 dark:shadow-teal-900/20 overflow-hidden"
+            className="relative w-full max-w-md bg-gradient-to-br from-[#060E0D]/95 to-[#030706]/98 rounded-3xl border border-[#00C4A7]/20 p-6 shadow-[0_0_40px_rgba(0,196,167,0.12)] overflow-hidden backdrop-blur-xl"
           >
-            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-teal-600 to-emerald-500" />
+            {/* Glowing top line highlight */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#00C4A7] to-transparent shadow-[0_1px_15px_rgba(0,196,167,0.6)]" />
+            <div className="absolute -right-20 -top-20 w-42 h-42 bg-[#00C4A7]/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -left-20 -bottom-20 w-42 h-42 bg-[#6366F1]/5 rounded-full blur-3xl pointer-events-none" />
             
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 relative z-10">
               <div>
-                <h3 className="font-display text-lg font-bold text-gray-900 dark:text-white leading-tight">{data.title}</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{data.subText}</p>
+                <h3 className="font-display text-lg font-bold text-white leading-tight">{data.title}</h3>
+                <p className="text-xs text-[#00C4A7]/70 font-semibold tracking-wide mt-1">{data.subText}</p>
               </div>
-              <span className="flex items-center gap-1 bg-[#F0FDFA] dark:bg-[#0D9488]/20 border border-teal-100 dark:border-teal-500/30 px-2.5 py-1 rounded-full text-[10px] font-bold text-[#0D9488] dark:text-[#2DD4BF]">
+              <span className="flex items-center gap-1.5 bg-[#051C18]/60 border border-[#00C4A7]/30 px-3 py-1 rounded-full text-[9px] font-bold text-[#00C4A7] tracking-wider uppercase shadow-[0_0_8px_rgba(0,196,167,0.15)]">
                 <Award className="h-3 w-3" /> PLACEMENT READY
               </span>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center mb-6">
+ 
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center mb-6 relative z-10">
               
               {/* Circular score gauge */}
               <div className="sm:col-span-5 flex flex-col items-center">
                 <div className="relative h-28 w-28">
                   <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="7" />
                     <m.circle
                       cx="50"
                       cy="50"
                       r="42"
                       fill="none"
-                      stroke="#2DD4BF"
-                      strokeWidth="8"
+                      stroke="#00C4A7"
+                      strokeWidth="7"
                       strokeDasharray="263.8"
                       initial={{ strokeDashoffset: 263.8 }}
                       animate={{ strokeDashoffset: 263.8 - (263.8 * data.score) / 1000 }}
                       transition={{ type: "spring", stiffness: 180, damping: 20 }}
                       strokeLinecap="round"
+                      className="drop-shadow-[0_0_5px_rgba(0,196,167,0.4)]"
                       transform="rotate(-90 50 50)"
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="font-display text-2xl font-extrabold text-gray-900 dark:text-white">{data.score}</span>
-                    <span className="text-[9px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">Top 4%</span>
+                    <span className="font-display text-3xl font-black text-white">{data.score}</span>
+                    <span className="text-[8px] text-[#00C4A7]/65 font-bold uppercase tracking-widest mt-1">Top 4%</span>
                   </div>
                 </div>
-                <div className="mt-2.5 text-center">
-                  <span className="inline-block px-2.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/10 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20">
+                <div className="mt-4 w-full">
+                  <div className="border border-[#00C4A7]/30 bg-[#051C18]/60 text-[#00C4A7] font-extrabold text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-xl text-center shadow-[0_0_8px_rgba(0,196,167,0.1)]">
                     {data.analysis}
-                  </span>
+                  </div>
                 </div>
               </div>
-
+ 
               {/* Sub-Metrics list */}
-              <div className="sm:col-span-7 space-y-3">
+              <div className="sm:col-span-7 space-y-3.5">
                 <AnimatePresence mode="wait">
                   <m.div
                     key={activeTab}
@@ -320,15 +324,15 @@ export default function Hero() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.99 }}
                     transition={{ duration: 0.12, ease: "easeOut" }}
-                    className="space-y-3"
+                    className="space-y-3.5"
                   >
                     {data.metrics.map((metric) => (
                       <div key={metric.label}>
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className="text-gray-600 dark:text-gray-400 font-medium">{metric.label}</span>
-                          <span className="font-bold text-gray-900 dark:text-white">{metric.value}%</span>
+                        <div className="flex justify-between text-[11px] mb-1 font-semibold">
+                          <span className="text-slate-350">{metric.label}</span>
+                          <span className="font-bold text-white">{metric.value}%</span>
                         </div>
-                        <div className="h-1.5 w-full bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-1.5 w-full bg-[#121E1C]/80 rounded-full overflow-hidden">
                           <m.div
                             initial={{ width: 0 }}
                             animate={{ width: `${metric.value}%` }}
@@ -341,13 +345,13 @@ export default function Hero() {
                   </m.div>
                 </AnimatePresence>
               </div>
-
+ 
             </div>
-
+ 
             {/* Speech Analysis HUD */}
-            <div className="rounded-2xl border border-gray-100 bg-white dark:border-white/10 dark:bg-white/5 p-4">
-              <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
-                <MessageSquare className="h-3.5 w-3.5 text-[#0D9488] dark:text-[#2DD4BF]" />
+            <div className="rounded-2xl border border-teal-950/40 bg-[#030605]/85 p-4 relative z-10">
+              <div className="flex items-center gap-2 mb-2 text-[10px] font-extrabold text-[#00C4A7]/75 tracking-wider">
+                <MessageSquare className="h-3.5 w-3.5 text-[#00C4A7]" />
                 <span>LIVE TRANSCRIPT SYNTHESIS</span>
               </div>
               <AnimatePresence mode="wait">
@@ -357,13 +361,13 @@ export default function Hero() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.99 }}
                   transition={{ duration: 0.1, ease: "easeOut" }}
-                  className="text-xs text-gray-600 dark:text-gray-300 italic leading-relaxed"
+                  className="text-xs text-slate-300 italic leading-relaxed font-medium"
                 >
                   &ldquo;{data.transcript}&rdquo;
                 </m.p>
               </AnimatePresence>
             </div>
-
+ 
           </m.div>
 
         </m.div>
