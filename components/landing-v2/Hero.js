@@ -263,7 +263,7 @@ export default function Hero() {
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-            className="relative w-full max-w-md bg-gradient-to-br from-[#060E0D]/25 to-[#030706]/35 rounded-3xl border border-white/10 dark:border-teal-500/20 p-6 shadow-[0_0_50px_rgba(0,196,167,0.15)] overflow-hidden backdrop-blur-2xl"
+            className="relative w-full max-w-md bg-gradient-to-br from-[#060E0D]/25 to-[#030706]/35 rounded-3xl border border-white/10 dark:border-teal-500/20 p-6 shadow-[0_0_50px_rgba(0,196,167,0.15)] overflow-hidden backdrop-blur-2xl transition-all duration-300 hover:backdrop-blur-none"
           >
             {/* Glowing top line highlight */}
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#00C4A7] to-transparent shadow-[0_1px_15px_rgba(0,196,167,0.6)]" />
