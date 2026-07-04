@@ -242,25 +242,25 @@ export default function SupportWidget() {
       {/* Floating Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-5 left-5 z-[90] w-14 h-14 bg-[#0D9488] hover:bg-[#0F766E] text-white rounded-full flex items-center justify-center shadow-lg transition-transform duration-200 hover:scale-105 active:scale-95 focus:outline-none"
+        className="fixed bottom-[84px] right-6 z-[90] w-12 h-12 bg-[#0D9488] hover:bg-[#0F766E] text-white rounded-full flex items-center justify-center shadow-lg transition-transform duration-200 hover:scale-105 active:scale-95 focus:outline-none"
       >
         {isOpen ? (
-          <X className="w-6 h-6 animate-spin-once" />
+          <X className="w-5 h-5 animate-spin-once" />
         ) : (
           <div className="relative">
-            <MessageCircle className="w-7 h-7" />
+            <MessageCircle className="w-5 h-5" />
             {unreadCount > 0 && (
-              <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-bounce">
+              <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center animate-bounce">
                 {unreadCount}
               </span>
             )}
           </div>
         )}
       </button>
-
+ 
       {/* Support Sliding Panel */}
       <div
-        className={`fixed bottom-24 left-5 right-5 md:right-auto md:w-[400px] bg-white rounded-2xl border border-gray-100 shadow-2xl z-[90] flex flex-col transition-all duration-300 ease-in-out transform origin-bottom-left max-h-[70vh] overflow-hidden ${
+        className={`fixed bottom-[144px] right-6 left-6 md:left-auto md:w-[400px] bg-white rounded-2xl border border-gray-100 shadow-2xl z-[90] flex flex-col transition-all duration-300 ease-in-out transform origin-bottom-right max-h-[70vh] overflow-hidden ${
           isOpen ? "scale-100 translate-y-0 opacity-100" : "scale-75 translate-y-10 opacity-0 pointer-events-none"
         }`}
       >
