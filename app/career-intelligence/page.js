@@ -389,7 +389,7 @@ export default function CareerIntelligencePage() {
             >
               <div className="text-center space-y-3">
                 <div className="flex flex-col items-center justify-center gap-4">
-                  <div className="w-16 h-16 shrink-0 select-none">
+                  <div className="w-[86px] h-[86px] shrink-0 select-none">
                     <img src="/images/3d-icons/head-circuit.png" alt="Career Intelligence" className="w-full h-full object-contain" />
                   </div>
                   <h1 className={typography.h1}>Career Intelligence Analyst</h1>

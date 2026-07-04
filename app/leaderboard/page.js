@@ -169,7 +169,7 @@ export default function LeaderboardPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4 border-b border-slate-100 pb-5">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 shrink-0 select-none">
+            <div className="w-[76px] h-[76px] shrink-0 select-none">
               <img src="/images/3d-icons/trophy.png" alt="Leaderboard" className="w-full h-full object-contain" />
             </div>
             <div>

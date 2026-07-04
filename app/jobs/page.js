@@ -324,7 +324,7 @@ export default function JobsPage() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-8 border-b border-slate-100 pb-5">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 shrink-0 select-none">
+            <div className="w-[76px] h-[76px] shrink-0 select-none">
               <img src="/images/3d-icons/briefcase.png" alt="Jobs & Internships" className="w-full h-full object-contain" />
             </div>
             <div>

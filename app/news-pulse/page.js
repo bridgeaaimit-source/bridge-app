@@ -222,7 +222,7 @@ export default function NewsPulsePage() {
 
           {/* Page Header */}
           <div className="flex items-center gap-4 border-b border-slate-100 pb-5">
-            <div className="w-14 h-14 shrink-0 select-none">
+            <div className="w-[76px] h-[76px] shrink-0 select-none">
               <img src="/images/3d-icons/newspaper-clipping.png" alt="News Pulse" className="w-full h-full object-contain" />
             </div>
             <div>
