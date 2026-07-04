@@ -47,7 +47,7 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10 border-b border-slate-100 pb-6">
           <div className="flex items-center gap-4">
-            <div className="w-[76px] h-[76px] shrink-0 select-none">
+            <div className="w-[100px] h-[100px] shrink-0 select-none">
               <img src="/images/3d-icons/videoconference.png" alt="Smart Mock Interview" className="w-full h-full object-contain" />
             </div>
             <div>

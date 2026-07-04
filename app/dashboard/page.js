@@ -674,7 +674,7 @@ export default function Dashboard() {
                 <h2 className="text-3xl font-extrabold text-slate-900 mt-1">{greeting}, {firstName}!</h2>
                 <p className="text-sm text-slate-500 mt-1.5">You're making great progress towards your dream placement. Keep up the consistency!</p>
               </div>
-              <div className="w-[86px] h-[86px] shrink-0 select-none">
+              <div className="w-[112px] h-[112px] shrink-0 select-none">
                 <img src="/images/3d-icons/house.png" alt="Home Dashboard" className="w-full h-full object-contain" />
               </div>
             </div>

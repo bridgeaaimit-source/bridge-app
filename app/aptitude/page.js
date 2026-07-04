@@ -890,7 +890,7 @@ export default function AptitudePage() {
               {/* Header & Stats Dashboard */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-slate-100 pb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-[76px] h-[76px] shrink-0 select-none">
+                  <div className="w-[100px] h-[100px] shrink-0 select-none">
                     <img src="/images/3d-icons/pencil-circle.png" alt="Aptitude Arena" className="w-full h-full object-contain" />
                   </div>
                   <div>

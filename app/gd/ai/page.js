@@ -170,7 +170,7 @@ export default function GDAIHubPage() {
           
           {/* Header with 3D Icon */}
           <div className="flex items-center gap-4 border-b border-slate-200/50 pb-5">
-            <div className="w-[76px] h-[76px] shrink-0 select-none">
+            <div className="w-[100px] h-[100px] shrink-0 select-none">
               <img src="/images/3d-icons/user-three.png" alt="GD Pulse" className="w-full h-full object-contain" />
             </div>
             <div>
