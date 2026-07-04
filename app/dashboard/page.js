@@ -668,10 +668,15 @@ export default function Dashboard() {
           <div className="lg:col-span-2 space-y-6">
             
             {/* Header Greeting */}
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{todayDate || "TUESDAY, JULY 1, 2025"}</p>
-              <h2 className="text-3xl font-extrabold text-slate-900 mt-1">{greeting}, {firstName}!</h2>
-              <p className="text-sm text-slate-500 mt-1.5">You're making great progress towards your dream placement. Keep up the consistency!</p>
+            <div className="flex items-center justify-between gap-4 border-b border-slate-100/60 pb-4">
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{todayDate || "TUESDAY, JULY 1, 2025"}</p>
+                <h2 className="text-3xl font-extrabold text-slate-900 mt-1">{greeting}, {firstName}!</h2>
+                <p className="text-sm text-slate-500 mt-1.5">You're making great progress towards your dream placement. Keep up the consistency!</p>
+              </div>
+              <div className="w-[112px] h-[112px] shrink-0 select-none">
+                <img src="/images/3d-icons/house.png" alt="Home Dashboard" className="w-full h-full object-contain" />
+              </div>
             </div>
 
             {/* 4 Stats Cards Row */}

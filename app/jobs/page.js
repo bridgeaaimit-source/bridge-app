@@ -322,10 +322,15 @@ export default function JobsPage() {
     <AppShell>
       <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900" style={{fontFamily:'Syne,sans-serif'}}>Jobs & Internships</h1>
-            <p className="text-gray-500 mt-1 text-sm">Opportunities matched to your resume profile</p>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8 border-b border-slate-100 pb-5">
+          <div className="flex items-center gap-4">
+            <div className="w-[100px] h-[100px] shrink-0 select-none">
+              <img src="/images/3d-icons/briefcase.png" alt="Jobs & Internships" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900" style={{fontFamily:'Syne,sans-serif'}}>Jobs & Internships</h1>
+              <p className="text-gray-500 mt-1 text-sm">Opportunities matched to your resume profile</p>
+            </div>
           </div>
           <button
             onClick={() => {

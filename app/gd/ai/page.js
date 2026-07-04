@@ -168,6 +168,17 @@ export default function GDAIHubPage() {
       <AppShell>
         <div className="max-w-[1200px] mx-auto px-6 md:px-12 py-10 min-h-screen space-y-12 bg-slate-50/30">
           
+          {/* Header with 3D Icon */}
+          <div className="flex items-center gap-4 border-b border-slate-200/50 pb-5">
+            <div className="w-[100px] h-[100px] shrink-0 select-none">
+              <img src="/images/3d-icons/user-three.png" alt="GD Pulse" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">GD Pulse</h1>
+              <p className="text-slate-500 text-sm mt-1">Simulated group discussion room and recruiter benchmarks</p>
+            </div>
+          </div>
+
           {/* Hero Section */}
           <div className="relative overflow-hidden bg-gradient-to-r from-teal-600 to-teal-700 rounded-3xl p-8 md:p-12 text-white shadow-xl">
             <div className="absolute top-0 right-0 w-80 h-80 bg-teal-500/25 rounded-full -mr-20 -mt-20 blur-2xl" />

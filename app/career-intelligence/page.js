@@ -388,9 +388,9 @@ export default function CareerIntelligencePage() {
               className="max-w-[1000px] mx-auto px-6 md:px-12 py-10 min-h-screen space-y-12"
             >
               <div className="text-center space-y-3">
-                <div className="flex items-center justify-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
-                    <SparklesIcon className="w-6 h-6" />
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <div className="w-[112px] h-[112px] shrink-0 select-none">
+                    <img src="/images/3d-icons/head-circuit.png" alt="Career Intelligence" className="w-full h-full object-contain" />
                   </div>
                   <h1 className={typography.h1}>Career Intelligence Analyst</h1>
                 </div>

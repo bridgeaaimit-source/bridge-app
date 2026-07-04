@@ -220,6 +220,17 @@ export default function NewsPulsePage() {
 
         <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-4 space-y-8">
 
+          {/* Page Header */}
+          <div className="flex items-center gap-4 border-b border-slate-100 pb-5">
+            <div className="w-[100px] h-[100px] shrink-0 select-none">
+              <img src="/images/3d-icons/newspaper-clipping.png" alt="News Pulse" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">News Pulse</h1>
+              <p className="text-slate-500 text-sm mt-1">Trending placement insights, arguments, and industry news</p>
+            </div>
+          </div>
+
           {/* GD DEEP-DIVE SECTION */}
           {gdLoading ? (
             <div className="bg-white rounded-2xl border border-gray-200 p-8 animate-pulse space-y-4">
