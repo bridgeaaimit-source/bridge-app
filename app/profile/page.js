@@ -287,9 +287,6 @@ export default function ProfilePage() {
         {/* Hero Header */}
         <div className="bg-gradient-to-br from-[#0D9488] to-[#14B8A6] rounded-3xl p-8 mb-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none" />
-          <div className="absolute right-6 bottom-6 w-[170px] h-[170px] opacity-20 sm:opacity-40 pointer-events-none select-none">
-            <img src="/images/3d-icons/user.png" alt="Profile" className="w-full h-full object-contain" />
-          </div>
           <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-6">
             {userData.photo ? (
               <img src={userData.photo} alt={userData.name} className="w-24 h-24 rounded-2xl object-cover border-4 border-white/30 shadow-xl flex-shrink-0" />
