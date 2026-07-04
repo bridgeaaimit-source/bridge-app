@@ -414,12 +414,17 @@ export default function BridgeScoreAnalysis() {
         </div>
 
         {/* Header Title */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
-          <div>
-            <h1 className="text-3xl font-extrabold text-gray-900" style={{ fontFamily: "Syne, sans-serif" }}>
-              BRIDGE Score Analysis
-            </h1>
-            <p className="text-gray-600 mt-1">Audit your placements readiness index and see daily score changes.</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10 border-b border-slate-100 pb-5">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 shrink-0 select-none">
+              <img src="/images/3d-icons/chart-bar.png" alt="BRIDGE Score Analysis" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-extrabold text-gray-900" style={{ fontFamily: "Syne, sans-serif" }}>
+                BRIDGE Score Analysis
+              </h1>
+              <p className="text-gray-600 mt-1">Audit your placements readiness index and see daily score changes.</p>
+            </div>
           </div>
           <div className="flex items-center gap-2 bg-[#CCFBF1] text-[#0D9488] px-4 py-2 rounded-xl border border-[#99F6E4]">
             <Trophy className="w-5 h-5 shrink-0" />

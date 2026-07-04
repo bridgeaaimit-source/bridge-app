@@ -198,20 +198,6 @@ export default function Dashboard() {
     router.push('/smart-interview');
   };
 
-  const featureList = [
-    { name: "Dashboard", path: "/dashboard", icon: "/images/3d-icons/house.png" },
-    { name: "Smart Mock", path: "/smart-interview", icon: "/images/3d-icons/videoconference.png" },
-    { name: "GD Pulse", path: "/gd/ai", icon: "/images/3d-icons/user-three.png" },
-    { name: "News Pulse", path: "/news-pulse", icon: "/images/3d-icons/newspaper-clipping.png" },
-    { name: "Aptitude Tests", path: "/aptitude", icon: "/images/3d-icons/pencil-circle.png" },
-    { name: "CareerGPS", path: "/career-gps", icon: "/images/3d-icons/compass.png" },
-    { name: "Career Intelligence", path: "/career-intelligence", icon: "/images/3d-icons/head-circuit.png" },
-    { name: "Jobs", path: "/jobs", icon: "/images/3d-icons/briefcase.png" },
-    { name: "Leaderboard", path: "/leaderboard", icon: "/images/3d-icons/trophy.png" },
-    { name: "Profile", path: "/profile", icon: "/images/3d-icons/user.png" },
-    { name: "Bridge Score", path: "/dashboard/bridge-score", icon: "/images/3d-icons/chart-bar.png" },
-  ];
-
   const getTimeAgo = (date) => {
     const seconds = Math.floor((new Date() - date) / 1000);
     
@@ -682,26 +668,14 @@ export default function Dashboard() {
           <div className="lg:col-span-2 space-y-6">
             
             {/* Header Greeting */}
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{todayDate || "TUESDAY, JULY 1, 2025"}</p>
-              <h2 className="text-3xl font-extrabold text-slate-900 mt-1">{greeting}, {firstName}!</h2>
-              <p className="text-sm text-slate-500 mt-1.5">You're making great progress towards your dream placement. Keep up the consistency!</p>
-            </div>
-
-            {/* Feature Suite Grid (3D Icons) */}
-            <div className="bg-white/50 backdrop-blur-sm border border-slate-100/80 rounded-3xl p-5 shadow-sm">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Placement Suite Features</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3.5">
-                {featureList.map((feat) => (
-                  <Link href={feat.path} key={feat.name} className="block">
-                    <div className="bg-white/80 border border-white/60 rounded-2xl p-4 flex flex-col items-center justify-between text-center cursor-pointer shadow-sm hover:shadow-md hover:border-[#00C4A7] hover:-translate-y-0.5 transition-all duration-300 group h-32">
-                      <div className="w-12 h-12 flex items-center justify-center group-hover:scale-105 transition-transform duration-300 select-none">
-                        <img src={feat.icon} alt={feat.name} className="max-w-full max-h-full object-contain" />
-                      </div>
-                      <span className="text-[10px] font-extrabold text-slate-700 mt-2 group-hover:text-[#00C4A7] transition-colors leading-tight">{feat.name}</span>
-                    </div>
-                  </Link>
-                ))}
+            <div className="flex items-center justify-between gap-4 border-b border-slate-100/60 pb-4">
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{todayDate || "TUESDAY, JULY 1, 2025"}</p>
+                <h2 className="text-3xl font-extrabold text-slate-900 mt-1">{greeting}, {firstName}!</h2>
+                <p className="text-sm text-slate-500 mt-1.5">You're making great progress towards your dream placement. Keep up the consistency!</p>
+              </div>
+              <div className="w-16 h-16 shrink-0 select-none">
+                <img src="/images/3d-icons/house.png" alt="Home Dashboard" className="w-full h-full object-contain" />
               </div>
             </div>
 

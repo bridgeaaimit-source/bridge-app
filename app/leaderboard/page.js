@@ -167,10 +167,15 @@ export default function LeaderboardPage() {
       <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10">
 
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-[#0D9488]" style={{fontFamily:'Syne,sans-serif'}}>Leaderboard</h1>
-            <p className="text-gray-500 text-sm mt-1">See how you stack up against top performers.</p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4 border-b border-slate-100 pb-5">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 shrink-0 select-none">
+              <img src="/images/3d-icons/trophy.png" alt="Leaderboard" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-[#0D9488]" style={{fontFamily:'Syne,sans-serif'}}>Leaderboard</h1>
+              <p className="text-gray-500 text-sm mt-1">See how you stack up against top performers.</p>
+            </div>
           </div>
           <div className="flex bg-gray-100 rounded-full p-1 shadow-inner">
             {['Weekly','Monthly','All Time'].map((f) => (

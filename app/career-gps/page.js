@@ -409,12 +409,17 @@ export default function CareerGPSPage() {
       <m.div variants={container} initial="hidden" animate="visible" className="max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10">
 
         {/* Header */}
-        <m.div variants={item} className="mb-8">
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900" style={{ fontFamily: "Syne, sans-serif" }}>Career GPS</h1>
-            <span className="text-xs bg-[#CCFBF1] text-[#0D9488] px-3 py-1 rounded-full font-bold border border-[#99F6E4]">Personalized</span>
+        <m.div variants={item} className="mb-8 flex items-center gap-4 border-b border-slate-100 pb-5">
+          <div className="w-14 h-14 shrink-0 select-none">
+            <img src="/images/3d-icons/compass.png" alt="Career GPS" className="w-full h-full object-contain" />
           </div>
-          <p className="text-gray-500 text-sm">Your navigation system from where you are to where you want to be</p>
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900" style={{ fontFamily: "Syne, sans-serif" }}>Career GPS</h1>
+              <span className="text-xs bg-[#CCFBF1] text-[#0D9488] px-3 py-1 rounded-full font-bold border border-[#99F6E4]">Personalized</span>
+            </div>
+            <p className="text-gray-500 text-sm">Your navigation system from where you are to where you want to be</p>
+          </div>
         </m.div>
 
         {/* Stage Selector */}

@@ -889,19 +889,24 @@ export default function AptitudePage() {
 
               {/* Header & Stats Dashboard */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-slate-100 pb-6">
-                <div>
-                  <h1 className={typography.h1}>
-                    Aptitude Arena
-                  </h1>
-                  <p className={typography.body}>
-                    Master Indian campus placement reasoning and quantitative rounds with adaptive, gamified drills.
-                    <button
-                      onClick={handleSeedDatabase}
-                      className="ml-2 text-xs text-teal-500 hover:underline font-semibold text-[#14B8A6]"
-                    >
-                      (Force Seed DB)
-                    </button>
-                  </p>
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 shrink-0 select-none">
+                    <img src="/images/3d-icons/pencil-circle.png" alt="Aptitude Arena" className="w-full h-full object-contain" />
+                  </div>
+                  <div>
+                    <h1 className={typography.h1}>
+                      Aptitude Arena
+                    </h1>
+                    <p className={typography.body}>
+                      Master Indian campus placement reasoning and quantitative rounds with adaptive, gamified drills.
+                      <button
+                        onClick={handleSeedDatabase}
+                        className="ml-2 text-xs text-teal-500 hover:underline font-semibold text-[#14B8A6]"
+                      >
+                        (Force Seed DB)
+                      </button>
+                    </p>
+                  </div>
                 </div>
                 
                 <div className="flex items-center gap-4 self-stretch md:self-auto bg-slate-50 border border-slate-200/60 p-3 px-5 rounded-2xl">
