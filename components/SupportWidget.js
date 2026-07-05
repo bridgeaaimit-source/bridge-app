@@ -122,8 +122,9 @@ export default function SupportWidget() {
     }
   }, [expandedTicketId, tickets]);
 
-  // Hide widget on login page and admin panel
-  if (pathname === "/login" || pathname.startsWith("/admin")) {
+  // Hide widget if user is not logged in, or on public marketing/admin routes
+  const publicRoutes = ["/", "/about", "/colleges", "/recruiters", "/students", "/login"];
+  if (!currentUser || publicRoutes.includes(pathname) || pathname.startsWith("/admin")) {
     return null;
   }
 
