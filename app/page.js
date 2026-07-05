@@ -1,13 +1,13 @@
 import AnimatedBackground from "@/components/landing-v2/AnimatedBackground";
 import Navbar from "@/components/landing-v2/Navbar";
 import Hero from "@/components/landing-v2/Hero";
-import SocialProof from "@/components/landing-v2/SocialProof";
-import ReadinessStack from "@/components/landing-v2/ReadinessStack";
-import BridgeScoreSection from "@/components/landing-v2/BridgeScoreSection";
 import ScrollReveal from "@/components/landing-v2/ScrollReveal";
 import FloatAnimation from "@/components/landing-v2/FloatAnimation";
 import dynamic from "next/dynamic";
 
+const SocialProof = dynamic(() => import("@/components/landing-v2/SocialProof"));
+const ReadinessStack = dynamic(() => import("@/components/landing-v2/ReadinessStack"));
+const BridgeScoreSection = dynamic(() => import("@/components/landing-v2/BridgeScoreSection"));
 const EcosystemSection = dynamic(() => import("@/components/landing-v2/EcosystemSection"));
 const GDShowcase = dynamic(() => import("@/components/landing-v2/GDShowcase"));
 const AudienceSegmentation = dynamic(() => import("@/components/landing-v2/AudienceSegmentation"));

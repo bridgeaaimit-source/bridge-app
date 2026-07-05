@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { m, useScroll, useMotionValueEvent } from "framer-motion";
+import { m, useScroll, useMotionValueEvent, useInView } from "framer-motion";
 import { ArrowRight, Info, Unlock, Lock } from "lucide-react";
 import Link from "next/link";
 
@@ -26,6 +26,7 @@ export default function BridgeScoreSection() {
   const [liveJitter, setLiveJitter] = useState(0);
 
   const sectionRef = useRef(null);
+  const isInView = useInView(sectionRef, { margin: "200px" });
   
   // Track scroll viewport coordinates of the section
   const { scrollYProgress } = useScroll({
@@ -52,7 +53,7 @@ export default function BridgeScoreSection() {
 
   // Continuous live evaluation fluctuation
   useEffect(() => {
-    if (isManualMode) {
+    if (isManualMode || !isInView) {
       const t = setTimeout(() => setLiveJitter(0), 0);
       return () => clearTimeout(t);
     }
@@ -61,7 +62,7 @@ export default function BridgeScoreSection() {
       setLiveJitter(Math.floor(Math.random() * 13) - 6);
     }, 1200);
     return () => clearInterval(interval);
-  }, [isManualMode]);
+  }, [isManualMode, isInView]);
 
   const handleSliderChange = (key, val) => {
     setIsManualMode(true);

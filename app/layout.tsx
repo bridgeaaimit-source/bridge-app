@@ -1,20 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Syne, DM_Sans, Inter, Poppins, Plus_Jakarta_Sans } from "next/font/google";
+import { Syne, DM_Sans, Poppins } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import SupportWidget from "@/components/SupportWidget";
 import FramerMotionProvider from "@/components/FramerMotionProvider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import ClientSupportWidget from "@/components/ClientSupportWidget";
 
 const syne = Syne({
   variable: "--font-syne",
@@ -28,20 +18,8 @@ const dmSans = DM_Sans({
   weight: ["400", "500", "600", "700"],
 });
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
-
 const poppins = Poppins({
   variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-});
-
-const jakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
 });
@@ -90,7 +68,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${syne.variable} ${dmSans.variable} ${inter.variable} ${poppins.variable} ${jakarta.variable} h-full antialiased`}
+      className={`${syne.variable} ${dmSans.variable} ${poppins.variable} h-full antialiased`}
     >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
@@ -130,32 +108,7 @@ export default function RootLayout({
             />
           </FramerMotionProvider>
         </ThemeProvider>
-        <SupportWidget />
-        <Toaster
-          position="top-center"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#1a1a1a',
-              color: '#fff',
-              border: '1px solid #333',
-              borderRadius: '12px',
-              fontSize: '14px',
-            },
-            success: {
-              iconTheme: {
-                primary: '#10b981',
-                secondary: '#fff',
-              },
-            },
-            error: {
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#fff',
-              },
-            },
-          }}
-        />
+        <ClientSupportWidget />
 
         {/* Auth bypass test badge */}
         {process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true' && (

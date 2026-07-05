@@ -20,13 +20,13 @@ export default function AnimatedBackground() {
 
       {/* Sweep & Scan Light Beams */}
       <m.div
-        className="absolute top-0 bottom-0 w-[500px] bg-gradient-to-r from-transparent via-[#0D9488]/5 dark:via-[#0D9488]/10 to-transparent skew-x-12"
-        animate={{ left: ["-50%", "150%"] }}
+        className="absolute top-0 bottom-0 w-[500px] left-0 bg-gradient-to-r from-transparent via-[#0D9488]/5 dark:via-[#0D9488]/10 to-transparent skew-x-12"
+        animate={{ x: ["-50vw", "150vw"] }}
         transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
       />
       <m.div
-        className="absolute top-0 bottom-0 w-[800px] bg-gradient-to-r from-transparent via-[#14B8A6]/3 dark:via-[#14B8A6]/5 to-transparent -skew-x-12"
-        animate={{ right: ["-50%", "150%"] }}
+        className="absolute top-0 bottom-0 w-[800px] right-0 bg-gradient-to-r from-transparent via-[#14B8A6]/3 dark:via-[#14B8A6]/5 to-transparent -skew-x-12"
+        animate={{ x: ["50vw", "-150vw"] }}
         transition={{ duration: 15, repeat: Infinity, ease: "linear", delay: 2 }}
       />
 

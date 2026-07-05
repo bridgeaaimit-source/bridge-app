@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { m } from "framer-motion";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useTheme } from "@/contexts/ThemeContext";
 
 export default function FooterCTA() {
@@ -88,15 +89,19 @@ export default function FooterCTA() {
           <div>
             <div className="inline-flex items-center">
               {mounted && theme === "dark" ? (
-                <img
+                <Image
                   src="/images/logo_transparent_white_text.png"
                   alt="BridgeAI"
+                  width={140}
+                  height={44}
                   className="h-8 sm:h-9 w-auto transition-all"
                 />
               ) : (
-                <img
+                <Image
                   src="/images/logo_transparent.png"
                   alt="BridgeAI"
+                  width={140}
+                  height={44}
                   className="h-8 sm:h-9 w-auto transition-all"
                 />
               )}
