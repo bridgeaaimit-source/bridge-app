@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { m, useScroll } from "framer-motion";
 import { Video, Mic, Activity, TrendingUp, Users, MessageSquare, FileText, Target, LayoutGrid, CheckCircle2, Sparkles } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function EcosystemSection() {
   const containerRef = useRef(null);
@@ -68,7 +69,13 @@ export default function EcosystemSection() {
               <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-900 shadow-xl relative aspect-video flex flex-col">
                 {/* Simulated Webcam Feed */}
                 <div className="flex-1 relative bg-gradient-to-b from-gray-800 to-gray-900 flex items-center justify-center overflow-hidden">
-                  <div className="absolute inset-0 opacity-80 bg-[url('/indian_student.png')] bg-cover bg-center" />
+                  <Image 
+                    src="/indian_student.png" 
+                    alt="Webcam Feed of Student"
+                    fill
+                    className="object-cover opacity-80"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                  />
                   
                   {/* Eye Contact Indicator Overlay */}
                   <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-3 py-1.5 text-xs font-semibold text-white">
@@ -78,7 +85,13 @@ export default function EcosystemSection() {
 
                   {/* Interviewer Avatar (AI) */}
                   <div className="absolute bottom-4 right-4 w-24 h-32 rounded-xl overflow-hidden border-2 border-gray-700 bg-gray-800 shadow-lg z-10">
-                     <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=800&auto=format&fit=crop')] bg-cover bg-center" />
+                     <Image 
+                       src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=300&auto=format&fit=crop" 
+                       alt="AI Interviewer Feed"
+                       fill
+                       className="object-cover"
+                       sizes="96px"
+                     />
                      <div className="absolute bottom-1 left-1 right-1 bg-black/60 backdrop-blur text-[8px] text-white px-1.5 py-0.5 rounded text-center">
                        AI Interviewer
                      </div>
@@ -208,7 +221,13 @@ export default function EcosystemSection() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                   {/* You */}
                   <div className="relative aspect-square rounded-xl overflow-hidden border-2 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
-                    <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=400&auto=format&fit=crop')] bg-cover bg-center opacity-80" />
+                    <Image 
+                      src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200&auto=format&fit=crop" 
+                      alt="User avatar"
+                      fill
+                      className="object-cover opacity-80"
+                      sizes="150px"
+                    />
                     <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur px-2 py-0.5 rounded text-[10px] font-semibold text-white">
                       You
                     </div>
@@ -218,7 +237,13 @@ export default function EcosystemSection() {
                   
                   {/* AI Moderator */}
                   <div className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 transition-colors">
-                    <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=400&auto=format&fit=crop')] bg-cover bg-center opacity-50 grayscale" />
+                    <Image 
+                      src="https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=200&auto=format&fit=crop" 
+                      alt="AI Moderator avatar"
+                      fill
+                      className="object-cover opacity-50 grayscale"
+                      sizes="150px"
+                    />
                     <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-teal-900/80 border border-teal-500/30 backdrop-blur px-2 py-0.5 rounded text-[10px] font-bold text-teal-300">
                       <Sparkles className="h-2.5 w-2.5" /> Moderator (AI)
                     </div>
@@ -226,7 +251,13 @@ export default function EcosystemSection() {
 
                   {/* Student 2 */}
                   <div className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 transition-colors">
-                    <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=400&auto=format&fit=crop')] bg-cover bg-center opacity-70" />
+                    <Image 
+                      src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200&auto=format&fit=crop" 
+                      alt="Rahul S. avatar"
+                      fill
+                      className="object-cover opacity-70"
+                      sizes="150px"
+                    />
                     <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur px-2 py-0.5 rounded text-[10px] font-semibold text-gray-300">
                       Rahul S.
                     </div>
@@ -234,7 +265,13 @@ export default function EcosystemSection() {
 
                   {/* Student 3 */}
                   <div className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 transition-colors">
-                    <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=400&auto=format&fit=crop')] bg-cover bg-center opacity-70" />
+                    <Image 
+                      src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=200&auto=format&fit=crop" 
+                      alt="Ananya P. avatar"
+                      fill
+                      className="object-cover opacity-70"
+                      sizes="150px"
+                    />
                     <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur px-2 py-0.5 rounded text-[10px] font-semibold text-gray-300">
                       Ananya P.
                     </div>
@@ -242,7 +279,13 @@ export default function EcosystemSection() {
 
                   {/* AI Participant */}
                   <div className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 transition-colors">
-                    <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop')] bg-cover bg-center opacity-50 grayscale" />
+                    <Image 
+                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" 
+                      alt="Panelist avatar"
+                      fill
+                      className="object-cover opacity-50 grayscale"
+                      sizes="150px"
+                    />
                     <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-indigo-900/80 border border-indigo-500/30 backdrop-blur px-2 py-0.5 rounded text-[10px] font-bold text-indigo-300">
                       <Sparkles className="h-2.5 w-2.5" /> Panelist (AI)
                     </div>

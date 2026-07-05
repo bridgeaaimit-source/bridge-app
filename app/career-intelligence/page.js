@@ -4,7 +4,12 @@ import { useState, useEffect } from 'react';
 import { auth } from '@/lib/firebase';
 import AppShell from "@/components/AppShell";
 import { m, AnimatePresence } from 'framer-motion';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import dynamic from 'next/dynamic';
+
+const MatchPieChart = dynamic(() => import('@/components/career-intelligence/MatchPieChart'), {
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-slate-50 dark:bg-slate-800/40 rounded-full animate-pulse" />
+});
 import toast from "react-hot-toast";
 import { 
   Canvas,
@@ -598,26 +603,7 @@ export default function CareerIntelligencePage() {
 
                     {/* Recharts Pie Match Score */}
                     <div className="relative w-40 h-40 flex items-center justify-center">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={[
-                              { value: results.matchScore },
-                              { value: 100 - results.matchScore }
-                            ]}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={50}
-                            outerRadius={65}
-                            startAngle={90}
-                            endAngle={-270}
-                            dataKey="value"
-                          >
-                            <Cell fill={getScoreColor(results.matchScore)} />
-                            <Cell fill="#F1F5F9" />
-                          </Pie>
-                        </PieChart>
-                      </ResponsiveContainer>
+                      <MatchPieChart matchScore={results.matchScore} />
                       <div className="absolute flex flex-col items-center">
                         <span className="text-3xl font-extrabold text-slate-900">{results.matchScore}%</span>
                         <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none">Match rating</span>

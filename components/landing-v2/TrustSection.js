@@ -2,6 +2,7 @@
 
 import { m } from "framer-motion";
 import { Shield, Mail, Phone, MapPin, Building } from "lucide-react";
+import Image from "next/image";
 
 const FOUNDERS = [
   {
@@ -85,7 +86,7 @@ export default function TrustSection() {
               <div key={idx} className="bg-white dark:bg-[#0A1211]/50 border border-gray-200 dark:border-white/5 rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col justify-between">
                 <div>
                   <div className="aspect-square w-20 h-20 rounded-xl overflow-hidden mb-4 bg-gray-100 dark:bg-white/5">
-                    <img src={founder.image} alt={founder.name} className="w-full h-full object-cover grayscale" />
+                    <Image src={founder.image} alt={founder.name} width={80} height={80} className="w-full h-full object-cover grayscale" />
                   </div>
                   <h4 className="text-base font-bold text-gray-900 dark:text-white">{founder.name}</h4>
                   <span className="text-[10px] text-teal-400 font-bold uppercase tracking-wider block mb-2">{founder.role}</span>
