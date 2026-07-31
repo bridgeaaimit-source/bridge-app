@@ -29,6 +29,15 @@ import { useAuthBypass } from "@/hooks/useAuthBypass";
 import GettingStartedChecklist from "@/components/onboarding/GettingStartedChecklist";
 import OnboardingTour from "@/components/OnboardingTour";
 import { m } from "framer-motion";
+import { 
+  ResponsiveContainer, 
+  RadarChart, 
+  PolarGrid, 
+  PolarAngleAxis, 
+  PolarRadiusAxis, 
+  Tooltip, 
+  Radar 
+} from 'recharts';
 import dynamic from 'next/dynamic';
 const PerformanceChart = dynamic(() => import('@/components/dashboard/PerformanceChart'), {
   ssr: false,
