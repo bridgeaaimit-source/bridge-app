@@ -95,7 +95,7 @@ export default function CommandCenter() {
       {/* Overview Sub-Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, tracking: "0.08em", color: "var(--muted)", textTransform: "uppercase", marginBottom: 2 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "var(--muted)", textTransform: "uppercase", marginBottom: 2 }}>
             — OVERVIEW
           </div>
           <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
