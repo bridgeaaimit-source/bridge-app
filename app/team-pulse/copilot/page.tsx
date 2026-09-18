@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Bot, Send, Sparkles, FileText, User } from "lucide-react";
+import { Bot, Send, Sparkles, FileText, User, HelpCircle, FileCheck, CheckCircle2 } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
-export default function HRCopilotPage() {
+function HRCopilotContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
 
@@ -17,7 +17,7 @@ export default function HRCopilotPage() {
     {
       role: "assistant",
       content:
-        "Hi! I'm your **Team Pulse HR Copilot**. I have access to your organization's employees, candidate pipeline, open job roles, performance ratings, and compliance records.\n\nHow can I help you today?",
+        "Hi! I'm your **HR Copilot**. I have full context across all **64 employees**, **8 open roles**, **32 candidates**, performance ratings, sentiment scores, and compliance records.\n\nAsk me anything about hiring, flight risk, promotions, or pick a suggested question or quick document template on the right.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -73,105 +73,236 @@ export default function HRCopilotPage() {
   };
 
   const sampleQueries = [
-    "Who are the top candidates for Senior Data Analyst, and what offer should I make?",
-    "Which high performers are at high flight risk and why?",
-    "Who is eligible for promotion in this appraisal cycle?",
-    "Which employees are overdue on mandatory POSH training?",
-    "Draft a hybrid work policy for Rocket India.",
+    "Who are my top 3 candidates for Senior Data Analyst, and what should I offer the best one?",
+    "Who is most likely to leave in the next 6 months and why?",
+    "Who is ready for promotion this cycle?",
+    "Who should be on a PIP, and what should I check first?",
+    "Which employees are overdue on POSH training?",
+    "Which team is least happy right now?",
   ];
 
   const documentTemplates = [
-    { label: "Offer Letter", prompt: "Draft a formal offer letter for Sneha Kulkarni for Senior Data Analyst." },
-    { label: "Rejection Email", prompt: "Draft a polite rejection email for a candidate who reached the final round." },
-    { label: "Hybrid Policy", prompt: "Draft a company hybrid work policy with 3 days in office." },
-    { label: "POSH Reminder", prompt: "Write an urgent POSH training reminder email to overdue employees." },
+    { label: "Offer letter", prompt: "Draft an offer letter for Sneha Kulkarni for Senior Data Analyst." },
+    { label: "Rejection email", prompt: "Write a kind rejection email for a candidate who reached the final round." },
+    { label: "Hybrid policy", prompt: "Draft a hybrid work policy for our company." },
+    { label: "POSH reminder", prompt: "Write a POSH training reminder to overdue employees." },
+    { label: "Appraisal letter", prompt: "Draft an appraisal letter for Arjun Nair with a rating of 5." },
+    { label: "Warning letter", prompt: "Draft a first written warning letter for repeated unexplained absence, respectful and compliant with Indian labour norms." },
   ];
+
+  // Simple Markdown renderer helper for bold, bullet lists, and code blocks
+  const renderMarkdown = (text: string) => {
+    const lines = text.split("\n");
+    return lines.map((line, idx) => {
+      let formatted = line;
+
+      // Handle bold text **bold**
+      const parts = formatted.split(/(\*\*.*?\*\*)/g);
+      const renderedParts = parts.map((part, pIdx) => {
+        if (part.startsWith("**") && part.endsWith("**")) {
+          return <strong key={pIdx}>{part.slice(2, -2)}</strong>;
+        }
+        return part;
+      });
+
+      if (line.startsWith("- ") || line.startsWith("* ")) {
+        return (
+          <li key={idx} style={{ marginLeft: 16, marginBottom: 4 }}>
+            {renderedParts.slice(0).map((p, i) => (typeof p === "string" ? p.replace(/^[-*]\s+/, "") : p))}
+          </li>
+        );
+      }
+
+      if (/^\d+\.\s/.test(line)) {
+        return (
+          <div key={idx} style={{ marginLeft: 8, marginBottom: 6, fontWeight: 500 }}>
+            {renderedParts}
+          </div>
+        );
+      }
+
+      return (
+        <p key={idx} style={{ marginBottom: line.trim() === "" ? 8 : 4, lineHeight: 1.6 }}>
+          {renderedParts}
+        </p>
+      );
+    });
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Header */}
       <div>
         <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--indigo-ink)", letterSpacing: ".1em" }}>
           AI Workforce Intelligence
         </div>
         <h1 style={{ fontSize: 28, fontWeight: 800 }}>HR Copilot</h1>
         <p style={{ color: "var(--muted)", marginTop: 4 }}>
-          Ask questions about your workforce data, generate HR documents, evaluate candidates, and request policy drafts.
+          Ask anything about your people data, or generate letters, emails, and policies in one click.
         </p>
       </div>
 
+      {/* Main Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20 }}>
-        {/* Left Main Chat Window */}
-        <div className="tp-panel" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 220px)", padding: 0, overflow: "hidden" }}>
-          {/* Chat Messages */}
+        {/* Left Chat Main Window */}
+        <div className="tp-panel" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 220px)", minHeight: 520, padding: 0, overflow: "hidden" }}>
+          {/* Messages Scroll Area */}
           <div style={{ flex: 1, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
             {messages.map((msg, idx) => (
               <div
                 key={idx}
                 style={{
-                  alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-                  maxWidth: "84%",
-                  padding: "12px 16px",
-                  borderRadius: 16,
-                  background: msg.role === "user" ? "var(--ink)" : "var(--tint)",
-                  color: msg.role === "user" ? "#fff" : "var(--ink)",
-                  borderBottomRightRadius: msg.role === "user" ? 4 : 16,
-                  borderBottomLeftRadius: msg.role === "assistant" ? 4 : 16,
-                  fontSize: 13.5,
-                  lineHeight: 1.6,
-                  whiteSpace: "pre-wrap",
+                  display: "flex",
+                  gap: 12,
+                  flexDirection: msg.role === "user" ? "row-reverse" : "row",
+                  alignItems: "flex-start",
                 }}
               >
-                {msg.content}
+                {/* Avatar */}
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    background: msg.role === "user" ? "var(--ink)" : "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    boxShadow: msg.role === "assistant" ? "0 2px 6px rgba(99, 102, 241, 0.3)" : "none",
+                  }}
+                >
+                  {msg.role === "user" ? <User style={{ width: 16, height: 16 }} /> : <Sparkles style={{ width: 16, height: 16 }} />}
+                </div>
+
+                {/* Message Bubble */}
+                <div
+                  style={{
+                    maxWidth: "82%",
+                    padding: "12px 16px",
+                    borderRadius: 16,
+                    background: msg.role === "user" ? "var(--ink)" : "#f8fafc",
+                    color: msg.role === "user" ? "#fff" : "var(--ink)",
+                    border: msg.role === "assistant" ? "1px solid var(--line)" : "none",
+                    borderTopRightRadius: msg.role === "user" ? 4 : 16,
+                    borderTopLeftRadius: msg.role === "assistant" ? 4 : 16,
+                    fontSize: 13.5,
+                    boxShadow: msg.role === "user" ? "0 2px 8px rgba(0,0,0,0.08)" : "0 1px 3px rgba(0,0,0,0.02)",
+                  }}
+                >
+                  {renderMarkdown(msg.content)}
+                </div>
               </div>
             ))}
+
             {loading && (
-              <div style={{ alignSelf: "flex-start", padding: "12px 16px", borderRadius: 16, background: "var(--tint)", fontSize: 13, color: "var(--muted)" }}>
-                HR Copilot is analyzing your data…
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 2px 6px rgba(99, 102, 241, 0.3)",
+                  }}
+                >
+                  <Sparkles style={{ width: 16, height: 16 }} />
+                </div>
+                <div
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: 16,
+                    background: "#f8fafc",
+                    border: "1px solid var(--line)",
+                    fontSize: 13,
+                    color: "var(--muted)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span className="tp-pulse-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: "#6366f1" }}></span>
+                  HR Copilot is analyzing workforce data…
+                </div>
               </div>
             )}
             <div ref={chatEndRef} />
           </div>
 
-          {/* Chat Input */}
-          <div style={{ padding: 12, borderTop: "1px solid var(--line)", background: "#fff" }}>
+          {/* Chat Input Bar */}
+          <div style={{ padding: 14, borderTop: "1px solid var(--line)", background: "#fff" }}>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSendMessage();
               }}
-              style={{ display: "flex", gap: 10 }}
+              style={{ display: "flex", gap: 10, alignItems: "center" }}
             >
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask HR Copilot anything about candidates, flight risks, salaries, policies…"
+                placeholder="Ask about hiring, attrition, promotions, compliance…"
                 style={{
                   flex: 1,
                   border: "1px solid var(--line2)",
                   borderRadius: 12,
-                  padding: "10px 14px",
+                  padding: "12px 16px",
                   outline: 0,
-                  fontSize: 13.5,
+                  fontSize: 14,
+                  background: "#fafafa",
+                  transition: "border-color 0.2s",
                 }}
               />
-              <button type="submit" disabled={loading || !input.trim()} className="tp-btn tp-btn-ai" style={{ padding: "0 18px" }}>
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                className="tp-btn tp-btn-ai"
+                style={{
+                  padding: "0 20px",
+                  height: 44,
+                  borderRadius: 12,
+                  opacity: loading || !input.trim() ? 0.6 : 1,
+                  cursor: loading || !input.trim() ? "not-allowed" : "pointer",
+                }}
+              >
                 <Send style={{ width: 16, height: 16 }} />
+                <span>Send</span>
               </button>
             </form>
           </div>
         </div>
 
-        {/* Right Query Shortcuts & Document Templates */}
+        {/* Right Panel Shortcuts & Templates */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div className="tp-panel stack">
-            <h3 style={{ fontSize: 15, fontWeight: 700 }}>Suggested Questions</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {/* Try Asking Panel */}
+          <div className="tp-panel stack" style={{ padding: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <HelpCircle style={{ width: 16, height: 16, color: "var(--indigo-ink)" }} />
+              <h3 style={{ fontSize: 15, fontWeight: 700 }}>Try asking</h3>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {sampleQueries.map((q, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleSendMessage(q)}
                   className="tp-btn"
-                  style={{ justifyContent: "flex-start", textAlign: "left", fontSize: 12, padding: "8px 10px", whiteSpace: "normal" }}
+                  style={{
+                    justifyContent: "flex-start",
+                    textAlign: "left",
+                    fontSize: 12.5,
+                    padding: "9px 12px",
+                    whiteSpace: "normal",
+                    lineHeight: 1.4,
+                    background: "#fff",
+                    border: "1px solid var(--line)",
+                    borderRadius: 10,
+                    transition: "all 0.15s ease",
+                  }}
                 >
                   {q}
                 </button>
@@ -179,23 +310,65 @@ export default function HRCopilotPage() {
             </div>
           </div>
 
-          <div className="tp-panel stack">
-            <h3 style={{ fontSize: 15, fontWeight: 700 }}>Quick HR Documents</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {/* Quick Documents Panel */}
+          <div className="tp-panel stack" style={{ padding: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <FileCheck style={{ width: 16, height: 16, color: "var(--indigo-ink)" }} />
+              <h3 style={{ fontSize: 15, fontWeight: 700 }}>Quick documents</h3>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {documentTemplates.map((t, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleSendMessage(t.prompt)}
                   className="tp-btn"
-                  style={{ fontSize: 11.5, padding: "8px 6px", textOverflow: "ellipsis" }}
+                  style={{
+                    fontSize: 12,
+                    padding: "7px 12px",
+                    borderRadius: 20,
+                    background: "var(--tint)",
+                    border: "1px solid var(--line2)",
+                    color: "var(--ink)",
+                    fontWeight: 600,
+                  }}
                 >
-                  <FileText style={{ width: 13, height: 13 }} /> {t.label}
+                  <FileText style={{ width: 13, height: 13, color: "var(--indigo-ink)" }} />
+                  {t.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* AI Banner Note */}
+          <div
+            style={{
+              padding: "12px 14px",
+              borderRadius: 12,
+              background: "linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%)",
+              border: "1px solid rgba(99, 102, 241, 0.2)",
+              fontSize: 12,
+              color: "var(--ink)",
+              lineHeight: 1.5,
+              display: "flex",
+              gap: 8,
+              alignItems: "flex-start",
+            }}
+          >
+            <Sparkles style={{ width: 16, height: 16, color: "#6366f1", flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <strong>Live Workforce AI:</strong> Answers are dynamically synthesized from your organization's hiring pipeline, flight risk indicators, performance appraisals, and compliance registers.
             </div>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function HRCopilotPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 20, fontSize: 14 }}>Loading HR Copilot…</div>}>
+      <HRCopilotContent />
+    </Suspense>
   );
 }
