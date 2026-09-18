@@ -33,16 +33,16 @@ const SEGMENTS = [
     highlight: true
   },
   {
-    title: "RECRUITERS",
-    headline: "Discover Better Candidates",
-    icon: <Briefcase className="h-6 w-6 text-emerald-400" />,
-    link: "/recruiters",
-    cta: "Talk To Sales",
+    title: "ENTERPRISE",
+    headline: "Team Pulse by Bridge AI",
+    icon: <Briefcase className="h-6 w-6 text-purple-400" />,
+    link: "/team-bridge",
+    cta: "Teams",
     bullets: [
-      "Zero screening effort - direct qualified pools",
-      "Verify student competence with Bridge Scores",
-      "Listen to real audio response logs",
-      "Speed up hiring pipelines by 3x"
+      "AI-powered HR automation & workforce intelligence",
+      "JD Studio, person-job fit & structured scorecards",
+      "9-box performance grid & flight risk radar",
+      "Multi-tenant enterprise HR SaaS"
     ]
   }
 ];
@@ -65,8 +65,8 @@ export default function AudienceSegmentation() {
           </p>
         </div>
 
-        {/* 3-Card Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* 4-Card Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {SEGMENTS.map((seg, idx) => (
             <m.div
               key={idx}
