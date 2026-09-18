@@ -62,8 +62,8 @@ export default function Navbar() {
           {[
             ["/colleges", "For Colleges"],
             ["/recruiters", "For Recruiters"],
+            ["/team-bridge", "Teams"],
             ["/students", "For Students"],
-            ["/#features", "Platform"],
             ["/#pricing", "Pricing"],
             ["/about", "About Us"],
           ].map(([href, label]) => {
@@ -143,8 +143,8 @@ export default function Navbar() {
               {[
                 ["/colleges", "For Colleges"],
                 ["/recruiters", "For Recruiters"],
+                ["/team-bridge", "Teams"],
                 ["/students", "For Students"],
-                ["/#features", "Platform"],
                 ["/#pricing", "Pricing"],
                 ["/about", "About Us"],
               ].map(([href, label]) => {

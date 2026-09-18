@@ -1,0 +1,233 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  legalName String
+  slug      String   @unique
+  city      String   @default("Bengaluru")
+  industry  String   @default("B2B SaaS")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users             User[]
+  employees         Employee[]
+  jobs              Job[]
+  candidates        Candidate[]
+  interviews        Interview[]
+  workforcePlans    WorkforcePlan[]
+  engagementRecords EngagementRecord[]
+  complianceRecords ComplianceRecord[]
+  auditLogs         AuditLog[]
+}
+
+model User {
+  id             String       @id @default(uuid())
+  organizationId String
+  email          String       @unique
+  passwordHash   String
+  name           String
+  role           String       @default("HR_RECRUITER") // SUPER_ADMIN, ORG_ADMIN, HR_RECRUITER, HIRING_MANAGER, EMPLOYEE
+  avatarUrl      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model Employee {
+  id                String       @id @default(uuid())
+  organizationId    String
+  name              String
+  email             String?
+  role              String
+  dept              String
+  level             Int          @default(2)
+  gender            String       @default("M")
+  age               Int          @default(30)
+  ctc               Float        @default(15.0) // LPA
+  market            Float        @default(16.0) // LPA
+  perf              Int          @default(3) // 1..5
+  perfPrev          Int          @default(3) // 1..5
+  potential         Int          @default(2) // 1..3
+  goals             Int          @default(80) // 0..100
+  engagement        Float        @default(4.0) // 1..5
+  overtime          Float        @default(40.0) // hrs/wk
+  mgrChanges        Int          @default(0)
+  tenure            Float        @default(2.0) // yrs
+  timeInLevel       Float        @default(1.5) // yrs
+  lastPromo         Float        @default(1.5) // yrs ago
+  mbti              String       @default("INTJ")
+  managerName       String       @default("Leadership")
+  skills            String       @default("[]") // JSON string
+  prevCompanies     String       @default("[]") // JSON string
+  trainings         String       @default("{}") // JSON string
+  documents         String       @default("{}") // JSON string
+  flightRiskScore   Float        @default(20.0)
+  flightRiskLevel   String       @default("low") // high, med, low
+  flightRiskDrivers String       @default("[]") // JSON string
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([dept])
+}
+
+model Job {
+  id             String       @id @default(uuid())
+  organizationId String
+  title          String
+  dept           String
+  level          Int          @default(2)
+  expMin         Float        @default(3.0)
+  expMax         Float        @default(6.0)
+  reqSkills      String       @default("[]") // JSON string
+  niceSkills     String       @default("[]") // JSON string
+  idealMbti      String       @default("[]") // JSON string
+  bandMin        Float        @default(12.0)
+  bandMax        Float        @default(20.0)
+  daysOpen       Int          @default(15)
+  hiringManager  String       @default("HR Manager")
+  competencies   String       @default("[]") // JSON string
+  status         String       @default("OPEN")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  candidates   Candidate[]
+  interviews   Interview[]
+
+  @@index([organizationId])
+}
+
+model Candidate {
+  id             String       @id @default(uuid())
+  organizationId String
+  jobId          String?
+  name           String
+  email          String?
+  company        String       @default("TechCorp")
+  title          String       @default("Engineer")
+  stage          String       @default("Sourced") // Sourced, Screening, Interview, Offer, Accepted, Rejected
+  exp            Float        @default(4.0)
+  curCtc         Float        @default(12.0)
+  expcCtc        Float        @default(16.0)
+  city           String       @default("Bengaluru")
+  notice         Int          @default(30)
+  offers         Int          @default(0)
+  gender         String       @default("F")
+  age            Int          @default(28)
+  mbti           String       @default("INTP")
+  source         String       @default("LinkedIn") // LinkedIn, Naukri, Referral, Campus
+  skills         String       @default("[]") // JSON string
+  cultureScore   Float        @default(80.0)
+  hops           Int          @default(1)
+  careerGap      Int          @default(0)
+  joinInDays     Int?
+  fitScore       Float        @default(75.0)
+  fitDetails     String       @default("{}") // JSON string
+  redFlags       String       @default("[]") // JSON string
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  job          Job?         @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  interviews   Interview[]
+
+  @@index([organizationId])
+  @@index([jobId])
+}
+
+model Interview {
+  id             String       @id @default(uuid())
+  organizationId String
+  candidateId    String
+  jobId          String
+  interviewerId  String?
+  ratings        String       @default("{}") // JSON object
+  notes          String       @default("{}") // JSON object
+  verdict        String?
+  summary        String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  candidate    Candidate    @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  job          Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([candidateId])
+}
+
+model WorkforcePlan {
+  id              String       @id @default(uuid())
+  organizationId  String
+  presetName      String       @default("Steady")
+  growthByDept    String       @default("{}") // JSON object
+  attritionRate   Float        @default(15.0)
+  agencyFeePct    Float        @default(8.33)
+  monthlyCapacity Int          @default(5)
+  totalHires      Int          @default(0)
+  totalCost       Float        @default(0.0)
+  createdAt       DateTime     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model EngagementRecord {
+  id             String       @id @default(uuid())
+  organizationId String
+  month          String
+  eNPS           Float        @default(18.0)
+  moodByDept     String       @default("{}") // JSON object
+  comments       String       @default("[]") // JSON string
+  createdAt      DateTime     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model ComplianceRecord {
+  id             String       @id @default(uuid())
+  organizationId String
+  title          String
+  area           String
+  status         String       @default("due") // done, due, over
+  dueDate        String
+  notes          String?
+  createdAt      DateTime     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model AuditLog {
+  id             String       @id @default(uuid())
+  organizationId String
+  userId         String
+  userEmail      String
+  action         String
+  entity         String
+  entityId       String?
+  details        String?
+  timestamp      DateTime     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
