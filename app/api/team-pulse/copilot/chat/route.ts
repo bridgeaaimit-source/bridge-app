@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/team-pulse/auth";
 import { prisma } from "@/lib/team-pulse/db";
+
+export const dynamic = "force-dynamic";
 import Anthropic from "@anthropic-ai/sdk";
 
 export async function POST(request: Request) {

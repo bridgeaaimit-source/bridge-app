@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/team-pulse/db";
 import { verifyPassword, createToken, COOKIE_NAME, logAudit } from "@/lib/team-pulse/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();

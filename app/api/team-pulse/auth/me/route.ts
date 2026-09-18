@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSession, COOKIE_NAME } from "@/lib/team-pulse/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const session = await getSession();
   if (!session) {

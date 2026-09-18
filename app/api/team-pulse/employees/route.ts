@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/team-pulse/auth";
 import { prisma } from "@/lib/team-pulse/db";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   const session = await getSession();
   if (!session) {

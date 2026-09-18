@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/team-pulse/auth";
 import { prisma } from "@/lib/team-pulse/db";
 
+export const dynamic = "force-dynamic";
+
 const DEFAULT_PULSE_COMMENTS = [
   "Engineering: The weekend on-call schedule is exhausting. We need a proper rotation.",
   "Sales: Great incentives this quarter, but targets keep moving every month.",
