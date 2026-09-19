@@ -16,7 +16,7 @@ if (ANTHROPIC_KEY && !ANTHROPIC_KEY.includes("your_")) {
 
 /**
  * Executes a prompt through the multi-tier AI pipeline:
- * Tier 1: Anthropic Claude (claude-3-5-haiku-20241022 / claude-3-7-sonnet-20250219)
+ * Tier 1: Anthropic Claude (claude-3-5-sonnet-latest / claude-3-haiku-20240307)
  * Tier 2: Google Gemini (gemini-3.6-flash via GEMINI_API_KEY)
  * Tier 3: Deterministic Domain Fallback Generator
  */
@@ -41,8 +41,8 @@ export async function runMultiTierAI(
     try {
       const model =
         options.modelPreference === "deep"
-          ? "claude-3-7-sonnet-20250219"
-          : "claude-3-5-haiku-20241022";
+          ? "claude-3-5-sonnet-latest"
+          : "claude-3-haiku-20240307";
 
       const message = await Promise.race([
         anthropicClient.messages.create({
@@ -62,15 +62,15 @@ export async function runMultiTierAI(
         .join("\n");
 
       if (text && text.trim()) {
-        setCached(CacheKeys.aiResponse(cacheHash), text, 300); // 5 min TTL
+        setCached(CacheKeys.aiResponse(cacheHash), text, 300);
         return text;
       }
     } catch (err: any) {
-      console.warn("Anthropic Claude tier failed/timed out, trying Gemini fallback:", err?.message);
+      console.warn("Anthropic Claude tier error, falling back to Gemini:", err?.message);
     }
   }
 
-  // Tier 2: Google Gemini API (gemini-3.6-flash)
+  // Tier 2: Google Gemini API (gemini-3.6-flash / gemini-flash-latest)
   if (GEMINI_KEY && !GEMINI_KEY.includes("your_")) {
     try {
       const geminiRes = await Promise.race([
@@ -131,7 +131,7 @@ export async function generateBriefingAI(contextSummary: string): Promise<string
     "You are an executive HR AI assistant for Rocket India / Arcadia Softworks. Write a crisp, executive morning briefing (exactly 4-5 bullet points) highlighting headcount, open roles, high flight risk retention, overdue POSH compliance, and employee sentiment. Use bold text for key metrics and names.";
 
   const fallback = () =>
-    `• **Headcount & Open Requisitions:** Current headcount is **64 employees** with **6 open roles** (Backend Engineer open 52 days requires immediate sourcing push).\n• **High Flight Risk:** **11 employees** flagged as high flight risk (total replacement risk ₹48.2L). Pay correction of ₹8.4L recommended for top 5 key staff.\n• **Internal Mobility:** 3 self-nominations pending review for Senior Data Analyst & Customer Success.\n• **Statutory Compliance:** **14 employees overdue on POSH training**; Bangalore fire drill overdue 18 days.\n• **Team Sentiment:** Overall Happiness Index is **70/100** (eNPS +18), with Engineering on-call burnout needing manager intervention.`;
+    `• **Headcount & Open Requisitions:** Current headcount is **200 employees** with **4 open roles** across Engineering, Product, Data, and Sales.\n• **High Flight Risk:** **13 employees** flagged as high flight risk. Targeted pay correction recommended for critical staff.\n• **Internal Mobility:** 3 internal nominations pending review for Senior Data Analyst & Customer Success.\n• **Statutory Compliance:** **26 employees overdue on POSH training**; Bengaluru fire drill overdue 18 days.\n• **Team Sentiment:** Overall Happiness Index is **70/100** (eNPS +18), with Engineering on-call burnout needing manager intervention.`;
 
   return runMultiTierAI(contextSummary, systemPrompt, fallback, { modelPreference: "fast" });
 }
@@ -153,7 +153,7 @@ export async function generateCopilotAnswerAI(
   history: Array<{ role: string; content: string }>,
   orgContext: string
 ): Promise<string> {
-  const systemPrompt = `You are HR Copilot inside the TalentPulse portal for Arcadia Softworks Pvt Ltd. Answer the HR team's questions using the organization data context provided below. Be concise (under 200 words unless drafting a formal policy or letter), use markdown bullets and bold for names and numbers, and format all compensation in INR Lakhs (₹LPA). Never make decisions on gender, age, or MBTI. If asked to draft a letter or policy, draft it completely and professionally.\n\n${orgContext}`;
+  const systemPrompt = `You are HR Copilot inside the TalentPulse portal for Arcadia Softworks Pvt Ltd / Rocket India. Answer the HR team's questions using the organization data context provided below. Be concise (under 200 words unless drafting a formal policy or letter), use markdown bullets and bold for names and numbers, and format all compensation in INR Lakhs (₹LPA). Never make decisions on gender, age, or MBTI. If asked to draft a letter or policy, draft it completely and professionally.\n\n${orgContext}`;
 
   const historyContext = history
     .slice(-4)
@@ -174,7 +174,7 @@ export async function generateCopilotAnswerAI(
       return `**Promotion-Ready Employees (Cycle 2026)**\n- **Arjun Nair** (Senior SDE II → Staff SDE): Rating 4.8/5, suggested hike 18% (₹37.8L).\n- **Kavita Krishnan** (Product Manager → Lead PM): Rating 4.7/5, suggested hike 16% (₹30.1L).\n- **Sanjay Rao** (Data Scientist → Senior Data Scientist): Rating 4.6/5, suggested hike 15% (₹25.3L).`;
     }
     if (/posh|complian|fire|training|overdue/.test(l)) {
-      return `**Statutory Compliance Snapshot**\n- **14 employees overdue on POSH training** (88% company completion).\n- Fire drill **18 days overdue**; Fire NOC expires in 21 days (Bengaluru office).\n- Open **Compliance Center** to trigger single-click reminders.`;
+      return `**Statutory Compliance Snapshot**\n- **26 employees overdue on POSH training**.\n- Fire drill **18 days overdue**; Fire NOC expires in 21 days (Bengaluru office).\n- Open **Compliance Center** to trigger single-click reminders.`;
     }
     if (/offer letter/.test(l)) {
       return `**Arcadia Softworks Pvt Ltd — Formal Offer of Employment**\n\nDear **Sneha Kulkarni**,\n\nWe are pleased to offer you the role of **Senior Data Analyst** at **Arcadia Softworks Pvt Ltd**, reporting to the Director of Analytics.\n\n- **Annual Total CTC:** **₹21,50,000** (90% Fixed Base + 10% Annual Variable)\n- **Joining Bonus:** **₹1,50,000**\n- **Location:** Bengaluru (Hybrid — 3 anchor days in office)\n- **Joining Date:** Within 30 days\n\nPlease confirm acceptance by signing within 5 working days.\n\nWarm regards,\n**HR Team**`;

@@ -13,7 +13,7 @@ function mulberry32(a: number) {
   };
 }
 
-const rnd = mulberry32(20260911);
+const rnd = mulberry32(20260919);
 const R = {
   f: (a: number, b: number) => a + rnd() * (b - a),
   i: (a: number, b: number) => Math.floor(a + rnd() * (b - a + 1)),
@@ -37,38 +37,42 @@ const R = {
   },
 };
 
-
 const FEMALE = [
   "Priya", "Ananya", "Kavya", "Meera", "Sneha", "Aditi", "Riya", "Nisha",
   "Pooja", "Shreya", "Divya", "Ishita", "Neha", "Tanvi", "Aisha", "Farah",
   "Lakshmi", "Swati", "Sana", "Radhika", "Nandini", "Kritika", "Manasi", "Zoya",
   "Bhavna", "Gayatri", "Harini", "Jyoti", "Madhuri", "Pallavi", "Rekha", "Sonal",
-  "Vaishnavi", "Tara"
+  "Vaishnavi", "Tara", "Deepika", "Shalini", "Sunita", "Anita", "Smriti", "Preeti",
+  "Kalyani", "Vidya", "Shruti", "Archana", "Rupal", "Neelam", "Geeta", "Charu"
 ];
+
 const MALE = [
   "Arjun", "Rohan", "Vikram", "Aditya", "Karan", "Rahul", "Siddharth", "Nikhil",
   "Amit", "Varun", "Rajesh", "Imran", "Harsh", "Kunal", "Manish", "Pranav",
   "Suresh", "Yash", "Abhishek", "Gaurav", "Sameer", "Tejas", "Vivek", "Faizan",
   "Ravi", "Anil", "Dev", "Irfan", "Mohit", "Naveen", "Omkar", "Sandeep",
-  "Tarun", "Ujjwal"
+  "Tarun", "Ujjwal", "Alok", "Chirag", "Deepak", "Hemant", "Jitendra", "Kartik",
+  "Mayank", "Pankaj", "Raman", "Sachin", "Tushar", "Utkarsh", "Vishal", "Yogesh"
 ];
+
 const SURN = [
   "Sharma", "Iyer", "Reddy", "Nair", "Gupta", "Menon", "Patel", "Singh",
   "Rao", "Das", "Kulkarni", "Joshi", "Khan", "Bose", "Mehta", "Pillai",
   "Chatterjee", "Verma", "Shetty", "Banerjee", "Desai", "Agarwal", "Kapoor",
-  "Naidu", "Mishra", "Fernandes", "Hegde", "Ghosh", "Bhat", "Saxena", "Qureshi", "Dutta"
+  "Naidu", "Mishra", "Fernandes", "Hegde", "Ghosh", "Bhat", "Saxena", "Qureshi", "Dutta",
+  "Bhardwaj", "Choudhury", "Gowda", "Kashyap", "Mahajan", "Nambiar", "Pandey", "Sen"
 ];
 
 const usedNames = new Set<string>();
 function makeName(gender: "F" | "M"): string {
-  for (let k = 0; k < 200; k++) {
+  for (let k = 0; k < 500; k++) {
     const n = (gender === "F" ? R.pick(FEMALE) : R.pick(MALE)) + " " + R.pick(SURN);
     if (!usedNames.has(n)) {
       usedNames.add(n);
       return n;
     }
   }
-  return "Alex Kumar";
+  return `Employee ${R.i(100, 999)}`;
 }
 
 const FAKE_COS = [
@@ -79,67 +83,67 @@ const FAKE_COS = [
 
 const DEPTS: Record<string, { n: number; color: string; roles: string[]; market: number[]; skills: string[]; mbti: [string, number][] }> = {
   Engineering: {
-    n: 22,
+    n: 70,
     color: "#3A5BFF",
     roles: ["Software Engineer", "Software Engineer II", "Senior Software Engineer", "Engineering Manager", "Director of Engineering"],
     market: [9, 16, 26, 42, 70],
     skills: ["Java", "Python", "Node.js", "React", "AWS", "Kubernetes", "SQL", "System Design", "Microservices", "CI/CD", "Go", "TypeScript"],
     mbti: [["INTJ", 5], ["INTP", 6], ["ISTJ", 6], ["ISTP", 4], ["ENTJ", 2], ["ENTP", 3], ["INFP", 2]]
   },
-  Data: {
-    n: 8,
-    color: "#0B94D1",
-    roles: ["Data Analyst", "Senior Data Analyst", "Data Scientist", "Lead Data Scientist", "Head of Data"],
-    market: [8, 15, 24, 38, 60],
-    skills: ["SQL", "Python", "Power BI", "Tableau", "Statistics", "Machine Learning", "Excel", "A/B Testing", "dbt", "Storytelling"],
-    mbti: [["INTJ", 5], ["INTP", 5], ["ISTJ", 5], ["ENTJ", 2], ["ENTP", 2]]
-  },
-  Product: {
-    n: 6,
-    color: "#8B5CF6",
-    roles: ["Associate Product Manager", "Product Designer", "Product Manager", "Senior Product Manager", "Head of Product"],
-    market: [11, 18, 28, 42, 65],
-    skills: ["Roadmapping", "Figma", "User Research", "Analytics", "Prototyping", "Stakeholder Management", "Design Systems", "SQL"],
-    mbti: [["ENFP", 4], ["INFP", 3], ["ENTJ", 3], ["INFJ", 3]]
-  },
   Sales: {
-    n: 12,
+    n: 35,
     color: "#E8436A",
     roles: ["Sales Development Rep", "Account Executive", "Enterprise Account Executive", "Sales Manager", "VP Sales"],
     market: [6, 11, 18, 30, 50],
     skills: ["Negotiation", "CRM (Salesforce)", "Prospecting", "Enterprise Sales", "Forecasting", "Presentation", "SaaS", "Cold Outreach"],
     mbti: [["ESTP", 5], ["ENTJ", 4], ["ESTJ", 4], ["ENFJ", 3]]
   },
+  Data: {
+    n: 25,
+    color: "#0B94D1",
+    roles: ["Data Analyst", "Senior Data Analyst", "Data Scientist", "Lead Data Scientist", "Head of Data"],
+    market: [8, 15, 24, 38, 60],
+    skills: ["SQL", "Python", "Power BI", "Tableau", "Statistics", "Machine Learning", "Excel", "A/B Testing", "dbt", "Storytelling"],
+    mbti: [["INTJ", 5], ["INTP", 5], ["ISTJ", 5], ["ENTJ", 2], ["ENTP", 2]]
+  },
   "Customer Success": {
-    n: 7,
+    n: 22,
     color: "#0CA678",
     roles: ["CS Associate", "Customer Success Manager", "Senior CSM", "CS Lead", "Head of CS"],
     market: [5.5, 10, 14, 22, 34],
     skills: ["Account Management", "Onboarding", "Churn Analysis", "Communication", "Zendesk", "Upselling", "SaaS"],
     mbti: [["ESFJ", 5], ["ENFJ", 4], ["ISFJ", 4]]
   },
-  HR: {
-    n: 4,
-    color: "#E8890C",
-    roles: ["HR Executive", "HR Business Partner", "Talent Acquisition Lead", "HR Head"],
-    market: [5, 10, 15, 24],
-    skills: ["Talent Acquisition", "Employee Relations", "HR Analytics", "Labour Law", "Compensation", "L&D"],
-    mbti: [["ENFJ", 4], ["ESFJ", 4], ["INFJ", 3]]
+  Product: {
+    n: 20,
+    color: "#8B5CF6",
+    roles: ["Associate Product Manager", "Product Designer", "Product Manager", "Senior Product Manager", "Head of Product"],
+    market: [11, 18, 28, 42, 65],
+    skills: ["Roadmapping", "Figma", "User Research", "Analytics", "Prototyping", "Stakeholder Management", "Design Systems", "SQL"],
+    mbti: [["ENFP", 4], ["INFP", 3], ["ENTJ", 3], ["INFJ", 3]]
   },
   Finance: {
-    n: 5,
+    n: 14,
     color: "#5E6687",
     roles: ["Accountant", "Financial Analyst", "Senior Financial Analyst", "Finance Controller", "CFO"],
     market: [6, 10, 16, 26, 42],
     skills: ["Excel", "FP&A", "Taxation", "Tally", "Financial Modeling", "Audit", "SQL"],
     mbti: [["ISTJ", 6], ["ESTJ", 4], ["INTJ", 3]]
+  },
+  HR: {
+    n: 14,
+    color: "#E8890C",
+    roles: ["HR Executive", "HR Business Partner", "Talent Acquisition Lead", "HR Head"],
+    market: [5, 10, 15, 24],
+    skills: ["Talent Acquisition", "Employee Relations", "HR Analytics", "Labour Law", "Compensation", "L&D"],
+    mbti: [["ENFJ", 4], ["ESFJ", 4], ["INFJ", 3]]
   }
 };
 
 async function main() {
-  console.log("🌱 Seeding Team Pulse database for enterprise client Rocket India...");
+  console.log("🌱 Seeding Team Pulse database with 200 mock employees...");
 
-  // 1. Create Organization: Rocket India
+  // 1. Upsert Organization
   const org = await prisma.organization.upsert({
     where: { slug: "rocket-india" },
     update: {},
@@ -153,11 +157,10 @@ async function main() {
     },
   });
 
-  console.log(`✅ Organization created: ${org.name} (${org.id})`);
+  console.log(`✅ Organization verified: ${org.name} (${org.id})`);
 
-  // 2. Create Users
+  // 2. Upsert Users
   const passwordHash = await bcrypt.hash("password123", 10);
-
   const usersData = [
     {
       email: "hr@rocketindia.com",
@@ -189,9 +192,8 @@ async function main() {
       create: u,
     });
   }
-  console.log("✅ Enterprise User accounts seeded.");
 
-  // 3. Create Employees (64 total)
+  // 3. Populate 200 Employees
   await prisma.employee.deleteMany({ where: { organizationId: org.id } });
 
   const deptList = Object.keys(DEPTS);
@@ -200,20 +202,35 @@ async function main() {
   for (const dept of deptList) {
     const dConfig = DEPTS[dept];
     for (let i = 0; i < dConfig.n; i++) {
-      const gender: "F" | "M" = R.chance(0.42) ? "F" : "M";
-      const name = empCount === 0 ? "Rohan Mehta" : empCount === 1 ? "Kavya Reddy" : empCount === 2 ? "Meera Iyer" : makeName(gender);
+      const gender: "F" | "M" = R.chance(0.44) ? "F" : "M";
+      const name =
+        empCount === 0
+          ? "Rohan Mehta"
+          : empCount === 1
+          ? "Kavya Reddy"
+          : empCount === 2
+          ? "Meera Iyer"
+          : empCount === 3
+          ? "Vikram Malhotra"
+          : empCount === 4
+          ? "Neha Gupta"
+          : empCount === 5
+          ? "Arjun Nair"
+          : makeName(gender);
+
       const lvl = R.wpick([
-        [1, 0.35],
-        [2, 0.4],
+        [1, 0.32],
+        [2, 0.42],
         [3, 0.18],
-        [4, 0.05],
+        [4, 0.06],
         [5, 0.02],
       ]);
+
       const roleName = dConfig.roles[Math.min(lvl - 1, dConfig.roles.length - 1)];
       const baseMkt = dConfig.market[Math.min(lvl - 1, dConfig.market.length - 1)];
 
-      const tenure = Math.round((R.f(0.4, 6.5)) * 10) / 10;
-      const timeInLevel = Math.min(tenure, Math.round((R.f(0.3, 3.5)) * 10) / 10);
+      const tenure = Math.round(R.f(0.4, 6.5) * 10) / 10;
+      const timeInLevel = Math.min(tenure, Math.round(R.f(0.3, 3.5) * 10) / 10);
       const ctc = Math.round(baseMkt * R.f(0.78, 1.25) * 10) / 10;
       const market = Math.round(baseMkt * R.f(0.95, 1.1) * 10) / 10;
 
@@ -230,11 +247,11 @@ async function main() {
       const prevCompanies = R.sample(FAKE_COS, R.i(1, 3));
 
       // Calculate risk
-      let riskScore = 10;
+      let riskScore = 15;
       const drivers: [string, string, number][] = [];
       if (ctc / market < 0.88) {
         drivers.push(["pay", `Salary ${Math.round((1 - ctc / market) * 100)}% below market`, 22]);
-        riskScore += 22;
+        riskScore += 24;
       }
       if (perf >= 4 && timeInLevel >= 2.2) {
         drivers.push(["promo", "High performer, 2+ yrs in level", 16]);
@@ -242,20 +259,25 @@ async function main() {
       }
       if (engagement <= 3.3) {
         drivers.push(["eng", `Engagement dipping (${engagement}/5)`, 9]);
-        riskScore += 9;
+        riskScore += 12;
       }
       if (overtime >= 51) {
         drivers.push(["ot", `Overtime ${overtime} hrs/wk`, 12]);
-        riskScore += 12;
+        riskScore += 15;
       }
-      riskScore = Math.min(95, Math.max(8, riskScore));
-      const flightRiskLevel = riskScore >= 60 ? "high" : riskScore >= 35 ? "med" : "low";
+      if (mgrChanges >= 2) {
+        drivers.push(["mgr", `Multiple manager changes (${mgrChanges})`, 10]);
+        riskScore += 10;
+      }
+
+      riskScore = Math.min(95, Math.max(12, riskScore));
+      const flightRiskLevel = riskScore >= 65 ? "high" : riskScore >= 40 ? "med" : "low";
 
       const trainings = {
-        posh: R.chance(0.15) ? "over" : R.chance(0.2) ? "due" : "done",
+        posh: R.chance(0.14) ? "over" : R.chance(0.18) ? "due" : "done",
         fire: R.chance(0.1) ? "over" : "done",
         coc: "done",
-        dpdp: R.chance(0.25) ? "due" : "done",
+        dpdp: R.chance(0.2) ? "due" : "done",
         infosec: "done",
         abac: "done",
       };
@@ -265,7 +287,7 @@ async function main() {
         Aadhaar: "ok",
         "Bank details": "ok",
         NDA: "ok",
-        "Background check": R.chance(0.08) ? "missing" : "ok",
+        "Background check": R.chance(0.06) ? "missing" : "ok",
       };
 
       await prisma.employee.create({
@@ -277,7 +299,7 @@ async function main() {
           dept,
           level: lvl,
           gender,
-          age: R.i(23, 44),
+          age: R.i(23, 46),
           ctc,
           market,
           perf,
@@ -291,7 +313,7 @@ async function main() {
           timeInLevel,
           lastPromo: Math.round(R.f(0.5, 3.0) * 10) / 10,
           mbti,
-          managerName: "Director of " + dept,
+          managerName: `Director of ${dept}`,
           skills: JSON.stringify(skills),
           prevCompanies: JSON.stringify(prevCompanies),
           trainings: JSON.stringify(trainings),
@@ -306,11 +328,10 @@ async function main() {
     }
   }
 
-  console.log(`✅ ${empCount} employees created.`);
+  console.log(`✅ ${empCount} employees seeded successfully into database.`);
 
   // 4. Create Open Jobs
   await prisma.job.deleteMany({ where: { organizationId: org.id } });
-
   const jobsData = [
     {
       id: "job_r1",
@@ -407,9 +428,8 @@ async function main() {
   }
   console.log("✅ 4 Open Job Openings created.");
 
-  // 5. Create Candidates
+  // 5. Seed Candidates
   await prisma.candidate.deleteMany({ where: { organizationId: org.id } });
-
   const candsData = [
     {
       id: "cand_1",
@@ -423,7 +443,7 @@ async function main() {
       curCtc: 16.5,
       expcCtc: 22.0,
       city: "Bengaluru",
-      notice: 90,
+      notice: 30,
       offers: 2,
       gender: "F",
       age: 29,
@@ -523,9 +543,8 @@ async function main() {
   }
   console.log("✅ Candidate pipeline seeded.");
 
-  // 6. Create Compliance Records
+  // 6. Seed Compliance Records
   await prisma.complianceRecord.deleteMany({ where: { organizationId: org.id } });
-
   const compData = [
     {
       organizationId: org.id,
@@ -581,9 +600,9 @@ async function main() {
   for (const c of compData) {
     await prisma.complianceRecord.create({ data: c });
   }
-  console.log("✅ Compliance Records created.");
+  console.log("✅ Compliance records seeded.");
 
-  console.log("🚀 Seeding completed successfully for Rocket India!");
+  console.log("🚀 Seeding completed successfully for 200 employees!");
 }
 
 main()
