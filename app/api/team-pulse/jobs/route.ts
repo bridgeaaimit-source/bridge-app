@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/team-pulse/auth";
 import { prisma } from "@/lib/team-pulse/db";
+import { invalidateOrgCache } from "@/lib/team-pulse/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -17,13 +18,33 @@ export async function GET() {
       orderBy: { daysOpen: "desc" },
     });
 
-    const parsed = jobs.map((j) => ({
-      ...j,
-      reqSkills: JSON.parse(j.reqSkills || "[]"),
-      niceSkills: JSON.parse(j.niceSkills || "[]"),
-      idealMbti: JSON.parse(j.idealMbti || "[]"),
-      competencies: JSON.parse(j.competencies || "[]"),
-    }));
+    const parsed = jobs.map((j) => {
+      let reqSkills: string[] = [];
+      let niceSkills: string[] = [];
+      let idealMbti: string[] = [];
+      let competencies: any[] = [];
+
+      try {
+        reqSkills = JSON.parse(j.reqSkills || "[]");
+      } catch {}
+      try {
+        niceSkills = JSON.parse(j.niceSkills || "[]");
+      } catch {}
+      try {
+        idealMbti = JSON.parse(j.idealMbti || "[]");
+      } catch {}
+      try {
+        competencies = JSON.parse(j.competencies || "[]");
+      } catch {}
+
+      return {
+        ...j,
+        reqSkills,
+        niceSkills,
+        idealMbti,
+        competencies,
+      };
+    });
 
     return NextResponse.json(parsed);
   } catch (error) {
@@ -58,6 +79,7 @@ export async function POST(request: Request) {
       },
     });
 
+    invalidateOrgCache(session.organizationId);
     return NextResponse.json(job);
   } catch (error) {
     return NextResponse.json({ error: "Failed to create job" }, { status: 500 });

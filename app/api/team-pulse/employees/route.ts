@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/team-pulse/auth";
 import { prisma } from "@/lib/team-pulse/db";
+import { invalidateOrgCache } from "@/lib/team-pulse/cache";
+import { computeFlightRisk } from "@/lib/team-pulse/scoreEngine";
 
 export const dynamic = "force-dynamic";
 
@@ -24,14 +26,38 @@ export async function GET(request: Request) {
       orderBy: { flightRiskScore: "desc" },
     });
 
-    const parsed = employees.map((e) => ({
-      ...e,
-      skills: JSON.parse(e.skills || "[]"),
-      prevCompanies: JSON.parse(e.prevCompanies || "[]"),
-      trainings: JSON.parse(e.trainings || "{}"),
-      documents: JSON.parse(e.documents || "{}"),
-      flightRiskDrivers: JSON.parse(e.flightRiskDrivers || "[]"),
-    }));
+    const parsed = employees.map((e) => {
+      let skills: string[] = [];
+      let prevCompanies: string[] = [];
+      let trainings: Record<string, string> = {};
+      let documents: Record<string, string> = {};
+      let flightRiskDrivers: string[] = [];
+
+      try {
+        skills = JSON.parse(e.skills || "[]");
+      } catch {}
+      try {
+        prevCompanies = JSON.parse(e.prevCompanies || "[]");
+      } catch {}
+      try {
+        trainings = JSON.parse(e.trainings || "{}");
+      } catch {}
+      try {
+        documents = JSON.parse(e.documents || "{}");
+      } catch {}
+      try {
+        flightRiskDrivers = JSON.parse(e.flightRiskDrivers || "[]");
+      } catch {}
+
+      return {
+        ...e,
+        skills,
+        prevCompanies,
+        trainings,
+        documents,
+        flightRiskDrivers,
+      };
+    });
 
     return NextResponse.json(parsed);
   } catch (error) {
@@ -47,11 +73,26 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
+
+    const computed = computeFlightRisk({
+      level: Number(body.level) || 2,
+      ctc: Number(body.ctc) || 15.0,
+      market: Number(body.market) || 16.0,
+      engagement: Number(body.engagement) || 4.0,
+      overtime: Number(body.overtime) || 40,
+      tenure: Number(body.tenure) || 1.0,
+      timeInLevel: Number(body.timeInLevel) || 1.0,
+      perf: Number(body.perf) || 3,
+      goals: Number(body.goals) || 80,
+    });
+
     const newEmp = await prisma.employee.create({
       data: {
         organizationId: session.organizationId,
         name: body.name,
-        email: body.email || `${body.name.toLowerCase().replace(/\s+/g, ".")}@${session.organizationName.toLowerCase().replace(/\s+/g, "")}.com`,
+        email:
+          body.email ||
+          `${body.name.toLowerCase().replace(/\s+/g, ".")}@${(session.organizationName || "arcadia").toLowerCase().replace(/\s+/g, "")}.com`,
         role: body.role,
         dept: body.dept,
         level: Number(body.level) || 2,
@@ -73,12 +114,13 @@ export async function POST(request: Request) {
         prevCompanies: JSON.stringify(body.prevCompanies || []),
         trainings: JSON.stringify(body.trainings || { posh: "done", fire: "done", coc: "done", dpdp: "done" }),
         documents: JSON.stringify(body.documents || { PAN: "ok", Aadhaar: "ok", "Bank details": "ok" }),
-        flightRiskScore: Number(body.flightRiskScore) || 15.0,
-        flightRiskLevel: body.flightRiskLevel || "low",
-        flightRiskDrivers: JSON.stringify(body.flightRiskDrivers || []),
+        flightRiskScore: body.flightRiskScore ? Number(body.flightRiskScore) : computed.score,
+        flightRiskLevel: body.flightRiskLevel || computed.level,
+        flightRiskDrivers: JSON.stringify(body.flightRiskDrivers || computed.drivers),
       },
     });
 
+    invalidateOrgCache(session.organizationId);
     return NextResponse.json(newEmp);
   } catch (error) {
     return NextResponse.json({ error: "Failed to create employee" }, { status: 500 });

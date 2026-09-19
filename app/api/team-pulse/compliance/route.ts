@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/team-pulse/auth";
 import { prisma } from "@/lib/team-pulse/db";
+import { getCached, setCached, CacheKeys } from "@/lib/team-pulse/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -10,28 +11,50 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  try {
-    const complianceRecords = await prisma.complianceRecord.findMany({
-      where: { organizationId: session.organizationId },
-    });
+  const organizationId = session.organizationId;
+  const cacheKey = CacheKeys.compliance(organizationId);
+  const cached = getCached<any>(cacheKey);
+  if (cached) {
+    return NextResponse.json(cached);
+  }
 
-    const employees = await prisma.employee.findMany({
-      where: { organizationId: session.organizationId },
-    });
+  try {
+    const [complianceRecords, employees] = await Promise.all([
+      prisma.complianceRecord.findMany({
+        where: { organizationId },
+      }),
+      prisma.employee.findMany({
+        where: { organizationId },
+        select: {
+          id: true,
+          name: true,
+          role: true,
+          dept: true,
+          trainings: true,
+          documents: true,
+        },
+      }),
+    ]);
 
     let totalTrainings = 0;
     let completedTrainings = 0;
-    let overdueCount = 0;
 
     const employeeCompliance = employees.map((e) => {
-      const train = JSON.parse(e.trainings || "{}");
-      const docs = JSON.parse(e.documents || "{}");
+      let train: Record<string, string> = {};
+      let docs: Record<string, string> = {};
+
+      try {
+        train = JSON.parse(e.trainings || "{}");
+      } catch {}
+
+      try {
+        docs = JSON.parse(e.documents || "{}");
+      } catch {}
 
       const trainValues = Object.values(train);
       trainValues.forEach((val) => {
         if (val !== "na") totalTrainings++;
         if (val === "done") completedTrainings++;
-        if (val === "over") overdueCount++;
       });
 
       const missingDocs = Object.entries(docs)
@@ -50,17 +73,28 @@ export async function GET() {
       };
     });
 
-    const trainingRate = totalTrainings > 0 ? Math.round((completedTrainings / totalTrainings) * 100) : 84;
+    const trainingRate =
+      totalTrainings > 0
+        ? Math.round((completedTrainings / totalTrainings) * 100)
+        : 84;
 
-    return NextResponse.json({
+    const result = {
       companyRecords: complianceRecords,
       employeeCompliance,
       trainingRate,
       overdueEmployeesCount: employeeCompliance.filter((e) => e.hasOverdue).length,
-      missingDocsEmployeesCount: employeeCompliance.filter((e) => e.missingDocs.length > 0).length,
-    });
+      missingDocsEmployeesCount: employeeCompliance.filter(
+        (e) => e.missingDocs.length > 0
+      ).length,
+    };
+
+    setCached(cacheKey, result, 60);
+    return NextResponse.json(result);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch compliance data" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch compliance data" },
+      { status: 500 }
+    );
   }
 }
 
@@ -80,6 +114,9 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to process compliance action" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to process compliance action" },
+      { status: 500 }
+    );
   }
 }

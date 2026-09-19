@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/team-pulse/auth";
 import { prisma } from "@/lib/team-pulse/db";
+import { invalidateOrgCache } from "@/lib/team-pulse/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -23,11 +24,23 @@ export async function GET(request: Request) {
       orderBy: { createdAt: "desc" },
     });
 
-    const parsed = interviews.map((i) => ({
-      ...i,
-      ratings: JSON.parse(i.ratings || "{}"),
-      notes: JSON.parse(i.notes || "{}"),
-    }));
+    const parsed = interviews.map((i) => {
+      let ratings: Record<string, number> = {};
+      let notes: Record<string, string> = {};
+
+      try {
+        ratings = JSON.parse(i.ratings || "{}");
+      } catch {}
+      try {
+        notes = JSON.parse(i.notes || "{}");
+      } catch {}
+
+      return {
+        ...i,
+        ratings,
+        notes,
+      };
+    });
 
     return NextResponse.json(parsed);
   } catch (error) {
@@ -72,6 +85,7 @@ export async function POST(request: Request) {
       });
     }
 
+    invalidateOrgCache(session.organizationId);
     return NextResponse.json(interview);
   } catch (error) {
     return NextResponse.json({ error: "Failed to submit interview scorecard" }, { status: 500 });

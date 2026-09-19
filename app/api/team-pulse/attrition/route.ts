@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/team-pulse/auth";
 import { prisma } from "@/lib/team-pulse/db";
+import { getCached, setCached, CacheKeys } from "@/lib/team-pulse/cache";
+import { computeFlightRisk } from "@/lib/team-pulse/scoreEngine";
 
 export const dynamic = "force-dynamic";
 
@@ -11,8 +13,14 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const dept = searchParams.get("dept");
-  const level = searchParams.get("level");
+  const dept = searchParams.get("dept") || "All";
+  const level = searchParams.get("level") || "All";
+
+  const cacheKey = CacheKeys.attrition(session.organizationId, dept, level);
+  const cached = getCached<any>(cacheKey);
+  if (cached) {
+    return NextResponse.json(cached);
+  }
 
   const whereClause: any = { organizationId: session.organizationId };
   if (dept && dept !== "All") whereClause.dept = dept;
@@ -25,9 +33,13 @@ export async function GET(request: Request) {
     });
 
     const parsed = employees.map((e) => {
-      const drivers = JSON.parse(e.flightRiskDrivers || "[]");
-      const replCostLpa = e.ctc * (e.level <= 2 ? 0.5 : e.level === 3 ? 0.75 : 1.0);
-      const fixPayCost = Math.max(0, e.market * 0.95 - e.ctc);
+      let storedDrivers: string[] = [];
+      try {
+        storedDrivers = JSON.parse(e.flightRiskDrivers || "[]");
+      } catch {}
+
+      const computed = computeFlightRisk(e);
+      const drivers = storedDrivers.length > 0 ? storedDrivers : computed.drivers;
 
       return {
         id: e.id,
@@ -41,11 +53,11 @@ export async function GET(request: Request) {
         tenure: e.tenure,
         mbti: e.mbti,
         managerName: e.managerName,
-        riskScore: e.flightRiskScore,
-        riskLevel: e.flightRiskLevel,
+        riskScore: e.flightRiskScore || computed.score,
+        riskLevel: e.flightRiskLevel || computed.level,
         drivers,
-        replCostLpa: Math.round(replCostLpa * 10) / 10,
-        fixPayCostLpa: Math.round(fixPayCost * 10) / 10,
+        replCostLpa: computed.replCostLpa,
+        fixPayCostLpa: computed.fixPayCostLpa,
       };
     });
 
@@ -54,12 +66,18 @@ export async function GET(request: Request) {
       .filter((e) => e.riskLevel === "high")
       .reduce((sum, e) => sum + e.replCostLpa, 0);
 
-    return NextResponse.json({
+    const result = {
       employees: parsed,
       highRiskCount,
       totalReplCostLpa: Math.round(totalReplCost * 10) / 10,
-    });
+    };
+
+    setCached(cacheKey, result, 60);
+    return NextResponse.json(result);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch attrition radar data" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch attrition radar data" },
+      { status: 500 }
+    );
   }
 }
