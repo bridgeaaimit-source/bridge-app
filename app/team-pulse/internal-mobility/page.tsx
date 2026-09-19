@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, Check, ArrowRightLeft, UserPlus, Info } from "lucide-react";
+import { renderFormattedMarkdown } from "@/lib/team-pulse/formatMarkdown";
 
 interface InternalCandidate {
   id: string;
@@ -419,9 +420,9 @@ export default function InternalMobilityPage() {
             {aiJobPost && (
               <div style={{
                 background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 16,
-                fontSize: 13, color: "#334155", lineHeight: 1.6, whiteSpace: "pre-wrap"
+                fontSize: 13, color: "#334155", lineHeight: 1.6
               }}>
-                {aiJobPost}
+                {renderFormattedMarkdown(aiJobPost)}
               </div>
             )}
           </div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, Check, ArrowRight, AlertTriangle, FileText, UserCheck } from "lucide-react";
+import { renderFormattedMarkdown } from "@/lib/team-pulse/formatMarkdown";
 
 const CANDIDATES_DATA: Record<string, any> = {
   "c_tanvi": {
@@ -841,10 +842,9 @@ export default function JobFitPage() {
                   fontSize: 13,
                   color: "#334155",
                   lineHeight: 1.6,
-                  marginBottom: 14,
-                  whiteSpace: "pre-wrap"
+                  marginBottom: 14
                 }}>
-                  {aiAssessment}
+                  {renderFormattedMarkdown(aiAssessment)}
                 </div>
               )}
             </div>

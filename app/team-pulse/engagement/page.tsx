@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, Flame, Check, RefreshCw } from "lucide-react";
+import { renderFormattedMarkdown } from "@/lib/team-pulse/formatMarkdown";
 
 export default function EngagementPage() {
   const [commentsText, setCommentsText] = useState(
@@ -606,9 +607,9 @@ export default function EngagementPage() {
           {aiSummaryOutput && (
             <div style={{
               background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 16,
-              fontSize: 13, color: "#334155", lineHeight: 1.6, whiteSpace: "pre-wrap"
+              fontSize: 13, color: "#334155", lineHeight: 1.6
             }}>
-              {aiSummaryOutput}
+              {renderFormattedMarkdown(aiSummaryOutput)}
             </div>
           )}
         </div>

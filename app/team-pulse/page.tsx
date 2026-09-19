@@ -17,6 +17,7 @@ import {
   Search,
   ChevronRight
 } from "lucide-react";
+import { renderFormattedMarkdown } from "@/lib/team-pulse/formatMarkdown";
 
 export default function CommandCenter() {
   const [data, setData] = useState<any>(null);
@@ -234,7 +235,7 @@ export default function CommandCenter() {
 
             <div style={{ fontSize: 13, color: "#334155", lineHeight: 1.6, display: "flex", flexDirection: "column", gap: 8 }}>
               {aiBriefing ? (
-                <div style={{ whiteSpace: "pre-wrap" }}>{aiBriefing}</div>
+                renderFormattedMarkdown(aiBriefing)
               ) : (
                 <>
                   <div>• <b>11 people are at high flight risk</b>, 9 of them high performers (Kavya Reddy, Rohan Mehta). Main cause: pay below market</div>

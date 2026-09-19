@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, Info, CheckCircle } from "lucide-react";
+import { renderFormattedMarkdown } from "@/lib/team-pulse/formatMarkdown";
 
 export default function FairnessAuditPage() {
   const [aiNarrativeOutput, setAiNarrativeOutput] = useState("");
@@ -398,9 +399,9 @@ export default function FairnessAuditPage() {
           {aiNarrativeOutput && (
             <div style={{
               background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 16,
-              fontSize: 13, color: "#334155", lineHeight: 1.6, whiteSpace: "pre-wrap"
+              fontSize: 13, color: "#334155", lineHeight: 1.6
             }}>
-              {aiNarrativeOutput}
+              {renderFormattedMarkdown(aiNarrativeOutput)}
             </div>
           )}
         </div>

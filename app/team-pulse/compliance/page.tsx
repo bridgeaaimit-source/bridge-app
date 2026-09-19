@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, CheckCircle, Users, AlertTriangle, Clock, Send, Info } from "lucide-react";
+import { renderFormattedMarkdown } from "@/lib/team-pulse/formatMarkdown";
 
 interface MatrixRow {
   id: string;
@@ -486,9 +487,9 @@ export default function ComplianceCenterPage() {
           {aiOutput && (
             <div style={{
               background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 16,
-              fontSize: 13, color: "#334155", lineHeight: 1.6, whiteSpace: "pre-wrap"
+              fontSize: 13, color: "#334155", lineHeight: 1.6
             }}>
-              {aiOutput}
+              {renderFormattedMarkdown(aiOutput)}
             </div>
           )}
         </div>
