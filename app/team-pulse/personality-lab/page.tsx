@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, Info, Upload, Check, ChevronDown } from "lucide-react";
+import { renderFormattedMarkdown } from "@/lib/team-pulse/formatMarkdown";
 
 // 16 MBTI Types data
 interface MbtiTypeDef {
@@ -665,10 +666,9 @@ export default function PersonalityLabPage() {
                 padding: 12,
                 fontSize: 12,
                 color: "#334155",
-                lineHeight: 1.5,
-                whiteSpace: "pre-wrap"
+                lineHeight: 1.5
               }}>
-                {coachingGuide}
+                {renderFormattedMarkdown(coachingGuide)}
               </div>
             )}
           </div>

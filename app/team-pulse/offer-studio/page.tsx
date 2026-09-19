@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, Check, Calculator, FileText, AlertTriangle, RotateCcw } from "lucide-react";
+import { renderFormattedMarkdown } from "@/lib/team-pulse/formatMarkdown";
 
 export default function OfferStudioPage() {
   const [selectedCand, setSelectedCand] = useState("Sneha Kulkarni");
@@ -820,10 +821,9 @@ export default function OfferStudioPage() {
                 padding: 16,
                 fontSize: 13,
                 color: "#334155",
-                lineHeight: 1.6,
-                whiteSpace: "pre-wrap"
+                lineHeight: 1.6
               }}>
-                {aiOutput}
+                {renderFormattedMarkdown(aiOutput)}
               </div>
             )}
 

@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Bot, Send, Sparkles, FileText, User, HelpCircle, FileCheck, CheckCircle2 } from "lucide-react";
+import { renderFormattedMarkdown } from "@/lib/team-pulse/formatMarkdown";
 
 interface Message {
   role: "user" | "assistant";
@@ -90,45 +91,6 @@ function HRCopilotContent() {
     { label: "Warning letter", prompt: "Draft a first written warning letter for repeated unexplained absence, respectful and compliant with Indian labour norms." },
   ];
 
-  // Simple Markdown renderer helper for bold, bullet lists, and code blocks
-  const renderMarkdown = (text: string) => {
-    const lines = text.split("\n");
-    return lines.map((line, idx) => {
-      let formatted = line;
-
-      // Handle bold text **bold**
-      const parts = formatted.split(/(\*\*.*?\*\*)/g);
-      const renderedParts = parts.map((part, pIdx) => {
-        if (part.startsWith("**") && part.endsWith("**")) {
-          return <strong key={pIdx}>{part.slice(2, -2)}</strong>;
-        }
-        return part;
-      });
-
-      if (line.startsWith("- ") || line.startsWith("* ")) {
-        return (
-          <li key={idx} style={{ marginLeft: 16, marginBottom: 4 }}>
-            {renderedParts.slice(0).map((p, i) => (typeof p === "string" ? p.replace(/^[-*]\s+/, "") : p))}
-          </li>
-        );
-      }
-
-      if (/^\d+\.\s/.test(line)) {
-        return (
-          <div key={idx} style={{ marginLeft: 8, marginBottom: 6, fontWeight: 500 }}>
-            {renderedParts}
-          </div>
-        );
-      }
-
-      return (
-        <p key={idx} style={{ marginBottom: line.trim() === "" ? 8 : 4, lineHeight: 1.6 }}>
-          {renderedParts}
-        </p>
-      );
-    });
-  };
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* Header */}
@@ -191,7 +153,7 @@ function HRCopilotContent() {
                     boxShadow: msg.role === "user" ? "0 2px 8px rgba(0,0,0,0.08)" : "0 1px 3px rgba(0,0,0,0.02)",
                   }}
                 >
-                  {renderMarkdown(msg.content)}
+                  {renderFormattedMarkdown(msg.content)}
                 </div>
               </div>
             ))}

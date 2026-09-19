@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, Check, Play, UserCheck, MessageSquareCheck } from "lucide-react";
+import { renderFormattedMarkdown } from "@/lib/team-pulse/formatMarkdown";
 
 interface CompetencyData {
   id: string;
@@ -466,10 +467,9 @@ export default function StructuredInterviewsPage() {
                   fontSize: 13,
                   color: "#334155",
                   lineHeight: 1.6,
-                  marginBottom: 14,
-                  whiteSpace: "pre-wrap"
+                  marginBottom: 14
                 }}>
-                  {aiSummary}
+                  {renderFormattedMarkdown(aiSummary)}
                 </div>
               )}
             </div>
