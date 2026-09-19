@@ -70,13 +70,13 @@ export default function WorkforcePlannerPage() {
 
   // Departments Data Calculation based on Sliders
   const departments: DeptGrowth[] = [
-    { name: "Engineering", pct: engPct, today: 22, newRoles: Math.round(22 * (engPct / 100)), backfills: 3, target: 22 + Math.round(22 * (engPct / 100)), addedPayroll: "₹96.0 L", barColor: "#2563EB" },
-    { name: "Data", pct: dataPct, today: 8, newRoles: Math.round(8 * (dataPct / 100)), backfills: 1, target: 8 + Math.round(8 * (dataPct / 100)), addedPayroll: "₹30.0 L", barColor: "#0EA5E9" },
-    { name: "Product", pct: prodPct, today: 6, newRoles: Math.round(6 * (prodPct / 100)), backfills: 1, target: 6 + Math.round(6 * (prodPct / 100)), addedPayroll: "₹18.0 L", barColor: "#8B5CF6" },
-    { name: "Sales", pct: salesPct, today: 12, newRoles: Math.round(12 * (salesPct / 100)), backfills: 2, target: 12 + Math.round(12 * (salesPct / 100)), addedPayroll: "₹44.0 L", barColor: "#EC4899" },
-    { name: "Customer Success", pct: csPct, today: 7, newRoles: Math.round(7 * (csPct / 100)), backfills: 1, target: 7 + Math.round(7 * (csPct / 100)), addedPayroll: "₹20.0 L", barColor: "#10B981" },
-    { name: "HR", pct: hrPct, today: 4, newRoles: Math.round(4 * (hrPct / 100)), backfills: 1, target: 4 + Math.round(4 * (hrPct / 100)), addedPayroll: "₹10.0 L", barColor: "#F97316" },
-    { name: "Finance", pct: finPct, today: 5, newRoles: Math.round(5 * (finPct / 100)), backfills: 1, target: 5 + Math.round(5 * (finPct / 100)), addedPayroll: "₹10.0 L", barColor: "#64748B" },
+    { name: "Engineering", pct: engPct, today: 70, newRoles: Math.round(70 * (engPct / 100)), backfills: 6, target: 70 + Math.round(70 * (engPct / 100)), addedPayroll: "₹2.80 Cr", barColor: "#2563EB" },
+    { name: "Sales", pct: salesPct, today: 35, newRoles: Math.round(35 * (salesPct / 100)), backfills: 4, target: 35 + Math.round(35 * (salesPct / 100)), addedPayroll: "₹1.10 Cr", barColor: "#EC4899" },
+    { name: "Data", pct: dataPct, today: 25, newRoles: Math.round(25 * (dataPct / 100)), backfills: 2, target: 25 + Math.round(25 * (dataPct / 100)), addedPayroll: "₹85.0 L", barColor: "#0EA5E9" },
+    { name: "Customer Success", pct: csPct, today: 22, newRoles: Math.round(22 * (csPct / 100)), backfills: 2, target: 22 + Math.round(22 * (csPct / 100)), addedPayroll: "₹60.0 L", barColor: "#10B981" },
+    { name: "Product", pct: prodPct, today: 20, newRoles: Math.round(20 * (prodPct / 100)), backfills: 2, target: 20 + Math.round(20 * (prodPct / 100)), addedPayroll: "₹72.0 L", barColor: "#8B5CF6" },
+    { name: "Finance", pct: finPct, today: 14, newRoles: Math.round(14 * (finPct / 100)), backfills: 1, target: 14 + Math.round(14 * (finPct / 100)), addedPayroll: "₹35.0 L", barColor: "#64748B" },
+    { name: "HR", pct: hrPct, today: 14, newRoles: Math.round(14 * (hrPct / 100)), backfills: 1, target: 14 + Math.round(14 * (hrPct / 100)), addedPayroll: "₹35.0 L", barColor: "#F97316" },
   ];
 
   const totalNewRoles = departments.reduce((acc, d) => acc + d.newRoles, 0);
@@ -84,6 +84,8 @@ export default function WorkforcePlannerPage() {
   const totalHires = totalNewRoles + totalBackfills;
   const totalCurrentPeople = departments.reduce((acc, d) => acc + d.today, 0);
   const totalTargetPeople = totalCurrentPeople + totalNewRoles;
+  const addedPayrollCr = ((totalNewRoles * 14.5) / 100).toFixed(2);
+  const recruitingSpendL = ((totalHires * 14.5 * (agencyFee / 100))).toFixed(1);
 
   const handleGenerateNarrative = async () => {
     setLoadingAi(true);
@@ -92,7 +94,7 @@ export default function WorkforcePlannerPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `Draft a 1-page executive workforce plan narrative for leadership. Scenario: ${scenario}. Total Hires Needed: ${totalHires} (${totalNewRoles} new + ${totalBackfills} backfills). Total Headcount Growth: ${totalCurrentPeople} -> ${totalTargetPeople} people. Added Annual Payroll: ₹2.28 Cr. Recruiting Spend: ₹30.1 L (agency fee ${agencyFee}%). Time to staff: 6 months. Include strategic priorities for key skill gaps (Enterprise Sales, Machine Learning, AWS).`,
+          prompt: `Draft a 1-page executive workforce plan narrative for leadership. Scenario: ${scenario}. Total Hires Needed: ${totalHires} (${totalNewRoles} new + ${totalBackfills} backfills). Total Headcount Growth: ${totalCurrentPeople} -> ${totalTargetPeople} people. Added Annual Payroll: ₹${addedPayrollCr} Cr. Recruiting Spend: ₹${recruitingSpendL} L (agency fee ${agencyFee}%). Time to staff: 6 months. Include strategic priorities for key skill gaps (Enterprise Sales, Machine Learning, AWS).`,
         }),
       });
       if (res.ok) {
@@ -100,20 +102,18 @@ export default function WorkforcePlannerPage() {
         setAiNarrative(json.reply);
       } else {
         setAiNarrative(
-          `**WORKFORCE PLAN EXECUTIVE SUMMARY (${scenario.toUpperCase()})**\n\n` +
-          `1. **Headcount Expansion:** Scaling from ${totalCurrentPeople} to ${totalTargetPeople} employees (+${totalNewRoles} net new roles + ${totalBackfills} backfills).\n` +
-          `2. **Financial Investment:** Total added annual payroll is ₹2.28 Cr, with an estimated recruiting spend of ₹30.1 L based on an agency fee of ${agencyFee}%.\n` +
-          `3. **Skill Strategy (Build vs. Buy):** Priority external hiring ("Buy") for Enterprise Sales (-6) and Machine Learning (-4). Internal upskilling ("Build") for Python (-3) and A/B Testing (-2).\n` +
-          `4. **Recruiting Capacity:** At ${recCapacity} hires/month, complete staffing will take ~6 months.`
+          `**EXECUTIVE WORKFORCE PLAN — ${scenario.toUpperCase()}**\n\n` +
+          `1. **Headcount & Capacity:** Total workforce targets expanding from **${totalCurrentPeople} to ${totalTargetPeople} people** (+${totalNewRoles} new positions, +${totalBackfills} backfills).\n` +
+          `2. **Financial Investment:** Added annual payroll commitment of **₹${addedPayrollCr} Cr**, with estimated recruiting expenditure of **₹${recruitingSpendL} L** across 6 months.\n` +
+          `3. **Key Strategic Gap Focus:** Prioritize hiring for Enterprise Sales and Machine Learning while building internal capability for Python and FP&A.`
         );
       }
     } catch {
       setAiNarrative(
-        `**WORKFORCE PLAN EXECUTIVE SUMMARY (${scenario.toUpperCase()})**\n\n` +
-        `1. **Headcount Expansion:** Scaling from ${totalCurrentPeople} to ${totalTargetPeople} employees (+${totalNewRoles} net new roles + ${totalBackfills} backfills).\n` +
-        `2. **Financial Investment:** Total added annual payroll is ₹2.28 Cr, with an estimated recruiting spend of ₹30.1 L based on an agency fee of ${agencyFee}%.\n` +
-        `3. **Skill Strategy (Build vs. Buy):** Priority external hiring ("Buy") for Enterprise Sales (-6) and Machine Learning (-4). Internal upskilling ("Build") for Python (-3) and A/B Testing (-2).\n` +
-        `4. **Recruiting Capacity:** At ${recCapacity} hires/month, complete staffing will take ~6 months.`
+        `**EXECUTIVE WORKFORCE PLAN — ${scenario.toUpperCase()}**\n\n` +
+        `1. **Headcount & Capacity:** Total workforce targets expanding from **${totalCurrentPeople} to ${totalTargetPeople} people** (+${totalNewRoles} new positions, +${totalBackfills} backfills).\n` +
+        `2. **Financial Investment:** Added annual payroll commitment of **₹${addedPayrollCr} Cr**, with estimated recruiting expenditure of **₹${recruitingSpendL} L** across 6 months.\n` +
+        `3. **Key Strategic Gap Focus:** Prioritize hiring for Enterprise Sales and Machine Learning while building internal capability for Python and FP&A.`
       );
     } finally {
       setLoadingAi(false);
@@ -125,37 +125,34 @@ export default function WorkforcePlannerPage() {
       {/* Sub-Header Bar */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "#10B981", textTransform: "uppercase", marginBottom: 2 }}>
-            — PLAN
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "#3B82F6", textTransform: "uppercase", marginBottom: 2 }}>
+            — PLAN & BUDGET
           </div>
           <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
             Workforce Planner
           </h1>
           <p style={{ fontSize: 13.5, color: "var(--muted)", margin: "3px 0 0 0" }}>
-            Run a what-if scenario for next year: hires needed, cost, timeline, and whether to build, buy or borrow each skill gap.
+            Model headcount, payroll and recruiting capacity for the next 4 quarters.
           </p>
         </div>
 
         <button
-          onClick={() => {
-            applyPreset("Aggressive growth");
-            setAiNarrative("");
-          }}
+          onClick={() => applyPreset("Aggressive growth")}
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: 6,
             padding: "7px 14px",
             borderRadius: 99,
-            background: "#ECFDF5",
-            border: "1px solid #A7F3D0",
-            color: "#059669",
+            background: "#EFF6FF",
+            border: "1px solid #BFDBFE",
+            color: "#1D4ED8",
             fontSize: 12.5,
             fontWeight: 700,
             cursor: "pointer"
           }}
         >
-          <Sparkles style={{ width: 14, height: 14, color: "#059669" }} />
+          <Sparkles style={{ width: 14, height: 14, color: "#2563EB" }} />
           Try with demo data
         </button>
       </div>
@@ -183,7 +180,7 @@ export default function WorkforcePlannerPage() {
             Added annual payroll
           </div>
           <div style={{ margin: "10px 0 2px 0" }}>
-            <span style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)", lineHeight: 1 }}>₹2.28 <small style={{ fontSize: 15, fontWeight: 700, color: "#64748B" }}>Cr</small></span>
+            <span style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)", lineHeight: 1 }}>₹{addedPayrollCr} <small style={{ fontSize: 15, fontWeight: 700, color: "#64748B" }}>Cr</small></span>
           </div>
           <div style={{ fontSize: 11.5, color: "#64748B", fontWeight: 500 }}>
             New roles only
@@ -197,7 +194,7 @@ export default function WorkforcePlannerPage() {
             Recruiting spend
           </div>
           <div style={{ margin: "10px 0 2px 0" }}>
-            <span style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)", lineHeight: 1 }}>₹30.1 <small style={{ fontSize: 15, fontWeight: 700, color: "#64748B" }}>L</small></span>
+            <span style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)", lineHeight: 1 }}>₹{recruitingSpendL} <small style={{ fontSize: 15, fontWeight: 700, color: "#64748B" }}>L</small></span>
           </div>
           <div style={{ fontSize: 11.5, color: "#64748B", fontWeight: 500 }}>
             At {agencyFee}% agency fee

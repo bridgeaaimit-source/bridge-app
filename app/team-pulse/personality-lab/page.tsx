@@ -13,25 +13,25 @@ interface MbtiTypeDef {
 }
 
 const INITIAL_TYPES: MbtiTypeDef[] = [
-  { code: "ISTJ", name: "Reliable executor", count: 8, dots: ["#EF4444", "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6"] },
-  { code: "ISFJ", name: "Steady supporter", count: 3, dots: ["#3B82F6", "#8B5CF6"] },
-  { code: "INFJ", name: "Purposeful advisor", count: 3, dots: ["#10B981", "#EC4899"] },
-  { code: "INTJ", name: "Strategic planner", count: 8, dots: ["#3B82F6", "#10B981", "#8B5CF6", "#F59E0B"] },
+  { code: "ISTJ", name: "Reliable executor", count: 24, dots: ["#3B82F6", "#06B6D4", "#64748B"] },
+  { code: "ISFJ", name: "Steady supporter", count: 8, dots: ["#10B981"] },
+  { code: "INFJ", name: "Purposeful advisor", count: 14, dots: ["#8B5CF6", "#F97316"] },
+  { code: "INTJ", name: "Strategic planner", count: 20, dots: ["#3B82F6", "#06B6D4", "#64748B"] },
   
-  { code: "ISTP", name: "Hands-on troubleshooter", count: 3, dots: ["#3B82F6", "#EF4444"] },
-  { code: "ISFP", name: "Quiet craftsperson", count: 2, dots: ["#8B5CF6", "#EC4899"] },
-  { code: "INFP", name: "Value-led creator", count: 2, dots: ["#8B5CF6"] },
-  { code: "INTP", name: "Analytical inventor", count: 6, dots: ["#3B82F6", "#10B981", "#F59E0B"] },
+  { code: "ISTP", name: "Hands-on troubleshooter", count: 7, dots: ["#3B82F6"] },
+  { code: "ISFP", name: "Quiet craftsperson", count: 0, dots: [] },
+  { code: "INFP", name: "Value-led creator", count: 17, dots: ["#3B82F6", "#8B5CF6"] },
+  { code: "INTP", name: "Analytical inventor", count: 13, dots: ["#3B82F6", "#06B6D4"] },
   
-  { code: "ESTP", name: "Action taker", count: 3, dots: ["#EF4444", "#F59E0B"] },
+  { code: "ESTP", name: "Action taker", count: 11, dots: ["#EC4899"] },
   { code: "ESFP", name: "Spirited performer", count: 0, dots: [] },
-  { code: "ENFP", name: "Enthusiastic connector", count: 6, dots: ["#10B981", "#F59E0B", "#EC4899", "#3B82F6"] },
-  { code: "ENTP", name: "Idea challenger", count: 3, dots: ["#3B82F6", "#8B5CF6"] },
+  { code: "ENFP", name: "Enthusiastic connector", count: 2, dots: ["#8B5CF6"] },
+  { code: "ENTP", name: "Idea challenger", count: 13, dots: ["#3B82F6", "#06B6D4"] },
   
-  { code: "ESTJ", name: "Practical manager", count: 3, dots: ["#EF4444", "#F59E0B"] },
-  { code: "ESFJ", name: "Team harmoniser", count: 2, dots: ["#10B981", "#F59E0B"] },
-  { code: "ENFJ", name: "People catalyst", count: 3, dots: ["#10B981", "#8B5CF6", "#EC4899"] },
-  { code: "ENTJ", name: "Decisive organiser", count: 9, dots: ["#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6"] },
+  { code: "ESTJ", name: "Practical manager", count: 15, dots: ["#EC4899", "#64748B"] },
+  { code: "ESFJ", name: "Team harmoniser", count: 12, dots: ["#10B981", "#F97316"] },
+  { code: "ENFJ", name: "People catalyst", count: 17, dots: ["#EC4899", "#10B981", "#F97316"] },
+  { code: "ENTJ", name: "Decisive organiser", count: 27, dots: ["#3B82F6", "#EC4899", "#06B6D4", "#8B5CF6"] },
 ];
 
 // Sample People Database for Person Profile & Role-Preference Fit
@@ -684,7 +684,7 @@ export default function PersonalityLabPage() {
                   Preference balance
                 </h3>
                 <span style={{ fontSize: 11.5, color: "#64748B", fontWeight: 500 }}>
-                  All · 64 people
+                  All · 200 people
                 </span>
               </div>
 

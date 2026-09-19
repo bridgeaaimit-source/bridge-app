@@ -205,7 +205,7 @@ export default function PerformancePage() {
             <span style={{ fontSize: 32, fontWeight: 800, color: "var(--ink)", lineHeight: 1 }}>17</span>
           </div>
           <div style={{ fontSize: 11.5, color: "#64748B", fontWeight: 500 }}>
-            of 64 reviewed
+            of 200 reviewed
           </div>
         </div>
 
@@ -616,10 +616,10 @@ export default function PerformancePage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 6 }}>
               {[
                 { rating: "Rating 1", pct: 2, guide: 5, barColor: "#EC4899", isAmber: false },
-                { rating: "Rating 2", pct: 19, guide: 15, barColor: "#EC4899", isAmber: false },
-                { rating: "Rating 3", pct: 30, guide: 50, barColor: "#D97706", isAmber: true },
-                { rating: "Rating 4", pct: 36, guide: 28, barColor: "#D97706", isAmber: true },
-                { rating: "Rating 5", pct: 14, guide: 10, barColor: "#EC4899", isAmber: false },
+                { rating: "Rating 2", pct: 5, guide: 15, barColor: "#EC4899", isAmber: false },
+                { rating: "Rating 3", pct: 55, guide: 50, barColor: "#D97706", isAmber: false },
+                { rating: "Rating 4", pct: 25, guide: 20, barColor: "#EC4899", isAmber: false },
+                { rating: "Rating 5", pct: 13, guide: 10, barColor: "#EC4899", isAmber: false },
               ].map((item) => (
                 <div key={item.rating} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, color: "var(--ink)" }}>

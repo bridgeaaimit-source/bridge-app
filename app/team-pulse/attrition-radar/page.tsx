@@ -356,7 +356,7 @@ export default function AttritionRadarPage() {
             High risk
           </div>
           <div style={{ margin: "10px 0 2px 0" }}>
-            <span style={{ fontSize: 32, fontWeight: 800, color: "var(--ink)", lineHeight: 1 }}>11</span>
+            <span style={{ fontSize: 32, fontWeight: 800, color: "var(--ink)", lineHeight: 1 }}>13</span>
           </div>
           <div style={{ fontSize: 11.5, color: "#64748B", fontWeight: 500 }}>
             9 are high performers
@@ -370,7 +370,7 @@ export default function AttritionRadarPage() {
             Medium risk
           </div>
           <div style={{ margin: "10px 0 2px 0" }}>
-            <span style={{ fontSize: 32, fontWeight: 800, color: "var(--ink)", lineHeight: 1 }}>21</span>
+            <span style={{ fontSize: 32, fontWeight: 800, color: "var(--ink)", lineHeight: 1 }}>51</span>
           </div>
           <div style={{ fontSize: 11.5, color: "#64748B", fontWeight: 500 }}>
             Monitor monthly
@@ -384,7 +384,7 @@ export default function AttritionRadarPage() {
             Cost if high-risk leave
           </div>
           <div style={{ margin: "10px 0 2px 0" }}>
-            <span style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)", lineHeight: 1 }}>₹124.1 <small style={{ fontSize: 15, fontWeight: 700, color: "#64748B" }}>L</small></span>
+            <span style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)", lineHeight: 1 }}>₹133.0 <small style={{ fontSize: 15, fontWeight: 700, color: "#64748B" }}>L</small></span>
           </div>
           <div style={{ fontSize: 11.5, color: "#64748B", fontWeight: 500 }}>
             Hiring, ramp-up and lost output (est.)

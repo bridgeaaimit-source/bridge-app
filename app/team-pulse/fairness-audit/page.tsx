@@ -276,9 +276,9 @@ export default function FairnessAuditPage() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4 }}>
               {[
-                { group: "Under 30 (21)", pct: 38 },
-                { group: "30–39 (24)", pct: 59 },
-                { group: "40+ (10)", pct: 69 },
+                { group: "Under 30 (49)", pct: 43 },
+                { group: "30–39 (93)", pct: 59 },
+                { group: "40+ (58)", pct: 60 },
               ].map((item) => (
                 <div key={item.group} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 11.5, fontWeight: 600, color: "#475569", width: 100 }}>
@@ -308,10 +308,10 @@ export default function FairnessAuditPage() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4 }}>
               {[
-                { level: "Level 1 (5F / 9M)", ratio: "1.07" },
-                { level: "Level 2 (7F / 14M)", ratio: "1.10" },
-                { level: "Level 3 (3F / 11M)", ratio: "1.13" },
-                { level: "Level 4 (4F / 5M)", ratio: "1.07" },
+                { level: "Level 1 (24F / 28M)", ratio: "1.07" },
+                { level: "Level 2 (53F / 42M)", ratio: "1.10" },
+                { level: "Level 3 (14F / 18M)", ratio: "1.13" },
+                { level: "Level 4 (10F / 7M)", ratio: "1.07" },
               ].map((item) => (
                 <div key={item.level} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 11.5, fontWeight: 600, color: "#475569", width: 120 }}>

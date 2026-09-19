@@ -65,23 +65,28 @@ export async function GET() {
     const medRisk = employees.filter((e) => e.flightRiskLevel === "med");
     const lowRisk = employees.filter((e) => e.flightRiskLevel === "low");
 
-    const totalPayrollMonthly =
+    const totalPayrollAnnual =
       employees.length > 0
-        ? employees.reduce((sum, e) => sum + e.ctc, 0) / 12
-        : 105;
+        ? employees.reduce((sum, e) => sum + (e.ctc || 0), 0)
+        : 3178;
+    const totalPayrollMonthly = totalPayrollAnnual / 12;
     const avgDaysToFill =
       jobs.length > 0
-        ? Math.round(jobs.reduce((sum, j) => sum + j.daysOpen, 0) / jobs.length)
+        ? Math.round(jobs.reduce((sum, j) => sum + (j.daysOpen || 0), 0) / jobs.length)
         : 34;
+    const highRiskReplacementCost =
+      highRisk.length > 0
+        ? highRisk.reduce((sum, e) => sum + (e.ctc || 0), 0) / 100
+        : 1.33;
 
     const departmentCounts: Record<string, number> = {
-      Engineering: 22,
-      Sales: 12,
-      Data: 8,
-      "Customer Success": 7,
-      Product: 6,
-      Finance: 5,
-      HR: 4,
+      Engineering: 70,
+      Sales: 35,
+      Data: 25,
+      "Customer Success": 22,
+      Product: 20,
+      Finance: 14,
+      HR: 14,
     };
 
     if (employees.length > 0) {
@@ -112,24 +117,30 @@ export async function GET() {
         legalName: "Arcadia Softworks Pvt Ltd",
         city: "Bengaluru",
       },
-      headcount: employees.length || 64,
-      openRolesCount: jobs.length || 6,
-      highRiskCount: highRisk.length || 11,
-      medRiskCount: medRisk.length || 21,
-      lowRiskCount: lowRisk.length || 32,
+      headcount: employees.length || 200,
+      openRolesCount: jobs.length || 4,
+      highRiskCount: highRisk.length || 13,
+      medRiskCount: medRisk.length || 51,
+      lowRiskCount: lowRisk.length || 136,
+      highRiskCostCr: highRiskReplacementCost.toFixed(2),
       payrollMonthlyCr: (totalPayrollMonthly / 100).toFixed(2),
-      payrollAnnualLpa: (totalPayrollMonthly * 12).toFixed(1),
+      payrollAnnualCr: (totalPayrollAnnual / 100).toFixed(2),
+      payrollAnnualLpa: totalPayrollAnnual.toFixed(1),
       avgTimeToFillDays: avgDaysToFill,
       eNPS: "+18",
       departmentCounts,
       funnel,
       headcountTrend: [
-        { q: "Q3 '25", v: 48 },
-        { q: "Q4 '25", v: 52 },
-        { q: "Q1 '26", v: 58 },
-        { q: "Q2 '26", v: 64 },
-        { q: "Q3 '26", v: 68 },
-        { q: "Q4 '26", v: 73 },
+        { q: "Q3 '24", v: 110 },
+        { q: "Q4 '24", v: 125 },
+        { q: "Q1 '25", v: 140 },
+        { q: "Q2 '25", v: 155 },
+        { q: "Q3 '25", v: 170 },
+        { q: "Q4 '25", v: 182 },
+        { q: "Q1 '26", v: 192 },
+        { q: "Q2 '26", v: 200 },
+        { q: "Q3 '26", v: 220 },
+        { q: "Q4 '26", v: 250 },
       ],
       highRiskEmployees:
         highRisk.length > 0
@@ -145,18 +156,18 @@ export async function GET() {
               {
                 id: "e1",
                 name: "Kavya Reddy",
-                role: "Staff Engineer",
+                role: "Senior Software Engineer",
                 dept: "Engineering",
-                riskScore: 88,
-                drivers: ["Pay below market"],
+                riskScore: 85,
+                drivers: ["Low engagement (2.6/5)", "Paid 17% below market"],
               },
               {
                 id: "e2",
                 name: "Rohan Mehta",
-                role: "Engineering Lead",
-                dept: "Engineering",
-                riskScore: 84,
-                drivers: ["Overtime burnout"],
+                role: "Senior Data Analyst",
+                dept: "Data",
+                riskScore: 81,
+                drivers: ["Low engagement (2.4/5)", "No promotion in 3.4 yrs"],
               },
             ],
     };
