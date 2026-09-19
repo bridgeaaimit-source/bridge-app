@@ -18,7 +18,7 @@ function HRCopilotContent() {
     {
       role: "assistant",
       content:
-        "Hi! I'm your **HR Copilot**. I have full context across all **64 employees**, **8 open roles**, **32 candidates**, performance ratings, sentiment scores, and compliance records.\n\nAsk me anything about hiring, flight risk, promotions, or pick a suggested question or quick document template on the right.",
+        "Hi! I'm your **HR Copilot**. I have full context across all **200 employees**, **4 open roles**, candidate pipelines, performance ratings, sentiment scores, and statutory compliance records.\n\nAsk me anything about hiring, flight risk, promotions, or pick a suggested question or quick document template on the right.",
     },
   ]);
   const [input, setInput] = useState("");

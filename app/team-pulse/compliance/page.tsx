@@ -81,7 +81,7 @@ export default function ComplianceCenterPage() {
               `Please log in to the portal and complete your assigned modules before the end of the week.\n\n` +
               `Thank you,\nCompliance Operations`
             : `**EXECUTIVE COMPLIANCE RISK SUMMARY**\n\n` +
-              `1. **Training Completion:** Overall mandatory course completion stands at 76% (10 of 64 employees fully compliant).\n` +
+              `1. **Training Completion:** Overall mandatory course completion stands at 76% (174 of 200 employees fully compliant).\n` +
               `2. **Overdue Items:** 26 employees have 1+ overdue items (POSH overdue: 12 employees).\n` +
               `3. **Statutory Filings:** Half-yearly fire drill is 10 days overdue for the Bengaluru office. Professional Tax and PF/ESI monthly returns are up to date.`
         );
@@ -96,7 +96,7 @@ export default function ComplianceCenterPage() {
             `Please log in to the portal and complete your assigned modules before the end of the week.\n\n` +
             `Thank you,\nCompliance Operations`
           : `**EXECUTIVE COMPLIANCE RISK SUMMARY**\n\n` +
-            `1. **Training Completion:** Overall mandatory course completion stands at 76% (10 of 64 employees fully compliant).\n` +
+            `1. **Training Completion:** Overall mandatory course completion stands at 76% (174 of 200 employees fully compliant).\n` +
             `2. **Overdue Items:** 26 employees have 1+ overdue items (POSH overdue: 12 employees).\n` +
             `3. **Statutory Filings:** Half-yearly fire drill is 10 days overdue for the Bengaluru office. Professional Tax and PF/ESI monthly returns are up to date.`
       );
@@ -169,10 +169,10 @@ export default function ComplianceCenterPage() {
             Fully compliant people
           </div>
           <div style={{ margin: "10px 0 2px 0" }}>
-            <span style={{ fontSize: 32, fontWeight: 800, color: "var(--ink)", lineHeight: 1 }}>10</span>
+            <span style={{ fontSize: 32, fontWeight: 800, color: "var(--ink)", lineHeight: 1 }}>174</span>
           </div>
           <div style={{ fontSize: 11.5, color: "#64748B", fontWeight: 500 }}>
-            of 64 employees
+            of 200 employees
           </div>
         </div>
 

@@ -78,14 +78,14 @@ export default function CommandCenter() {
 
   // Headcount growth chart SVG data points
   // Quarters: Q3'24, Q4'24, Q1'25, Q2'25, Q3'25, Q4'25, Q1'26, Q2'26, Q3'26, Q4'26
-  // Values: 35, 38, 42, 45, 48, 51, 56, 64 (solid), 70, 80 (dashed)
   // Chart dimensions: W=520, H=160
-  const yMin = 35, yMax = 80;
+  const count = data?.headcount || 200;
+  const yMin = 100, yMax = 260;
   const getY = (val: number) => 150 - ((val - yMin) / (yMax - yMin)) * 120;
   const getX = (idx: number) => 25 + idx * 53;
 
-  const historicalVals = [39, 41, 45, 48, 50, 53, 58, 64]; // idx 0 to 7
-  const projectionVals = [64, 70, 80]; // idx 7, 8, 9
+  const historicalVals = [110, 125, 140, 155, 170, 182, 192, count]; // idx 0 to 7
+  const projectionVals = [count, Math.round(count * 1.10), Math.round(count * 1.25)]; // idx 7, 8, 9
 
   const solidPoints = historicalVals.map((v, i) => `${getX(i)},${getY(v)}`).join(" ");
   const projectedPoints = projectionVals.map((v, i) => `${getX(i + 7)},${getY(v)}`).join(" ");
@@ -150,7 +150,7 @@ export default function CommandCenter() {
             </h2>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <span style={{ fontSize: 13.5, color: "var(--ink2)", fontWeight: 500 }}>
-                <b>{data?.organization?.legalName || "Arcadia Softworks Pvt Ltd"}</b> · {data?.headcount || 64} people · 7 teams · {data?.openRolesCount || 6} open roles
+                <b>{data?.organization?.legalName || "Arcadia Softworks Pvt Ltd"}</b> · {count} people · 7 teams · {data?.openRolesCount || 4} open roles
               </span>
               <span style={{
                 fontSize: 11,
@@ -161,7 +161,7 @@ export default function CommandCenter() {
                 border: "1px solid #E2E8F0",
                 color: "#64748B"
               }}>
-                Demo data
+                Live data
               </span>
             </div>
           </div>
@@ -237,13 +237,13 @@ export default function CommandCenter() {
               {aiBriefing ? (
                 renderFormattedMarkdown(aiBriefing)
               ) : (
-                <>
-                  <div>• <b>11 people are at high flight risk</b>, 9 of them high performers (Kavya Reddy, Rohan Mehta). Main cause: pay below market</div>
-                  <div>• <b>Backend Engineer (SDE II)</b> has been open <b>52 days</b>, the longest of any role. Consider internal mobility or widening the search.</div>
-                  <div>• <b>Sneha Kulkarni</b> (Senior Data Analyst) has a 90-day notice period and 2 other offers, so joining probability is only <b>54%</b>. A notice buyout would help.</div>
-                  <div>• <b>12 employees are overdue on POSH training</b>, mostly in Sales. The half-yearly fire drill is 18 days overdue.</div>
-                  <div>• Engineering averages <b>48 hrs/week</b> and its happiness score fell 13 points since April. Watch for burnout.</div>
-                </>
+                renderFormattedMarkdown(
+                  `• **Headcount & Open Requisitions:** Current headcount is **${count} employees** with **${data?.openRolesCount || 4} open roles** across Engineering, Product, Data, and Sales.\n` +
+                  `• **High Flight Risk:** **${data?.highRiskCount || 13} employees** flagged as high flight risk. Targeted pay correction recommended for critical staff.\n` +
+                  `• **Internal Mobility:** **3 internal nominations** pending review for Senior Data Analyst & Customer Success.\n` +
+                  `• **Statutory Compliance:** **26 employees overdue on POSH training**; Bengaluru fire drill overdue 18 days.\n` +
+                  `• **Team Sentiment:** Overall Happiness Index is **70/100** (eNPS +18), with Engineering on-call burnout needing manager intervention.`
+                )
               )}
             </div>
           </div>
@@ -282,10 +282,10 @@ export default function CommandCenter() {
             <Users style={{ width: 16, height: 16, color: "#06B6D4" }} /> Headcount
           </div>
           <div className="tp-kpi-val" style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>
-            {data?.headcount || 64}
+            {data?.headcount || 200}
           </div>
           <div style={{ fontSize: 12, color: "#10B981", fontWeight: 700, marginTop: 2 }}>
-            <b>+6</b> this quarter
+            <b>+18</b> this quarter
           </div>
         </div>
 
@@ -295,10 +295,10 @@ export default function CommandCenter() {
             <Search style={{ width: 16, height: 16, color: "#3B82F6" }} /> Open roles
           </div>
           <div className="tp-kpi-val" style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>
-            {data?.openRolesCount || 6}
+            {data?.openRolesCount || 4}
           </div>
           <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-            39 candidates in pipeline
+            {data?.funnel?.[0]?.value || 39} candidates in pipeline
           </div>
         </div>
 
@@ -308,10 +308,10 @@ export default function CommandCenter() {
             <AlertTriangle style={{ width: 16, height: 16, color: "#EF4444" }} /> High flight risk
           </div>
           <div className="tp-kpi-val" style={{ fontSize: 28, fontWeight: 800, marginTop: 4, color: "#EF4444" }}>
-            {data?.highRiskCount || 11}
+            {data?.highRiskCount || 13}
           </div>
           <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-            ₹1.24 Cr replacement cost
+            ₹{data?.highRiskCostCr || "1.33"} Cr replacement cost
           </div>
         </div>
 
@@ -321,7 +321,7 @@ export default function CommandCenter() {
             <Clock style={{ width: 16, height: 16, color: "#F97316" }} /> Avg time to fill
           </div>
           <div className="tp-kpi-val" style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>
-            34 <small style={{ fontSize: 14, fontWeight: 600, color: "var(--muted)" }}>days</small>
+            {data?.avgTimeToFillDays || 34} <small style={{ fontSize: 14, fontWeight: 600, color: "var(--muted)" }}>days</small>
           </div>
           <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
             Longest: 52 days
@@ -334,10 +334,10 @@ export default function CommandCenter() {
             <Wallet style={{ width: 16, height: 16, color: "#10B981" }} /> Monthly payroll
           </div>
           <div className="tp-kpi-val" style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>
-            ₹1.05 <small style={{ fontSize: 14, fontWeight: 600, color: "var(--muted)" }}>Cr</small>
+            ₹{data?.payrollMonthlyCr || "2.65"} <small style={{ fontSize: 14, fontWeight: 600, color: "var(--muted)" }}>Cr</small>
           </div>
           <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-            Annual CTC ₹12.54 Cr
+            Annual CTC ₹{data?.payrollAnnualCr || "31.78"} Cr
           </div>
         </div>
 
@@ -347,7 +347,7 @@ export default function CommandCenter() {
             <Heart style={{ width: 16, height: 16, color: "#EC4899" }} /> eNPS
           </div>
           <div className="tp-kpi-val" style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>
-            +18
+            {data?.eNPS || "+18"}
           </div>
           <div style={{ fontSize: 12, color: "#10B981", fontWeight: 700, marginTop: 2 }}>
             <b>+3</b> vs last month
@@ -377,7 +377,7 @@ export default function CommandCenter() {
               </defs>
 
               {/* Y Axis Grid Lines */}
-              {[80, 69, 58, 46, 35].map((val) => {
+              {[250, 210, 175, 140, 100].map((val) => {
                 const y = getY(val);
                 return (
                   <g key={val}>
@@ -427,15 +427,15 @@ export default function CommandCenter() {
               ))}
 
               {/* Highlighted Value Badge at Q2 '26 */}
-              <g transform={`translate(${getX(7) - 16}, ${getY(64) - 26})`}>
-                <rect width="32" height="18" rx="5" fill="#0284C7" />
-                <text x="16" y="13" textAnchor="middle" fontSize="11" fontWeight="800" fill="#FFF">
-                  64
+              <g transform={`translate(${getX(7) - 16}, ${getY(count) - 26})`}>
+                <rect width="36" height="18" rx="5" fill="#0284C7" />
+                <text x="18" y="13" textAnchor="middle" fontSize="11" fontWeight="800" fill="#FFF">
+                  {count}
                 </text>
               </g>
 
               {/* Projected Nodes (Hollow) */}
-              {[70, 80].map((v, i) => (
+              {projectionVals.slice(1).map((v, i) => (
                 <circle
                   key={i}
                   cx={getX(i + 8)}
@@ -472,29 +472,33 @@ export default function CommandCenter() {
         <div className="tp-panel" style={{ borderRadius: 20, padding: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
             <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--ink)", margin: 0 }}>People by team</h3>
-            <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>64 total</span>
+            <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{data?.headcount || 200} total</span>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
             {[
-              { team: "Engineering", count: 22, color: "#3B82F6", percent: 65 },
-              { team: "Sales", count: 12, color: "#EC4899", percent: 35 },
-              { team: "Data", count: 8, color: "#06B6D4", percent: 24 },
-              { team: "Customer Success", count: 7, color: "#10B981", percent: 21 },
-              { team: "Product", count: 6, color: "#8B5CF6", percent: 18 },
-              { team: "Finance", count: 5, color: "#64748B", percent: 15 },
-              { team: "HR", count: 4, color: "#F97316", percent: 12 },
-            ].map((item) => (
-              <div key={item.team} style={{ display: "grid", gridTemplateColumns: "130px 1fr 30px", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>{item.team}</span>
-                <div style={{ height: 9, background: "#F1F5F9", borderRadius: 99, overflow: "hidden" }}>
-                  <div style={{ width: `${item.percent}%`, height: "100%", background: item.color, borderRadius: 99 }} />
+              { team: "Engineering", count: data?.departmentCounts?.["Engineering"] || 70, color: "#3B82F6" },
+              { team: "Sales", count: data?.departmentCounts?.["Sales"] || 35, color: "#EC4899" },
+              { team: "Data", count: data?.departmentCounts?.["Data"] || 25, color: "#06B6D4" },
+              { team: "Customer Success", count: data?.departmentCounts?.["Customer Success"] || 22, color: "#10B981" },
+              { team: "Product", count: data?.departmentCounts?.["Product"] || 20, color: "#8B5CF6" },
+              { team: "Finance", count: data?.departmentCounts?.["Finance"] || 14, color: "#64748B" },
+              { team: "HR", count: data?.departmentCounts?.["HR"] || 14, color: "#F97316" },
+            ].map((item) => {
+              const total = data?.headcount || 200;
+              const pct = Math.round((item.count / total) * 100);
+              return (
+                <div key={item.team} style={{ display: "grid", gridTemplateColumns: "130px 1fr 30px", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>{item.team}</span>
+                  <div style={{ height: 9, background: "#F1F5F9", borderRadius: 99, overflow: "hidden" }}>
+                    <div style={{ width: `${Math.min(100, pct * 2.2)}%`, height: "100%", background: item.color, borderRadius: 99 }} />
+                  </div>
+                  <span style={{ fontFamily: "var(--f-mono)", fontSize: 12.5, fontWeight: 700, color: "var(--ink)", textAlign: "right" }}>
+                    {item.count}
+                  </span>
                 </div>
-                <span style={{ fontFamily: "var(--f-mono)", fontSize: 12.5, fontWeight: 700, color: "var(--ink)", textAlign: "right" }}>
-                  {item.count}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -513,28 +517,42 @@ export default function CommandCenter() {
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 10 }}>
             {/* SVG Donut Chart */}
             <div style={{ position: "relative", width: 110, height: 110, flexShrink: 0 }}>
-              <svg viewBox="0 0 36 36" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
-                {/* Background Ring */}
-                <circle cx="18" cy="18" r="14" fill="none" stroke="#F1F5F9" strokeWidth="4.5" />
-                {/* Low Risk Segment (Green 32/64 = 50%) */}
-                <circle cx="18" cy="18" r="14" fill="none" stroke="#10B981" strokeWidth="4.5" strokeDasharray="44 88" strokeDashoffset="0" />
-                {/* Medium Risk Segment (Orange 21/64 = 32.8%) */}
-                <circle cx="18" cy="18" r="14" fill="none" stroke="#F97316" strokeWidth="4.5" strokeDasharray="29 88" strokeDashoffset="-44" />
-                {/* High Risk Segment (Red 11/64 = 17.2%) */}
-                <circle cx="18" cy="18" r="14" fill="none" stroke="#EF4444" strokeWidth="4.5" strokeDasharray="15 88" strokeDashoffset="-73" />
-              </svg>
-              <div style={{
-                position: "absolute",
-                top: 0, left: 0, right: 0, bottom: 0,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                textAlign: "center"
-              }}>
-                <span style={{ fontSize: 22, fontWeight: 800, color: "var(--ink)", lineHeight: 1 }}>11</span>
-                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--muted)", marginTop: 2 }}>high risk</span>
-              </div>
+              {(() => {
+                const total = data?.headcount || 200;
+                const high = data?.highRiskCount || 13;
+                const med = data?.medRiskCount || 51;
+                const low = data?.lowRiskCount || 136;
+                const lowArc = (low / total) * 88;
+                const medArc = (med / total) * 88;
+                const highArc = (high / total) * 88;
+
+                return (
+                  <>
+                    <svg viewBox="0 0 36 36" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
+                      {/* Background Ring */}
+                      <circle cx="18" cy="18" r="14" fill="none" stroke="#F1F5F9" strokeWidth="4.5" />
+                      {/* Low Risk Segment */}
+                      <circle cx="18" cy="18" r="14" fill="none" stroke="#10B981" strokeWidth="4.5" strokeDasharray={`${lowArc} 88`} strokeDashoffset="0" />
+                      {/* Medium Risk Segment */}
+                      <circle cx="18" cy="18" r="14" fill="none" stroke="#F97316" strokeWidth="4.5" strokeDasharray={`${medArc} 88`} strokeDashoffset={`-${lowArc}`} />
+                      {/* High Risk Segment */}
+                      <circle cx="18" cy="18" r="14" fill="none" stroke="#EF4444" strokeWidth="4.5" strokeDasharray={`${highArc} 88`} strokeDashoffset={`-${lowArc + medArc}`} />
+                    </svg>
+                    <div style={{
+                      position: "absolute",
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      textAlign: "center"
+                    }}>
+                      <span style={{ fontSize: 22, fontWeight: 800, color: "var(--ink)", lineHeight: 1 }}>{high}</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: "var(--muted)", marginTop: 2 }}>high risk</span>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
 
             {/* Legend */}
@@ -544,21 +562,21 @@ export default function CommandCenter() {
                   <span style={{ width: 9, height: 9, borderRadius: 2, background: "#EF4444" }} />
                   High risk
                 </span>
-                <span style={{ fontFamily: "var(--f-mono)", fontWeight: 700 }}>11</span>
+                <span style={{ fontFamily: "var(--f-mono)", fontWeight: 700 }}>{data?.highRiskCount || 13}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12.5 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 600, color: "#334155" }}>
                   <span style={{ width: 9, height: 9, borderRadius: 2, background: "#F97316" }} />
                   Medium
                 </span>
-                <span style={{ fontFamily: "var(--f-mono)", fontWeight: 700 }}>21</span>
+                <span style={{ fontFamily: "var(--f-mono)", fontWeight: 700 }}>{data?.medRiskCount || 51}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12.5 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 600, color: "#334155" }}>
                   <span style={{ width: 9, height: 9, borderRadius: 2, background: "#10B981" }} />
                   Low
                 </span>
-                <span style={{ fontFamily: "var(--f-mono)", fontWeight: 700 }}>32</span>
+                <span style={{ fontFamily: "var(--f-mono)", fontWeight: 700 }}>{data?.lowRiskCount || 136}</span>
               </div>
             </div>
           </div>
