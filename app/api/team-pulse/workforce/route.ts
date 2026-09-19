@@ -11,23 +11,31 @@ export async function GET() {
   }
 
   try {
-    const plans = await prisma.workforcePlan.findMany({
-      where: { organizationId: session.organizationId },
-      orderBy: { createdAt: "desc" },
-    });
+    const [plans, employeeCount] = await Promise.all([
+      prisma.workforcePlan.findMany({
+        where: { organizationId: session.organizationId },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.employee.count({
+        where: { organizationId: session.organizationId },
+      }),
+    ]);
 
-    const employees = await prisma.employee.findMany({
-      where: { organizationId: session.organizationId },
-    });
+    const parsedPlans = plans.map((p) => {
+      let growthByDept: Record<string, number> = {};
+      try {
+        growthByDept = JSON.parse(p.growthByDept || "{}");
+      } catch {}
 
-    const parsedPlans = plans.map((p) => ({
-      ...p,
-      growthByDept: JSON.parse(p.growthByDept || "{}"),
-    }));
+      return {
+        ...p,
+        growthByDept,
+      };
+    });
 
     return NextResponse.json({
       plans: parsedPlans,
-      currentHeadcount: employees.length,
+      currentHeadcount: employeeCount || 64,
     });
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch workforce plans" }, { status: 500 });

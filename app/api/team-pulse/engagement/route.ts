@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/team-pulse/auth";
 import { prisma } from "@/lib/team-pulse/db";
+import { getCached, setCached, CacheKeys } from "@/lib/team-pulse/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -21,16 +22,14 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const organizationId = session.organizationId;
+  const cacheKey = CacheKeys.engagement(organizationId);
+  const cached = getCached<any>(cacheKey);
+  if (cached) {
+    return NextResponse.json(cached);
+  }
+
   try {
-    const records = await prisma.engagementRecord.findMany({
-      where: { organizationId: session.organizationId },
-      orderBy: { createdAt: "desc" },
-    });
-
-    const employees = await prisma.employee.findMany({
-      where: { organizationId: session.organizationId },
-    });
-
     const moodByDept: Record<string, number> = {
       Engineering: 57,
       Data: 64,
@@ -50,7 +49,7 @@ export async function GET() {
       { m: "Sep", v: 18 },
     ];
 
-    return NextResponse.json({
+    const result = {
       moodByDept,
       eNPSHistory,
       eNPS: 18,
@@ -63,8 +62,14 @@ export async function GET() {
         { role: "Senior SDE", dept: "Engineering", tenure: 2.1, reason: "Higher offer / market pay", quote: "Got a 45% hike elsewhere." },
         { role: "Product Designer", dept: "Product", tenure: 1.8, reason: "Career growth", quote: "Wanted more ownership of strategy." },
       ],
-    });
+    };
+
+    setCached(cacheKey, result, 120);
+    return NextResponse.json(result);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch engagement data" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch engagement data" },
+      { status: 500 }
+    );
   }
 }

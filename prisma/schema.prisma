@@ -82,6 +82,10 @@ model Employee {
 
   @@index([organizationId])
   @@index([dept])
+  @@index([organizationId, dept])
+  @@index([organizationId, flightRiskLevel])
+  @@index([organizationId, perf])
+  @@index([organizationId, level])
 }
 
 model Job {
@@ -109,6 +113,8 @@ model Job {
   interviews   Interview[]
 
   @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, dept])
 }
 
 model Candidate {
@@ -147,6 +153,9 @@ model Candidate {
 
   @@index([organizationId])
   @@index([jobId])
+  @@index([organizationId, stage])
+  @@index([organizationId, jobId])
+  @@index([organizationId, source])
 }
 
 model Interview {
@@ -168,6 +177,8 @@ model Interview {
 
   @@index([organizationId])
   @@index([candidateId])
+  @@index([organizationId, jobId])
+  @@index([candidateId, jobId])
 }
 
 model WorkforcePlan {
@@ -214,6 +225,8 @@ model ComplianceRecord {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, area])
 }
 
 model AuditLog {
