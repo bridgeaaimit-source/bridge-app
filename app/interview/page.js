@@ -9,6 +9,8 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { addDoc, collection, doc, getDoc, updateDoc } from "firebase/firestore";
 import { normalizeFillerWords } from "@/lib/interviewEval";
+import { recommendTraining } from "@/lib/trainingContent";
+import Link from "next/link";
 import { useAssemblyAI } from "@/hooks/useAssemblyAI";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
 
@@ -60,6 +62,13 @@ export default function InterviewPage() {
     stopRecording: stopAssemblyAIRecording,
     clearTranscript: clearAssemblyAITranscript,
   } = useAssemblyAI();
+
+  // Preselect a domain when arriving from Domain Training (?domain=Operations)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const requested = new URLSearchParams(window.location.search).get("domain");
+    if (requested && domains.some((d) => d.label === requested)) setSelectedDomain(requested);
+  }, []);
 
   useEffect(() => {
     if (hookFullTranscript) {
@@ -806,6 +815,25 @@ export default function InterviewPage() {
                     </ul>
                   </div>
                 </div>
+
+                {/* Personalised training from this interview */}
+                {(() => {
+                  const rec = recommendTraining({ domain: selectedDomain, metrics: feedback.metrics });
+                  if (!rec) return null;
+                  const href = `/training?track=${rec.trackId}&lesson=${rec.lessonId}&reason=${encodeURIComponent(rec.reason)}`;
+                  return (
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border-2 border-[#0D9488] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-[#0D9488] mb-1">Your next step</p>
+                        <p className="font-semibold text-gray-900">{rec.reason}</p>
+                        <p className="text-sm text-gray-600">We picked a short lesson to fix exactly this. Then retake the interview to see your score move.</p>
+                      </div>
+                      <Link href={href} className="shrink-0 text-center bg-[#0D9488] text-white px-5 py-3 rounded-xl font-semibold hover:bg-[#0F766E]">
+                        Start training →
+                      </Link>
+                    </div>
+                  );
+                })()}
 
                 {/* Question-by-question review */}
                 {Array.isArray(feedback.perQuestion) && feedback.perQuestion.length > 0 && (

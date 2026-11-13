@@ -28,7 +28,8 @@ import {
   BridgeScoreIcon,
   TrophyIcon,
   UserIcon,
-  ShieldIcon
+  ShieldIcon,
+  TargetIcon
 } from '@/components/DesignSystem';
 
 const DrivesIcon = (props) => (
@@ -276,7 +277,8 @@ export default function AppShell({ children, hideNavigation = false }) {
         { href: '/smart-interview', icon: SmartInterviewIcon, label: 'Smart Interview', group: ['/smart-interview', '/interview', '/device-test'], tour: 'smart-interview' },
         { href: '/gd/ai', icon: GDPulseIcon, label: 'GD Pulse', group: ['/gd/ai', '/pulse', '/gd', '/coach'], tour: 'gd-practice' },
         { href: '/news-pulse', icon: NewspaperClippingIcon, label: 'News Pulse', group: ['/news-pulse'] },
-        { href: '/aptitude', icon: AptitudeArenaIcon, label: 'Aptitude Arena', group: ['/aptitude'] }
+        { href: '/aptitude', icon: AptitudeArenaIcon, label: 'Aptitude Arena', group: ['/aptitude'] },
+        { href: '/training', icon: TargetIcon, label: 'Domain Training', group: ['/training'] }
       ]
     },
     {
