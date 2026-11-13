@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { resumeFieldsForFirestore } from '@/lib/resumeStorage';
 import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
@@ -185,7 +186,7 @@ export default function ProfilePage() {
       }
 
       const userRef = doc(db, 'users', currentUser.uid);
-      await updateDoc(userRef, { resumeUploaded: true, resumeFileName: file.name, resumeBase64: dataUrl, bridgeScore, updatedAt: new Date().toISOString() });
+      await updateDoc(userRef, { ...resumeFieldsForFirestore(file.name, dataUrl), bridgeScore, updatedAt: new Date().toISOString() });
       setResumeFileName(file.name);
       setUserData(prev => ({ ...prev, bridgeScore }));
       toast.success(`Resume updated! New Bridge Score: ${bridgeScore}`, { id: toastId });

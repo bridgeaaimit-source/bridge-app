@@ -46,6 +46,7 @@ const SupportIcon = (props) => (
 );
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { resumeFieldsForFirestore } from '@/lib/resumeStorage';
 import { doc, getDoc, updateDoc, setDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthBypass } from '@/hooks/useAuthBypass';
@@ -247,7 +248,7 @@ export default function AppShell({ children, hideNavigation = false }) {
         return;
       }
 
-      const updateData = { resumeUploaded: true, resumeFileName: file.name, resumeBase64: dataUrl, bridgeScore, resumeScore: scoreData, updatedAt: new Date().toISOString() };
+      const updateData = { ...resumeFieldsForFirestore(file.name, dataUrl), bridgeScore, resumeScore: scoreData, updatedAt: new Date().toISOString() };
       if (snap.exists()) {
         await updateDoc(userRef, updateData);
       } else {

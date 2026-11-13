@@ -7,6 +7,7 @@ import AppShell from "@/components/AppShell";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { auth, db } from "@/lib/firebase";
+import { resumeFieldsForFirestore } from '@/lib/resumeStorage';
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, setDoc, collection, addDoc, query, orderBy, limit, getDocs, getDoc, updateDoc } from "firebase/firestore";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
@@ -441,8 +442,8 @@ function SmartInterviewContent() {
     }
 
     // Check file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size must be less than 5MB');
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error('File size must be less than 3MB');
       return;
     }
 
@@ -475,9 +476,7 @@ function SmartInterviewContent() {
       if (user) {
         const dataUrl = `data:application/pdf;base64,${base64}`;
         const updateData = {
-          resumeUploaded: true,
-          resumeFileName: file.name,
-          resumeBase64: dataUrl,
+          ...resumeFieldsForFirestore(file.name, dataUrl),
           bridgeScore: scoreData.bridge_score || 0,
           updatedAt: new Date().toISOString()
         };
@@ -503,15 +502,15 @@ function SmartInterviewContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resume_base64: base64, file_type: fileExt, file_name: file.name, userId: user?.uid }),
       });
-      const data = await res.json();
-      if (res.ok && data.resumeText) {
-        dispatch({ type: 'SET_CONFIG', payload: { resumeText: data.resumeText } });
-      } else {
-        dispatch({ type: 'SET_CONFIG', payload: { resumeText: `Resume: ${file.name}` } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.resumeText) {
+        toast.error(data?.error || "We couldn't read this resume. Please upload a text-based PDF and try again.", { id: toastId });
+        return;
       }
+      dispatch({ type: 'SET_CONFIG', payload: { resumeText: data.resumeText } });
 
       setDbResumeUploaded(true);
-      toast.success('Resume validated and loaded successfully!', { id: toastId });
+      toast.success('Resume read successfully!', { id: toastId });
     } catch (error) {
       toast.error('Failed to upload and validate resume', { id: toastId });
       console.error('Resume upload error:', error);
@@ -1158,7 +1157,7 @@ function SmartInterviewContent() {
                 )}
                 <input type="file" accept=".pdf" className="hidden" onChange={handleResumeUpload} disabled={loading} />
               </label>
-              <p className="text-xs text-slate-400 mt-3 font-medium">Max 5MB · PDF format only</p>
+              <p className="text-xs text-slate-400 mt-3 font-medium">Max 3MB · PDF format only</p>
             </div>
           </div>
         </AppShell>
