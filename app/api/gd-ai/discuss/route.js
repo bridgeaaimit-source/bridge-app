@@ -36,6 +36,8 @@ export async function POST(request) {
       turnType = 'debate',
       uid = 'anonymous',
       isModerator = false,
+      difficulty = 'intermediate',
+      language = 'en-IN',
     } = body;
 
     if (!topic || !personaId) {
@@ -67,6 +69,8 @@ export async function POST(request) {
           studentName,
           personaNames,
           turnType,
+          difficulty,
+          language,
         });
 
     // Create SSE stream
@@ -82,7 +86,7 @@ export async function POST(request) {
           // Use Claude Haiku for speed (target <1s first token)
           const anthropicStream = await client.messages.create({
             model: 'claude-haiku-4-5',
-            max_tokens: 150, // hard cap: 100 words max per turn
+            max_tokens: 160, // hard cap: about 90 words per turn
             temperature: 0.8,
             messages: [
               {

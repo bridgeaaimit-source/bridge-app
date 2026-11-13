@@ -332,7 +332,7 @@ function SetupContent() {
                       </div>
                       <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
                         {difficulty === 'easy' && 'Easy: Co-participants debate slowly with few interruptions, helpful for beginners.'}
-                        {difficulty === 'intermediate' && 'Medium: Balanced debate flow with normal speaking speeds and occasional interruption.'}
+                        {difficulty === 'intermediate' && 'Intermediate: Balanced debate flow with normal speaking speeds and occasional interruption.'}
                         {difficulty === 'hard' && 'Hard: Aggressive speakers, heavy interruptions, requires strong logic framing.'}
                       </p>
                     </div>

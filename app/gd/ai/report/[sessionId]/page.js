@@ -334,6 +334,7 @@ export default function GDReportPage({ params: paramsPromise }) {
             summary: data.evaluation.summary,
             strongestMoment: data.evaluation.strongestMoment,
             growthArea: data.evaluation.growthArea,
+            panelVerdict: data.evaluation.panelVerdict,
             dimensions: data.evaluation.dimensions,
             overallAnalysis: data.evaluation.overallAnalysis,
             transcript: safeTurns,
@@ -500,6 +501,7 @@ export default function GDReportPage({ params: paramsPromise }) {
     summary = '',
     strongestMoment = '',
     growthArea = '',
+    panelVerdict = null,
     dimensions = {},
     overallAnalysis = {},
     transcript = [],
@@ -585,6 +587,22 @@ export default function GDReportPage({ params: paramsPromise }) {
             {/* AI Summary Assessment */}
             <Card className="lg:col-span-2 p-8 border-slate-200/80 flex flex-col justify-between">
               <div className="space-y-4">
+                {panelVerdict?.verdict && (
+                  <div className={`rounded-2xl border p-4 ${
+                    panelVerdict.verdict === 'Likely shortlisted'
+                      ? 'bg-emerald-50 border-emerald-200'
+                      : panelVerdict.verdict === 'Borderline'
+                      ? 'bg-amber-50 border-amber-200'
+                      : 'bg-rose-50 border-rose-200'
+                  }`}>
+                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest block mb-1">Panel verdict</span>
+                    <p className={`text-lg font-extrabold ${
+                      panelVerdict.verdict === 'Likely shortlisted' ? 'text-emerald-700'
+                        : panelVerdict.verdict === 'Borderline' ? 'text-amber-700' : 'text-rose-700'
+                    }`}>{panelVerdict.verdict}</p>
+                    {panelVerdict.reason && <p className="text-sm text-slate-600 mt-1 leading-relaxed">{panelVerdict.reason}</p>}
+                  </div>
+                )}
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
                   Moderator Executive Summary
                 </span>

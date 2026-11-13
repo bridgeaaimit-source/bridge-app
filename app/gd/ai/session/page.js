@@ -370,7 +370,7 @@ export default function GDAISessionPage() {
     setStreamingSpeakerId(null);
 
     const studentName = setupData?.studentName || 'everyone';
-    const closingPromptText = `We're approaching the end of our discussion. ${studentName}, please share your closing remarks — you have up to two minutes.`;
+    const closingPromptText = `Thank you, everyone, we are out of time. ${studentName}, could you please summarise the discussion for the panel? You have up to two minutes.`;
 
     // Append closing turn to transcript
     const closingTurn = {
@@ -443,10 +443,13 @@ export default function GDAISessionPage() {
     setSpeakerState('idle');
     setActiveSpeakerId(null);
 
-    // Call first turn
+    // Like a real GD, leave a short window so the student can initiate.
+    // runNextTurn() exits early if the student has already pressed "Speak Now".
+    const turnCountAtOpening = turnsRef.current.length;
     setTimeout(() => {
-      runNextTurn();
-    }, 800);
+      // Skip if the student (or anyone) has already started the discussion.
+      if (turnsRef.current.length === turnCountAtOpening) runNextTurn();
+    }, 6000);
   };
 
   // Helper: Parse streamed SSE events manually
@@ -532,6 +535,8 @@ export default function GDAISessionPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             topic: setupData.topic,
+            difficulty: setupData.difficulty,
+            language: setupData.language,
             personaId: 'moderator',
             sessionPhase: sessionPhaseRef.current,
             turns: currentTurns,
@@ -649,6 +654,8 @@ export default function GDAISessionPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           topic: setupData.topic,
+          difficulty: setupData.difficulty,
+          language: setupData.language,
           personaId: aiId,
           sessionPhase: sessionPhaseRef.current,
           turns: currentTurns,
@@ -656,6 +663,7 @@ export default function GDAISessionPage() {
           studentName: setupData.studentName,
           personaNames,
           turnType,
+          lastStudentTurn: [...currentTurns].reverse().find((t) => t.speakerId === 'student')?.text || null,
           uid: setupData.uid,
         }),
         signal: controller.signal,
@@ -1079,6 +1087,7 @@ export default function GDAISessionPage() {
           summary: evalSuccess ? data.evaluation.summary : 'Evaluation failed. Click to retry.',
           strongestMoment: evalSuccess ? data.evaluation.strongestMoment : '',
           growthArea: evalSuccess ? data.evaluation.growthArea : '',
+          panelVerdict: evalSuccess ? data.evaluation.panelVerdict : null,
           dimensions: evalSuccess ? data.evaluation.dimensions : null,
           overallAnalysis: evalSuccess ? data.evaluation.overallAnalysis : null,
           transcript: finalTurns.map(t => ({
