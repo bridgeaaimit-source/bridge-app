@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const MOCK_GPS = {
@@ -61,36 +61,23 @@ const MOCK_GPS = {
 };
 
 export function useCareerGPS(userId) {
-  const [gpsData, setGpsData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Render the guidance immediately instead of waiting for sign-in and a
+  // database round trip; saved insights (if any) are merged in when they arrive.
+  const [gpsData, setGpsData] = useState(MOCK_GPS);
+  const [loading] = useState(false);
   const isBypass = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true";
 
   useEffect(() => {
-    if (!userId && !isBypass) { setLoading(false); return; }
-    if (isBypass) {
-      setTimeout(() => { setGpsData(MOCK_GPS); setLoading(false); }, 600);
-      return;
-    }
-    async function load() {
-      try {
-        const snap = await getDoc(doc(db, "user_insights", userId));
-        if (snap.exists()) {
-          const saved = snap.data();
-          setGpsData({ ...MOCK_GPS, ...saved, stageData: MOCK_GPS.stageData });
-        } else {
-          await setDoc(doc(db, "user_insights", userId), {
-            marketFitScore: MOCK_GPS.marketFitScore,
-            scoreBreakdown: MOCK_GPS.scoreBreakdown,
-            skillGaps: MOCK_GPS.skillGaps,
-            timeline: MOCK_GPS.timeline,
-            lastUpdated: new Date().toISOString(),
-          });
-          setGpsData(MOCK_GPS);
+    if (!userId || isBypass) return;
+    let cancelled = false;
+    getDoc(doc(db, "user_insights", userId))
+      .then((snap) => {
+        if (!cancelled && snap.exists()) {
+          setGpsData({ ...MOCK_GPS, ...snap.data(), stageData: MOCK_GPS.stageData });
         }
-      } catch (e) { console.error("Error loading GPS data:", e); setGpsData(MOCK_GPS); }
-      finally { setLoading(false); }
-    }
-    load();
+      })
+      .catch(() => {}); // not readable for students under current rules; keep defaults
+    return () => { cancelled = true; };
   }, [userId, isBypass]);
 
   return { gpsData, loading };
