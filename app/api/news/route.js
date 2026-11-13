@@ -1,7 +1,7 @@
 import { after } from 'next/server';
 import { adminDb, admin } from '@/lib/firebase-admin';
 import { getLatestNews, getCategory, NEWS_CATEGORIES } from '@/lib/newsFeeds';
-import { buildBrief } from '@/lib/newsBrief';
+import { buildBrief, cleanBrief } from '@/lib/newsBrief';
 
 // The AI brief is built in the background after the response is sent.
 export const maxDuration = 120;
@@ -71,7 +71,7 @@ export async function GET(request) {
   const forceRebuild = rebuildAsked && isAdmin;
 
   const now = Date.now();
-  const brief = state?.brief || null;
+  const brief = cleanBrief(state?.brief || null);
   const age = brief?.builtAt ? now - new Date(brief.builtAt).getTime() : Infinity;
   const building = (state?.buildingUntil || 0) > now;
   const recentlyFailed = state?.failedAt && now - new Date(state.failedAt).getTime() < FAIL_BACKOFF_MS;
