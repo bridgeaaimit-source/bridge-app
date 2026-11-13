@@ -15,6 +15,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { trackTokensServer } from '@/lib/tokenTrackerServer';
+import { extractJson } from '@/lib/extractJson';
 
 export const runtime = 'nodejs';
 
@@ -124,67 +125,37 @@ export async function POST(request) {
       ];
     }
 
-    let profile;
-    try {
-      if (!client) {
-        throw new Error('Anthropic client is not initialized (missing API key)');
+    if (!client) {
+      return Response.json(
+        { error: 'Resume reading is unavailable right now. Please try again in a minute.' },
+        { status: 503 }
+      );
+    }
+
+    // Two attempts. Never return made-up profile data if reading fails.
+    let profile = null;
+    for (let attempt = 1; attempt <= 2 && !profile; attempt++) {
+      try {
+        const message = await client.messages.create({
+          model: 'claude-sonnet-4-5',
+          max_tokens: 4000, // 2000 cut long resumes off mid-JSON
+          messages: [{ role: 'user', content: messageContent }],
+        });
+        await trackTokensServer(userId || 'anonymous', 'resume', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-5');
+        if (message.stop_reason === 'max_tokens') {
+          throw new Error('Reply was cut off before the JSON finished');
+        }
+        profile = extractJson(message.content[0].text);
+      } catch (err) {
+        console.error(`parse-resume attempt ${attempt} failed:`, err.message);
       }
-      const message = await client.messages.create({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 2000,
-        messages: [{ role: 'user', content: messageContent }],
-      });
+    }
 
-      // Track token usage
-      await trackTokensServer(userId || 'anonymous', 'resume', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-sonnet-4-5');
-
-      const raw = message.content[0].text
-        .replace(/```json/gi, '')
-        .replace(/```/g, '')
-        .trim();
-
-      // Find the JSON object boundaries robustly
-      const jsonStart = raw.indexOf('{');
-      const jsonEnd = raw.lastIndexOf('}');
-      if (jsonStart === -1 || jsonEnd === -1) {
-        throw new Error('Claude returned non-JSON response');
-      }
-
-      profile = JSON.parse(raw.slice(jsonStart, jsonEnd + 1));
-    } catch (claudeError) {
-      console.warn('⚠️ parse-resume Claude API failed, using mock profile fallback:', claudeError.message);
-      profile = {
-        name: "Mock Candidate",
-        email: "candidate@example.com",
-        phone: "+91 98765 43210",
-        location: "Mumbai, India",
-        education: {
-          degree: "B.Tech in Computer Science",
-          college: "IIT Bombay",
-          year: "2026",
-          gpa: "9.2 CGPA",
-          branch: "Computer Science and Engineering"
-        },
-        experience_level: "Fresher",
-        work_experience: [
-          { company: "Google Summer of Code (Internship)", role: "Contributor", duration: "3 months", description: "Contributed to open source machine learning libraries." }
-        ],
-        domains: ["Tech"],
-        skills: ["React", "JavaScript", "Node.js", "Python", "SQL", "Git", "Machine Learning"],
-        certifications: ["AWS Certified Cloud Practitioner"],
-        projects: [
-          { name: "BRIDGE Placement Prep Platform", tech: ["Next.js", "Firebase", "Claude API"], description: "Built an AI-powered mock interview and career guidance application." }
-        ],
-        achievements: ["JEE Advanced Rank 120"],
-        languages: ["English", "Hindi"],
-        looking_for: "Full-time",
-        profile_summary: "CS senior at IIT Bombay with strong algorithms, full-stack, and ML foundations. Active contributor to open source projects.",
-        job_titles_suitable: ["Software Engineer", "Frontend Engineer", "Full Stack Developer"],
-        companies_suitable: ["TCS", "Infosys", "Wipro", "Accenture", "Google"],
-        salary_expectation: "8-12 LPA",
-        college: "IIT Bombay",
-        degree: "B.Tech in Computer Science"
-      };
+    if (!profile) {
+      return Response.json(
+        { error: "We couldn't read this resume. Please try again, or upload a text-based PDF (exported from Word, Google Docs or Canva) rather than a scanned photo." },
+        { status: 502 }
+      );
     }
 
     // Build a clean plain-text summary for features that need it

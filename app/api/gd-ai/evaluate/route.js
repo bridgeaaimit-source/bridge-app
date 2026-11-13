@@ -82,7 +82,8 @@ export async function POST(request) {
     // Profiled output tokens: ~1,450 vs ~2,900 → inference ~32-44s vs ~61-81s
     // Secondary signals (confidence, listening, evidence, collaboration) are
     // embedded within the 5 core dimensions rather than scored separately.
-    const prompt = `You are an expert Group Discussion evaluator for Indian placement interviews.
+    const prompt = `You are a senior member of a company HR panel evaluating a campus placement Group Discussion in India
+(the shortlisting GD used by recruiters such as consulting firms, banks, FMCG and IT companies).
 
 TOPIC: "${topic}"
 DURATION: ${Math.round(elapsedSeconds / 60)} minutes
@@ -94,7 +95,16 @@ ${transcriptText}
 STUDENT CONTRIBUTIONS:
 ${studentContributions}
 
-Evaluate ${studentName} across 5 recruiter-critical dimensions. Be SPECIFIC — quote actual student text. Most students score 50-75; reserve 80+ for exceptional performance.
+Evaluate ${studentName} the way a real Indian GD panel does. Panels look for:
+- Initiation: did they open the discussion or set a direction early?
+- Entry: did they find the right moments to come in, without shouting others down?
+- Content: relevant points, real examples, logic; penalise statistics that sound invented.
+- Handling interruptions: stayed calm, completed their point ("let me complete my point").
+- Listening: built on others by name, did not repeat points already made.
+- Leadership: brought the group back on track, involved quieter members, summarised.
+- Conduct: no aggression, no personal remarks.
+Do not reward length or number of turns on their own. Be SPECIFIC and quote the student's actual words.
+Most students score 50-75; reserve 80+ for performance that would clearly be shortlisted.
 
 SCORING WEIGHTS: Communication 25% | Critical Thinking 25% | Leadership & Collaboration 20% | Persuasiveness 15% | Participation Quality 15%
 
@@ -111,6 +121,10 @@ Return ONLY a valid JSON object. No markdown, no code fences, no explanation tex
   "summary": "2-3 sentence honest assessment referencing specific discussion moments",
   "strongestMoment": "exact quote of the single best student contribution",
   "growthArea": "the single most important improvement area",
+  "panelVerdict": {
+    "verdict": "Likely shortlisted | Borderline | Not shortlisted",
+    "reason": "1-2 sentences a real panel would write, citing specific moments from the transcript"
+  },
   "dimensions": {
     "communication": {
       "score": number (0-100),
@@ -206,23 +220,21 @@ Return ONLY a valid JSON object. No markdown, no code fences, no explanation tex
     }
 
     // 6. Schema Validation & Repair Layer (Task 8)
-    if (typeof evaluation.overallScore !== 'number') {
-      evaluation.overallScore = 60;
-    } else {
+    if (typeof evaluation.overallScore === 'number') {
       evaluation.overallScore = Math.max(0, Math.min(100, evaluation.overallScore));
     }
 
-    if (typeof evaluation.summary !== 'string') {
-      evaluation.summary = "Evaluation completed. The candidate participated actively in the discussion on the chosen topic.";
-    }
+    // Never fill missing feedback with invented text; the report hides empty fields.
+    if (typeof evaluation.summary !== 'string') evaluation.summary = '';
+    if (typeof evaluation.strongestMoment !== 'string') evaluation.strongestMoment = '';
+    if (typeof evaluation.growthArea !== 'string') evaluation.growthArea = '';
 
-    if (typeof evaluation.strongestMoment !== 'string') {
-      evaluation.strongestMoment = "The candidate contributed structured arguments to the discussion flow.";
-    }
-
-    if (typeof evaluation.growthArea !== 'string') {
-      evaluation.growthArea = "Enhance analytical content density and reference peer statements.";
-    }
+    const allowedVerdicts = ['Likely shortlisted', 'Borderline', 'Not shortlisted'];
+    const pv = evaluation.panelVerdict && typeof evaluation.panelVerdict === 'object' ? evaluation.panelVerdict : {};
+    evaluation.panelVerdict = {
+      verdict: allowedVerdicts.find((v) => v.toLowerCase() === String(pv.verdict || '').trim().toLowerCase()) || '',
+      reason: typeof pv.reason === 'string' ? pv.reason : '',
+    };
 
     if (!evaluation.dimensions || typeof evaluation.dimensions !== 'object') {
       evaluation.dimensions = {};
@@ -234,19 +246,37 @@ Return ONLY a valid JSON object. No markdown, no code fences, no explanation tex
       'persuasiveness', 'participationQuality'
     ];
 
+    // A report with several unscored dimensions is not a real evaluation: fail so the
+    // student can retry, instead of showing invented scores.
+    const scoredDims = requiredDims.filter(dim => typeof evaluation.dimensions?.[dim]?.score === 'number');
+    if (scoredDims.length < requiredDims.length - 1) {
+      throw new Error(`Evaluation incomplete: only ${scoredDims.length} of ${requiredDims.length} dimensions were scored.`);
+    }
+    const avgScored = Math.round(scoredDims.reduce((sum, dim) => sum + evaluation.dimensions[dim].score, 0) / scoredDims.length);
+
     requiredDims.forEach(dim => {
       if (!evaluation.dimensions[dim] || typeof evaluation.dimensions[dim] !== 'object') {
         evaluation.dimensions[dim] = {};
       }
       const d = evaluation.dimensions[dim];
-      if (typeof d.score !== 'number') d.score = 60;
+      if (typeof d.score !== 'number') d.score = avgScored;
       d.score = Math.max(0, Math.min(100, d.score));
       if (typeof d.grade !== 'string') d.grade = d.score >= 80 ? 'A' : d.score >= 65 ? 'B' : d.score >= 50 ? 'C' : d.score >= 35 ? 'D' : 'F';
-      if (typeof d.summary !== 'string') d.summary = `The candidate demonstrated baseline performance in the ${dim} area.`;
+      if (typeof d.summary !== 'string') d.summary = '';
       if (!Array.isArray(d.evidence)) d.evidence = [];
       if (typeof d.improvement !== 'string') d.improvement = 'Focus on delivering structured, evidence-backed contributions.';
       if (typeof d.exercise !== 'string') d.exercise = 'Practice the PEP (Point, Explanation, Proof) framework in a 5-minute daily drill.';
     });
+
+    if (typeof evaluation.overallScore !== 'number') {
+      // Weighted as stated in the prompt: 25/25/20/15/15
+      const d = evaluation.dimensions;
+      evaluation.overallScore = Math.round(
+        d.communication.score * 0.25 + d.criticalThinking.score * 0.25 +
+        d.leadershipCollaboration.score * 0.20 + d.persuasiveness.score * 0.15 +
+        d.participationQuality.score * 0.15
+      );
+    }
 
     if (!evaluation.overallAnalysis || typeof evaluation.overallAnalysis !== 'object') {
       evaluation.overallAnalysis = {};
@@ -260,8 +290,8 @@ Return ONLY a valid JSON object. No markdown, no code fences, no explanation tex
     if (typeof oa.contentQuality !== 'number') oa.contentQuality = Math.round((dims.criticalThinking?.score || 60) / 10);
     if (typeof oa.persuasiveness !== 'number') oa.persuasiveness = Math.round((dims.persuasiveness?.score || 60) / 10);
     if (typeof oa.summary !== 'string') oa.summary = evaluation.summary;
-    if (typeof oa.topStrength !== 'string') oa.topStrength = 'Logic-dense communication framing.';
-    if (typeof oa.topWeakness !== 'string') oa.topWeakness = 'Actionable quantitative evidence implementation.';
+    if (typeof oa.topStrength !== 'string') oa.topStrength = '';
+    if (typeof oa.topWeakness !== 'string') oa.topWeakness = '';
     if (!Array.isArray(oa.actionItems) || oa.actionItems.length === 0) {
       oa.actionItems = [
         'Structure contributions using the PEP (Point, Explanation, Example) framework.',
@@ -290,6 +320,7 @@ Return ONLY a valid JSON object. No markdown, no code fences, no explanation tex
       summary: evaluation.summary,
       strongestMoment: evaluation.strongestMoment,
       growthArea: evaluation.growthArea,
+      panelVerdict: evaluation.panelVerdict,
       dimensions: evaluation.dimensions,
       overallAnalysis: evaluation.overallAnalysis,
       status: 'REPORT_READY',

@@ -9,49 +9,7 @@ import { getSessionPersonas, MODERATOR } from '@/lib/gdPersonas';
 import toast from 'react-hot-toast';
 import { useAuthBypass } from '@/hooks/useAuthBypass';
 import { auth } from '@/lib/firebase';
-
-const TOPIC_PRESETS = {
-  current_affairs: [
-    "Should India mandate AI literacy in school curriculum by 2027?",
-    "One Nation One Election: Feasibility and impact on federalism.",
-    "Is India ready for a complete transition to Electric Vehicles by 2030?"
-  ],
-  business: [
-    "Is the 70-hour work week sustainable for Indian youth?",
-    "Central Bank Digital Currencies (CBDC) vs Private Crypto.",
-    "Is the Indian startup boom sustainable or a funding bubble?"
-  ],
-  tech: [
-    "Will Generative AI create more jobs than it destroys?",
-    "Should social media platforms be regulated as publishers?",
-    "Data Privacy: Can it exist in the age of big data and AI?"
-  ],
-  social: [
-    "Has social media destroyed offline community relationships?",
-    "Should higher education in India be fully privatized?",
-    "Environmental conservation vs rapid industrialization in developing countries."
-  ],
-  abstract: [
-    "Red is better than blue.",
-    "The path is more important than the destination.",
-    "Failure is a better teacher than success."
-  ],
-  case_study: [
-    "A logistics company faces a 20% driver shortage during peak season. Solve it.",
-    "A retail bank sees 40% customer attrition to digital-first neo-banks. Adapt.",
-    "An eco-friendly cosmetics brand wants to scale retail on a low budget."
-  ],
-  stress_gd: [
-    "Should incompetent employees be fired instantly without severance?",
-    "Is absolute compliance to authority necessary for corporate efficiency?",
-    "Academic grades are the only valid measure of competence in tech recruiting."
-  ],
-  ethics: [
-    "Should companies track employee screens during remote work?",
-    "CSR: Genuine philanthropy or greenwashing marketing?",
-    "Is lobbying ethical in corporate policy development?"
-  ]
-};
+import { TOPIC_PRESETS } from '@/lib/gdTopics';
 
 const CATEGORY_NAMES = {
   current_affairs: 'Current Affairs',
@@ -92,6 +50,12 @@ function SetupContent() {
     const catParam = searchParams.get('category');
     if (catParam && TOPIC_PRESETS[catParam]) {
       setCategory(catParam);
+    }
+    // A topic handed over from News Pulse ("Practice this GD")
+    const topicParam = (searchParams.get('topic') || '').trim();
+    if (topicParam) {
+      setIsCustomTopic(true);
+      setCustomTopic(topicParam.slice(0, 200));
     }
   }, [searchParams]);
 
@@ -374,7 +338,7 @@ function SetupContent() {
                       </div>
                       <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
                         {difficulty === 'easy' && 'Easy: Co-participants debate slowly with few interruptions, helpful for beginners.'}
-                        {difficulty === 'intermediate' && 'Medium: Balanced debate flow with normal speaking speeds and occasional interruption.'}
+                        {difficulty === 'intermediate' && 'Intermediate: Balanced debate flow with normal speaking speeds and occasional interruption.'}
                         {difficulty === 'hard' && 'Hard: Aggressive speakers, heavy interruptions, requires strong logic framing.'}
                       </p>
                     </div>

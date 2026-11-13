@@ -1,5 +1,7 @@
 'use client';
 
+import { TOPIC_PRESETS } from '@/lib/gdTopics';
+
 /**
  * CategoryGrid
  * 
@@ -16,7 +18,7 @@ export default function CategoryGrid({ onSelectCategory }) {
       name: 'Current Affairs',
       desc: 'National and global events, politics, and policy decisions.',
       icon: <GlobeIcon />,
-      topicsCount: 18,
+      topicsCount: TOPIC_PRESETS['current_affairs']?.length || 0,
       difficulty: 'Medium',
       difficultyColor: 'text-amber-500 bg-amber-50',
     },
@@ -25,7 +27,7 @@ export default function CategoryGrid({ onSelectCategory }) {
       name: 'Business & Finance',
       desc: 'Strategy, corporate decisions, startup trends, and economic shifts.',
       icon: <BriefcaseIcon />,
-      topicsCount: 15,
+      topicsCount: TOPIC_PRESETS['business']?.length || 0,
       difficulty: 'Hard',
       difficultyColor: 'text-rose-500 bg-rose-50',
     },
@@ -34,7 +36,7 @@ export default function CategoryGrid({ onSelectCategory }) {
       name: 'Tech & Innovation',
       desc: 'AI policy, digital transformation, privacy, and future tech.',
       icon: <CpuIcon />,
-      topicsCount: 12,
+      topicsCount: TOPIC_PRESETS['tech']?.length || 0,
       difficulty: 'Medium',
       difficultyColor: 'text-amber-500 bg-amber-50',
     },
@@ -43,7 +45,7 @@ export default function CategoryGrid({ onSelectCategory }) {
       name: 'Social Issues',
       desc: 'Education reform, gender diversity, environmental sustainability.',
       icon: <UsersIcon />,
-      topicsCount: 14,
+      topicsCount: TOPIC_PRESETS['social']?.length || 0,
       difficulty: 'Easy',
       difficultyColor: 'text-emerald-500 bg-emerald-50',
     },
@@ -52,7 +54,7 @@ export default function CategoryGrid({ onSelectCategory }) {
       name: 'Abstract Topics',
       desc: 'Philosophical questions, metaphors, and creative reasoning.',
       icon: <SparklesIcon />,
-      topicsCount: 10,
+      topicsCount: TOPIC_PRESETS['abstract']?.length || 0,
       difficulty: 'Hard',
       difficultyColor: 'text-rose-500 bg-rose-50',
     },
@@ -61,7 +63,7 @@ export default function CategoryGrid({ onSelectCategory }) {
       name: 'Case Study & Ops',
       desc: 'Solve real-world operational challenges under constraints.',
       icon: <FolderIcon />,
-      topicsCount: 8,
+      topicsCount: TOPIC_PRESETS['case_study']?.length || 0,
       difficulty: 'Hard',
       difficultyColor: 'text-rose-500 bg-rose-50',
     },
@@ -70,7 +72,7 @@ export default function CategoryGrid({ onSelectCategory }) {
       name: 'Stress GD Boost',
       desc: 'Provocative statements designed to trigger intense AI debates.',
       icon: <ZapIcon />,
-      topicsCount: 6,
+      topicsCount: TOPIC_PRESETS['stress_gd']?.length || 0,
       difficulty: 'Extreme',
       difficultyColor: 'text-red-600 bg-red-50 border border-red-200 font-extrabold',
     },
@@ -79,7 +81,7 @@ export default function CategoryGrid({ onSelectCategory }) {
       name: 'Ethics & Governance',
       desc: 'Corporate ethics, sustainability, and moral dilemmas in industry.',
       icon: <ShieldIcon />,
-      topicsCount: 9,
+      topicsCount: TOPIC_PRESETS['ethics']?.length || 0,
       difficulty: 'Medium',
       difficultyColor: 'text-amber-500 bg-amber-50',
     },

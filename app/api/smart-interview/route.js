@@ -118,6 +118,74 @@ function isSimilarQuestion(newQ, existingQ) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Video mode only: coaching on on-camera presence from a few webcam snapshots
+ * taken during the interview. Runs beside the main evaluation and never
+ * changes the interview score. Snapshots are sent for this one check and are
+ * not stored. Returns null if there is nothing usable.
+ */
+async function reviewPresence(frames, jobRole, userId) {
+  try {
+    if (!client || !Array.isArray(frames)) return null;
+    const usable = frames
+      .filter(f => typeof f === 'string' && f.startsWith('/9j/') && f.length < 250000)
+      .slice(0, 4);
+    if (usable.length === 0) return null;
+
+    const prompt = `These are ${usable.length} webcam snapshots of a student taken during a mock interview for the role: ${jobRole || 'campus placement'}.
+Give coaching on on-camera presence for an Indian campus placement interview. Judge ONLY things the student can change before the real interview:
+- framing (head and shoulders visible, centred, camera at eye level)
+- lighting (face clearly lit, no strong backlight)
+- eye contact (looking at the camera, not down or away)
+- posture and expression (upright, attentive, relaxed)
+- background (tidy, no distractions)
+- attire (how formal and neat it looks for an interview)
+
+Never identify the person. Never comment on face, body, skin, hair texture, age, gender, religion, attractiveness or anything else they cannot change.
+If no person is clearly visible, or the images are too dark to judge, set "visible" to false and explain in "summary".
+
+Return ONLY valid JSON:
+{
+  "visible": true,
+  "score": 7,
+  "summary": "one sentence overall",
+  "what_works": ["up to 3 short, specific points"],
+  "fix_before_the_real_interview": ["up to 3 short, specific fixes"]
+}`;
+
+    const message = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 600,
+      messages: [{
+        role: 'user',
+        content: [
+          ...usable.map(data => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } })),
+          { type: 'text', text: prompt },
+        ],
+      }],
+    });
+    trackTokensServer(userId || 'anonymous', 'smart-interview', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-haiku-4-5-20251001').catch(() => {});
+
+    const text = message.content?.[0]?.text || '';
+    const match = text.replace(/```json/g, '').replace(/```/g, '').match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    const raw = JSON.parse(match[0]);
+    const list = (v) => (Array.isArray(v) ? v.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim().slice(0, 220)).slice(0, 3) : []);
+    const score = Math.round(Number(raw.score));
+    return {
+      visible: raw.visible !== false,
+      score: raw.visible !== false && score >= 1 && score <= 10 ? score : null,
+      summary: typeof raw.summary === 'string' ? raw.summary.slice(0, 300) : '',
+      whatWorks: list(raw.what_works),
+      fixes: list(raw.fix_before_the_real_interview),
+      framesChecked: usable.length,
+    };
+  } catch (err) {
+    console.warn('Presence review skipped:', err.message);
+    return null;
+  }
+}
+
 export async function POST(request) {
   const body = await request.json();
   const {
@@ -131,6 +199,7 @@ export async function POST(request) {
     last_answer,
     session_memory,
     user_id,
+    presence_frames,
   } = body;
 
   console.log('👤 User ID:', user_id || 'unknown');
@@ -787,6 +856,10 @@ Return ONLY valid JSON (the overall_score and placement_chance fields are placeh
     try {
       if (!client) throw new Error('Anthropic client not initialized');
 
+      // On-camera presence (video mode) is reviewed in parallel; it is advice
+      // only and never feeds into the scores below.
+      const presencePromise = reviewPresence(presence_frames, job_role, user_id);
+
       const message = await retryClaudeCall(() =>
         client.messages.create({
           model: 'claude-haiku-4-5-20251001',
@@ -885,72 +958,23 @@ Return ONLY valid JSON (the overall_score and placement_chance fields are placeh
           else if (roundedOverall >= 4.0) parsed.verdict = "Weak Maybe";
           else parsed.verdict = "Not Hire";
         } else {
-          // Fallback values if scores object is missing
-          parsed.overall_score = 6.0;
-          parsed.placement_chance = 60;
-          parsed.verdict = "Strong Maybe";
+          // No scores came back: fail honestly so the student can retry.
+          return Response.json({ error: 'The report came back without scores. Please retry.' }, { status: 502 });
         }
 
         parsed.question_analysis = [];
+        const presence = await presencePromise;
+        if (presence) parsed.presence = presence;
         return Response.json(parsed);
 
       } catch (parseError) {
-        console.error('JSON parse error in evaluate:', parseError, 'Raw:', text);
-        return Response.json({
-          placement_chance: 60,
-          verdict: 'Strong Maybe',
-          overall_score: 6.0,
-          scores: {
-            communication: { score: 6, evidence: "Completed the interview session.", justification: "General structured dialogue." },
-            technical_knowledge: { score: 6, evidence: "Completed the interview session.", justification: "General knowledge." },
-            resume_jd_fit: { score: 6, evidence: "Completed the interview session.", justification: "General fit." },
-            confidence: { score: 6, evidence: "Completed the interview session.", justification: "Steady response rate." },
-            answer_quality: { score: 6, evidence: "Completed the interview session.", justification: "Answers were direct." },
-            problem_solving: { score: 6, evidence: "Completed the interview session.", justification: "Reasonable workflow." },
-            professionalism: { score: 8, evidence: "No violations recorded.", justification: "Standard professional conduct." }
-          },
-          summary: {
-            strengths: ['Completed the mock interview', 'Showed interest and effort'],
-            weaknesses: ['Evaluation report encountered a minor parsing issue'],
-            key_takeaways: 'Good effort shown. Re-run the interview for a more detailed breakdown.',
-          },
-          question_analysis: [],
-          career_insights: {
-            market_fit: 'Medium',
-            salary_range: '₹3.5-6 LPA (Entry level)',
-            growth_potential: 'High',
-            recommended_roles: [job_role],
-          },
-        });
+        // No made-up report: the app shows "Report generation failed" with a Retry button.
+        console.error('JSON parse error in evaluate:', parseError, 'Raw:', text?.slice(0, 300));
+        return Response.json({ error: 'The report came back incomplete. Please retry.' }, { status: 502 });
       }
     } catch (claudeError) {
       console.warn('Evaluate Claude call failed:', claudeError.message);
-      return Response.json({
-        placement_chance: 60,
-        verdict: 'Strong Maybe',
-        overall_score: 6.0,
-        scores: {
-          communication: { score: 7, evidence: "Completed the interview session.", justification: "Structured articulation." },
-          technical_knowledge: { score: 6, evidence: "Completed the interview session.", justification: "Adequate explanations." },
-          resume_jd_fit: { score: 6, evidence: "Completed the interview session.", justification: "Good alignment." },
-          confidence: { score: 7, evidence: "Completed the interview session.", justification: "Clear vocal delivery." },
-          answer_quality: { score: 5, evidence: "Completed the interview session.", justification: "Standard answers." },
-          problem_solving: { score: 6, evidence: "Completed the interview session.", justification: "Satisfactory approach." },
-          professionalism: { score: 8, evidence: "No violations recorded.", justification: "Standard conduct." }
-        },
-        summary: {
-          strengths: ['Completed the full interview', 'Demonstrated structured communication'],
-          weaknesses: ['Some answers lacked depth and concrete examples'],
-          key_takeaways: 'Good overall participation. Practice using the STAR method when answering behavioral questions.',
-        },
-        question_analysis: [],
-        career_insights: {
-          market_fit: 'Medium',
-          salary_range: '₹4-7 LPA',
-          growth_potential: 'High',
-          recommended_roles: [job_role || 'Software Engineer'],
-        },
-      });
+      return Response.json({ error: 'The AI service is busy. Please retry in a moment.' }, { status: 503 });
     }
   }
 

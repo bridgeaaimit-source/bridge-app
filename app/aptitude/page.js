@@ -899,12 +899,6 @@ export default function AptitudePage() {
                     </h1>
                     <p className={typography.body}>
                       Master Indian campus placement reasoning and quantitative rounds with adaptive, gamified drills.
-                      <button
-                        onClick={handleSeedDatabase}
-                        className="ml-2 text-xs text-teal-500 hover:underline font-semibold text-[#14B8A6]"
-                      >
-                        (Force Seed DB)
-                      </button>
                     </p>
                   </div>
                 </div>

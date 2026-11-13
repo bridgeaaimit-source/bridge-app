@@ -28,7 +28,8 @@ import {
   BridgeScoreIcon,
   TrophyIcon,
   UserIcon,
-  ShieldIcon
+  ShieldIcon,
+  TargetIcon
 } from '@/components/DesignSystem';
 
 const DrivesIcon = (props) => (
@@ -39,6 +40,12 @@ const DrivesIcon = (props) => (
 );
 
 const AdminIcon = ShieldIcon;
+const UsageIcon = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M3 3v18h18" />
+    <path d="M7 15l4-4 3 3 5-6" />
+  </svg>
+);
 const SupportIcon = (props) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -46,6 +53,7 @@ const SupportIcon = (props) => (
 );
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { resumeFieldsForFirestore } from '@/lib/resumeStorage';
 import { doc, getDoc, updateDoc, setDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthBypass } from '@/hooks/useAuthBypass';
@@ -247,7 +255,7 @@ export default function AppShell({ children, hideNavigation = false }) {
         return;
       }
 
-      const updateData = { resumeUploaded: true, resumeFileName: file.name, resumeBase64: dataUrl, bridgeScore, resumeScore: scoreData, updatedAt: new Date().toISOString() };
+      const updateData = { ...resumeFieldsForFirestore(file.name, dataUrl), bridgeScore, resumeScore: scoreData, updatedAt: new Date().toISOString() };
       if (snap.exists()) {
         await updateDoc(userRef, updateData);
       } else {
@@ -275,7 +283,8 @@ export default function AppShell({ children, hideNavigation = false }) {
         { href: '/smart-interview', icon: SmartInterviewIcon, label: 'Smart Interview', group: ['/smart-interview', '/interview', '/device-test'], tour: 'smart-interview' },
         { href: '/gd/ai', icon: GDPulseIcon, label: 'GD Pulse', group: ['/gd/ai', '/pulse', '/gd', '/coach'], tour: 'gd-practice' },
         { href: '/news-pulse', icon: NewspaperClippingIcon, label: 'News Pulse', group: ['/news-pulse'] },
-        { href: '/aptitude', icon: AptitudeArenaIcon, label: 'Aptitude Arena', group: ['/aptitude'] }
+        { href: '/aptitude', icon: AptitudeArenaIcon, label: 'Aptitude Arena', group: ['/aptitude'] },
+        { href: '/training', icon: TargetIcon, label: 'Domain Training', group: ['/training'] }
       ]
     },
     {
@@ -300,6 +309,7 @@ export default function AppShell({ children, hideNavigation = false }) {
         ...(isRecruiter ? [{ href: '/recruiter', icon: RecruitersIcon, label: 'Recruiter', group: ['/recruiter'] }] : []),
         { href: '/drives', icon: DrivesIcon, label: 'Drives', group: ['/drives'] },
         ...(isAdmin ? [{ href: '/admin', icon: AdminIcon, label: 'Admin Dashboard', group: ['/admin'] }] : []),
+        ...(isAdmin ? [{ href: '/admin/token-dashboard', icon: UsageIcon, label: 'API Usage & Cost', group: ['/admin/token-dashboard'] }] : []),
         ...(isAdmin ? [{ href: '/admin/support', icon: SupportIcon, label: 'Support', group: ['/admin/support'], badge: openTicketsCount }] : [])
       ]
     }

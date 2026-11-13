@@ -158,8 +158,8 @@ export default function JobsPage() {
     }
 
     // Check file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size must be less than 5MB');
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error('File size must be less than 3MB');
       return;
     }
 
@@ -306,7 +306,7 @@ export default function JobsPage() {
             <label className="block border-2 border-dashed border-[#CCFBF1] rounded-2xl p-8 hover:border-[#0D9488] transition-colors cursor-pointer mb-6">
               <Upload className="w-10 h-10 text-[#0D9488] mx-auto mb-3" />
               <p className="text-gray-600 text-sm font-medium">Drop your resume or click to browse</p>
-              <p className="text-xs text-gray-400 mt-1">PDF, DOC, DOCX · Max 5MB</p>
+              <p className="text-xs text-gray-400 mt-1">PDF, DOC, DOCX · Max 3MB</p>
               <input type="file" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} className="hidden" />
             </label>
             <div className="p-4 bg-teal-50/40 backdrop-blur-sm rounded-xl border border-teal-200/30">

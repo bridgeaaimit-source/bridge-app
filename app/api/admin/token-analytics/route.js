@@ -1,10 +1,58 @@
 import { adminDb } from '@/lib/firebase-admin';
+import * as admin from 'firebase-admin';
 import {
-  calcLLMCostINR,
+  calcLLMCost,
   estimateHistoricalCostINR,
   FEATURE_DEFAULT_MODEL,
-  MODEL_PRICING
+  getModelPricing,
+  USD_TO_INR,
 } from '@/lib/modelPricing';
+
+// Keys on a daily usage doc that are not feature token counters.
+const META_KEYS = new Set(['userId', 'date', 'total', 'totalTokens', 'lastUsed', 'lastUpdated', 'calls', 'cost_usd']);
+const SUFFIXES = ['_input', '_output', '_model', '_models', '_calls', '_cost_usd'];
+
+function isFeatureKey(key, val) {
+  return typeof val === 'number' && !META_KEYS.has(key) && !SUFFIXES.some(s => key.endsWith(s));
+}
+
+// Same day key as lib/tokenTrackerServer.js (India time).
+function istDateKey(date = new Date()) {
+  return new Date(date.getTime() + 5.5 * 60 * 60 * 1000).toISOString().split('T')[0];
+}
+
+function buildDateList({ days, startDate, endDate }) {
+  const list = [];
+  const valid = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+  if (valid(startDate) && valid(endDate) && startDate <= endDate) {
+    const d = new Date(`${startDate}T00:00:00Z`);
+    const end = new Date(`${endDate}T00:00:00Z`);
+    while (d <= end && list.length < 366) {
+      list.push(d.toISOString().split('T')[0]);
+      d.setUTCDate(d.getUTCDate() + 1);
+    }
+  }
+  if (list.length === 0) {
+    const n = Math.min(Math.max(parseInt(days, 10) || 30, 1), 366);
+    const today = new Date(`${istDateKey()}T00:00:00Z`);
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setUTCDate(d.getUTCDate() - i);
+      list.push(d.toISOString().split('T')[0]);
+    }
+  }
+  return list;
+}
+
+async function inChunks(items, size, fn) {
+  const out = [];
+  for (let i = 0; i < items.length; i += size) {
+    out.push(...(await Promise.all(items.slice(i, i + size).map(fn))));
+  }
+  return out;
+}
+
+const round = (n, dp = 2) => Number((n || 0).toFixed(dp));
 
 export async function POST(request) {
   try {
@@ -14,311 +62,311 @@ export async function POST(request) {
     // Validate admin secret
     const envKey = (process.env.ADMIN_SECRET_KEY || '').replace(/^["']|["']$/g, '').trim();
     const providedKey = (secretKey || '').trim();
-    
-    console.log('[TokenAnalytics] Key check:', { envKeyLen: envKey.length, providedKeyLen: providedKey.length, match: envKey === providedKey });
-    
     if (!envKey || providedKey !== envKey) {
       return Response.json({ error: 'Unauthorized — invalid secret key' }, { status: 401 });
     }
-
     if (!adminDb) {
       return Response.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
     }
 
-    // Build ordered date array (oldest → newest)
-    let datesToFetch = [];
-    const todayStr = new Date().toISOString().split('T')[0];
-
-    if (startDate && endDate) {
-      // Custom range: validate and build list
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      if (!isNaN(start) && !isNaN(end) && start <= end) {
-        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-          datesToFetch.push(d.toISOString().split('T')[0]);
-        }
-      }
-    }
-
-    if (datesToFetch.length === 0) {
-      // Fallback: preset days (newest → oldest, then we reverse at end)
-      for (let i = days - 1; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        datesToFetch.push(d.toISOString().split('T')[0]);
-      }
-    }
-
-    const effectiveDays = datesToFetch.length;
+    const datesToFetch = buildDateList({ days, startDate, endDate });
     const rangeStart = datesToFetch[0];
     const rangeEnd = datesToFetch[datesToFetch.length - 1];
+    const today = istDateKey();
 
-    const dailyData = [];
+    // ── 1. Read all days in parallel (LLM + voice) ──────────────────────────
+    const dayResults = await inChunks(datesToFetch, 20, async (dateStr) => {
+      const [llm, voice] = await Promise.all([
+        adminDb.collection('tokenUsage').doc('daily').collection(dateStr).get()
+          .catch(err => { console.error(`LLM usage read failed for ${dateStr}:`, err.message); return null; }),
+        adminDb.collection('tokenUsage').doc('voice').collection(dateStr).get()
+          .catch(err => { console.error(`Voice usage read failed for ${dateStr}:`, err.message); return null; }),
+      ]);
+      return { dateStr, llm, voice };
+    });
+
     const userMap = new Map();
-    const featureDetailMap = new Map();
-    const today = todayStr;
+    const featureMap = new Map();
+    const dailyData = [];
+    let totalTokens = 0, totalCalls = 0, totalLLMCostINR = 0;
+    let totalTTSChars = 0, totalTTSCostINR = 0, totalTTSCalls = 0;
+    let exactDaysCount = 0, estimatedDaysCount = 0;
 
-    let totalTokens = 0;
-    let totalLLMCostINR = 0;
-    let totalTTSChars = 0;
-    let totalTTSCostINR = 0;
-    let totalSTTSeconds = 0;
-    let totalSTTCostINR = 0;
-    
-    let exactDaysCount = 0;
-    let estimatedDaysCount = 0;
+    const getUser = (uid, dateStr) => {
+      if (!userMap.has(uid)) {
+        userMap.set(uid, {
+          userId: uid, name: uid, email: '', college: '', role: '',
+          total: 0, calls: 0, llmCostINR: 0, voiceCostINR: 0, voiceChars: 0,
+          features: {}, featureDetail: {}, days: new Set(),
+          firstSeen: dateStr, lastSeen: dateStr,
+        });
+      }
+      const u = userMap.get(uid);
+      u.days.add(dateStr);
+      if (dateStr > u.lastSeen) u.lastSeen = dateStr;
+      if (dateStr < u.firstSeen) u.firstSeen = dateStr;
+      return u;
+    };
 
-    // Iterate over each day in the computed date list
-    for (const dateStr of datesToFetch) {
-
-      let dayTotalTokens = 0;
-      let dayLLMCostINR = 0;
-      let dayTTSChars = 0;
-      let dayTTSCostINR = 0;
-      let daySTTSeconds = 0;
-      let daySTTCostINR = 0;
+    for (const { dateStr, llm, voice } of dayResults) {
+      let dayTokens = 0, dayCalls = 0, dayLLM = 0, dayTTS = 0;
+      let dayExact = false, dayEstimated = false;
       const dayUsers = new Set();
-      
-      let dayHasExactLLM = false;
-      let dayHasEstimatedLLM = false;
 
-      // 1. Fetch LLM token usage
-      try {
-        const snapshot = await adminDb.collection('tokenUsage').doc('daily').collection(dateStr).get();
+      llm?.forEach(docSnap => {
+        const data = docSnap.data();
+        const uid = docSnap.id;
+        dayUsers.add(uid);
+        const u = getUser(uid, dateStr);
 
-        snapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          const uid = docSnap.id;
-          dayUsers.add(uid);
+        for (const [key, val] of Object.entries(data)) {
+          if (!isFeatureKey(key, val) || val <= 0) continue;
+          const tokens = val;
+          const inputTokens = data[`${key}_input`] || 0;
+          const outputTokens = data[`${key}_output`] || 0;
+          const calls = data[`${key}_calls`] || 0;
+          const models = Array.isArray(data[`${key}_models`]) && data[`${key}_models`].length
+            ? data[`${key}_models`]
+            : [data[`${key}_model`] || FEATURE_DEFAULT_MODEL[key] || 'claude-sonnet-4-5'];
 
-          // Build/update user map
-          if (!userMap.has(uid)) {
-            userMap.set(uid, {
-              userId: uid,
-              name: uid,
-              email: '',
-              total: 0,
-              totalCostINR: 0,
-              features: {},
-              days: new Set(),
-              firstSeen: dateStr,
-              lastSeen: dateStr,
-              requestCount: 0,
-            });
+          let costINR, estimated;
+          if (typeof data[`${key}_cost_usd`] === 'number') {
+            // Exact: priced per call with the real model when it was logged.
+            costINR = data[`${key}_cost_usd`] * USD_TO_INR;
+            estimated = false;
+          } else if (inputTokens > 0 || outputTokens > 0) {
+            const c = calcLLMCost(inputTokens, outputTokens, models[models.length - 1]);
+            costINR = c.costINR;
+            estimated = c.isEstimated;
+          } else {
+            costINR = estimateHistoricalCostINR(tokens, key).costINR;
+            estimated = true;
           }
-          const u = userMap.get(uid);
-          u.days.add(dateStr);
-          if (dateStr > u.lastSeen) u.lastSeen = dateStr;
-          if (dateStr < u.firstSeen) u.firstSeen = dateStr;
+          if (estimated) dayEstimated = true; else dayExact = true;
 
-          // For each key, if it represents a normalized feature
-          Object.entries(data).forEach(([key, val]) => {
-            // A feature key is a string representing a number, and isn't special or suffix
-            if (
-              !['userId', 'date', 'total', 'totalTokens', 'lastUsed', 'lastUpdated'].includes(key) &&
-              !key.endsWith('_input') &&
-              !key.endsWith('_output') &&
-              !key.endsWith('_model') &&
-              typeof val === 'number'
-            ) {
-              const tokens = val;
-              const inputTokens = data[`${key}_input`] || 0;
-              const outputTokens = data[`${key}_output`] || 0;
-              const modelSlug = data[`${key}_model`] || FEATURE_DEFAULT_MODEL[key] || 'claude-sonnet-4-5';
+          dayTokens += tokens;
+          dayCalls += calls;
+          dayLLM += costINR;
 
-              let costInfo;
-              if (inputTokens > 0 || outputTokens > 0) {
-                costInfo = calcLLMCostINR(inputTokens, outputTokens, modelSlug);
-                dayHasExactLLM = true;
-              } else if (tokens > 0) {
-                costInfo = estimateHistoricalCostINR(tokens, key);
-                dayHasEstimatedLLM = true;
-              }
+          u.total += tokens;
+          u.calls += calls;
+          u.llmCostINR += costINR;
+          u.features[key] = (u.features[key] || 0) + tokens;
+          const fd = u.featureDetail[key] || (u.featureDetail[key] = { tokens: 0, calls: 0, costINR: 0 });
+          fd.tokens += tokens;
+          fd.calls += calls;
+          fd.costINR += costINR;
 
-              if (costInfo) {
-                dayLLMCostINR += costInfo.costINR;
-                u.totalCostINR += costInfo.costINR;
-                
-                // Aggregate feature breakdown
-                let feat = featureDetailMap.get(key);
-                if (!feat) {
-                  feat = {
-                    feature: key,
-                    tokens: 0,
-                    inputTokens: 0,
-                    outputTokens: 0,
-                    modelSlug: modelSlug,
-                    vendor: MODEL_PRICING[modelSlug]?.vendor || 'Anthropic',
-                    costINR: 0,
-                    isEstimated: false
-                  };
-                  featureDetailMap.set(key, feat);
-                }
-                feat.tokens += tokens;
-                feat.inputTokens += inputTokens || Math.round(tokens * 0.7);
-                feat.outputTokens += outputTokens || Math.round(tokens * 0.3);
-                feat.costINR += costInfo.costINR;
-                if (costInfo.isEstimated) {
-                  feat.isEstimated = true;
-                }
-                // Update model slug to a real tracked one if available
-                if (data[`${key}_model`]) {
-                  feat.modelSlug = modelSlug;
-                  feat.vendor = MODEL_PRICING[modelSlug]?.vendor || 'Anthropic';
-                }
-              }
-
-              u.total += tokens;
-              u.features[key] = (u.features[key] || 0) + tokens;
-              u.requestCount++;
-              dayTotalTokens += tokens;
-            }
-          });
-        });
-      } catch (err) {
-        console.error(`Error fetching LLM daily usage for ${dateStr}:`, err.message);
-      }
-
-      // 2. Fetch TTS/STT usage
-      try {
-        const voiceSnapshot = await adminDb.collection('tokenUsage').doc('voice').collection(dateStr).get();
-        voiceSnapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          const uid = docSnap.id;
-          dayUsers.add(uid);
-
-          const ttsChars = data.tts_chars || 0;
-          const ttsCost = data.tts_cost_inr || 0;
-          const sttSeconds = data.stt_seconds || 0;
-          const sttCost = data.stt_cost_inr || 0;
-
-          dayTTSChars += ttsChars;
-          dayTTSCostINR += ttsCost;
-          daySTTSeconds += sttSeconds;
-          daySTTCostINR += sttCost;
-
-          // Build/update user map for voice
-          if (!userMap.has(uid)) {
-            userMap.set(uid, {
-              userId: uid,
-              name: uid,
-              email: '',
-              total: 0,
-              totalCostINR: 0,
-              features: {},
-              days: new Set(),
-              firstSeen: dateStr,
-              lastSeen: dateStr,
-              requestCount: 0,
-            });
+          let feat = featureMap.get(key);
+          if (!feat) {
+            feat = { feature: key, tokens: 0, inputTokens: 0, outputTokens: 0, calls: 0, costINR: 0, models: new Set(), users: new Set(), isEstimated: false };
+            featureMap.set(key, feat);
           }
-          const u = userMap.get(uid);
-          u.totalCostINR += ttsCost + sttCost;
-          u.days.add(dateStr);
-          if (dateStr > u.lastSeen) u.lastSeen = dateStr;
-          if (dateStr < u.firstSeen) u.firstSeen = dateStr;
-        });
-      } catch (err) {
-        console.error(`Error fetching voice usage for ${dateStr}:`, err.message);
-      }
+          feat.tokens += tokens;
+          feat.inputTokens += inputTokens || Math.round(tokens * 0.7);
+          feat.outputTokens += outputTokens || Math.round(tokens * 0.3);
+          feat.calls += calls;
+          feat.costINR += costINR;
+          feat.users.add(uid);
+          models.forEach(m => feat.models.add(m));
+          if (estimated) feat.isEstimated = true;
+        }
+      });
 
-      totalTokens += dayTotalTokens;
-      totalLLMCostINR += dayLLMCostINR;
-      totalTTSChars += dayTTSChars;
-      totalTTSCostINR += dayTTSCostINR;
-      totalSTTSeconds += daySTTSeconds;
-      totalSTTCostINR += daySTTCostINR;
+      voice?.forEach(docSnap => {
+        const data = docSnap.data();
+        const uid = docSnap.id;
+        const chars = data.tts_chars || 0;
+        const cost = data.tts_cost_inr || 0;
+        if (!chars && !cost) return;
+        dayUsers.add(uid);
+        const u = getUser(uid, dateStr);
+        u.voiceCostINR += cost;
+        u.voiceChars += chars;
+        u.calls += data.tts_calls || 0;
+        dayTTS += cost;
+        dayCalls += data.tts_calls || 0;
+        totalTTSChars += chars;
+        totalTTSCalls += data.tts_calls || 0;
+      });
 
-      if (dayHasExactLLM) {
-        exactDaysCount++;
-      } else if (dayHasEstimatedLLM) {
-        estimatedDaysCount++;
-      }
+      totalTokens += dayTokens;
+      totalCalls += dayCalls;
+      totalLLMCostINR += dayLLM;
+      totalTTSCostINR += dayTTS;
+      if (dayExact) exactDaysCount++;
+      else if (dayEstimated) estimatedDaysCount++;
 
       dailyData.push({
         date: dateStr,
-        total: dayTotalTokens,
+        total: dayTokens,
+        calls: dayCalls,
         users: dayUsers.size,
-        llmCostINR: dayLLMCostINR,
-        ttsCostINR: dayTTSCostINR,
-        sttCostINR: daySTTCostINR,
-        totalCostINR: dayLLMCostINR + dayTTSCostINR + daySTTCostINR,
+        llmCostINR: dayLLM,
+        ttsCostINR: dayTTS,
+        sttCostINR: 0,
+        totalCostINR: dayLLM + dayTTS,
         isToday: dateStr === today,
       });
     }
 
-    // Fetch user profile info from Firestore (names, emails)
-    const uids = Array.from(userMap.keys());
-    const batchSize = 10;
-    for (let i = 0; i < uids.length; i += batchSize) {
-      const batch = uids.slice(i, i + batchSize);
-      await Promise.all(batch.map(async (uid) => {
-        try {
-          const snap = await adminDb.collection('users').doc(uid).get();
-          if (snap.exists) {
-            const d = snap.data();
-            const u = userMap.get(uid);
-            u.name = d.name || d.displayName || d.email || uid;
-            u.email = d.email || '';
-          }
-        } catch {}
-      }));
+    // ── 2. Names and emails for everyone in the period ──────────────────────
+    const realUids = Array.from(userMap.keys()).filter(uid => !['anonymous', 'system'].includes(uid));
+    const profiles = new Map();
+    for (let i = 0; i < realUids.length; i += 100) {
+      const refs = realUids.slice(i, i + 100).map(uid => adminDb.collection('users').doc(uid));
+      try {
+        const snaps = await adminDb.getAll(...refs);
+        snaps.forEach(s => { if (s.exists) profiles.set(s.id, s.data()); });
+      } catch (err) {
+        console.error('User profile lookup failed:', err.message);
+      }
+    }
+    const nameFor = (uid) => {
+      if (uid === 'anonymous') return 'Unknown (not signed in)';
+      if (uid === 'system') return 'System (scheduled jobs)';
+      const p = profiles.get(uid);
+      return p?.name || p?.displayName || p?.fullName || p?.email || uid;
+    };
+    for (const [uid, u] of userMap) {
+      const p = profiles.get(uid);
+      u.name = nameFor(uid);
+      u.email = p?.email || '';
+      u.college = p?.college || p?.collegeName || p?.institution || '';
+      u.role = p?.role || '';
     }
 
-    const sortedUsers = Array.from(userMap.values())
-      .map(u => ({ ...u, days: u.days.size, totalCostINR: u.totalCostINR.toFixed(2) }))
-      .sort((a, b) => b.total - a.total);
+    // ── 3. Call-by-call log (from the new tracker onwards) ──────────────────
+    let recentCalls = [];
+    try {
+      const startTs = admin.firestore.Timestamp.fromDate(new Date(`${rangeStart}T00:00:00+05:30`));
+      const endTs = admin.firestore.Timestamp.fromDate(new Date(`${rangeEnd}T23:59:59.999+05:30`));
+      const snap = await adminDb.collection('apiUsageLog')
+        .where('createdAt', '>=', startTs)
+        .where('createdAt', '<=', endTs)
+        .orderBy('createdAt', 'desc')
+        .limit(500)
+        .get();
+      recentCalls = snap.docs.map(d => {
+        const c = d.data();
+        return {
+          id: d.id,
+          time: c.createdAt?.toDate?.().toISOString() || null,
+          userId: c.userId,
+          name: nameFor(c.userId),
+          email: profiles.get(c.userId)?.email || '',
+          kind: c.kind || 'llm',
+          feature: c.feature,
+          model: c.model,
+          inputTokens: c.inputTokens || 0,
+          outputTokens: c.outputTokens || 0,
+          chars: c.chars || 0,
+          costINR: round(c.costINR, 4),
+          costUSD: round(c.costUSD, 5),
+        };
+      });
+      // Names for log entries outside the daily docs (rare)
+      const missing = [...new Set(recentCalls.map(c => c.userId))]
+        .filter(uid => uid && !profiles.has(uid) && !['anonymous', 'system'].includes(uid));
+      if (missing.length) {
+        const snaps = await adminDb.getAll(...missing.slice(0, 100).map(uid => adminDb.collection('users').doc(uid)));
+        snaps.forEach(s => { if (s.exists) profiles.set(s.id, s.data()); });
+        recentCalls.forEach(c => { c.name = nameFor(c.userId); c.email = profiles.get(c.userId)?.email || ''; });
+      }
+    } catch (err) {
+      console.error('API call log read failed:', err.message);
+    }
 
-    const reversedDaily = dailyData; // already oldest→newest order
-    const todayEntry = reversedDaily.find(d => d.isToday);
-    const avgDaily = totalTokens / Math.max(effectiveDays, 1);
+    // ── 4. Shape the response ────────────────────────────────────────────────
+    const combinedTotalCost = totalLLMCostINR + totalTTSCostINR;
+    const users = Array.from(userMap.values())
+      .map(u => {
+        const cost = u.llmCostINR + u.voiceCostINR;
+        return {
+          ...u,
+          days: u.days.size,
+          llmCostINR: round(u.llmCostINR, 2),
+          voiceCostINR: round(u.voiceCostINR, 2),
+          totalCostINR: cost.toFixed(2),
+          totalCostUSD: round(cost / USD_TO_INR, 3),
+          featureDetail: Object.fromEntries(Object.entries(u.featureDetail).map(([k, v]) => [k, { ...v, costINR: round(v.costINR, 2) }])),
+        };
+      })
+      .sort((a, b) =>
+        // Named students first; unknown/system rows at the bottom
+        (['anonymous', 'system'].includes(a.userId) - ['anonymous', 'system'].includes(b.userId)) ||
+        parseFloat(b.totalCostINR) - parseFloat(a.totalCostINR) || b.total - a.total);
 
-    const featureBreakdown = Array.from(featureDetailMap.values())
-      .map(feat => ({
-        ...feat,
-        percentage: totalTokens > 0 ? ((feat.tokens / totalTokens) * 100).toFixed(1) : '0.0',
-        costINR: feat.costINR.toFixed(2),
-      }))
-      .sort((a, b) => b.tokens - a.tokens);
+    const features = Array.from(featureMap.values())
+      .map(f => {
+        const models = Array.from(f.models);
+        const mainModel = models[models.length - 1];
+        return {
+          feature: f.feature,
+          tokens: f.tokens,
+          inputTokens: f.inputTokens,
+          outputTokens: f.outputTokens,
+          calls: f.calls,
+          users: f.users.size,
+          models,
+          modelSlug: models.join(', '),
+          vendor: getModelPricing(mainModel)?.vendor || 'Anthropic',
+          isEstimated: f.isEstimated,
+          percentage: totalTokens > 0 ? ((f.tokens / totalTokens) * 100).toFixed(1) : '0.0',
+          costINR: f.costINR.toFixed(2),
+          costUSD: round(f.costINR / USD_TO_INR, 3),
+          costPerCallINR: f.calls > 0 ? round(f.costINR / f.calls, 3) : null,
+        };
+      })
+      .sort((a, b) => parseFloat(b.costINR) - parseFloat(a.costINR));
 
-    // Compute alerts
+    const todayEntry = dailyData.find(d => d.isToday);
+    const avgDaily = totalTokens / Math.max(datesToFetch.length, 1);
+    const anonymous = userMap.get('anonymous');
+
     const alerts = [];
-    if (todayEntry && todayEntry.total > avgDaily * 2) {
-      alerts.push({ type: 'warning', message: `Today's LLM usage (${todayEntry.total.toLocaleString()}) is ${(todayEntry.total / avgDaily).toFixed(1)}x the daily average` });
+    if (todayEntry && avgDaily > 0 && todayEntry.total > avgDaily * 2) {
+      alerts.push({ type: 'warning', message: `Today's AI usage (${todayEntry.total.toLocaleString()} tokens) is ${(todayEntry.total / avgDaily).toFixed(1)}x the daily average` });
     }
-    if (sortedUsers.length > 0 && parseFloat(sortedUsers[0].total) > totalTokens * 0.4) {
-      alerts.push({ type: 'warning', message: `${sortedUsers[0].name} accounts for ${((sortedUsers[0].total / totalTokens) * 100).toFixed(0)}% of all LLM usage` });
+    const topUser = users.find(u => u.userId !== 'anonymous');
+    if (topUser && combinedTotalCost > 0 && parseFloat(topUser.totalCostINR) > combinedTotalCost * 0.4) {
+      alerts.push({ type: 'warning', message: `${topUser.name} accounts for ${((parseFloat(topUser.totalCostINR) / combinedTotalCost) * 100).toFixed(0)}% of all AI cost` });
     }
-    const combinedTotalCost = totalLLMCostINR + totalTTSCostINR + totalSTTCostINR;
     if (combinedTotalCost > 500) {
-      alerts.push({ type: 'caution', message: `Total system cost is ₹${combinedTotalCost.toFixed(0)} in ${effectiveDays} days` });
+      alerts.push({ type: 'caution', message: `Total AI cost is ₹${combinedTotalCost.toFixed(0)} in ${datesToFetch.length} days` });
     }
 
     return Response.json({
       summary: {
         totalTokens,
-        totalUsers: sortedUsers.length,
-        avgPerUser: sortedUsers.length > 0 ? Math.round(totalTokens / sortedUsers.length) : 0,
+        totalCalls,
+        totalUsers: users.filter(u => u.userId !== 'anonymous').length,
+        avgPerUser: users.length > 0 ? Math.round(totalTokens / users.length) : 0,
         todayTokens: todayEntry?.total || 0,
+        todayCostINR: round(todayEntry?.totalCostINR || 0, 2),
         avgDailyTokens: Math.round(avgDaily),
-        period: effectiveDays,
-        dateRange: { start: rangeStart, end: rangeEnd, days: effectiveDays },
-        // New model-aware cost summaries
+        period: datesToFetch.length,
+        dateRange: { start: rangeStart, end: rangeEnd, days: datesToFetch.length },
         totalLLMCostINR: totalLLMCostINR.toFixed(2),
         totalTTSCostINR: totalTTSCostINR.toFixed(2),
-        totalSTTCostINR: totalSTTCostINR.toFixed(2),
+        totalSTTCostINR: '0.00',
         totalCostINR: combinedTotalCost.toFixed(2),
+        totalCostUSD: round(combinedTotalCost / USD_TO_INR, 2),
+        anonymousCostINR: round((anonymous?.llmCostINR || 0) + (anonymous?.voiceCostINR || 0), 2),
         exactDaysCount,
         estimatedDaysCount,
+        usdToInr: USD_TO_INR,
       },
-      daily: reversedDaily,
-      users: sortedUsers.slice(0, 50),
-      features: featureBreakdown,
+      daily: dailyData,
+      users,
+      features,
+      recentCalls,
       voiceSummary: {
         ttsChars: totalTTSChars,
+        ttsCalls: totalTTSCalls,
         ttsCostINR: totalTTSCostINR,
-        sttSeconds: totalSTTSeconds,
-        sttCostINR: totalSTTCostINR,
+        sttSeconds: 0,
+        sttCostINR: 0,
       },
       alerts,
     });

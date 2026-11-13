@@ -1,25 +1,14 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { trackTokensServer } from '@/lib/tokenTrackerServer';
+import { normalizeEvaluation } from '@/lib/interviewEval';
 
-
-
-
-
+// Results are saved by the interview page once the whole interview is finished
+// (signed-in user, users/{uid}/interview_feedback). This route only generates
+// questions and evaluates answers.
 export async function POST(request) {
   try {
-    console.log('ANTHROPIC KEY:', process.env.ANTHROPIC_API_KEY?.substring(0, 15));
-    
     const body = await request.json();
-    const { question, answer, domain, count, uid, sessionId } = body;
-    
-    console.log('=== API ROUTE HIT ===');
-    console.log('Body:', { question, answer, domain, count });
-    console.log('Has API key:', !!process.env.ANTHROPIC_API_KEY);
-    console.log('API Key first 10 chars:', process.env.ANTHROPIC_API_KEY?.substring(0, 10));
-    console.log('Raw env var:', process.env.ANTHROPIC_API_KEY);
-    console.log('NewsAPI key exists:', !!process.env.NEWS_API_KEY);
+    const { question, answer, domain, count, uid } = body;
 
     let client = null;
     if (process.env.ANTHROPIC_API_KEY) {
@@ -34,9 +23,10 @@ export async function POST(request) {
 
     // Generate questions
     if (count && domain && !answer) {
-      const prompt = `Generate ${count} realistic interview questions 
-for ${domain} role at Indian companies like TCS, Infosys, Wipro.
-Mix HR and technical questions for freshers.
+      const prompt = `Generate ${count} realistic interview questions
+for a fresher ${domain} role at Indian companies.
+Mix HR and domain questions for freshers.
+Do not name any specific company in the questions; say "our company" instead.
 
 IMPORTANT: Return ONLY valid JSON format. No markdown, no extra text.
 Format exactly like this:
@@ -68,16 +58,13 @@ Now generate the questions:`;
           .replace(/```json/g, '')
           .replace(/```/g, '')
           .trim();
-        
-        console.log('Questions response:', text);
-        
+
         try {
           const parsed = JSON.parse(text);
           return Response.json(parsed);
         } catch (parseError) {
-          console.error('JSON parse error:', parseError);
-          console.error('Raw text:', text);
-          
+          console.error('Question JSON parse error:', parseError.message);
+
           // Fallback: try to extract questions manually
           const questionMatch = text.match(/"questions":\s*\[(.*?)\]/s);
           if (questionMatch) {
@@ -199,8 +186,8 @@ Return ONLY valid JSON, no markdown, no extra text:
     "has_conclusion": (true/false based on actual answer),
     "rating": "Poor/Average/Good/Excellent"
   },
-  "weak_language": (find in actual answer),
-  "strong_language": (find in actual answer),
+  "weak_language": ["weak phrase quoted from the actual answer"],
+  "strong_language": ["strong phrase quoted from the actual answer"],
   "strengths": [
     "specific strength quoting actual answer words"
   ],
@@ -211,124 +198,52 @@ Return ONLY valid JSON, no markdown, no extra text:
   ],
   "filler_feedback": "specific filler feedback for this answer",
   "structure_feedback": "specific structure feedback",
-  "better_answer": "model answer for ${question} in ${domain} context, 
-    150 words, professional, Indian fresher context"
-}`;
+  "better_answer": "model answer for ${question} in ${domain} context,
+    120 words, professional, Indian fresher context"
+}
 
-      let analysis;
-      try {
-        if (!client) {
-          throw new Error('Anthropic client is not initialized (missing API key)');
-        }
-        const message = await client.messages.create({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 2000,
-          messages: [{ role: 'user', content: prompt }]
-        });
+Rules for better_answer: never invent company names, numbers, percentages,
+money amounts or certificates. Where the student's own details belong, write
+placeholders such as [your company], [your project] or [a number from your work].
+Use an empty list [] when nothing applies; never write "NONE FOUND".`;
 
-        // Track token usage
-        await trackTokensServer(uid || 'anonymous', 'interview', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-haiku-4-5-20251001');
-
-        const text = message.content[0].text
-          .replace(/```json/g, '')
-          .replace(/```/g, '')
-          .trim();
-        
-        console.log('Analysis response:', text);
-        
-        try {
-          analysis = JSON.parse(text);
-        } catch (parseError) {
-          console.error('JSON parse error for analysis:', parseError);
-          console.error('Raw text:', text);
-          
-          // Fallback: create a basic analysis object
-          analysis = {
-            score: 5,
-            confidence: 5,
-            content: 5,
-            clarity: 5,
-            overall_feedback: "AI analysis temporarily unavailable. Please try again.",
-            strengths: ["Answer provided"],
-            improvements: ["Try again with more details"],
-            filler_words: { found: foundFillers, count: foundFillers.length, examples: foundFillers.join(', ') },
-            filler_feedback: "No filler analysis available",
-            structure_feedback: "No structure analysis available",
-            better_answer: "A comprehensive answer would include specific examples and details."
-          };
-        }
-      } catch (claudeError) {
-        console.warn('⚠️ interview analysis Claude API failed, using mock evaluation fallback:', claudeError.message);
-        analysis = {
-          score: wordCount < 15 ? 4 : 7,
-          confidence: foundFillers.length > 3 ? 5 : 7,
-          content: wordCount < 20 ? 4 : 7,
-          clarity: 7,
-          communication: 7,
-          word_count: wordCount,
-          filler_words: {
-            found: foundFillers,
-            count: foundFillers.length,
-            examples: foundFillers.join(', ')
-          },
-          structure: {
-            has_opening: wordCount > 10,
-            has_examples: wordCount > 25,
-            has_conclusion: wordCount > 40,
-            rating: wordCount < 20 ? "Poor" : "Good"
-          },
-          weak_language: foundFillers.slice(0, 2).join(', ') || 'none',
-          strong_language: 'relevant terms',
-          strengths: ["Communicated ideas clearly", "Provided a prompt response"],
-          improvements: ["Use specific STAR examples", "Provide more depth in answers"],
-          filler_feedback: foundFillers.length > 0 ? `Try to reduce the use of filler words like ${foundFillers.slice(0, 2).join(', ')}.` : "Great job avoiding filler words!",
-          structure_feedback: wordCount < 20 ? "Your answer is short. Try using the STAR method to structure it." : "Good basic structure, keep practicing to detail your points.",
-          better_answer: `A stronger response for this question would be: "When faced with ${question.substring(0, 20)}..., I structured my approach by first understanding the situation, defining my role, taking specific actions, and analyzing the final positive results. This allowed me to achieve the goal efficiently."`
-        };
+      if (!client) {
+        return Response.json(
+          { error: 'Answer evaluation is unavailable right now. Please try again in a minute.' },
+          { status: 503 }
+        );
       }
 
-      // Save interview results to Firestore if uid provided
-      if (uid && sessionId) {
+      // Up to two attempts; never invent a score if the AI fails.
+      let analysis = null;
+      for (let attempt = 1; attempt <= 2 && !analysis; attempt++) {
         try {
-          // Save session data
-          const sessionRef = doc(db, 'interviews', uid, 'sessions', sessionId);
-          await setDoc(sessionRef, {
-            domain,
-            score: analysis.score,
-            date: new Date().toISOString(),
-            questionsCount: 1,
-            fillerWords: analysis.filler_words ? analysis.filler_words.count : 0,
-            feedback: analysis.better_answer
+          const message = await client.messages.create({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 2000,
+            messages: [{ role: 'user', content: prompt }]
           });
-          
-          // Update user document
-          const userRef = doc(db, 'users', uid);
-          const userSnap = await getDoc(userRef);
-          
-          if (userSnap.exists()) {
-            const userData = userSnap.data();
-            const scoreIncrease = analysis.score * 10;
-            const newBridgeScore = Math.min(1000, 
-              Math.max(0, 
-                (userData.bridgeScore || 500) + scoreIncrease
-              )
-            );
-            const newInterviewsDone = (userData.interviewsDone || 0) + 1;
-            const newAvgScore = ((userData.avgScore || 0) * (userData.interviewsDone || 0) + analysis.score) / newInterviewsDone;
-            
-            await updateDoc(userRef, {
-              bridgeScore: Math.round(newBridgeScore),
-              interviewsDone: newInterviewsDone,
-              avgScore: newAvgScore,
-              streak: (userData.streak || 0) + 1
-            });
-          }
-        } catch (firestoreError) {
-          console.error('Error saving to Firestore:', firestoreError);
-          // Don't fail the API response if Firestore fails
+
+          await trackTokensServer(uid || 'anonymous', 'interview', message.usage?.input_tokens, message.usage?.output_tokens, 'claude-haiku-4-5-20251001');
+
+          const text = message.content[0].text
+            .replace(/```json/g, '')
+            .replace(/```/g, '')
+            .trim();
+          const jsonText = text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
+          analysis = normalizeEvaluation(JSON.parse(jsonText), { detectedFillers: foundFillers, wordCount });
+        } catch (err) {
+          console.error(`Interview evaluation attempt ${attempt} failed:`, err.message);
         }
       }
-      
+
+      if (!analysis) {
+        return Response.json(
+          { error: 'We could not evaluate this answer. Please try again.' },
+          { status: 502 }
+        );
+      }
+
       return Response.json(analysis);
     }
 

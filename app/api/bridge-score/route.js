@@ -28,7 +28,7 @@ export async function GET(request) {
       });
     }
 
-    // Safely query Aptitude Records from root collection (with fallback for missing composite index)
+    const load_aptitudeRecords = async () => {
     let aptitudeRecords = [];
     try {
       let snap;
@@ -68,8 +68,10 @@ export async function GET(request) {
     } catch (e) {
       console.warn('[BridgeScore API] Aptitude fetch warning:', e.message);
     }
+    return aptitudeRecords;
+    };
 
-    // Safely query Smart Interview Records
+    const load_interviewRecords = async () => {
     let interviewRecords = [];
     try {
       let snap;
@@ -122,8 +124,10 @@ export async function GET(request) {
     } catch (e) {
       console.warn('[BridgeScore API] Interview fetch warning:', e.message);
     }
+    return interviewRecords;
+    };
 
-    // Safely query GD Records
+    const load_gdRecords = async () => {
     let gdRecords = [];
     try {
       let snap;
@@ -148,8 +152,10 @@ export async function GET(request) {
     } catch (e) {
       console.warn('[BridgeScore API] GD fetch warning:', e.message);
     }
+    return gdRecords;
+    };
 
-    // Safely query Historical Bridge Scores
+    const load_historicalBridgeScores = async () => {
     let historicalBridgeScores = [];
     try {
       let snap;
@@ -174,6 +180,20 @@ export async function GET(request) {
     } catch (e) {
       console.warn('[BridgeScore API] Historical scores fetch warning:', e.message);
     }
+    return historicalBridgeScores;
+    };
+
+    // All reads in parallel (they used to run one after another)
+    const [aptitudeRecords, interviewRecords, gdRecords, historicalBridgeScores, calculatedStreak] = await Promise.all([
+      load_aptitudeRecords(),
+      load_interviewRecords(),
+      load_gdRecords(),
+      load_historicalBridgeScores(),
+      calculateCurrentStreak(userId, adminDb).catch((e) => {
+        console.warn('[BridgeScore API] Streak calculation warning:', e.message);
+        return 0;
+      }),
+    ]);
 
     const candidateData = {
       aptitudeRecords,
@@ -183,23 +203,19 @@ export async function GET(request) {
     };
 
     const bridgeScoreResult = calculateBridgeScore(candidateData);
-    
-    let calculatedStreak = 0;
-    try {
-      calculatedStreak = await calculateCurrentStreak(userId, adminDb);
-    } catch (e) {
-      console.warn('[BridgeScore API] Streak calculation warning:', e.message);
-    }
 
     // Save the new score calculation asynchronously (fire and forget)
     // Only save if it's a valid calculated score (not null from empty data)
     if (bridgeScoreResult.score !== null) {
       const userRef = adminDb.collection('users').doc(userId);
+      // historicalBridgeScores is oldest -> newest; only record a new history point
+      // when the score actually changed (previously every page view added one).
+      const lastRecorded = historicalBridgeScores[historicalBridgeScores.length - 1];
+      const scoreChanged = lastRecorded !== bridgeScoreResult.score;
       Promise.all([
-        userRef.collection('bridge_scores').add({
-          ...bridgeScoreResult,
-          createdAt: new Date()
-        }),
+        scoreChanged
+          ? userRef.collection('bridge_scores').add({ ...bridgeScoreResult, createdAt: new Date() })
+          : Promise.resolve(),
         userRef.set({
           bridgeScore: bridgeScoreResult.score,
           breakdown: bridgeScoreResult.breakdown,

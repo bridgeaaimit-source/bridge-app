@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { trackTokensServer } from '@/lib/tokenTrackerServer';
+import { extractJson } from '@/lib/extractJson';
 
 const MOCK_JSEARCH_JOBS = [
   {
@@ -118,7 +119,7 @@ Return ONLY valid JSON:
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-5',
-      max_tokens: 1500,
+      max_tokens: 3000,
       messages: [{
         role: 'user',
         content: [
@@ -144,9 +145,9 @@ Return ONLY valid JSON:
       .trim();
 
     try {
-      return Response.json(JSON.parse(text));
+      return Response.json(extractJson(text));
     } catch (e) {
-      console.error('Error parsing profile JSON:', e.message, text);
+      console.error('Error parsing profile JSON:', e.message);
       return Response.json(
         { error: 'Could not extract profile. Please ensure the PDF is a valid resume containing your details.' },
         { status: 400 }

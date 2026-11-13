@@ -7,6 +7,7 @@ import AppShell from "@/components/AppShell";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { auth, db } from "@/lib/firebase";
+import { resumeFieldsForFirestore } from '@/lib/resumeStorage';
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, setDoc, collection, addDoc, query, orderBy, limit, getDocs, getDoc, updateDoc } from "firebase/firestore";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
@@ -57,6 +58,7 @@ function SmartInterviewContent() {
   const lastViolationTimeRef = useRef(0);
   // Fix 9: stable video element ref
   const liveVideoRef = useRef(null);
+  const presenceFramesRef = useRef([]); // a few webcam snapshots for the on-camera presence review
 
   // Interview state
   const [currentAnswer, setCurrentAnswer] = useState('');
@@ -173,6 +175,29 @@ function SmartInterviewContent() {
       liveVideoRef.current.srcObject = videoStream;
     }
   }, [videoStream]);
+
+  // Video mode: keep one small snapshot per answer (max 4) for the presence
+  // review in the final report. Taken a few seconds into the answer; sent
+  // once with the evaluation and never saved.
+  useEffect(() => {
+    if (state.status !== 'interviewing' || state.config.mode !== 'video' || !videoStream) return;
+    if (presenceFramesRef.current.length >= 4) return;
+    const timer = setTimeout(() => {
+      try {
+        const video = liveVideoRef.current;
+        if (!video || !video.videoWidth) return;
+        const width = 480;
+        const height = Math.round((video.videoHeight / video.videoWidth) * width);
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(video, 0, 0, width, height);
+        const data = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
+        if (data && data.length < 250000) presenceFramesRef.current.push(data);
+      } catch {}
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, [videoStream, state.status, state.config.mode]);
 
   // Stable violation handler
   const handleViolation = useCallback((type) => {
@@ -441,8 +466,8 @@ function SmartInterviewContent() {
     }
 
     // Check file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size must be less than 5MB');
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error('File size must be less than 3MB');
       return;
     }
 
@@ -475,9 +500,7 @@ function SmartInterviewContent() {
       if (user) {
         const dataUrl = `data:application/pdf;base64,${base64}`;
         const updateData = {
-          resumeUploaded: true,
-          resumeFileName: file.name,
-          resumeBase64: dataUrl,
+          ...resumeFieldsForFirestore(file.name, dataUrl),
           bridgeScore: scoreData.bridge_score || 0,
           updatedAt: new Date().toISOString()
         };
@@ -503,15 +526,15 @@ function SmartInterviewContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resume_base64: base64, file_type: fileExt, file_name: file.name, userId: user?.uid }),
       });
-      const data = await res.json();
-      if (res.ok && data.resumeText) {
-        dispatch({ type: 'SET_CONFIG', payload: { resumeText: data.resumeText } });
-      } else {
-        dispatch({ type: 'SET_CONFIG', payload: { resumeText: `Resume: ${file.name}` } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.resumeText) {
+        toast.error(data?.error || "We couldn't read this resume. Please upload a text-based PDF and try again.", { id: toastId });
+        return;
       }
+      dispatch({ type: 'SET_CONFIG', payload: { resumeText: data.resumeText } });
 
       setDbResumeUploaded(true);
-      toast.success('Resume validated and loaded successfully!', { id: toastId });
+      toast.success('Resume read successfully!', { id: toastId });
     } catch (error) {
       toast.error('Failed to upload and validate resume', { id: toastId });
       console.error('Resume upload error:', error);
@@ -934,7 +957,8 @@ function SmartInterviewContent() {
           round: state.config.round,
           session_memory: memoryObj,
           conversation_history: historyToUse,
-          user_id: auth.currentUser?.uid || 'test-user-123'
+          user_id: auth.currentUser?.uid || 'test-user-123',
+          presence_frames: state.config.mode === 'video' ? presenceFramesRef.current : [],
         }),
       });
 
@@ -1057,6 +1081,7 @@ function SmartInterviewContent() {
     lastHistorySnapshotRef.current = [];
     lastMemorySnapshotRef.current = null;
     fullTranscriptRef.current = '';
+    presenceFramesRef.current = [];
   };
 
   // ── Browser tab visibility recovery ──────────────────────────────────────
@@ -1158,7 +1183,7 @@ function SmartInterviewContent() {
                 )}
                 <input type="file" accept=".pdf" className="hidden" onChange={handleResumeUpload} disabled={loading} />
               </label>
-              <p className="text-xs text-slate-400 mt-3 font-medium">Max 5MB · PDF format only</p>
+              <p className="text-xs text-slate-400 mt-3 font-medium">Max 3MB · PDF format only</p>
             </div>
           </div>
         </AppShell>
@@ -1174,6 +1199,12 @@ function SmartInterviewContent() {
   // INTERVIEW SCREEN
   if (state.status === 'interviewing') {
     const isNextLocked = speakingTime < 10;
+    const interviewerRole = {
+      'Technical Round': 'Technical interviewer',
+      'HR Round': 'HR interviewer',
+      'Managerial Round': 'Hiring manager',
+      'Final Round': 'Placement panel lead',
+    }[state.config.round] || 'Interviewer';
     const totalExpectedQuestions = 10;
     const estimatedQuestionsRemaining = Math.max(0, totalExpectedQuestions - state.engine.questionNumber);
 
@@ -1218,99 +1249,114 @@ function SmartInterviewContent() {
             </button>
           </div>
 
-          {/* INTERVIEW PROGRESS TIMELINE */}
-          <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 mb-6 shadow-sm">
-            <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 tracking-wider mb-4 uppercase">
-              <span>Interview Timeline Progress</span>
-              <span className="text-[#00C4A7]">{estimatedQuestionsRemaining} Questions Est. Remaining</span>
-            </div>
-            <div className="flex gap-2 items-center overflow-x-auto pb-1.5">
+          {/* Progress through the interview */}
+          <div className="flex items-center gap-3 mb-6">
+            <ol className="flex-1 flex items-center gap-1.5" aria-label="Interview progress">
               {[...Array(totalExpectedQuestions)].map((_, i) => {
                 const qIndex = i + 1;
                 const active = state.engine.questionNumber === qIndex;
                 const completed = state.engine.questionNumber > qIndex;
                 return (
-                  <div key={i} className="flex items-center gap-2 shrink-0">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                      completed 
-                        ? 'bg-[#00C4A7] text-white shadow-sm' 
-                        : active 
-                        ? 'bg-[#6366F1] text-white ring-4 ring-[#6366F1]/10' 
-                        : 'bg-slate-50 border border-slate-200 text-slate-400'
-                    }`}>
-                      {completed ? "✓" : qIndex}
-                    </div>
-                    {qIndex < totalExpectedQuestions && (
-                      <div className={`w-6 h-0.5 ${completed ? 'bg-[#00C4A7]' : 'bg-slate-100'}`} />
-                    )}
-                  </div>
+                  <li
+                    key={i}
+                    className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                      completed ? 'bg-[#0D9488]' : active ? 'bg-[#0F3D3A]' : 'bg-slate-200'
+                    }`}
+                  />
                 );
               })}
-            </div>
+            </ol>
+            <span className="text-sm text-slate-500 shrink-0">
+              {estimatedQuestionsRemaining > 0 ? `About ${estimatedQuestionsRemaining} more` : 'Last question'}
+            </span>
           </div>
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow duration-300">
-                
-                {state.engine.interviewerThought && (
-                  <div className="bg-[#F8FAFC] border border-slate-200/60 rounded-xl p-4 mb-4 animate-fade-in">
-                    <p className="text-[10px] font-bold text-slate-400 tracking-wider uppercase mb-1">Recruiter Panel Context:</p>
-                    <p className="text-xs text-slate-600 leading-relaxed font-medium">{state.engine.interviewerThought}</p>
+              {/* Interviewer's side of the desk */}
+              <section className="rounded-3xl bg-[#0F3D3A] text-white p-6 md:p-9">
+                <div className="flex items-center gap-4 mb-6">
+                  <span className="relative flex items-center justify-center w-14 h-14 rounded-full bg-teal-200 text-[#0F3D3A] text-xl font-extrabold shrink-0" aria-hidden="true">
+                    {isSpeaking && <span className="absolute -inset-1.5 rounded-full border-2 border-teal-300/70 animate-ping motion-reduce:hidden" />}
+                    A
+                  </span>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-lg leading-tight">Ananya</div>
+                    <div className="text-sm text-teal-100/70">{interviewerRole} for {state.config.jobRole}</div>
                   </div>
+                  <div className="ml-auto flex items-center gap-3">
+                    <div className="hidden sm:flex items-center gap-2 text-sm text-teal-100/80" role="status">
+                      {isSpeaking && (
+                        <span className="flex items-end gap-0.5 h-4" aria-hidden="true">
+                          {[0, 1, 2, 3].map((i) => (
+                            <span key={i} className="w-1 bg-teal-200 rounded-full animate-pulse motion-reduce:animate-none" style={{ height: `${[60, 100, 45, 80][i]}%`, animationDelay: `${i * 0.15}s`, animationDuration: '0.7s' }} />
+                          ))}
+                        </span>
+                      )}
+                      {isTyping ? 'Considering your answer' : isSpeaking ? 'Speaking' : isThinking ? 'Giving you a moment' : 'Listening to you'}
+                    </div>
+                    <button
+                      onClick={() => speakText(state.engine.currentQuestion)}
+                      className="flex items-center gap-2 text-sm font-medium px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 transition-colors"
+                      title="Hear the question again"
+                    >
+                      <Volume2 className="w-4 h-4" /> Repeat
+                    </button>
+                  </div>
+                </div>
+
+                {isTyping ? (
+                  <div className="flex items-center gap-2 h-16" role="status" aria-label="Preparing the next question">
+                    <span className="w-2.5 h-2.5 bg-teal-200 rounded-full animate-bounce" />
+                    <span className="w-2.5 h-2.5 bg-teal-200 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                    <span className="w-2.5 h-2.5 bg-teal-200 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                  </div>
+                ) : (
+                  <h2 className="text-xl md:text-[1.7rem] md:leading-[1.3] font-bold tracking-tight" style={{ fontFamily: 'Syne,sans-serif' }}>
+                    {state.engine.currentQuestion}
+                  </h2>
                 )}
 
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-[#00C4A7]/10 rounded-full flex items-center justify-center text-[#00C4A7] shrink-0">
-                    <Brain className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">AI Recruiter Panel</div>
-                    <div className="font-extrabold text-slate-800 text-base">{state.config.jobRole} Role</div>
-                  </div>
-                  <button
-                    onClick={() => speakText(state.engine.currentQuestion)}
-                    className="ml-auto p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-650 transition-colors border border-slate-200/60"
-                    title="Repeat question"
-                  >
-                    <Volume2 className="w-4 h-4" />
-                  </button>
-                </div>
+                {state.engine.interviewerThought && !isTyping && (
+                  <p className="mt-5 pt-4 border-t border-white/10 text-sm text-teal-100/80 leading-relaxed">
+                    <span className="font-semibold text-white">Why the panel is asking: </span>{state.engine.interviewerThought}
+                  </p>
+                )}
+              </section>
 
-                {/* Conversation Container */}
-                <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2">
-                  {state.engine.conversationHistory.map((msg, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-lg px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-                          msg.role === 'user'
-                            ? 'bg-[#00C4A7] text-white font-medium shadow-sm rounded-tr-none'
-                            : 'bg-[#F8FAFC] border border-slate-200/50 text-slate-800 font-medium rounded-tl-none'
-                        }`}
-                      >
-                        {msg.message}
+              <div className="mt-4 bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm">
+                {/* Earlier questions and answers */}
+                {(() => {
+                  const history = state.engine.conversationHistory;
+                  const last = history[history.length - 1];
+                  const earlier = last && last.role !== 'user' && last.message === state.engine.currentQuestion ? history.slice(0, -1) : history;
+                  if (earlier.length === 0) return null;
+                  return (
+                    <details className="mb-5 group">
+                      <summary className="cursor-pointer text-sm font-semibold text-slate-600 hover:text-slate-900 list-none flex items-center gap-2">
+                        <ChevronRight className="w-4 h-4 transition-transform group-open:rotate-90" />
+                        Earlier in this interview ({earlier.filter(m => m.role === 'user').length} answered)
+                      </summary>
+                      <div className="mt-3 space-y-3 max-h-[260px] overflow-y-auto pr-2">
+                        {earlier.map((msg, index) => (
+                          <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-lg px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                              msg.role === 'user'
+                                ? 'bg-[#0D9488] text-white rounded-tr-none'
+                                : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-tl-none'
+                            }`}>
+                              {msg.message}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                  ))}
-                  {isTyping && (
-                    <div className="flex justify-start">
-                      <div className="bg-[#F8FAFC] border border-slate-200/50 px-4 py-3 rounded-2xl rounded-tl-none">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    </details>
+                  );
+                })()}
 
                 {/* Active Interaction Stage panel */}
-                <div className="border-t border-slate-100 pt-4">
+                <div>
                   {isSpeaking ? (
                     <div className="flex flex-col items-center justify-center p-8 bg-[#F8FAFC] rounded-2xl border border-slate-100 text-center space-y-4 animate-fade-in">
                       <div className="flex items-end justify-center gap-1.5 h-10">
@@ -1324,7 +1370,7 @@ function SmartInterviewContent() {
                       </div>
                       <div>
                         <p className="font-bold text-slate-800 text-sm">Interviewer is speaking...</p>
-                        <p className="text-xs text-slate-400 mt-1 font-semibold">Please listen carefully to the question prompt.</p>
+                        <p className="text-xs text-slate-500 mt-1 font-medium">Listen to the full question. You will get a few seconds to think.</p>
                       </div>
                       <button 
                         onClick={() => { 
@@ -1357,8 +1403,8 @@ function SmartInterviewContent() {
                         <span className="text-2xl font-extrabold text-[#00C4A7]">{thinkingTimeLeft}</span>
                       </div>
                       <div>
-                        <p className="font-bold text-slate-800 text-sm">Comprehending Question...</p>
-                        <p className="text-xs text-slate-400 mt-1 font-semibold">Take a moment to formulate your response outline.</p>
+                        <p className="font-bold text-slate-800 text-sm">Think before you speak</p>
+                        <p className="text-xs text-slate-500 mt-1 font-medium">Recording starts when the countdown ends. Plan your first sentence.</p>
                       </div>
                       <button 
                         onClick={() => { setIsThinking(false); startRecordingState(true); }} 
@@ -1405,8 +1451,8 @@ function SmartInterviewContent() {
                       {/* Real-time speech transcript preview box */}
                       {(fullTranscript || interimTranscript) && (
                         <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-left animate-fade-in">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Live Transcript Preview</p>
-                          <p className="text-xs text-slate-600 leading-relaxed italic">
+                          <p className="text-sm font-semibold text-slate-600 mb-1">What we are hearing</p>
+                          <p className="text-base text-slate-800 leading-relaxed">
                             &ldquo;{fullTranscript || interimTranscript}&rdquo;
                           </p>
                         </div>
@@ -1436,22 +1482,39 @@ function SmartInterviewContent() {
 
             {/* Right Column (Webcam Preview & Parameters) */}
             <div className="flex flex-col gap-6">
-              {state.config.mode === 'video' && !isThinking && (
-                <div className="bg-slate-900 rounded-2xl p-4 overflow-hidden border border-slate-800 shadow-md">
-                  <div className="aspect-video w-full overflow-hidden rounded-xl bg-black relative">
+              {/* The candidate's side of the call */}
+              <div className="rounded-3xl bg-slate-900 p-3 shadow-md">
+                <div className="aspect-video w-full overflow-hidden rounded-2xl bg-slate-800 relative">
+                  {state.config.mode === 'video' && (
                     <video
                       ref={liveVideoRef}
                       autoPlay
                       muted
                       playsInline
-                      className={`h-full w-full object-cover rounded-lg ${videoStream ? '' : 'hidden'}`}
+                      className={`h-full w-full object-cover -scale-x-100 ${videoStream ? '' : 'hidden'}`}
                     />
-                    {!videoStream && (
-                      <div className="flex h-full w-full items-center justify-center text-xs text-slate-500 font-semibold uppercase tracking-wider">Webcam Active</div>
-                    )}
+                  )}
+                  {!(state.config.mode === 'video' && videoStream) && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-300">
+                      <span className="w-14 h-14 rounded-full bg-slate-700 flex items-center justify-center">
+                        {state.config.mode === 'video' ? <Camera className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+                      </span>
+                      <span className="text-sm">
+                        {state.config.mode === 'video' ? 'Camera turns on when you answer' : 'Voice only interview'}
+                      </span>
+                    </div>
+                  )}
+                  <div className="absolute left-3 bottom-3 flex items-center gap-2 bg-black/55 text-white text-xs font-medium px-2.5 py-1 rounded-full">
+                    <span className={`w-2 h-2 rounded-full ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-slate-400'}`} />
+                    You {isRecording ? '(mic on)' : '(mic off)'}
                   </div>
                 </div>
-              )}
+                {state.config.mode === 'video' && (
+                  <p className="text-xs text-slate-400 leading-relaxed px-2 pt-3 pb-1">
+                    A few snapshots are checked for framing, lighting, eye contact and posture, and shown in your report. They are not saved.
+                  </p>
+                )}
+              </div>
 
               <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 shadow-sm">
                 <h3 className="font-extrabold text-[#00C4A7] mb-4 text-[10px] uppercase tracking-wider flex items-center gap-2">

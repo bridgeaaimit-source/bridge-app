@@ -57,6 +57,21 @@ import {
   BridgeScoreIcon
 } from '@/components/DesignSystem';
 
+// Calendar day in the user's own timezone (IST for Indian students), as YYYY-MM-DD.
+// toISOString() would use UTC and shift dates before 5:30 am IST.
+const toLocalDateKey = (date) => {
+  const d = date instanceof Date ? date : new Date(date);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+
+// Turns any stored score shape (number, string, {score}) into a number for display
+const toScoreNumber = (value) => {
+  if (value && typeof value === 'object') value = value.score ?? value.value ?? value.overall;
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.round(n * 10) / 10 : 0;
+};
+
 // Helper to generate dynamic learning history scores
 const generateDynamicHistory = (latestScore) => {
   const scoreVal = typeof latestScore === 'number' ? latestScore : parseInt(latestScore) || 0;
@@ -160,6 +175,7 @@ export default function Dashboard() {
   const [resumeUploaded, setResumeUploaded] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [scoreHistory, setScoreHistory] = useState([]);
+  const [scoreRecords, setScoreRecords] = useState([]); // real bridge_scores documents, newest first
   const [isMounted, setIsMounted] = useState(false);
   const [timeframe, setTimeframe] = useState("week"); // "week" or "month"
   const [weeklyStreakDays, setWeeklyStreakDays] = useState([
@@ -185,7 +201,7 @@ export default function Dashboard() {
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
     if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('en-IN');
   };
 
   useEffect(() => {
@@ -200,7 +216,7 @@ export default function Dashboard() {
 
     const today = new Date();
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const computedDate = today.toLocaleDateString('en-US', options);
+    const computedDate = today.toLocaleDateString('en-IN', options);
 
     // Defer state updates to avoid React's synchronous render lint warning
     const timer = setTimeout(() => {
@@ -338,7 +354,7 @@ export default function Dashboard() {
                 type: 'interview',
                 title: `Mock Interview: ${data.round || data.type || 'Standard'}`,
                 time: getTimeAgo(dateVal),
-                score: data.feedback?.scores?.answer_quality || data.feedback?.overall_score || data.score || 0,
+                score: toScoreNumber(data.feedback?.overall_score ?? data.feedback?.scores?.answer_quality ?? data.score),
                 date: dateVal
               });
             });
@@ -379,24 +395,24 @@ export default function Dashboard() {
           const datesSet = new Set();
           activities.forEach(act => {
             if (act.date) {
-              datesSet.add(act.date.toISOString().split('T')[0]);
+              datesSet.add(toLocalDateKey(act.date));
             }
           });
 
           let calculatedStreak = 0;
           const sortedDates = Array.from(datesSet).sort().reverse();
           if (sortedDates.length > 0) {
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = toLocalDateKey(new Date());
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            const yesterdayStr = toLocalDateKey(yesterday);
             
             const latestActiveDate = sortedDates[0];
             if (latestActiveDate === todayStr || latestActiveDate === yesterdayStr) {
               let streakCount = 0;
-              let checkDate = new Date(latestActiveDate);
+              let checkDate = new Date(`${latestActiveDate}T00:00:00`);
               while (true) {
-                const checkStr = checkDate.toISOString().split('T')[0];
+                const checkStr = toLocalDateKey(checkDate);
                 if (datesSet.has(checkStr)) {
                   streakCount++;
                   checkDate.setDate(checkDate.getDate() - 1);
@@ -420,11 +436,11 @@ export default function Dashboard() {
           for (let i = 0; i < 7; i++) {
             const dayDate = new Date(monday);
             dayDate.setDate(monday.getDate() + i);
-            const dayStr = dayDate.toISOString().split('T')[0];
+            const dayStr = toLocalDateKey(dayDate);
             updatedWeekDays.push({
               dayName: dayNames[i],
               checked: datesSet.has(dayStr),
-              isToday: dayStr === today.toISOString().split('T')[0]
+              isToday: dayStr === toLocalDateKey(today)
             });
           }
 
@@ -448,6 +464,7 @@ export default function Dashboard() {
             const scoreSnap = await getDocs(scoreQuery);
             if (!scoreSnap.empty) {
               const records = scoreSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+              setScoreRecords(records);
               const weeksMap = {};
               records.forEach(r => {
                 const date = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.createdAt || Date.now());
@@ -456,7 +473,7 @@ export default function Dashboard() {
                 const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
                 startOfWeek.setDate(diff);
                 startOfWeek.setHours(0, 0, 0, 0);
-                const key = startOfWeek.toISOString().split("T")[0];
+                const key = toLocalDateKey(startOfWeek);
                 if (!weeksMap[key] || new Date(r.createdAt) > new Date(weeksMap[key].createdAt)) {
                   weeksMap[key] = r;
                 }
@@ -488,7 +505,7 @@ export default function Dashboard() {
                 else if (communicationDiff < 0) details.push(`Group Discussion ${communicationDiff}`);
 
                 const startRange = new Date(key);
-                const dateStr = `Week of ${startRange.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+                const dateStr = `Week of ${startRange.toLocaleDateString("en-IN", { month: "short", day: "numeric" })}`;
 
                 return {
                   weekDate: dateStr,
@@ -555,17 +572,32 @@ export default function Dashboard() {
     return 'Placement Prep';
   };
 
-  // Mappings for stats breakdowns (radar spider web score)
-  const radarData = [
-    { subject: 'Aptitude', value: stats.bridgeScore ? Math.min(100, Math.round((stats.bridgeScore * 0.75) % 100)) : 94 },
-    { subject: 'Communication', value: stats.avgScore ? Math.min(100, Math.round(stats.avgScore * 10)) : 96 },
-    { subject: 'Technical', value: stats.bridgeScore ? Math.min(100, Math.round((stats.bridgeScore * 0.8) % 100)) : 92 },
-    { subject: 'Problem Solving', value: stats.bridgeScore ? Math.min(100, Math.round((stats.bridgeScore * 0.73) % 100)) : 97 },
-    { subject: 'Personality', value: stats.bridgeScore ? Math.min(100, Math.round((stats.bridgeScore * 0.68) % 100)) : 95 }
-  ];
+  // Skill profile from the latest real Bridge Score breakdown (no invented values)
+  const latestBreakdown = scoreRecords[0]?.breakdown;
+  const pct = (value, max) => Math.max(0, Math.min(100, Math.round(((Number(value) || 0) / max) * 100)));
+  const radarData = latestBreakdown
+    ? [
+        { subject: 'Aptitude', value: pct(latestBreakdown.cognitive, 350) },
+        { subject: 'Interviews', value: pct(latestBreakdown.competence, 400) },
+        { subject: 'Communication', value: pct(latestBreakdown.communication, 250) },
+      ]
+    : [];
 
-  // Line Chart Data
-  const lineChartData = generateLineChartData(stats.bridgeScore || 0, timeframe);
+  // Performance chart from real Bridge Score records in the selected timeframe
+  const toDateValue = (v) => (v?.toDate ? v.toDate() : v ? new Date(v) : null);
+  const lineChartData = (() => {
+    const days = timeframe === 'week' ? 7 : 30;
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const points = scoreRecords
+      .map((r) => ({ date: toDateValue(r.createdAt), score: Number(r.score) || 0 }))
+      .filter((p) => p.date && !isNaN(p.date) && p.date.getTime() >= cutoff)
+      .sort((a, b) => a.date - b.date);
+    return points.map((p, i) => ({
+      name: p.date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+      score: p.score,
+      change: i > 0 ? p.score - points[i - 1].score : 0,
+    }));
+  })();
 
   // Suggested Tasks Config (Select exactly 2 based on user stats priority)
   const getRecommendedTasks = () => {
@@ -652,7 +684,11 @@ export default function Dashboard() {
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{todayDate || "TUESDAY, JULY 1, 2025"}</p>
                 <h2 className="text-3xl font-extrabold text-slate-900 mt-1">{greeting}, {firstName}!</h2>
-                <p className="text-sm text-slate-500 mt-1.5">You're making great progress towards your dream placement. Keep up the consistency!</p>
+                <p className="text-sm text-slate-500 mt-1.5">
+                  {stats.interviewsDone > 0 || stats.bridgeScore > 0
+                    ? "You’re making progress towards your dream placement. Keep up the consistency!"
+                    : "Start with a mock interview to get your first Bridge Score."}
+                </p>
               </div>
               <div className="w-[112px] h-[112px] shrink-0 select-none">
                 <img src="/images/3d-icons/house.png" alt="Home Dashboard" className="w-full h-full object-contain" />
@@ -674,14 +710,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="mt-4 flex items-center gap-1 text-[10px]">
-                  {stats.avgScore > 0 ? (
-                    <>
-                      <span className="font-bold text-[#00C4A7]">↑ 4</span>
-                      <span className="text-slate-400">this week</span>
-                    </>
-                  ) : (
-                    <span className="text-slate-400">No tests taken yet</span>
-                  )}
+                  <span className="text-slate-400">{getDisplayAptitude() ? 'From your aptitude tests' : 'No tests taken yet'}</span>
                 </div>
               </div>
 
@@ -697,14 +726,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="mt-4 flex items-center gap-1 text-[10px]">
-                  {stats.interviewsDone > 0 ? (
-                    <>
-                      <span className="font-bold text-purple-600">↑ 5</span>
-                      <span className="text-slate-400">this week</span>
-                    </>
-                  ) : (
-                    <span className="text-slate-400">No mocks taken yet</span>
-                  )}
+                  <span className="text-slate-400">{stats.interviewsDone > 0 ? 'Completed mock interviews' : 'No mocks taken yet'}</span>
                 </div>
               </div>
 
@@ -720,7 +742,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="mt-4 text-[10px]">
-                  <span className="font-semibold text-orange-500">Keep it going!</span>
+                  <span className="font-semibold text-orange-500">{stats.currentStreak > 0 ? 'Keep it going!' : 'Practise today to start one'}</span>
                 </div>
               </div>
 
@@ -728,9 +750,9 @@ export default function Dashboard() {
               <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-2xl p-4 shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Batch Rank</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Avg Interview Score</p>
                     <h4 className="text-2xl font-extrabold text-slate-800 mt-1">
-                      {stats.bridgeScore > 0 ? "Top 18%" : "—"}
+                      {stats.avgScore > 0 ? `${Math.round(stats.avgScore * 10) / 10}/10` : "—"}
                     </h4>
                   </div>
                   <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500">
@@ -738,14 +760,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="mt-4 flex items-center gap-1 text-[10px]">
-                  {stats.bridgeScore > 0 ? (
-                    <>
-                      <span className="font-bold text-blue-600">↑ 4%</span>
-                      <span className="text-slate-400">this week</span>
-                    </>
-                  ) : (
-                    <span className="text-slate-400">Pending evaluation</span>
-                  )}
+                  <Link href="/leaderboard" className="text-blue-600 font-semibold hover:underline">See leaderboard →</Link>
                 </div>
               </div>
 
@@ -826,8 +841,14 @@ export default function Dashboard() {
               </div>
 
               <div className="w-full h-64 mt-4 relative">
-                {isMounted && (
+                {isMounted && lineChartData.length >= 2 && (
                   <PerformanceChart lineChartData={lineChartData} isOutOf1000={isOutOf1000} timeframe={timeframe} />
+                )}
+                {isMounted && lineChartData.length < 2 && (
+                  <div className="h-full flex flex-col items-center justify-center text-center bg-slate-50/50 border border-dashed border-slate-200 rounded-2xl px-6">
+                    <p className="text-xs font-semibold text-slate-500">Your progress chart appears after two scored activities in this period.</p>
+                    <button onClick={handleStartChallenge} className="text-[10px] text-[#00C4A7] hover:underline font-bold mt-2">Take a mock interview →</button>
+                  </div>
                 )}
               </div>
             </div>
@@ -931,7 +952,7 @@ export default function Dashboard() {
                         {getScoreRating(stats.bridgeScore || 0)}
                       </span>
                       <span className="text-[8px] text-slate-400 font-bold mt-1">
-                        {stats.bridgeScore > 0 ? "TOP 18%" : "—"}
+                        OUT OF 1000
                       </span>
                     </div>
                   </div>
@@ -941,7 +962,10 @@ export default function Dashboard() {
                     <p className="text-[10px] font-extrabold text-slate-800 uppercase tracking-wider self-start mb-2">Skill Profile</p>
                     
                     <div className="w-full h-52 flex items-center justify-center relative">
-                      {isMounted && (
+                      {isMounted && radarData.length === 0 && (
+                        <p className="text-[10px] text-slate-400 font-semibold text-center px-4">Complete an interview, aptitude test or GD to see your skill profile.</p>
+                      )}
+                      {isMounted && radarData.length > 0 && (
                         <ResponsiveContainer width="100%" height="100%">
                           <RadarChart cx="50%" cy="50%" outerRadius="65%" data={radarData}>
                             <PolarGrid stroke="#cbd5e1" />
@@ -988,7 +1012,7 @@ export default function Dashboard() {
                 <Flame className="w-4 h-4 text-orange-500" /> Practice Streak
               </h3>
               <p className="text-[10px] font-extrabold text-slate-700">{stats.currentStreak} Day Streak</p>
-              <p className="text-[9px] text-slate-400 mt-0.5">Amazing consistency! Protect your score multiplier.</p>
+              <p className="text-[9px] text-slate-400 mt-0.5">{stats.currentStreak > 0 ? 'Nice consistency. Practise today to keep it going.' : 'Do one activity today to start your streak.'}</p>
 
               {/* Duolingo Calendar Map */}
               <div className="grid grid-cols-7 gap-2 text-center text-[9px] font-bold text-slate-500 mt-4 bg-slate-50 p-3 rounded-2xl border border-slate-100">
@@ -1030,7 +1054,7 @@ export default function Dashboard() {
                         <div className="flex-grow border-b border-slate-50 pb-2">
                           <p className="text-xs font-bold text-slate-850">{activity.title}</p>
                           <p className="text-[9px] text-slate-400 mt-0.5">
-                            {activity.score ? `Scored ${activity.score} • ` : ''}{activity.time}
+                            {activity.score ? `Scored ${activity.score}${activity.type === 'interview' ? '/10' : ''} • ` : ''}{activity.time}
                           </p>
                         </div>
                       </div>

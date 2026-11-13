@@ -2,9 +2,11 @@
 
 import React from 'react';
 import { useInterviewState } from '@/context/InterviewContext';
-import { Mic, Lightbulb, CheckCircle, AlertCircle, Award, RefreshCw } from 'lucide-react';
+import { Mic, Lightbulb, CheckCircle, AlertCircle, Award, RefreshCw, Camera } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import PremiumLoading from './PremiumLoading';
+import Link from 'next/link';
+import { recommendTrainingFromSmartInterview } from '@/lib/trainingContent';
 
 export default function FeedbackReport({ resetInterview, isEvaluating, onRetryEvaluation }) {
   const state = useInterviewState();
@@ -142,6 +144,84 @@ export default function FeedbackReport({ resetInterview, isEvaluating, onRetryEv
               );
             })}
           </div>
+
+          {/* On-camera presence (video interviews only) */}
+          {feedback.presence && (
+            <div className="bg-white/80 backdrop-blur-md border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-lg flex items-center gap-2">
+                    <Camera className="w-5 h-5 text-[#0D9488]" /> How you came across on camera
+                  </h3>
+                  <p className="text-sm text-slate-500 mt-1">
+                    From {feedback.presence.framesChecked} snapshot{feedback.presence.framesChecked === 1 ? '' : 's'} taken while you answered. Advice only, it does not change your score.
+                  </p>
+                </div>
+                {feedback.presence.score != null && (
+                  <div className="text-right shrink-0">
+                    <div className="text-3xl font-extrabold text-[#0D9488]">{feedback.presence.score}<span className="text-sm text-slate-400 font-bold">/10</span></div>
+                    <div className="text-xs text-slate-500">presence</div>
+                  </div>
+                )}
+              </div>
+              {feedback.presence.summary && <p className="text-slate-700 leading-relaxed mb-5">{feedback.presence.summary}</p>}
+              {feedback.presence.visible && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {feedback.presence.whatWorks?.length > 0 && (
+                    <div className="bg-green-50/60 border border-green-100 rounded-2xl p-5">
+                      <div className="text-sm font-bold mb-3 text-green-800">Working for you</div>
+                      <ul className="space-y-2.5">
+                        {feedback.presence.whatWorks.map((item, i) => (
+                          <li key={i} className="text-sm text-slate-700 flex items-start gap-2 leading-relaxed">
+                            <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" /><span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {feedback.presence.fixes?.length > 0 && (
+                    <div className="bg-amber-50/60 border border-amber-100 rounded-2xl p-5">
+                      <div className="text-sm font-bold mb-3 text-amber-800">Fix before the real interview</div>
+                      <ul className="space-y-2.5">
+                        {feedback.presence.fixes.map((item, i) => (
+                          <li key={i} className="text-sm text-slate-700 flex items-start gap-2 leading-relaxed">
+                            <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" /><span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Next step: one lesson picked from the weakest score */}
+          {(() => {
+            const rec = recommendTrainingFromSmartInterview({ jobRole, scores: feedback.scores });
+            if (!rec) return null;
+            return (
+              <div className="rounded-3xl bg-[#F0FDFA] border-2 border-[#0D9488] p-6 md:p-7 flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+                <div className="flex items-start gap-4">
+                  <span className="w-11 h-11 rounded-2xl bg-[#0D9488] text-white flex items-center justify-center shrink-0">
+                    <Lightbulb className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">{rec.reason}</h3>
+                    <p className="text-slate-600 mt-1 leading-relaxed max-w-xl text-sm">
+                      Your next step is one short lesson picked for exactly this. Finish it, then retake the interview and watch this score move.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href={`/training?track=${rec.trackId}&lesson=${rec.lessonId}&reason=${encodeURIComponent(rec.reason)}`}
+                  className="shrink-0 text-center bg-[#0D9488] text-white px-6 py-3.5 rounded-xl font-semibold hover:bg-[#0F766E] transition-colors"
+                >
+                  Open my lesson
+                </Link>
+              </div>
+            );
+          })()}
 
           {/* Summary */}
           {feedback.summary && (

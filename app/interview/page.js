@@ -1,23 +1,55 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { RotateCcw, Share2, Mic, Trophy, Volume2, Lightbulb, Star, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { RotateCcw, Share2, Mic, Volume2, Lightbulb, Star, TrendingUp, AlertCircle, CheckCircle, Keyboard, Bot, ArrowRight, ChevronDown, Clock, Target, Sparkles, Square, PenLine } from "lucide-react";
 import confetti from "canvas-confetti";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { addDoc, collection, doc, getDoc, updateDoc } from "firebase/firestore";
+import { normalizeFillerWords } from "@/lib/interviewEval";
+import { recommendTraining } from "@/lib/trainingContent";
+import Link from "next/link";
 import { useAssemblyAI } from "@/hooks/useAssemblyAI";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
 
 const domains = [
-  { icon: "💻", label: "Software Engineer" },
-  { icon: "📊", label: "Data Analyst" },
-  { icon: "📣", label: "Marketing" },
-  { icon: "💰", label: "Finance" },
-  { icon: "🏢", label: "Operations" },
-  { icon: "🎯", label: "MBA General" },
+  { icon: "💻", label: "Software Engineer", hint: "Projects, problem-solving, CS basics" },
+  { icon: "📊", label: "Data Analyst", hint: "SQL, metrics, turning data into decisions" },
+  { icon: "📣", label: "Marketing", hint: "Brands, campaigns, consumer insight" },
+  { icon: "💰", label: "Finance", hint: "Markets, valuation, financial statements" },
+  { icon: "🏢", label: "Operations", hint: "Process, supply chain, efficiency" },
+  { icon: "🎯", label: "MBA General", hint: "HR round, goals, leadership, why MBA" },
 ];
+
+const METRIC_INFO = {
+  clarity: "How easy your answers were to follow",
+  confidence: "How sure and decisive you sounded",
+  content: "Depth, examples and relevance",
+  communication: "Structure, flow and language",
+};
+
+function scoreTone(score) {
+  if (score >= 8) return { ring: "#10B981", text: "text-emerald-600", bg: "bg-emerald-50", label: "Interview-ready" };
+  if (score >= 6) return { ring: "#F59E0B", text: "text-amber-600", bg: "bg-amber-50", label: "Almost there" };
+  return { ring: "#EF4444", text: "text-rose-600", bg: "bg-rose-50", label: "Needs more practice" };
+}
+
+function WordMeter({ words, min }) {
+  const pct = Math.min(100, Math.round((words / min) * 100));
+  const ok = words >= min;
+  return (
+    <div className="flex items-center gap-3 min-w-0">
+      <div className="w-28 h-1.5 rounded-full bg-slate-200 overflow-hidden shrink-0" aria-hidden="true">
+        <div className={`h-full rounded-full transition-all duration-300 ${ok ? "bg-[#0D9488]" : "bg-amber-400"}`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className={`text-sm ${ok ? "text-[#0F766E] font-medium" : "text-slate-500"}`}>
+        {ok ? `${words} words` : `${words} of ${min} words needed`}
+      </span>
+    </div>
+  );
+}
 
 export default function InterviewPage() {
   const { isBypassed, mockUser } = useAuthBypass();
@@ -40,6 +72,13 @@ export default function InterviewPage() {
   const [browserSupport, setBrowserSupport] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [failedCount, setFailedCount] = useState(0);
+  const [elapsed, setElapsed] = useState(0);            // seconds on the current question
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [openReview, setOpenReview] = useState(0);       // which answer is expanded in the report
+  // One entry per question: { question, answer, promise, result, error }
+  const evaluationsRef = useRef([]);
 
   const {
     isRecording,
@@ -54,6 +93,13 @@ export default function InterviewPage() {
     stopRecording: stopAssemblyAIRecording,
     clearTranscript: clearAssemblyAITranscript,
   } = useAssemblyAI();
+
+  // Preselect a domain when arriving from Domain Training (?domain=Operations)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const requested = new URLSearchParams(window.location.search).get("domain");
+    if (requested && domains.some((d) => d.label === requested)) setSelectedDomain(requested);
+  }, []);
 
   useEffect(() => {
     if (hookFullTranscript) {
@@ -97,6 +143,9 @@ export default function InterviewPage() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
+      const voices = window.speechSynthesis.getVoices();
+      const indian = voices.find((v) => v.lang === 'en-IN') || voices.find((v) => v.lang?.startsWith('en-GB'));
+      if (indian) { utterance.voice = indian; utterance.lang = indian.lang; }
       utterance.rate = 0.9;
       utterance.pitch = 1;
       utterance.volume = 1;
@@ -110,6 +159,8 @@ export default function InterviewPage() {
   };
 
   const startRecording = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+    setIsSpeaking(false);
     setVoiceAnswer("");
     clearAssemblyAITranscript();
     startAssemblyAIRecording();
@@ -151,7 +202,6 @@ export default function InterviewPage() {
       setQuestions(data.questions);
       setCurrentQuestionIndex(0);
       setStep(2);
-      toast.success(`Generated ${data.questions.length} questions!`);
     } catch (error) {
       console.error('Error generating questions:', error);
       setErrorMessage(
@@ -169,145 +219,145 @@ export default function InterviewPage() {
     generateQuestions();
   };
 
-  const submitVoiceAnswer = async () => {
-    if (!voiceAnswer.trim()) {
-      setErrorMessage("Please speak or write an answer before submitting.");
-      return;
+  // Clock for the current question; in voice mode the interviewer asks it aloud.
+  useEffect(() => {
+    if (step !== 2) return;
+    setElapsed(0);
+    setConfirmLeave(false);
+    const tick = setInterval(() => setElapsed((t) => t + 1), 1000);
+    if (interviewMode === "voice" && autoSpeak && questions[currentQuestionIndex]) {
+      speakText(questions[currentQuestionIndex]);
     }
+    return () => clearInterval(tick);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, currentQuestionIndex]);
 
-    if (!uid || !sessionId) {
-      setErrorMessage("User session not initialized. Please refresh and try again.");
-      return;
-    }
+  const MIN_WORDS = 20;
+  const countWords = (text) => (text.trim() ? text.trim().split(/\s+/).length : 0);
 
-    setErrorMessage("");
-    setIsAnalyzingAnswer(true);
-
-    try {
-      const currentQuestion = questions[currentQuestionIndex];
-      console.log('Submitting voice answer:', { currentQuestion, transcript: voiceAnswer.trim(), domain: selectedDomain, uid, sessionId });
-      
+  const evaluateAnswer = async (question, answerText) => {
+    const callApi = async () => {
       const response = await fetch("/api/interview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: currentQuestion,
-          answer: voiceAnswer.trim(),
-          domain: selectedDomain,
-          uid,
-          sessionId
-        }),
+        body: JSON.stringify({ question, answer: answerText, domain: selectedDomain, uid }),
       });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.error || "Could not analyze this answer.");
+      return data;
+    };
+    try {
+      return await callApi();
+    } catch {
+      return await callApi(); // one quiet retry
+    }
+  };
 
-      console.log('Voice answer response status:', response.status);
-      const data = await response.json();
-      console.log('Voice answer response data:', data);
+  const queueEvaluation = (index, question, answerText) => {
+    const entry = { question, answer: answerText, result: null, error: null };
+    entry.promise = evaluateAnswer(question, answerText)
+      .then((result) => { entry.result = result; return result; })
+      .catch((err) => { entry.error = err; return null; });
+    evaluationsRef.current[index] = entry;
+  };
 
-      if (!response.ok) {
-        throw new Error(data?.error || "Could not analyze your answer right now.");
-      }
-
-      const updatedAnalyses = [...analyses, data];
-      setAnalyses(updatedAnalyses);
-      const updatedResponses = [
-        ...responses,
-        {
-          question: currentQuestion,
-          answer: voiceAnswer.trim(),
-          analysis: data
-        }
-      ];
-      setResponses(updatedResponses);
-      setVoiceAnswer("");
-      clearAssemblyAITranscript();
-      
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-      } else {
-        setStep(3);
-        setFeedback(data);
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
+  const saveInterview = async (report) => {
+    if (isBypassed || !auth.currentUser) return;
+    const user = auth.currentUser;
+    try {
+      await addDoc(collection(db, "users", user.uid, "interview_feedback"), {
+        type: "mock_interview",
+        jobRole: selectedDomain,
+        round: "Mock Interview",
+        mode: interviewMode,
+        feedback: {
+          overall_score: report.overall_score,
+          metrics: report.metrics,
+          strengths: report.strengths,
+          improvements: report.improvements,
+          filler_words: report.filler_words,
+        },
+        questions: report.perQuestion.map((q) => ({ question: q.question, answer: q.answer, score: q.score, better_answer: q.better_answer })),
+        sessionId,
+        timestamp: new Date().toISOString(),
+        createdAt: Date.now(),
+      });
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        const newInterviewsDone = (userData.interviewsDone || 0) + 1;
+        const newAvgScore = ((userData.avgScore || 0) * (userData.interviewsDone || 0) + report.overall_score) / newInterviewsDone;
+        await updateDoc(userRef, {
+          interviewsDone: newInterviewsDone,
+          avgScore: Math.round(newAvgScore * 10) / 10,
+          updatedAt: new Date().toISOString(),
         });
       }
+      fetch(`/api/bridge-score?userId=${user.uid}`).catch(() => {});
     } catch (error) {
-      console.error('Error submitting voice answer:', error);
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while analyzing your answer. Please try again."
-      );
-    } finally {
-      setIsAnalyzingAnswer(false);
+      console.error("Could not save interview:", error.message);
+      toast.error("Your report is ready, but we couldn't save it to your profile.");
     }
   };
 
-  const submitAnswer = async () => {
-    if (!answer.trim()) {
-      setErrorMessage("Please write an answer before submitting.");
+  const finishInterview = async () => {
+    setIsFinalizing(true);
+    setErrorMessage("");
+    const entries = evaluationsRef.current;
+    await Promise.all(entries.map((e) => e.promise));
+    const failed = entries.filter((e) => !e.result);
+    setFailedCount(failed.length);
+    if (failed.length > 0) {
+      setIsFinalizing(false);
+      setErrorMessage(`We couldn't evaluate ${failed.length} of your answers. Tap "Retry" to try again.`);
       return;
     }
+    const results = entries.map((e) => e.result);
+    const report = aggregateFeedback(results, entries);
+    setAnalyses(results);
+    setResponses(entries.map((e) => ({ question: e.question, answer: e.answer, analysis: e.result })));
+    setSelectedFeedbackTab(0);
+    setOpenReview(0);
+    setFeedback(report);
+    setIsFinalizing(false);
+    setStep(3);
+    if (report.overall_score >= 7) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    saveInterview(report);
+  };
 
+  const retryFailed = () => {
+    evaluationsRef.current.forEach((entry, index) => {
+      if (entry && !entry.result) queueEvaluation(index, entry.question, entry.answer);
+    });
+    finishInterview();
+  };
+
+  const submitAnswerText = (rawText) => {
+    const text = (rawText || "").trim();
+    if (countWords(text) < MIN_WORDS) {
+      setErrorMessage(`Please answer in at least ${MIN_WORDS} words so the AI can give useful feedback.`);
+      return;
+    }
     setErrorMessage("");
-    setIsAnalyzingAnswer(true);
-
-    try {
-      const currentQuestion = questions[currentQuestionIndex];
-      const response = await fetch("/api/interview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: currentQuestion,
-          answer: answer.trim(),
-          domain: selectedDomain,
-          uid,
-          sessionId
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || "Could not analyze your answer right now.");
-      }
-
-      const updatedAnalyses = [...analyses, data];
-      setAnalyses(updatedAnalyses);
-      const updatedResponses = [
-        ...responses,
-        {
-          question: currentQuestion,
-          answer: answer.trim(),
-          analysis: data,
-        },
-      ];
-      setResponses(updatedResponses);
-
-      const isLastQuestion = currentQuestionIndex >= questions.length - 1;
-      if (isLastQuestion) {
-        setSelectedFeedbackTab(0);
-        setFeedback(aggregateFeedback(updatedAnalyses));
-        setStep(3);
-      } else {
-        setCurrentQuestionIndex((prev) => prev + 1);
-        setAnswer("");
-      }
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while analyzing your answer. Please try again."
-      );
-    } finally {
-      setIsAnalyzingAnswer(false);
+    queueEvaluation(currentQuestionIndex, questions[currentQuestionIndex], text);
+    setAnswer("");
+    setVoiceAnswer("");
+    clearAssemblyAITranscript();
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex((prev) => prev + 1);
+    } else {
+      finishInterview();
     }
   };
+
+  const submitVoiceAnswer = () => submitAnswerText(voiceAnswer);
+  const submitAnswer = () => submitAnswerText(answer);
 
   const resetInterview = () => {
     setStep(1);
     setAnswer("");
+    setVoiceAnswer("");
     setQuestions([]);
     setCurrentQuestionIndex(0);
     setAnalyses([]);
@@ -317,6 +367,10 @@ export default function InterviewPage() {
     setErrorMessage("");
     setIsLoadingQuestions(false);
     setIsAnalyzingAnswer(false);
+    setIsFinalizing(false);
+    setFailedCount(0);
+    evaluationsRef.current = [];
+    setSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   };
 
   const shareResult = () => {
@@ -329,577 +383,591 @@ export default function InterviewPage() {
         url: window.location.origin,
       });
     } else {
-      navigator.clipboard.writeText(shareText);
-      alert("Result copied to clipboard!");
+      navigator.clipboard.writeText(shareText).then(() => toast.success("Result copied — paste it anywhere to share"));
     }
   };
 
-  const aggregateFeedback = (analyses) => {
-    if (!analyses || analyses.length === 0) return null;
-
-    const totalScore = analyses.reduce((sum, analysis) => sum + (analysis.score || 0), 0);
-    const overallScore = totalScore / analyses.length;
-
+  const aggregateFeedback = (results, entries = []) => {
+    if (!results || results.length === 0) return null;
+    const avg = (key) => {
+      const values = results.map((r) => Number(r?.[key])).filter((n) => Number.isFinite(n));
+      return values.length ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10 : 0;
+    };
     const allFillerWords = new Set();
     const allStrengths = [];
     const allImprovements = [];
-
-    analyses.forEach(analysis => {
-      if (analysis.filler_words) {
-        analysis.filler_words.forEach(word => allFillerWords.add(word));
-      }
-      if (analysis.strengths) {
-        allStrengths.push(...analysis.strengths);
-      }
-      if (analysis.improvements) {
-        allImprovements.push(...analysis.improvements);
-      }
+    results.forEach((r) => {
+      normalizeFillerWords(r?.filler_words).found.forEach((w) => allFillerWords.add(w));
+      if (Array.isArray(r?.strengths)) allStrengths.push(...r.strengths);
+      if (Array.isArray(r?.improvements)) allImprovements.push(...r.improvements);
     });
-
     return {
-      overall_score: overallScore,
+      overall_score: avg("score"),
       filler_words: Array.from(allFillerWords),
-      strengths: allStrengths,
-      improvements: allImprovements,
+      strengths: [...new Set(allStrengths.map((t) => String(t).trim()).filter(Boolean))].slice(0, 6),
+      improvements: [...new Set(allImprovements.map((t) => String(t).trim()).filter(Boolean))].slice(0, 6),
       metrics: {
-        clarity: overallScore,
-        relevance: overallScore,
-        confidence: overallScore,
-        structure: overallScore,
-        completeness: overallScore
+        clarity: avg("clarity"),
+        confidence: avg("confidence"),
+        content: avg("content"),
+        communication: avg("communication"),
       },
-      model_answer: "Based on your responses, a strong answer would demonstrate clear communication of your skills and experiences with specific examples, showing how they align with the role requirements."
+      perQuestion: results.map((r, i) => ({
+        question: entries[i]?.question || questions[i] || `Question ${i + 1}`,
+        answer: entries[i]?.answer || "",
+        score: Number.isFinite(Number(r?.score)) ? Number(r.score) : 0,
+        better_answer: typeof r?.better_answer === "string" ? r.better_answer : "",
+      })),
     };
+  };
+
+  // ── Presentation helpers ────────────────────────────────────────────────
+  const total = questions.length || 5;
+  const question = questions[currentQuestionIndex] || "";
+  const isLast = currentQuestionIndex >= questions.length - 1;
+  const typedWords = countWords(answer);
+  const spokenWords = countWords(voiceAnswer);
+  const liveWords = countWords([hookTranscript, hookInterimTranscript].filter(Boolean).join(" "));
+  const clock = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}`;
+  const nextLabel = isFinalizing ? "Scoring your answers" : isLast ? "Finish and see my report" : "Submit and go to next question";
+  const tone = feedback ? scoreTone(feedback.overall_score) : null;
+  const training = feedback ? recommendTraining({ domain: selectedDomain, metrics: feedback.metrics }) : null;
+
+  const leaveInterview = () => {
+    if (!confirmLeave) { setConfirmLeave(true); return; }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
+    stopAssemblyAIRecording();
+    resetInterview();
   };
 
   return (
     <AppShell hideNavigation={step === 2}>
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">AI Mock Interview</h1>
-            <p className="text-gray-600 mt-1">Practice with real questions from top companies</p>
+      {/* ═════════════ 1. Set up ═════════════ */}
+      {step === 1 && (
+        <div className="max-w-6xl mx-auto px-4 md:px-10 pt-8 pb-16">
+          <div className="mb-8 max-w-2xl">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight" style={{ fontFamily: "Syne,sans-serif" }}>
+              Mock interview
+            </h1>
+            <p className="text-slate-600 mt-2 text-base leading-relaxed">
+              Five questions for the role you pick. Answer like you would in the real room, then see exactly where you gained and lost marks.
+            </p>
           </div>
-          <div className="flex items-center gap-4">
-            {typeof window !== 'undefined' && 'speechSynthesis' in window ? (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Volume2 className="w-4 h-4" />
-                <span>TTS Available</span>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-8 items-start">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8">
+              <fieldset>
+                <legend className="text-lg font-bold text-slate-900 mb-1">Which role are you interviewing for?</legend>
+                <p className="text-sm text-slate-500 mb-4">The questions change with the role.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {domains.map((domain) => {
+                    const active = selectedDomain === domain.label;
+                    return (
+                      <button
+                        key={domain.label}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setSelectedDomain(domain.label)}
+                        className={`flex items-center gap-4 text-left p-4 rounded-2xl border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] focus-visible:ring-offset-2 ${
+                          active ? "border-[#0D9488] bg-[#F0FDFA]" : "border-slate-200 bg-white hover:border-slate-300"
+                        }`}
+                      >
+                        <span className="text-2xl w-11 h-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center shrink-0" aria-hidden="true">{domain.icon}</span>
+                        <span className="min-w-0">
+                          <span className="block font-semibold text-slate-900">{domain.label}</span>
+                          <span className="block text-sm text-slate-500 leading-snug">{domain.hint}</span>
+                        </span>
+                        {active && <CheckCircle className="w-5 h-5 text-[#0D9488] ml-auto shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              <fieldset className="mt-8">
+                <legend className="text-lg font-bold text-slate-900 mb-1">How do you want to answer?</legend>
+                <p className="text-sm text-slate-500 mb-4">Speaking is closer to the real thing. Typing is good for a quiet place.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { id: "voice", icon: Mic, title: "Speak my answers", text: "Your words appear as you talk. You can fix them before you submit." },
+                    { id: "text", icon: Keyboard, title: "Type my answers", text: "No microphone needed." },
+                  ].map((m) => {
+                    const active = interviewMode === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setInterviewMode(m.id)}
+                        className={`flex items-start gap-3 text-left p-4 rounded-2xl border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] focus-visible:ring-offset-2 ${
+                          active ? "border-[#0D9488] bg-[#F0FDFA]" : "border-slate-200 bg-white hover:border-slate-300"
+                        }`}
+                      >
+                        <m.icon className={`w-5 h-5 mt-0.5 shrink-0 ${active ? "text-[#0D9488]" : "text-slate-400"}`} />
+                        <span>
+                          <span className="block font-semibold text-slate-900">{m.title}</span>
+                          <span className="block text-sm text-slate-500 leading-snug">{m.text}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {interviewMode === "voice" && !browserSupport && (
+                  <p className="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                    Voice works best in Chrome. If the microphone doesn&apos;t start, switch to typing.
+                  </p>
+                )}
+              </fieldset>
+
+              {errorMessage && (
+                <div role="alert" className="mt-6 p-4 bg-red-50 rounded-xl border border-red-200 text-red-700 text-sm">{errorMessage}</div>
+              )}
+
+              <button
+                onClick={startInterview}
+                disabled={isLoadingQuestions}
+                className="mt-8 w-full bg-[#0D9488] text-white py-4 rounded-2xl font-semibold text-base hover:bg-[#0F766E] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] focus-visible:ring-offset-2"
+              >
+                {isLoadingQuestions ? (
+                  <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Writing your {selectedDomain} questions</>
+                ) : (
+                  <>Start the {selectedDomain} interview</>
+                )}
+              </button>
+            </div>
+
+            <aside className="rounded-3xl bg-[#0F3D3A] text-white p-6 md:p-7">
+              <h2 className="text-lg font-bold mb-5" style={{ fontFamily: "Syne,sans-serif" }}>How it works</h2>
+              <ol className="space-y-5">
+                {[
+                  { title: "Answer five questions", text: `One at a time, at least ${MIN_WORDS} words each. A good answer takes one to two minutes.` },
+                  { title: "Each answer is scored", text: "On clarity, confidence, content and communication, out of 10." },
+                  { title: "Get your report", text: "Your score, a stronger version of each answer, and one lesson picked for your weakest area." },
+                ].map((item, i) => (
+                  <li key={i} className="flex gap-4">
+                    <span className="w-7 h-7 rounded-full bg-white/10 border border-white/20 text-sm font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                    <div>
+                      <div className="font-semibold">{item.title}</div>
+                      <div className="text-sm text-teal-100/80 leading-relaxed mt-0.5">{item.text}</div>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <div className="mt-6 pt-5 border-t border-white/10 flex items-center gap-2 text-sm text-teal-100/80">
+                <Clock className="w-4 h-4 shrink-0" /> About 10 minutes
               </div>
-            ) : (
-              <div className="flex items-center gap-2 text-sm text-orange-600">
-                <AlertCircle className="w-4 h-4" />
-                <span>Use Chrome for voice features</span>
-              </div>
-            )}
+            </aside>
           </div>
         </div>
+      )}
 
-        {/* Step Indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center text-sm font-semibold mb-4">
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
-              step >= 1 ? 'bg-[#F0FDFA] text-[#0D9488]' : 'bg-gray-100 text-gray-500'
-            }`}>
-              <span className="w-6 h-6 bg-[#0D9488] text-white rounded-full flex items-center justify-center text-xs">1</span>
-              <span>Choose Domain</span>
-            </div>
-            <div className={`w-12 h-0.5 ${step >= 2 ? 'bg-[#0D9488]' : 'bg-gray-300'}`}></div>
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
-              step >= 2 ? 'bg-[#F0FDFA] text-[#0D9488]' : 'bg-gray-100 text-gray-500'
-            }`}>
-              <span className="w-6 h-6 bg-[#0D9488] text-white rounded-full flex items-center justify-center text-xs">2</span>
-              <span>Answer Questions</span>
-            </div>
-            <div className={`w-12 h-0.5 ${step >= 3 ? 'bg-[#0D9488]' : 'bg-gray-300'}`}></div>
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
-              step >= 3 ? 'bg-[#F0FDFA] text-[#0D9488]' : 'bg-gray-100 text-gray-500'
-            }`}>
-              <span className="w-6 h-6 bg-[#0D9488] text-white rounded-full flex items-center justify-center text-xs">3</span>
-              <span>Get Feedback</span>
+      {/* ═════════════ 2. The interview room ═════════════ */}
+      {step === 2 && (
+        <div className="min-h-screen bg-slate-50">
+          {/* Room bar */}
+          <div className="bg-white border-b border-slate-200">
+            <div className="max-w-5xl mx-auto px-4 md:px-8 h-16 flex items-center gap-4">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-slate-900 truncate">{selectedDomain} interview</div>
+                <div className="text-xs text-slate-500">Question {currentQuestionIndex + 1} of {total}</div>
+              </div>
+              <ol className="flex-1 flex items-center justify-center gap-1.5" aria-label="Progress">
+                {[...Array(total)].map((_, i) => (
+                  <li
+                    key={i}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      i < currentQuestionIndex ? "w-8 bg-[#0D9488]" : i === currentQuestionIndex ? "w-12 bg-[#0F3D3A]" : "w-8 bg-slate-200"
+                    }`}
+                  />
+                ))}
+              </ol>
+              <div className="hidden sm:flex items-center gap-1.5 text-sm text-slate-600 tabular-nums" title="Time on this question">
+                <Clock className="w-4 h-4 text-slate-400" /> {clock}
+              </div>
+              <button
+                type="button"
+                onClick={leaveInterview}
+                onBlur={() => setConfirmLeave(false)}
+                className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] ${
+                  confirmLeave ? "bg-red-600 text-white" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                }`}
+              >
+                {confirmLeave ? "Leave and lose my answers" : "Leave"}
+              </button>
             </div>
           </div>
-        </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Main Interview Panel */}
-          <div className="lg:col-span-2">
-            {step === 1 && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Select your domain to begin</h2>
-                  <p className="text-gray-600 mb-8">We'll ask you 5 targeted questions based on your chosen field</p>
+          <div className="max-w-5xl mx-auto px-4 md:px-8 py-6 md:py-10">
+            {/* Interviewer's side of the desk */}
+            <section className="rounded-3xl bg-[#0F3D3A] text-white p-6 md:p-10 relative overflow-hidden">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="relative flex items-center justify-center w-11 h-11 rounded-full bg-white/10 border border-white/20 shrink-0">
+                  {isSpeaking && <span className="absolute inset-0 rounded-full border-2 border-teal-300/70 animate-ping motion-reduce:hidden" />}
+                  <Bot className="w-5 h-5 text-teal-200" />
+                </span>
+                <div className="min-w-0">
+                  <div className="font-semibold leading-tight">Your interviewer</div>
+                  <div className="text-sm text-teal-100/70">{isSpeaking ? "Asking the question" : "Waiting for your answer"}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => speakText(question)}
+                  className="ml-auto flex items-center gap-2 text-sm font-medium px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-200"
+                >
+                  <Volume2 className="w-4 h-4" /> {isSpeaking ? "Repeat" : "Hear it"}
+                </button>
+              </div>
+              <h2 key={currentQuestionIndex} className="text-2xl md:text-[2rem] md:leading-[1.25] font-bold tracking-tight max-w-3xl" style={{ fontFamily: "Syne,sans-serif" }}>
+                {question}
+              </h2>
+            </section>
 
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                    {domains.map((domain) => {
-                      const active = selectedDomain === domain.label;
-                      return (
+            {/* Candidate's side */}
+            <section className="mt-4 rounded-3xl bg-white border border-slate-200 shadow-sm p-6 md:p-8">
+              {interviewMode === "text" ? (
+                <div>
+                  <label htmlFor="answer-box" className="flex items-center gap-2 text-base font-semibold text-slate-900 mb-3">
+                    <PenLine className="w-4 h-4 text-[#0D9488]" /> Your answer
+                  </label>
+                  <textarea
+                    id="answer-box"
+                    value={answer}
+                    onChange={(e) => setAnswer(e.target.value)}
+                    placeholder="Start with the situation, say what you did, end with the result."
+                    className="w-full h-48 md:h-56 p-4 text-base leading-relaxed text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-2xl resize-y focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent"
+                  />
+                  <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <WordMeter words={typedWords} min={MIN_WORDS} />
+                    <button
+                      onClick={submitAnswer}
+                      disabled={typedWords < MIN_WORDS || isFinalizing}
+                      className="bg-[#0D9488] text-white px-6 py-3.5 rounded-xl font-semibold hover:bg-[#0F766E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] focus-visible:ring-offset-2"
+                    >
+                      {nextLabel}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+                    <div className="flex items-center gap-2 text-base font-semibold text-slate-900">
+                      <Mic className="w-4 h-4 text-[#0D9488]" /> Your answer
+                    </div>
+                    <div className="flex items-center gap-1.5" role="group" aria-label="Accent for speech recognition">
+                      <span className="text-sm text-slate-500 mr-1">My accent</span>
+                      {[{ code: "en-IN", label: "Indian" }, { code: "en-GB", label: "British" }, { code: "en-US", label: "American" }].map((l) => (
                         <button
-                          key={domain.label}
-                          onClick={() => setSelectedDomain(domain.label)}
-                          className={`p-6 rounded-2xl border-2 transition-all ${
-                            active 
-                              ? 'border-[#0D9488] bg-[#F0FDFA] shadow-md' 
-                              : 'border-gray-200 bg-white hover:border-gray-300'
+                          key={l.code}
+                          type="button"
+                          aria-pressed={speechLang === l.code}
+                          onClick={() => setLang(l.code)}
+                          className={`text-sm px-3 py-1 rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] ${
+                            speechLang === l.code ? "bg-[#0F3D3A] text-white border-[#0F3D3A]" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"
                           }`}
                         >
-                          <div className="text-3xl mb-3">{domain.icon}</div>
-                          <div className="font-semibold text-gray-900">{domain.label}</div>
+                          {l.label}
                         </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Interview Mode Toggle */}
-                  <div className="mb-8">
-                    <label className="block text-sm font-medium text-gray-700 mb-3">Interview Mode</label>
-                    <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
-                      <button
-                        onClick={() => setInterviewMode("text")}
-                        className={`flex-1 py-2 px-4 rounded-md transition-colors ${
-                          interviewMode === "text"
-                            ? "bg-white text-[#0D9488] shadow-sm"
-                            : "text-gray-600 hover:text-gray-900"
-                        }`}
-                      >
-                        Text Mode
-                      </button>
-                      <button
-                        onClick={() => setInterviewMode("voice")}
-                        className={`flex-1 py-2 px-4 rounded-md transition-colors ${
-                          interviewMode === "voice"
-                            ? "bg-white text-[#0D9488] shadow-sm"
-                            : "text-gray-600 hover:text-gray-900"
-                        }`}
-                      >
-                        Voice Mode
-                      </button>
+                      ))}
                     </div>
                   </div>
 
+                  {isConnecting ? (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center">
+                      <div className="w-10 h-10 mx-auto border-2 border-slate-300 border-t-[#0D9488] rounded-full animate-spin mb-4" />
+                      <p className="font-medium text-slate-700">Turning on your microphone</p>
+                    </div>
+                  ) : isRecording ? (
+                    <div>
+                      <div className="rounded-2xl border-2 border-red-200 bg-red-50/40 p-5 md:p-6 min-h-[11rem]">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-red-700 mb-3">
+                          <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" /> Recording. Speak now.
+                        </div>
+                        {hookTranscript || hookInterimTranscript ? (
+                          <p className="text-base leading-relaxed text-slate-900">
+                            {hookTranscript}
+                            {hookInterimTranscript && <span className="text-slate-400"> {hookInterimTranscript}</span>}
+                          </p>
+                        ) : (
+                          <p className="text-base text-slate-400">Your words will appear here as you speak.</p>
+                        )}
+                      </div>
+                      <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <WordMeter words={liveWords} min={MIN_WORDS} />
+                        <div className="flex gap-3">
+                          <button
+                            onClick={stopRecording}
+                            type="button"
+                            className="flex items-center justify-center gap-2 bg-white text-slate-800 border border-slate-300 px-5 py-3.5 rounded-xl font-semibold hover:bg-slate-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488]"
+                          >
+                            <Square className="w-3.5 h-3.5 fill-current" /> Stop and review
+                          </button>
+                          {(hookTranscript || hookInterimTranscript) && (
+                            <button
+                              onClick={() => {
+                                const captured = [hookTranscript, hookInterimTranscript].filter(Boolean).join(" ");
+                                stopAssemblyAIRecording();
+                                setVoiceAnswer(captured);
+                                submitAnswerText(captured);
+                              }}
+                              type="button"
+                              className="bg-[#0D9488] text-white px-5 py-3.5 rounded-xl font-semibold hover:bg-[#0F766E] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] focus-visible:ring-offset-2"
+                            >
+                              Stop and submit
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : voiceAnswer ? (
+                    <div>
+                      <label htmlFor="voice-review" className="block text-sm text-slate-600 mb-2">This is what we heard. Fix anything that&apos;s wrong, then submit.</label>
+                      <textarea
+                        id="voice-review"
+                        value={voiceAnswer}
+                        onChange={(e) => setVoiceAnswer(e.target.value)}
+                        className="w-full h-44 p-4 text-base leading-relaxed text-slate-900 border border-slate-300 rounded-2xl resize-y focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent"
+                      />
+                      <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <WordMeter words={spokenWords} min={MIN_WORDS} />
+                        <div className="flex gap-3">
+                          <button
+                            onClick={startRecording}
+                            type="button"
+                            className="bg-white text-slate-800 border border-slate-300 px-5 py-3.5 rounded-xl font-semibold hover:bg-slate-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488]"
+                          >
+                            Record again
+                          </button>
+                          <button
+                            onClick={submitVoiceAnswer}
+                            disabled={isFinalizing || spokenWords < MIN_WORDS}
+                            type="button"
+                            className="bg-[#0D9488] text-white px-5 py-3.5 rounded-xl font-semibold hover:bg-[#0F766E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] focus-visible:ring-offset-2"
+                          >
+                            {nextLabel}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 md:p-10 text-center">
+                      <button
+                        onClick={startRecording}
+                        type="button"
+                        className="w-20 h-20 mx-auto rounded-full bg-[#0D9488] text-white flex items-center justify-center hover:bg-[#0F766E] transition-colors shadow-lg shadow-teal-600/20 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200"
+                        aria-label="Start recording my answer"
+                      >
+                        <Mic className="w-8 h-8" />
+                      </button>
+                      <p className="mt-4 font-semibold text-slate-900">Tap the microphone and answer out loud</p>
+                      <p className="text-sm text-slate-500 mt-1">Take a breath first. You can review what we heard before you submit.</p>
+                      {transcriptionError && (
+                        <p role="alert" className="mt-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl p-3 max-w-md mx-auto">{transcriptionError}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {isFinalizing && (
+                <div className="mt-5 p-4 bg-[#F0FDFA] rounded-xl border border-[#CCFBF1] flex items-center gap-3" role="status">
+                  <span className="w-5 h-5 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin shrink-0" />
+                  <span className="text-[#0F766E] text-sm font-medium">Scoring your {total} answers and writing your report. This takes a few seconds.</span>
+                </div>
+              )}
+
+              {errorMessage && (
+                <div role="alert" className="mt-5 p-4 bg-red-50 rounded-xl border border-red-200 flex items-center justify-between gap-4">
+                  <span className="text-red-700 text-sm">{errorMessage}</span>
+                  {failedCount > 0 && !isFinalizing && (
+                    <button onClick={retryFailed} type="button" className="shrink-0 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700">
+                      Retry
+                    </button>
+                  )}
+                </div>
+              )}
+            </section>
+
+            {/* A good answer has */}
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+              {[
+                { icon: Target, title: "A clear point first", text: "Answer the question in your first sentence." },
+                { icon: Star, title: "One real example", text: "Situation, what you did, what happened." },
+                { icon: TrendingUp, title: "A number if you can", text: "Marks, people, rupees, days saved." },
+              ].map((tip) => (
+                <div key={tip.title} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white/60 px-4 py-3">
+                  <tip.icon className="w-4 h-4 text-[#0D9488] mt-0.5 shrink-0" />
+                  <div>
+                    <div className="font-semibold text-slate-800">{tip.title}</div>
+                    <div className="text-slate-500 leading-snug">{tip.text}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═════════════ 3. The report ═════════════ */}
+      {step === 3 && feedback && (
+        <div className="max-w-5xl mx-auto px-4 md:px-10 pt-8 pb-16 space-y-6">
+          {/* Scorecard */}
+          <section className="rounded-3xl bg-[#0F3D3A] text-white overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-[280px_minmax(0,1fr)]">
+              <div className="p-8 md:p-10 flex flex-col items-center justify-center text-center md:border-r border-white/10">
+                <div className="relative w-40 h-40">
+                  <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90" aria-hidden="true">
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="10" />
+                    <circle
+                      cx="60" cy="60" r="52" fill="none" stroke={tone.ring} strokeWidth="10" strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * 52}
+                      strokeDashoffset={2 * Math.PI * 52 * (1 - Math.min(feedback.overall_score, 10) / 10)}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-5xl font-extrabold tabular-nums" style={{ fontFamily: "Syne,sans-serif" }}>{feedback.overall_score}</span>
+                    <span className="text-sm text-teal-100/70">out of 10</span>
+                  </div>
+                </div>
+                <div className="mt-4 text-lg font-bold">{tone.label}</div>
+                <div className="text-sm text-teal-100/70">{selectedDomain} mock interview</div>
+              </div>
+
+              <div className="p-8 md:p-10">
+                <h1 className="text-2xl font-bold mb-6" style={{ fontFamily: "Syne,sans-serif" }}>Your scorecard</h1>
+                <dl className="space-y-5">
+                  {Object.entries(feedback.metrics || {}).map(([key, value]) => (
+                    <div key={key}>
+                      <div className="flex items-baseline justify-between gap-4 mb-1.5">
+                        <dt className="font-semibold capitalize">{key.replace("_", " ")}</dt>
+                        <dd className="text-sm tabular-nums text-teal-50">{value} / 10</dd>
+                      </div>
+                      <div className="h-2 rounded-full bg-white/10 overflow-hidden" aria-hidden="true">
+                        <div className="h-full rounded-full" style={{ width: `${(Math.min(value, 10) / 10) * 100}%`, backgroundColor: scoreTone(value).ring }} />
+                      </div>
+                      {METRIC_INFO[key] && <p className="text-sm text-teal-100/70 mt-1.5">{METRIC_INFO[key]}</p>}
+                    </div>
+                  ))}
+                </dl>
+                <div className="mt-8 flex flex-wrap gap-3">
                   <button
-                    onClick={startInterview}
-                    disabled={isLoadingQuestions}
-                    className="w-full bg-gradient-to-r from-[#0D9488] to-[#0F766E] text-white py-4 rounded-2xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={resetInterview}
+                    className="flex items-center gap-2 px-5 py-3 bg-white text-[#0F3D3A] rounded-xl font-semibold hover:bg-teal-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                   >
-                    {isLoadingQuestions ? "Loading Questions..." : "Begin Interview →"}
+                    <RotateCcw className="w-4 h-4" /> Take another interview
+                  </button>
+                  <button
+                    onClick={shareResult}
+                    className="flex items-center gap-2 px-5 py-3 bg-white/10 border border-white/20 rounded-xl font-semibold hover:bg-white/20 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  >
+                    <Share2 className="w-4 h-4" /> Share my score
                   </button>
                 </div>
               </div>
-            )}
+            </div>
+          </section>
 
-            {step === 2 && (
-              <div className="space-y-6">
-                {/* Question Card */}
-                <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-[#F0FDFA] rounded-full flex items-center justify-center">
-                        <Mic className="w-4 h-4 text-[#0D9488]" />
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-600">Question {currentQuestionIndex + 1} of 5</div>
-                        <div className="font-semibold text-gray-900">AI Interviewer</div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => speakText(questions[currentQuestionIndex])}
-                      className="p-2 text-gray-600 hover:text-[#0D9488] transition-colors"
-                      title="Speak Question"
-                    >
-                      <Volume2 className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="mb-6">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-gradient-to-r from-[#0D9488] to-[#0F766E] h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  {/* Question */}
-                  <div className="mb-8">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                      {questions[currentQuestionIndex]}
-                    </h3>
-                  </div>
-
-                  {/* Answer Area */}
-                  {interviewMode === "text" ? (
-                    <div className="space-y-4">
-                      <textarea
-                        value={answer}
-                        onChange={(e) => setAnswer(e.target.value)}
-                        placeholder="Type your answer here..."
-                        className="w-full h-32 p-4 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent"
-                      />
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm text-gray-500">
-                          {answer.length} characters
-                        </div>
-                        <button
-                          onClick={submitAnswer}
-                          disabled={!answer.trim() || isAnalyzingAnswer}
-                          className="bg-gradient-to-r from-[#0D9488] to-[#0F766E] text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isAnalyzingAnswer ? "Analyzing..." : "Submit Answer"}
-                        </button>
-                      </div>
-                    </div>
-
-                  ) : (
-                    <div className="space-y-4">
-                      {/* Language selection similar to smart-interview */}
-                      <div className="flex items-center justify-end gap-2 mb-2">
-                        <span className="text-xs text-gray-500 font-semibold">Language:</span>
-                        {[{code:'en-IN',label:'🇮🇳 India'},{code:'en-GB',label:'🇬🇧 UK'},{code:'en-US',label:'🇺🇸 US'}].map(l => (
-                          <button 
-                            key={l.code} 
-                            onClick={() => setLang(l.code)}
-                            type="button"
-                            className={`text-xs px-2 py-1 rounded-full border font-medium transition-all ${
-                              speechLang === l.code 
-                                ? 'bg-[#0D9488] text-white border-[#0D9488] shadow-sm' 
-                                : 'bg-white text-gray-600 border-gray-200 hover:border-[#0D9488]'
-                            }`}
-                          >
-                            {l.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="bg-gray-50 rounded-xl p-8 text-center border border-gray-100">
-                        {isConnecting ? (
-                          <div className="space-y-4">
-                            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto animate-pulse">
-                              <Mic className="w-8 h-8 text-yellow-600" />
-                            </div>
-                            <div className="text-gray-600 font-medium">Starting microphone...</div>
-                          </div>
-                        ) : isRecording ? (
-                          <div className="space-y-4">
-                            <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]">
-                              <Mic className="w-8 h-8 text-white" />
-                            </div>
-                            <div className="text-gray-900 font-semibold animate-pulse">Recording... Speak your answer now</div>
-                            
-                            {/* Live transcript during recording */}
-                            <div className="bg-white border border-gray-200 rounded-xl p-4 min-h-[80px] text-left shadow-inner">
-                              {(hookTranscript || hookInterimTranscript) ? (
-                                <p className="text-sm text-gray-800 leading-relaxed">
-                                  <span className="text-gray-900">{hookTranscript}</span>
-                                  {hookInterimTranscript && <span className="text-gray-400 italic"> {hookInterimTranscript}</span>}
-                                </p>
-                              ) : (
-                                <p className="text-sm text-gray-400 italic">Listening... start speaking</p>
-                              )}
-                            </div>
-
-                            <div className="flex gap-4 max-w-md mx-auto">
-                              <button
-                                onClick={stopRecording}
-                                type="button"
-                                className="flex-1 bg-red-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors shadow-sm flex items-center justify-center gap-2"
-                              >
-                                <span className="w-2.5 h-2.5 bg-white rounded-full"></span> Stop
-                              </button>
-                              {(hookTranscript || hookInterimTranscript) && (
-                                <button
-                                  onClick={() => {
-                                    const captured = hookTranscript || hookInterimTranscript;
-                                    stopAssemblyAIRecording();
-                                    setVoiceAnswer(captured);
-                                    setTimeout(() => {
-                                      submitVoiceAnswer();
-                                    }, 100);
-                                  }}
-                                  type="button"
-                                  className="flex-1 bg-[#0D9488] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#0F766E] transition-colors shadow-sm"
-                                >
-                                  Stop &amp; Submit →
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            <div className="w-16 h-16 bg-[#F0FDFA] rounded-full flex items-center justify-center mx-auto">
-                              <Mic className="w-8 h-8 text-[#0D9488]" />
-                            </div>
-                            
-                            {/* Review and Edit when not recording but transcript exists */}
-                            {voiceAnswer ? (
-                              <div className="space-y-4 text-left max-w-xl mx-auto">
-                                <label className="block text-xs font-bold text-[#0D9488] uppercase tracking-wide">Review &amp; Edit Your Answer:</label>
-                                <textarea
-                                  value={voiceAnswer}
-                                  onChange={(e) => setVoiceAnswer(e.target.value)}
-                                  className="w-full h-32 p-4 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent bg-white text-sm leading-relaxed"
-                                  placeholder="Review transcript..."
-                                />
-                                <div className="flex gap-4">
-                                  <button
-                                    onClick={startRecording}
-                                    type="button"
-                                    className="flex-1 bg-white text-gray-700 border border-gray-300 px-6 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-                                  >
-                                    Re-record
-                                  </button>
-                                  <button
-                                    onClick={submitVoiceAnswer}
-                                    disabled={isAnalyzingAnswer || !voiceAnswer.trim()}
-                                    type="button"
-                                    className="flex-1 bg-gradient-to-r from-[#0D9488] to-[#0F766E] text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    {isAnalyzingAnswer ? "Analyzing..." : "Submit Answer"}
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="space-y-4">
-                                <div className="text-gray-600 font-medium">Click to start recording</div>
-                                <button
-                                  onClick={startRecording}
-                                  type="button"
-                                  className="bg-gradient-to-r from-[#0D9488] to-[#0F766E] text-white px-8 py-3.5 rounded-xl font-semibold hover:shadow-lg transition-all duration-300"
-                                >
-                                  Start Recording
-                                </button>
-                                {transcriptionError && (
-                                  <div className="text-xs text-red-600 font-medium bg-red-50 border border-red-100 rounded-lg p-2 max-w-sm mx-auto">{transcriptionError}</div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+          {/* What to do next */}
+          {training && (
+            <section className="rounded-3xl bg-[#F0FDFA] border-2 border-[#0D9488] p-6 md:p-7 flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+              <div className="flex items-start gap-4">
+                <span className="w-11 h-11 rounded-2xl bg-[#0D9488] text-white flex items-center justify-center shrink-0"><Sparkles className="w-5 h-5" /></span>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">{training.reason}</h2>
+                  <p className="text-slate-600 mt-1 leading-relaxed max-w-xl">
+                    Your next step is one short lesson picked for exactly this. Finish it, retake the interview, and watch this score move.
+                  </p>
                 </div>
-
-                {errorMessage && (
-                  <div className="p-4 bg-red-50 rounded-xl border border-red-200">
-                    <div className="text-red-600 text-sm">{errorMessage}</div>
-                  </div>
-                )}
               </div>
-            )}
+              <Link
+                href={`/training?track=${training.trackId}&lesson=${training.lessonId}&reason=${encodeURIComponent(training.reason)}`}
+                className="shrink-0 text-center bg-[#0D9488] text-white px-6 py-3.5 rounded-xl font-semibold hover:bg-[#0F766E] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0D9488] focus-visible:ring-offset-2"
+              >
+                Open my lesson
+              </Link>
+            </section>
+          )}
 
-            {step === 3 && feedback && (
-              <div className="space-y-6">
-                {/* Overall Score */}
-                <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 text-center">
-                  <div className="mb-6">
-                    <div className={`text-6xl font-bold ${
-                      feedback.overall_score >= 8 ? 'text-green-600' :
-                      feedback.overall_score >= 6 ? 'text-yellow-600' :
-                      'text-red-600'
-                    }`}>
-                      {feedback.overall_score}/10
-                    </div>
-                    <div className="text-gray-600 mt-2">Overall Score</div>
-                  </div>
-                  
-                  <div className="flex justify-center gap-4 mb-8">
-                    <button
-                      onClick={shareResult}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#F0FDFA] text-[#0D9488] rounded-lg hover:bg-[#CCFBF1] transition-colors"
-                    >
-                      <Share2 className="w-4 h-4" />
-                      Share Result
-                    </button>
-                    <button
-                      onClick={resetInterview}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      Try Again
-                    </button>
-                  </div>
-                </div>
-
-                {/* Detailed Feedback */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Metrics */}
-                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                    <h3 className="font-semibold text-gray-900 mb-4">Performance Metrics</h3>
-                    <div className="space-y-3">
-                      {Object.entries(feedback.metrics || {}).map(([key, value]) => (
-                        <div key={key} className="flex items-center justify-between">
-                          <span className="text-gray-600 capitalize">{key.replace('_', ' ')}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-24 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-[#0D9488] h-2 rounded-full"
-                                style={{ width: `${(value / 10) * 100}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-medium w-8">{value}/10</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Filler Words */}
-                  {feedback.filler_words && feedback.filler_words.length > 0 && (
-                    <div className="bg-orange-50 rounded-2xl p-6 shadow-sm border border-orange-200">
-                      <h3 className="font-semibold text-orange-900 mb-3 flex items-center gap-2">
-                        <AlertCircle className="w-5 h-5" />
-                        Filler Words Detected
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {feedback.filler_words.map((word, index) => (
-                          <span key={index} className="px-3 py-1 bg-orange-200 text-orange-800 rounded-full text-sm">
-                            {word}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Strengths and Improvements */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-green-50 rounded-2xl p-6 shadow-sm border border-green-200">
-                    <h3 className="font-semibold text-green-900 mb-4 flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5" />
-                      Strengths
-                    </h3>
-                    <ul className="space-y-2">
-                      {(feedback.strengths || []).map((strength, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <Star className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                          <span className="text-gray-700">{strength}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="bg-yellow-50 rounded-2xl p-6 shadow-sm border border-yellow-200">
-                    <h3 className="font-semibold text-yellow-900 mb-4 flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5" />
-                      Areas to Improve
-                    </h3>
-                    <ul className="space-y-2">
-                      {(feedback.improvements || []).map((improvement, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <Lightbulb className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                          <span className="text-gray-700">{improvement}</span>
-                        </li>
-                      ))}
-                    </ul>
+          {/* What worked / what to fix */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <section className="bg-white rounded-3xl border border-slate-200 p-6 md:p-7">
+              <h2 className="font-bold text-slate-900 mb-4 flex items-center gap-2"><CheckCircle className="w-5 h-5 text-emerald-600" /> What you did well</h2>
+              {(feedback.strengths || []).length ? (
+                <ul className="space-y-3">
+                  {feedback.strengths.map((item, i) => (
+                    <li key={i} className="flex items-start gap-3 text-slate-700 leading-relaxed">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2.5 shrink-0" />{item}
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="text-slate-500">Nothing stood out yet. Longer answers with examples give the AI more to credit.</p>}
+            </section>
+            <section className="bg-white rounded-3xl border border-slate-200 p-6 md:p-7">
+              <h2 className="font-bold text-slate-900 mb-4 flex items-center gap-2"><Lightbulb className="w-5 h-5 text-amber-500" /> What to fix before the real one</h2>
+              {(feedback.improvements || []).length ? (
+                <ul className="space-y-3">
+                  {feedback.improvements.map((item, i) => (
+                    <li key={i} className="flex items-start gap-3 text-slate-700 leading-relaxed">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2.5 shrink-0" />{item}
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="text-slate-500">No major gaps found in this round.</p>}
+              {feedback.filler_words?.length > 0 && (
+                <div className="mt-5 pt-5 border-t border-slate-100">
+                  <p className="text-sm text-slate-600 mb-2">Filler words you used. Pause instead of saying them.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {feedback.filler_words.map((word, i) => (
+                      <span key={i} className="px-3 py-1 bg-amber-50 border border-amber-200 text-amber-800 rounded-full text-sm">{word}</span>
+                    ))}
                   </div>
                 </div>
-
-                {/* Model Answer */}
-                {feedback.model_answer && (
-                  <div className="bg-[#F0FDFA] rounded-2xl p-6 shadow-sm border border-[#CCFBF1]">
-                    <h3 className="font-semibold text-[#0F766E] mb-4">Model Answer</h3>
-                    <p className="text-gray-700">{feedback.model_answer}</p>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </section>
           </div>
 
-          {/* Right Column - Tips and Progress */}
-          <div className="space-y-6">
-            {/* Tips Card */}
-            {step === 2 && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Lightbulb className="w-5 h-5 text-yellow-500" />
-                  Quick Tips
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-[#F0FDFA] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-[#0D9488]">1</span>
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-900">Structure your answer</div>
-                      <div className="text-sm text-gray-600">Start with context, then main points, conclusion</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-[#F0FDFA] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-[#0D9488]">2</span>
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-900">Use STAR method</div>
-                      <div className="text-sm text-gray-600">Situation, Task, Action, Result</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-[#F0FDFA] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-[#0D9488]">3</span>
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-900">Avoid filler words</div>
-                      <div className="text-sm text-gray-600">Minimize "um", "like", "you know"</div>
-                    </div>
-                  </div>
-                </div>
+          {/* Answer by answer */}
+          {Array.isArray(feedback.perQuestion) && feedback.perQuestion.length > 0 && (
+            <section className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
+              <div className="p-6 md:p-7 pb-4">
+                <h2 className="font-bold text-slate-900 text-lg">Answer by answer</h2>
+                <p className="text-slate-500 text-sm mt-1">Open a question to compare what you said with a stronger answer.</p>
               </div>
-            )}
-
-            {/* Progress Card */}
-            {step === 2 && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-4">Your Progress</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Questions Answered</span>
-                    <span className="font-semibold text-gray-900">{currentQuestionIndex}/{questions.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Time Spent</span>
-                    <span className="font-semibold text-gray-900">~2 min/question</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Mode</span>
-                    <span className="font-semibold text-gray-900 capitalize">{interviewMode}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Domain Info */}
-            {step === 1 && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-4">About {selectedDomain}</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-[#F0FDFA] rounded-full flex items-center justify-center">
-                      <Trophy className="w-4 h-4 text-[#0D9488]" />
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-900">High Demand</div>
-                      <div className="text-sm text-gray-600">Top companies are hiring</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                      <TrendingUp className="w-4 h-4 text-green-600" />
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-900">Great Growth</div>
-                      <div className="text-sm text-gray-600">Career advancement opportunities</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+              <ul className="divide-y divide-slate-100">
+                {feedback.perQuestion.map((item, index) => {
+                  const open = openReview === index;
+                  const t = scoreTone(item.score);
+                  return (
+                    <li key={index}>
+                      <button
+                        type="button"
+                        aria-expanded={open}
+                        onClick={() => setOpenReview(open ? -1 : index)}
+                        className="w-full flex items-center gap-4 text-left px-6 md:px-7 py-4 hover:bg-slate-50 transition-colors focus:outline-none focus-visible:bg-slate-50"
+                      >
+                        <span className={`w-12 shrink-0 text-center text-sm font-bold tabular-nums rounded-lg py-1.5 ${t.bg} ${t.text}`}>{item.score}/10</span>
+                        <span className="flex-1 font-medium text-slate-900">{item.question}</span>
+                        <ChevronDown className={`w-5 h-5 text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+                      </button>
+                      {open && (
+                        <div className="px-6 md:px-7 pb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="rounded-2xl border border-slate-200 p-4">
+                            <h3 className="text-sm font-semibold text-slate-500 mb-2">What you said</h3>
+                            <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{item.answer || "No answer recorded."}</p>
+                          </div>
+                          <div className="rounded-2xl border border-[#99F6E4] bg-[#F0FDFA] p-4">
+                            <h3 className="text-sm font-semibold text-[#0F766E] mb-2">A stronger answer</h3>
+                            <p className="text-slate-800 leading-relaxed whitespace-pre-wrap">{item.better_answer || "No sample answer was generated for this question."}</p>
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
         </div>
-      </div>
+      )}
     </AppShell>
   );
 }
