@@ -51,6 +51,12 @@ function SetupContent() {
     if (catParam && TOPIC_PRESETS[catParam]) {
       setCategory(catParam);
     }
+    // A topic handed over from News Pulse ("Practice this GD")
+    const topicParam = (searchParams.get('topic') || '').trim();
+    if (topicParam) {
+      setIsCustomTopic(true);
+      setCustomTopic(topicParam.slice(0, 200));
+    }
   }, [searchParams]);
 
   // Set default topic when category changes

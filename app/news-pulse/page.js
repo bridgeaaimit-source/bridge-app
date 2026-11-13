@@ -1,518 +1,705 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import Link from "next/link";
 import {
-  Search, ArrowUpRight, Bookmark, Star, Newspaper, ArrowRight,
-  CheckCircle, AlertCircle, TrendingUp, Zap, Sparkles, Building2,
-  Lightbulb, MessageSquare, Quote, Target, BarChart2, Eye, Clock,
-  RefreshCw
+  Search, ArrowUpRight, Bookmark, Newspaper, ArrowRight, CheckCircle, AlertCircle,
+  TrendingUp, Sparkles, Lightbulb, MessageSquare, Target, BarChart2, Clock, RefreshCw,
+  Zap, Globe, HelpCircle, XCircle, Mic, ShieldCheck,
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
-import { useAuthBypass } from "@/hooks/useAuthBypass";
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import toast from "react-hot-toast";
 
-const CATEGORIES = ["All", "Marketing", "Finance", "HR", "Analytics", "Tech", "MBA"];
+const DEFAULT_CATEGORIES = [
+  { id: "All", label: "All" },
+  { id: "World", label: "World & Economy" },
+  { id: "Tech", label: "Tech & AI" },
+  { id: "Finance", label: "Finance" },
+  { id: "Marketing", label: "Marketing" },
+  { id: "HR", label: "HR & Jobs" },
+  { id: "Operations", label: "Operations" },
+  { id: "Analytics", label: "Analytics" },
+];
 
-// Get IST date string — resets at 6 AM IST (00:30 UTC)
-function getISTDateKey() {
-  const now = new Date();
-  // IST = UTC+5:30. Reset at 6AM IST = 0:30 UTC
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
-  const istMs = utcMs + 5.5 * 60 * 60 * 1000;
-  const ist = new Date(istMs);
-  // Subtract 6 hours so "today" resets at 6 AM IST
-  const adjusted = new Date(istMs - 6 * 60 * 60 * 1000);
-  const y = adjusted.getFullYear();
-  const m = String(adjusted.getMonth() + 1).padStart(2, '0');
-  const d = String(adjusted.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
+const CACHE_PREFIX = "newsPulse_v2_";
+const SAVED_KEY = "newsPulse_saved";
+const POLL_MS = 6000;
+const MAX_POLLS = 30;
 
-function loadCache(key) {
+function readLocal(key) {
   try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
 }
-function saveCache(key, data) {
-  try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
+function writeLocal(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 }
 
-const FALLBACK_GD = {
-  gd_topic: "Is AI replacing human creativity?",
-  why_trending: "AI tools are disrupting creative industries globally in 2025",
-  pros: ["AI enables faster content creation at scale — a 3-minute video ad now takes hours, not weeks", "Reduces production costs by up to 70%, making creativity accessible to small businesses", "Democratises design tools — anyone with a prompt can create professional visuals"],
-  cons: ["Loss of emotional depth — AI lacks lived human experience that drives truly resonant storytelling", "Copyright & ownership issues remain legally unresolved across global markets", "Threatens livelihoods of creative professionals — illustrators, copywriters, video editors"],
-  example_argument: "While AI optimises reach and speed, it cannot replicate the emotional resonance of human storytelling. The most powerful campaigns — like Amul's or Apple's — come from human insight about culture, not pattern matching. AI should augment, not replace, human creativity.",
-  key_facts: ["AI art market grew 300% in 2024 (Forbes)", "60% of designers use AI tools daily (Adobe State of Creativity 2024)", "India's creative economy employs 8 million people directly"],
-  how_to_start: "I'd like to begin by drawing a distinction — AI doesn't replace creativity, it changes who can be creative. The real question is whether we're ready to redefine what we value in creative work.",
-  power_phrase: "The question isn't whether AI can create — it's whether creation without human intent has meaning.",
-  interview_connection: "Interviewers in marketing, media, or tech often ask your stance on AI in your domain. Frame it as: tool + human = unstoppable.",
-  difficulty: "Medium",
-};
+function timeAgo(iso) {
+  if (!iso) return "";
+  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs} hr${hrs === 1 ? "" : "s"} ago`;
+  const days = Math.round(hrs / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+function clockIST(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "2-digit" });
+}
+
+function Card({ className = "", children }) {
+  return <div className={`bg-white/80 backdrop-blur-md border border-slate-200/70 rounded-3xl shadow-sm ${className}`}>{children}</div>;
+}
+
+function SectionTitle({ icon: Icon, children, hint }) {
+  return (
+    <div className="flex items-end justify-between gap-3 mb-4">
+      <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2" style={{ fontFamily: "Syne,sans-serif" }}>
+        <Icon className="w-5 h-5 text-[#0D9488]" /> {children}
+      </h2>
+      {hint && <span className="text-xs text-slate-400">{hint}</span>}
+    </div>
+  );
+}
+
+function SourceChip({ src }) {
+  if (!src) return null;
+  return (
+    <a
+      href={src.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      title={src.title}
+      className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0D9488] bg-[#CCFBF1]/70 hover:bg-[#CCFBF1] px-2 py-0.5 rounded-full transition-colors max-w-full"
+    >
+      <span className="truncate">{src.source}</span>
+      {src.publishedAt && <span className="text-teal-600/70 font-medium shrink-0">· {timeAgo(src.publishedAt)}</span>}
+      <ArrowUpRight className="w-3 h-3 shrink-0" />
+    </a>
+  );
+}
+
+function Skeleton({ lines = 3, className = "" }) {
+  return (
+    <div className={`animate-pulse space-y-3 ${className}`}>
+      {[...Array(lines)].map((_, i) => (
+        <div key={i} className="h-3.5 bg-slate-200/80 rounded" style={{ width: `${90 - i * 12}%` }} />
+      ))}
+    </div>
+  );
+}
 
 export default function NewsPulsePage() {
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [gdInsights, setGdInsights] = useState(null);
-  const [gdLoading, setGdLoading] = useState(true);
-  const [newsData, setNewsData] = useState(null);
-  const [newsLoading, setNewsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [savedArticles, setSavedArticles] = useState([]);
-  const [gdPracticeLoading, setGdPracticeLoading] = useState(false);
+  const [category, setCategory] = useState("All");
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState("");
+  const [saved, setSaved] = useState([]);
+  const [showSaved, setShowSaved] = useState(false);
+  const [answers, setAnswers] = useState({});
   const [isAdmin, setIsAdmin] = useState(false);
+  const pollRef = useRef({ timer: null, count: 0, category: null });
+  const categoryRef = useRef("All");
 
-  const { isBypassed } = useAuthBypass();
-
-  // Load user role on mount
   useEffect(() => {
+    setSaved(readLocal(SAVED_KEY) || []);
     const unsub = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          const userSnap = await getDoc(doc(db, "users", user.uid));
-          if (userSnap.exists() && userSnap.data().role === "admin") {
-            setIsAdmin(true);
-          } else {
-            setIsAdmin(false);
-          }
-        } catch (e) {
-          console.error("Error loading user role:", e);
-        }
-      } else {
-        setIsAdmin(false);
-      }
+      if (!user) { setIsAdmin(false); return; }
+      try {
+        const snap = await getDoc(doc(db, "users", user.uid));
+        setIsAdmin(snap.exists() && snap.data().role === "admin");
+      } catch { setIsAdmin(false); }
     });
     return () => unsub();
   }, []);
 
-  // Fetch GD insights — client-side daily cache, supports manual admin force-refresh
-  const fetchGDInsights = async (category, forceRefresh = false) => {
-    const dateKey = getISTDateKey();
-    const cacheKey = `pulse_gd_${category}_${dateKey}`;
-    
-    if (!forceRefresh) {
-      const cached = loadCache(cacheKey);
-      if (cached && cached.gd_topic) {
-        setGdInsights(cached);
-        setGdLoading(false);
-        return;
-      }
-    }
-    
-    setGdLoading(true);
-    try {
-      const url = `/api/gd-insights?category=${encodeURIComponent(category)}&userId=${auth.currentUser?.uid || ''}${forceRefresh ? '&force=true' : ''}`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText || `HTTP ${res.status}`);
-      }
-      const data = await res.json();
-      if (!data?.gd_topic) throw new Error('Bad response');
-      saveCache(cacheKey, data);
-      setGdInsights(data);
-      if (forceRefresh) {
-        toast.success("GD Topic refreshed successfully!");
-      }
-    } catch (err) {
-      console.error("Fetch GD insights failed:", err);
-      if (!forceRefresh) {
-        setGdInsights(FALLBACK_GD);
-      } else {
-        toast.error(err.message?.includes("Unauthorized") ? "Unauthorized: Admin access required." : "Failed to refresh today's GD topic.");
-      }
-    } finally {
-      setGdLoading(false);
-    }
+  const stopPolling = () => {
+    if (pollRef.current.timer) clearTimeout(pollRef.current.timer);
+    pollRef.current = { timer: null, count: 0, category: null };
   };
 
-  // Fetch news — client-side daily cache
-  const fetchNews = async (category) => {
-    const dateKey = getISTDateKey();
-    const cacheKey = `pulse_news_${category}_${dateKey}`;
-    const cached = loadCache(cacheKey);
-    if (cached?.articles?.length) {
-      setNewsData(cached);
-      setNewsLoading(false);
-      return;
+  const fetchNews = useCallback(async (cat, { refresh = false, rebuild = false, poll = false } = {}) => {
+    const params = new URLSearchParams({ category: cat });
+    if (refresh) params.set("refresh", "1");
+    if (rebuild) params.set("rebuild", "1");
+    if (poll) params.set("poll", "1");
+    if (auth.currentUser?.uid) params.set("userId", auth.currentUser.uid);
+    const headers = {};
+    if (rebuild && auth.currentUser) headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
+    const res = await fetch(`/api/news?${params}`, { headers, cache: "no-store" });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || `Could not load news (HTTP ${res.status})`);
+    return json;
+  }, []);
+
+  const apply = useCallback((cat, json) => {
+    if (categoryRef.current !== cat) return;
+    setData(json);
+    setError(null);
+    writeLocal(CACHE_PREFIX + cat, { savedAt: Date.now(), data: json });
+  }, []);
+
+  const schedulePoll = useCallback((cat, previousBuiltAt) => {
+    if (pollRef.current.timer) clearTimeout(pollRef.current.timer);
+    if (pollRef.current.category !== cat) pollRef.current = { timer: null, count: 0, category: cat };
+    if (pollRef.current.count >= MAX_POLLS) return;
+    pollRef.current.timer = setTimeout(async () => {
+      pollRef.current.count += 1;
+      try {
+        const json = await fetchNews(cat, { poll: true });
+        if (categoryRef.current !== cat) return;
+        apply(cat, json);
+        const builtAt = json.brief?.builtAt || null;
+        if (builtAt && builtAt !== previousBuiltAt && previousBuiltAt) {
+          toast.success("AI analysis updated with the latest news");
+        }
+        if (json.briefStatus === "building" || json.briefStatus === "updating") {
+          schedulePoll(cat, builtAt || previousBuiltAt);
+        } else {
+          stopPolling();
+        }
+      } catch {
+        schedulePoll(cat, previousBuiltAt);
+      }
+    }, POLL_MS);
+  }, [fetchNews, apply]);
+
+  const load = useCallback(async (cat, opts = {}) => {
+    categoryRef.current = cat;
+    stopPolling();
+    const cached = readLocal(CACHE_PREFIX + cat);
+    if (cached?.data && !opts.refresh && !opts.rebuild) {
+      setData(cached.data);
+      setLoading(false);
+    } else if (!opts.refresh && !opts.rebuild) {
+      setData(null);
+      setLoading(true);
     }
-    setNewsLoading(true);
     try {
-      const res = await fetch(`/api/news?category=${encodeURIComponent(category)}&userId=${auth.currentUser?.uid || ''}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if (!data?.articles) throw new Error('Bad response');
-      saveCache(cacheKey, data);
-      setNewsData(data);
-    } catch {
-      setNewsData({ articles: [
-        { title: "TCS Announces 40,000 New Hires for FY2025", description: "Tata Consultancy Services plans to hire 40,000 fresh graduates focused on AI and cloud technologies.", url: "https://www.tcs.com/careers", source: "TCS", time: "Today" },
-        { title: "Top Skills Employers Want in 2025", description: "AI literacy, communication, and adaptability top the list of most sought-after skills by Indian recruiters.", url: "https://india.linkedin.com", source: "LinkedIn India", time: "Today" },
-        { title: "India Startup Ecosystem Hits $150B Valuation", description: "Indian startups raised record funding in 2024 with fintech and edtech leading growth.", url: "https://inc42.com", source: "Inc42", time: "Today" },
-      ]});
+      const json = await fetchNews(cat, opts);
+      apply(cat, json);
+      if (json.briefStatus === "building" || json.briefStatus === "updating") {
+        schedulePoll(cat, json.brief?.builtAt || null);
+      }
+      return json;
+    } catch (err) {
+      if (categoryRef.current === cat) setError(err.message);
+      throw err;
     } finally {
-      setNewsLoading(false);
+      if (categoryRef.current === cat) setLoading(false);
     }
-  };
+  }, [fetchNews, apply, schedulePoll]);
 
   useEffect(() => {
-    if (isBypassed) {
-      setGdInsights(FALLBACK_GD);
-      setNewsData({ articles: [
-        { title: "AI Revolution: What Students Must Know", description: "Major companies are investing in AI, creating massive opportunities for graduates.", url: "https://www.google.com/search?q=AI+revolution+careers", source: "Tech News", time: "2h ago" },
-        { title: "Top 10 Skills Employers Want in 2025", description: "Communication, problem-solving, and AI literacy top recruiter wishlists.", url: "https://www.linkedin.com/pulse/top-skills-employers-want-2025", source: "Career Insights", time: "5h ago" },
-      ]});
-      setGdLoading(false);
-      setNewsLoading(false);
-      return;
-    }
-    fetchGDInsights("All");
-    fetchNews("All");
-  }, [isBypassed]);
+    load("All").catch(() => {});
+    return () => stopPolling();
+  }, [load]);
 
-  const handleCategoryChange = (cat) => {
-    setActiveCategory(cat);
-    fetchGDInsights(cat);
-    fetchNews(cat);
+  const changeCategory = (cat) => {
+    if (cat === category) return;
+    setCategory(cat);
+    setAnswers({});
+    setSearch("");
+    load(cat).catch(() => {});
   };
 
-  const handleGDPractice = () => {
-    setGdPracticeLoading(true);
+  const refreshHeadlines = async () => {
+    setRefreshing(true);
     try {
-      sessionStorage.setItem('gd_topic', JSON.stringify(gdInsights));
-      window.location.href = '/gd';
-    } catch { setGdPracticeLoading(false); }
+      await load(category, { refresh: true });
+      toast.success("Latest headlines loaded");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
-  const toggleSave = (article) => setSavedArticles(prev =>
-    prev.some(a => a.title === article.title) ? prev.filter(a => a.title !== article.title) : [...prev, article]
-  );
+  const rebuildAnalysis = async () => {
+    setRefreshing(true);
+    try {
+      const json = await load(category, { rebuild: true });
+      if (json.briefStatus === "updating" || json.briefStatus === "building") {
+        toast.success("Rebuilding the AI analysis — about a minute");
+      } else {
+        toast("Analysis was rebuilt in the last 10 minutes", { icon: "ℹ️" });
+      }
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
-  const filteredArticles = newsData?.articles?.filter(a =>
-    a.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    a.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const toggleSave = (article) => {
+    setSaved((prev) => {
+      const next = prev.some((a) => a.url === article.url)
+        ? prev.filter((a) => a.url !== article.url)
+        : [{ title: article.title, url: article.url, source: article.source, publishedAt: article.publishedAt }, ...prev].slice(0, 50);
+      writeLocal(SAVED_KEY, next);
+      return next;
+    });
+  };
+
+  const brief = data?.brief || null;
+  const status = data?.briefStatus || (loading ? "building" : "unavailable");
+  const articles = useMemo(() => data?.articles || [], [data]);
+  const categories = data?.categories?.length ? data.categories : DEFAULT_CATEGORIES;
+
+  const sourceFor = useCallback((id) => {
+    if (!id) return null;
+    return brief?.sources?.[id] || articles.find((a) => a.id === id) || null;
+  }, [brief, articles]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return articles;
+    return articles.filter((a) => `${a.title} ${a.summary} ${a.source}`.toLowerCase().includes(q));
+  }, [articles, search]);
+
+  const gd = brief?.gd;
+  const practiceHref = gd ? `/gd/ai/setup?category=current_affairs&topic=${encodeURIComponent(gd.topic)}` : "/gd/ai/setup";
+  const analysisPending = !brief && (status === "building" || loading);
+  const score = brief?.quiz?.length ? brief.quiz.filter((q, i) => answers[i] === q.answer).length : 0;
+  const answeredAll = brief?.quiz?.length && Object.keys(answers).length === brief.quiz.length;
 
   return (
     <AppShell>
       <div className="min-h-screen">
+        <div className="max-w-[1200px] mx-auto px-4 md:px-10 pt-8 pb-16 space-y-8">
 
-        {/* ── Page Header ── */}
-        <div className="max-w-[1200px] mx-auto px-4 md:px-10 pt-8 pb-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-6">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900" style={{fontFamily:'Syne,sans-serif'}}>News Pulse</h1>
-                <span className="flex items-center gap-1 text-xs text-green-700 bg-green-100 border border-green-200 px-3 py-1 rounded-full font-semibold">
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" /> Live
-                </span>
+          {/* ── Header ── */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-100 pb-5">
+            <div className="flex items-center gap-4">
+              <div className="w-[76px] h-[76px] shrink-0 select-none hidden sm:block">
+                <img src="/images/3d-icons/newspaper-clipping.png" alt="" className="w-full h-full object-contain" />
               </div>
-              <p className="text-gray-400 text-sm">Trending insights · {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}</p>
-            </div>
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search articles…"
-                className="w-full bg-white border-2 border-[#CCFBF1] focus:border-[#0D9488] rounded-full pl-9 pr-4 py-2 text-sm outline-none transition-colors" />
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-4 space-y-8">
-
-          {/* Page Header */}
-          <div className="flex items-center gap-4 border-b border-slate-100 pb-5">
-            <div className="w-[100px] h-[100px] shrink-0 select-none">
-              <img src="/images/3d-icons/newspaper-clipping.png" alt="News Pulse" className="w-full h-full object-contain" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">News Pulse</h1>
-              <p className="text-slate-500 text-sm mt-1">Trending placement insights, arguments, and industry news</p>
-            </div>
-          </div>
-
-          {/* GD DEEP-DIVE SECTION */}
-          {gdLoading ? (
-            <div className="bg-white rounded-2xl border border-gray-200 p-8 animate-pulse space-y-4">
-              <div className="h-5 bg-gray-200 rounded w-1/3"></div>
-              <div className="h-8 bg-gray-200 rounded w-2/3"></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="h-24 bg-gray-100 rounded-xl"></div>
-                <div className="h-24 bg-gray-100 rounded-xl"></div>
+              <div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight" style={{ fontFamily: "Syne,sans-serif" }}>News Pulse</h1>
+                  <span className="flex items-center gap-1.5 text-xs text-green-700 bg-green-100 border border-green-200 px-2.5 py-1 rounded-full font-semibold">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" /> Live headlines
+                  </span>
+                </div>
+                <p className="text-slate-500 text-sm mt-1">
+                  What happened, why it matters for your placements, and what to say about it in a GD or interview.
+                </p>
+                <p className="text-slate-400 text-xs mt-1">
+                  From Economic Times, Mint, BusinessLine and The Hindu
+                  {data?.fetchedAt && <> · headlines checked {clockIST(data.fetchedAt)}</>}
+                  {brief?.builtAt && <> · AI analysis from {clockIST(brief.builtAt)} ({timeAgo(brief.builtAt)})</>}
+                </p>
               </div>
             </div>
-          ) : gdInsights && (
-            <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl overflow-hidden shadow-sm">
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={refreshHeadlines}
+                disabled={refreshing}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl hover:border-[#0D9488] hover:text-[#0D9488] text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} /> Refresh headlines
+              </button>
+              {isAdmin && (
+                <button
+                  onClick={rebuildAnalysis}
+                  disabled={refreshing}
+                  title="Admin only — uses AI tokens"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-[#0D9488] text-white rounded-xl hover:bg-[#0F766E] text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
+                >
+                  <ShieldCheck className="w-4 h-4" /> Rebuild analysis
+                </button>
+              )}
+            </div>
+          </div>
 
-              {/* Topic Header */}
-              <div className="bg-gradient-to-r from-[#00C4A7] to-[#00b296] px-6 py-5">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-bold text-teal-100 uppercase tracking-widest">Today's GD Topic</span>
-                      {isAdmin && (
-                        <button
-                          onClick={() => fetchGDInsights(activeCategory, true)}
-                          title="Refresh Topic (Admin Only)"
-                          disabled={gdLoading}
-                          className="p-1 rounded bg-white/10 hover:bg-white/20 text-white transition-colors disabled:opacity-50 flex items-center justify-center cursor-pointer"
-                        >
-                          <RefreshCw className={`w-3.5 h-3.5 ${gdLoading ? 'animate-spin' : ''}`} />
-                        </button>
-                      )}
-                      {gdInsights.difficulty && (
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white`}>
-                          {gdInsights.difficulty}
-                        </span>
-                      )}
-                    </div>
-                    <h2 className="text-2xl font-bold text-white leading-snug">{gdInsights.gd_topic}</h2>
-                    {gdInsights.why_trending && (
-                      <p className="text-teal-100 text-sm mt-1.5 flex items-center gap-1.5">
-                        <TrendingUp className="w-3.5 h-3.5 shrink-0" />
-                        {gdInsights.why_trending}
-                      </p>
+          {/* ── Categories ── */}
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mt-2">
+            {categories.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => changeCategory(c.id)}
+                className={`px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all border ${
+                  category === c.id
+                    ? "bg-[#0D9488] text-white border-[#0D9488] shadow-sm"
+                    : "bg-white text-slate-500 border-slate-200 hover:border-[#0D9488] hover:text-[#0D9488]"
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+
+          {error && !data && (
+            <Card className="p-8 text-center">
+              <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+              <p className="text-slate-700 font-medium">{error}</p>
+              <button onClick={() => load(category).catch(() => {})} className="mt-4 text-sm font-semibold text-[#0D9488]">Try again</button>
+            </Card>
+          )}
+
+          {analysisPending && articles.length > 0 && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-teal-50 border border-teal-100 text-sm text-teal-800">
+              <div className="w-4 h-4 border-2 border-teal-300 border-t-teal-700 rounded-full animate-spin shrink-0" />
+              Reading today&apos;s news and preparing your brief. This takes about a minute. The latest headlines are already below.
+            </div>
+          )}
+          {status === "unavailable" && !loading && articles.length > 0 && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-amber-50 border border-amber-100 text-sm text-amber-800">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              The AI analysis isn&apos;t ready for this section yet. The latest headlines are below. Please check back later.
+            </div>
+          )}
+
+          {/* ── In 60 seconds + Quiz ── */}
+          {(analysisPending || brief?.in60?.length > 0 || brief?.quiz?.length > 0) && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="p-6 lg:col-span-2">
+                <SectionTitle icon={Zap} hint={brief?.builtAt ? `as of ${clockIST(brief.builtAt)}` : null}>Today in 60 seconds</SectionTitle>
+                {analysisPending ? <Skeleton lines={5} /> : (
+                  <ol className="space-y-3">
+                    {(brief?.in60 || []).map((item, i) => (
+                      <li key={i} className="flex gap-3">
+                        <span className="mt-0.5 w-6 h-6 rounded-full bg-[#0D9488] text-white text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                        <div className="min-w-0">
+                          <p className="text-sm text-slate-800 leading-relaxed">{item.text}</p>
+                          <div className="mt-1"><SourceChip src={sourceFor(item.id)} /></div>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </Card>
+
+              <Card className="p-6">
+                <SectionTitle icon={HelpCircle}>Test yourself</SectionTitle>
+                {analysisPending ? <Skeleton lines={6} /> : brief?.quiz?.length ? (
+                  <div className="space-y-5">
+                    {brief.quiz.map((q, qi) => {
+                      const picked = answers[qi];
+                      return (
+                        <div key={qi}>
+                          <p className="text-sm font-semibold text-slate-800 mb-2">{qi + 1}. {q.question}</p>
+                          <div className="space-y-1.5">
+                            {q.options.map((opt, oi) => {
+                              const done = picked !== undefined;
+                              const correct = oi === q.answer;
+                              const style = !done
+                                ? "border-slate-200 hover:border-[#0D9488] text-slate-700"
+                                : correct
+                                  ? "border-green-300 bg-green-50 text-green-800"
+                                  : picked === oi ? "border-red-300 bg-red-50 text-red-700" : "border-slate-100 text-slate-400";
+                              return (
+                                <button
+                                  key={oi}
+                                  disabled={done}
+                                  onClick={() => setAnswers((a) => ({ ...a, [qi]: oi }))}
+                                  className={`w-full text-left text-xs px-3 py-2 rounded-xl border transition-colors flex items-center gap-2 ${style}`}
+                                >
+                                  {done && correct && <CheckCircle className="w-3.5 h-3.5 shrink-0" />}
+                                  {done && !correct && picked === oi && <XCircle className="w-3.5 h-3.5 shrink-0" />}
+                                  {opt}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {picked !== undefined && (
+                            <div className="mt-2 text-xs text-slate-500 leading-relaxed">
+                              {q.explanation} <SourceChip src={sourceFor(q.id)} />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {answeredAll && (
+                      <div className="text-sm font-bold text-[#0D9488] bg-teal-50 rounded-xl px-3 py-2 text-center">
+                        You got {score} of {brief.quiz.length}{score === brief.quiz.length ? " — you're up to date!" : " — read the stories below to catch up."}
+                      </div>
                     )}
                   </div>
-                  <button
-                    onClick={handleGDPractice}
-                    disabled={gdPracticeLoading}
-                    className="shrink-0 bg-white text-[#0D9488] font-bold px-6 py-3 rounded-xl hover:bg-teal-50 transition-colors flex items-center gap-2 shadow-md disabled:opacity-60"
-                  >
-                    {gdPracticeLoading ? <><div className="w-4 h-4 border-2 border-[#0D9488]/40 border-t-[#0D9488] rounded-full animate-spin" /> Starting...</> : <><MessageSquare className="w-4 h-4" /> Practice GD Now</>}
-                  </button>
-                </div>
-              </div>
+                ) : <p className="text-sm text-slate-400">No quiz for this section yet.</p>}
+              </Card>
+            </div>
+          )}
 
-              <div className="p-6 space-y-6">
-
-                {/* Pros & Cons */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Pros */}
-                  <div className="bg-green-50/40 backdrop-blur-md rounded-2xl p-4 border border-green-200/30">
-                    <h3 className="text-sm font-bold text-green-800 mb-3 flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4" /> Arguments FOR
-                    </h3>
-                    <ul className="space-y-2">
-                      {(Array.isArray(gdInsights.pros) ? gdInsights.pros : [gdInsights.pros]).map((p, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-green-900">
-                          <span className="mt-1 w-4 h-4 rounded-full bg-green-200 text-green-800 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
-                          {p}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  {/* Cons */}
-                  <div className="bg-red-50/40 backdrop-blur-md rounded-2xl p-4 border border-red-200/30">
-                    <h3 className="text-sm font-bold text-red-800 mb-3 flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4" /> Arguments AGAINST
-                    </h3>
-                    <ul className="space-y-2">
-                      {(Array.isArray(gdInsights.cons) ? gdInsights.cons : [gdInsights.cons]).map((c, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-red-900">
-                          <span className="mt-1 w-4 h-4 rounded-full bg-red-200 text-red-800 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
-                          {c}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Key Facts + How to Start */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {gdInsights.key_facts?.length > 0 && (
-                    <div className="bg-blue-50/40 backdrop-blur-md rounded-2xl p-4 border border-blue-200/30">
-                      <h3 className="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2">
-                        <BarChart2 className="w-4 h-4" /> Key Facts & Data
-                      </h3>
-                      <ul className="space-y-2">
-                        {gdInsights.key_facts.map((f, i) => (
-                          <li key={i} className="text-sm text-blue-900 flex items-start gap-2">
-                            <span className="text-blue-400 mt-0.5">•</span>{f}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {gdInsights.how_to_start && (
-                    <div className="bg-purple-50/40 backdrop-blur-md rounded-2xl p-4 border border-purple-200/30">
-                      <h3 className="text-sm font-bold text-purple-800 mb-3 flex items-center gap-2">
-                        <Target className="w-4 h-4" /> How to Start Speaking
-                      </h3>
-                      <p className="text-sm text-purple-900 italic leading-relaxed">"{gdInsights.how_to_start}"</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Example Argument */}
-                {gdInsights.example_argument && (
-                  <div className="bg-teal-50/40 backdrop-blur-md rounded-2xl p-4 border border-teal-200/30">
-                    <h3 className="text-sm font-bold text-teal-800 mb-2 flex items-center gap-2">
-                      <Lightbulb className="w-4 h-4" /> Winning Argument (use this in GD)
-                    </h3>
-                    <p className="text-sm text-teal-900 leading-relaxed">{gdInsights.example_argument}</p>
-                  </div>
-                )}
-
-                {/* Power Phrase + Interview connection */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {gdInsights.power_phrase && (
-                    <div className="bg-yellow-50/40 backdrop-blur-md rounded-2xl p-4 border border-yellow-200/30 flex items-start gap-3">
-                      <Star className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
-                      <div>
-                        <div className="text-xs font-bold text-yellow-800 mb-1">Power Phrase</div>
-                        <p className="text-sm text-yellow-900 font-medium italic">"{gdInsights.power_phrase}"</p>
+          {/* ── Big themes ── */}
+          {(analysisPending || brief?.themes?.length > 0) && (
+            <div>
+              <SectionTitle icon={Globe} hint="the debates a panel can raise">Big stories you must understand</SectionTitle>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {analysisPending
+                  ? [...Array(3)].map((_, i) => <Card key={i} className="p-5"><Skeleton lines={6} /></Card>)
+                  : brief.themes.map((t, i) => (
+                    <Card key={i} className="p-5 flex flex-col">
+                      <h3 className="font-bold text-slate-900 leading-snug mb-2">{t.title}</h3>
+                      <p className="text-sm text-slate-600 leading-relaxed">{t.whatIsGoingOn}</p>
+                      {t.indiaAngle && (
+                        <p className="text-sm text-slate-700 mt-3"><span className="font-semibold text-[#0D9488]">For India: </span>{t.indiaAngle}</p>
+                      )}
+                      {(t.oneSide || t.otherSide) && (
+                        <div className="mt-3 space-y-2">
+                          {t.oneSide && <div className="text-xs rounded-xl bg-green-50 border border-green-100 text-green-900 px-3 py-2"><span className="font-bold">One view: </span>{t.oneSide}</div>}
+                          {t.otherSide && <div className="text-xs rounded-xl bg-rose-50 border border-rose-100 text-rose-900 px-3 py-2"><span className="font-bold">The other view: </span>{t.otherSide}</div>}
+                        </div>
+                      )}
+                      <div className="flex flex-wrap gap-1.5 mt-auto pt-3">
+                        {t.ids.slice(0, 3).map((id) => <SourceChip key={id} src={sourceFor(id)} />)}
                       </div>
-                    </div>
-                  )}
-                  {gdInsights.interview_connection && (
-                    <div className="bg-orange-50/40 backdrop-blur-md rounded-2xl p-4 border border-orange-200/30 flex items-start gap-3">
-                      <Sparkles className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
-                      <div>
-                        <div className="text-xs font-bold text-orange-800 mb-1">Interview Link</div>
-                        <p className="text-sm text-orange-900">{gdInsights.interview_connection}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Practice CTA bottom */}
-                <div className="border-t border-gray-100 pt-4 flex items-center justify-between flex-wrap gap-3">
-                  <p className="text-sm text-gray-500">Ready? Jump into the live GD arena with AI participants.</p>
-                  <button
-                    onClick={handleGDPractice}
-                    disabled={gdPracticeLoading}
-                    className="bg-[#0D9488] text-white font-semibold px-6 py-2.5 rounded-xl hover:bg-[#0F766E] transition-colors flex items-center gap-2 text-sm"
-                  >
-                    {gdPracticeLoading ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Starting...</> : <>Start GD Practice <ArrowRight className="w-4 h-4" /></>}
-                  </button>
-                </div>
+                    </Card>
+                  ))}
               </div>
             </div>
           )}
 
-          {/* NEWS FEED */}
+          {/* ── GD topic from the news ── */}
+          {(analysisPending || gd) && (
+            <Card className="overflow-hidden">
+              <div className="bg-gradient-to-r from-[#00C4A7] to-[#0891B2] px-6 py-5">
+                {analysisPending ? <Skeleton lines={2} /> : (
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-bold text-teal-50 uppercase tracking-widest">GD topic from today&apos;s news</span>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">{gd.difficulty}</span>
+                      </div>
+                      <h2 className="text-xl md:text-2xl font-bold text-white leading-snug">{gd.topic}</h2>
+                      {gd.whyNow && (
+                        <p className="text-teal-50 text-sm mt-2 flex items-start gap-1.5"><TrendingUp className="w-4 h-4 mt-0.5 shrink-0" />{gd.whyNow}</p>
+                      )}
+                    </div>
+                    <Link
+                      href={practiceHref}
+                      className="shrink-0 bg-white text-[#0D9488] font-bold px-5 py-3 rounded-xl hover:bg-teal-50 transition-colors flex items-center gap-2 shadow-md"
+                    >
+                      <Mic className="w-4 h-4" /> Practise this GD
+                    </Link>
+                  </div>
+                )}
+              </div>
+              {!analysisPending && (
+                <div className="p-6 space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-green-50/60 rounded-2xl p-4 border border-green-100">
+                      <h3 className="text-sm font-bold text-green-800 mb-3 flex items-center gap-2"><CheckCircle className="w-4 h-4" /> Points for</h3>
+                      <ul className="space-y-2">
+                        {gd.pointsFor.map((p, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-green-900">
+                            <span className="mt-0.5 w-5 h-5 rounded-full bg-green-200 text-green-800 text-xs flex items-center justify-center font-bold shrink-0">{i + 1}</span>{p}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="bg-rose-50/60 rounded-2xl p-4 border border-rose-100">
+                      <h3 className="text-sm font-bold text-rose-800 mb-3 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> Points against</h3>
+                      <ul className="space-y-2">
+                        {gd.pointsAgainst.map((p, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-rose-900">
+                            <span className="mt-0.5 w-5 h-5 rounded-full bg-rose-200 text-rose-800 text-xs flex items-center justify-center font-bold shrink-0">{i + 1}</span>{p}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {gd.facts.length > 0 && (
+                      <div className="bg-blue-50/60 rounded-2xl p-4 border border-blue-100">
+                        <h3 className="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2"><BarChart2 className="w-4 h-4" /> Facts from the news (quote these)</h3>
+                        <ul className="space-y-2.5">
+                          {gd.facts.map((f, i) => (
+                            <li key={i} className="text-sm text-blue-900">
+                              <span className="text-blue-400 mr-1">•</span>{f.fact}
+                              <div className="mt-1 ml-3"><SourceChip src={sourceFor(f.id)} /></div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    <div className="space-y-4">
+                      {gd.openingLine && (
+                        <div className="bg-purple-50/60 rounded-2xl p-4 border border-purple-100">
+                          <h3 className="text-sm font-bold text-purple-800 mb-2 flex items-center gap-2"><Target className="w-4 h-4" /> How to open</h3>
+                          <p className="text-sm text-purple-900 italic leading-relaxed">&ldquo;{gd.openingLine}&rdquo;</p>
+                        </div>
+                      )}
+                      {gd.closingLine && (
+                        <div className="bg-teal-50/60 rounded-2xl p-4 border border-teal-100">
+                          <h3 className="text-sm font-bold text-teal-800 mb-2 flex items-center gap-2"><Lightbulb className="w-4 h-4" /> How to summarise</h3>
+                          <p className="text-sm text-teal-900 italic leading-relaxed">&ldquo;{gd.closingLine}&rdquo;</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {gd.powerPhrase && (
+                      <div className="bg-yellow-50/60 rounded-2xl p-4 border border-yellow-100 flex items-start gap-3">
+                        <Sparkles className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
+                        <div>
+                          <div className="text-xs font-bold text-yellow-800 mb-1">Power phrase</div>
+                          <p className="text-sm text-yellow-900 font-medium italic">&ldquo;{gd.powerPhrase}&rdquo;</p>
+                        </div>
+                      </div>
+                    )}
+                    {gd.interviewConnection && (
+                      <div className="bg-orange-50/60 rounded-2xl p-4 border border-orange-100 flex items-start gap-3">
+                        <MessageSquare className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+                        <div>
+                          <div className="text-xs font-bold text-orange-800 mb-1">In your interview</div>
+                          <p className="text-sm text-orange-900">{gd.interviewConnection}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {gd.ids.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-xs text-slate-400 mr-1">Read the news behind this topic:</span>
+                      {gd.ids.slice(0, 4).map((id) => <SourceChip key={id} src={sourceFor(id)} />)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* ── Top stories with analysis ── */}
+          {(analysisPending || brief?.stories?.length > 0) && (
+            <div>
+              <SectionTitle icon={Sparkles} hint="picked and explained for placements">Top stories for your placements</SectionTitle>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {analysisPending
+                  ? [...Array(4)].map((_, i) => <Card key={i} className="p-5"><Skeleton lines={5} /></Card>)
+                  : brief.stories.map((s) => {
+                    const src = sourceFor(s.id);
+                    const isSaved = saved.some((a) => a.url === src?.url);
+                    return (
+                      <Card key={s.id} className="p-5 flex flex-col">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          {s.sector && <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{s.sector}</span>}
+                          {s.gdWorthy && <span className="text-[11px] font-bold uppercase tracking-wide text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">GD-worthy</span>}
+                          <span className="ml-auto" />
+                          {src && (
+                            <button onClick={() => toggleSave(src)} title={isSaved ? "Remove from saved" : "Save"} className="p-1 text-slate-400 hover:text-yellow-500">
+                              <Bookmark className={`w-4 h-4 ${isSaved ? "fill-yellow-400 text-yellow-500" : ""}`} />
+                            </button>
+                          )}
+                        </div>
+                        <h3 className="font-bold text-slate-900 leading-snug" style={{ fontFamily: "Syne,sans-serif" }}>{s.headline}</h3>
+                        <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">{s.whatHappened}</p>
+                        {s.whyItMatters && (
+                          <div className="mt-3 text-sm bg-teal-50/70 border border-teal-100 rounded-xl px-3 py-2 text-teal-900">
+                            <span className="font-bold">Why it matters for you: </span>{s.whyItMatters}
+                          </div>
+                        )}
+                        {s.interviewQuestion && (
+                          <div className="mt-2 text-sm text-slate-700">
+                            <span className="font-semibold text-orange-700">Could be asked: </span>&ldquo;{s.interviewQuestion}&rdquo;
+                          </div>
+                        )}
+                        {s.talkingPoint && (
+                          <div className="mt-1.5 text-sm text-slate-700">
+                            <span className="font-semibold text-purple-700">You could say: </span>{s.talkingPoint}
+                          </div>
+                        )}
+                        <div className="mt-auto pt-3"><SourceChip src={src} /></div>
+                      </Card>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {brief?.tip?.text && (
+            <Card className="p-5 flex items-start gap-3">
+              <Lightbulb className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <div className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-1">Interview tip from today&apos;s news</div>
+                <p className="text-sm text-slate-800">{brief.tip.text}</p>
+                <div className="mt-1.5"><SourceChip src={sourceFor(brief.tip.id)} /></div>
+              </div>
+            </Card>
+          )}
+
+          {/* ── All latest headlines ── */}
           <div>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
-              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2" style={{fontFamily:'Syne,sans-serif'}}>
-                <Newspaper className="w-5 h-5 text-[#0D9488]" /> Placement News
-              </h2>
-              {/* Category Pills */}
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 w-full md:w-auto">
-                {CATEGORIES.map(cat => (
-                  <button key={cat} onClick={() => handleCategoryChange(cat)}
-                    className={`px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all border ${
-                      activeCategory === cat
-                        ? 'bg-[#0D9488] text-white border-[#0D9488] shadow-sm'
-                        : 'bg-white text-gray-500 border-gray-200 hover:border-[#0D9488] hover:text-[#0D9488]'
-                    }`}>
-                    {cat}
-                  </button>
-                ))}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
+              <SectionTitle icon={Newspaper} hint={articles.length ? `${articles.length} stories · last 72 hours` : null}>
+                {showSaved ? "Saved stories" : "All latest headlines"}
+              </SectionTitle>
+              <div className="flex items-center gap-2 -mt-3 sm:mt-0 sm:mb-4">
+                <button
+                  onClick={() => setShowSaved((v) => !v)}
+                  className={`text-xs font-semibold px-3 py-2 rounded-xl border transition-colors flex items-center gap-1.5 ${showSaved ? "bg-yellow-50 border-yellow-200 text-yellow-800" : "bg-white border-slate-200 text-slate-600"}`}
+                >
+                  <Bookmark className="w-3.5 h-3.5" /> Saved ({saved.length})
+                </button>
+                {!showSaved && (
+                  <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search headlines, e.g. RBI, AI, Tata"
+                      className="w-full bg-white border border-slate-200 focus:border-[#0D9488] rounded-xl pl-9 pr-3 py-2 text-sm outline-none transition-colors"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
-            {newsLoading ? (
-              <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
-                    <div className="space-y-3">
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                      <div className="h-3 bg-gray-100 rounded w-full"></div>
-                      <div className="h-3 bg-gray-100 rounded w-5/6"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : filteredArticles.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredArticles.map((article, i) => (
-                  <div 
-                    key={i} 
-                    onClick={() => {
-                      if (article.url && article.url !== '#') {
-                        window.open(article.url, '_blank', 'noopener,noreferrer');
-                      }
-                    }}
-                    className={`bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl shadow-sm hover:shadow-md transition-all group overflow-hidden ${
-                      article.url && article.url !== '#' ? 'cursor-pointer' : ''
-                    }`}
-                  >
-                    <div className="p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-[11px] font-bold uppercase tracking-wide text-[#0D9488] bg-[#CCFBF1] px-2 py-0.5 rounded-full">
-                          {typeof article.source === 'object' ? article.source?.name : article.source || 'News'}
-                        </span>
-                        <span className="text-xs text-gray-400 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {article.time || (article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'Today')}
-                        </span>
-                      </div>
-                      <h3 className="text-sm font-bold text-gray-900 mb-2 leading-snug group-hover:text-[#0D9488] transition-colors line-clamp-2" style={{fontFamily:'Syne,sans-serif'}}>
-                        {article.title}
-                      </h3>
-                      <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-3">
-                        {article.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation(); // Prevent card click event
-                            toggleSave(article);
-                          }} 
-                          className="p-1.5 text-gray-400 hover:text-yellow-500 transition-colors rounded-lg hover:bg-yellow-50"
-                        >
-                          <Bookmark className={`w-4 h-4 ${savedArticles.some(a => a.title === article.title) ? 'fill-yellow-400 text-yellow-500' : ''}`} />
-                        </button>
-                        {article.url && article.url !== '#' ? (
-                          <a href={article.url} target="_blank" rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()} // Prevent card double click trigger
-                            className="text-xs font-semibold text-[#0D9488] hover:text-[#0F766E] flex items-center gap-1">
-                            Read More <ArrowUpRight className="w-3 h-3" />
-                          </a>
-                        ) : (
-                          <span className="text-xs text-gray-300">Source unavailable</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            {loading && !articles.length ? (
+              <div className="space-y-3">{[...Array(5)].map((_, i) => <Card key={i} className="p-4"><Skeleton lines={2} /></Card>)}</div>
+            ) : (showSaved ? saved : filtered).length === 0 ? (
+              <Card className="p-10 text-center">
+                <Newspaper className="w-9 h-9 text-slate-300 mx-auto mb-2" />
+                <p className="text-slate-600 font-medium">{showSaved ? "No saved stories yet" : search ? "No headlines match your search" : "No headlines right now"}</p>
+                <p className="text-slate-400 text-sm mt-1">{showSaved ? "Tap the bookmark on a story to keep it here." : search ? "Try another word." : "Tap Refresh headlines in a few minutes."}</p>
+              </Card>
             ) : (
-              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                <Newspaper className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-600 font-medium">{searchQuery ? 'No articles match your search' : 'No articles available'}</p>
-                <p className="text-gray-400 text-sm mt-1">{searchQuery ? 'Try a different keyword' : 'Check back after 6 AM IST'}</p>
-              </div>
+              <Card className="divide-y divide-slate-100">
+                {(showSaved ? saved : filtered.slice(0, 60)).map((a) => {
+                  const isSaved = saved.some((s) => s.url === a.url);
+                  return (
+                    <div key={a.url} className="flex items-start gap-3 px-4 py-3.5 hover:bg-slate-50/60 transition-colors">
+                      {a.image ? (
+                        <img src={a.image} alt="" loading="lazy" className="w-16 h-16 rounded-xl object-cover shrink-0 hidden sm:block bg-slate-100" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                      ) : null}
+                      <div className="flex-1 min-w-0">
+                        <a href={a.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-slate-900 hover:text-[#0D9488] leading-snug line-clamp-2">
+                          {a.title}
+                        </a>
+                        {a.summary && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{a.summary}</p>}
+                        <div className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1.5">
+                          <span className="font-semibold text-slate-500">{a.source}</span>
+                          {a.publishedAt && <><Clock className="w-3 h-3" /> {timeAgo(a.publishedAt)}</>}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center gap-1 shrink-0">
+                        <button onClick={() => toggleSave(a)} title={isSaved ? "Remove from saved" : "Save"} className="p-1.5 text-slate-400 hover:text-yellow-500 rounded-lg hover:bg-yellow-50">
+                          <Bookmark className={`w-4 h-4 ${isSaved ? "fill-yellow-400 text-yellow-500" : ""}`} />
+                        </button>
+                        <a href={a.url} target="_blank" rel="noopener noreferrer" className="p-1.5 text-slate-400 hover:text-[#0D9488]" title="Read on the publisher's site">
+                          <ArrowUpRight className="w-4 h-4" />
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })}
+              </Card>
             )}
           </div>
 
-          {/* Top Companies sidebar-style row */}
-          <div className="bg-white/70 backdrop-blur-md border border-white/30 rounded-3xl p-6 shadow-sm">
-            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-[#0D9488]" /> Top Hiring Companies
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-              {[
-                { name: 'Google', jobs: 245, trend: 'up' },
-                { name: 'Microsoft', jobs: 189, trend: 'up' },
-                { name: 'Amazon', jobs: 167, trend: 'down' },
-                { name: 'TCS', jobs: 423, trend: 'up' },
-                { name: 'Infosys', jobs: 378, trend: 'stable' },
-              ].map((c, i) => (
-                <div key={i} className="flex flex-col items-center justify-center p-3 bg-slate-50/50 backdrop-blur-sm rounded-2xl border border-slate-100 text-center hover:border-[#00C4A7]/30 transition-all">
-                  <div className="font-semibold text-gray-900 text-sm">{c.name}</div>
-                  <div className="text-xs text-gray-500 mt-0.5">{c.jobs} positions</div>
-                  <div className="mt-1.5">
-                    {c.trend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-green-500 mx-auto" />}
-                    {c.trend === 'down' && <TrendingUp className="w-3.5 h-3.5 text-red-400 rotate-180 mx-auto" />}
-                    {c.trend === 'stable' && <div className="w-3.5 h-0.5 bg-gray-300 mx-auto mt-1.5"></div>}
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="flex items-center justify-between flex-wrap gap-3 text-sm bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4">
+            <span className="text-slate-600">Ready to use this? Practise speaking on today&apos;s news with the AI panel.</span>
+            <Link href={practiceHref} className="font-semibold text-[#0D9488] flex items-center gap-1.5">Start GD practice <ArrowRight className="w-4 h-4" /></Link>
           </div>
-
         </div>
       </div>
     </AppShell>
