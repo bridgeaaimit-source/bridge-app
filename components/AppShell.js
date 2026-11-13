@@ -40,6 +40,12 @@ const DrivesIcon = (props) => (
 );
 
 const AdminIcon = ShieldIcon;
+const UsageIcon = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M3 3v18h18" />
+    <path d="M7 15l4-4 3 3 5-6" />
+  </svg>
+);
 const SupportIcon = (props) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -303,6 +309,7 @@ export default function AppShell({ children, hideNavigation = false }) {
         ...(isRecruiter ? [{ href: '/recruiter', icon: RecruitersIcon, label: 'Recruiter', group: ['/recruiter'] }] : []),
         { href: '/drives', icon: DrivesIcon, label: 'Drives', group: ['/drives'] },
         ...(isAdmin ? [{ href: '/admin', icon: AdminIcon, label: 'Admin Dashboard', group: ['/admin'] }] : []),
+        ...(isAdmin ? [{ href: '/admin/token-dashboard', icon: UsageIcon, label: 'API Usage & Cost', group: ['/admin/token-dashboard'] }] : []),
         ...(isAdmin ? [{ href: '/admin/support', icon: SupportIcon, label: 'Support', group: ['/admin/support'], badge: openTicketsCount }] : [])
       ]
     }

@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import FramerMotionProvider from "@/components/FramerMotionProvider";
 import ClientSupportWidget from "@/components/ClientSupportWidget";
+import ApiIdentity from "@/components/ApiIdentity";
 
 const syne = Syne({
   variable: "--font-syne",
@@ -70,6 +71,7 @@ export default function RootLayout({
         <link rel="icon" href="/images/logo_favicon_512.png" />
       </head>
       <body className="min-h-full flex flex-col bg-white dark:bg-gray-900 transition-colors" suppressHydrationWarning>
+        <ApiIdentity />
         <ThemeProvider>
           <FramerMotionProvider>
             {children}

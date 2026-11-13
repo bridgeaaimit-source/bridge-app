@@ -17,6 +17,7 @@
 import crypto from 'crypto';
 import { pcmToWav } from '@/lib/wavGenerator';
 import { adminStorage, adminDb, admin } from '@/lib/firebase-admin';
+import { trackVoiceServer } from '@/lib/tokenTrackerServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -131,6 +132,7 @@ export async function POST(request) {
 
     // Generate fresh audio
     let audioBuffer, contentType;
+    let ttsProvider = 'gemini';
     try {
       audioBuffer = await generateGeminiTTS(text, voiceName);
       contentType = 'audio/wav';
@@ -140,6 +142,7 @@ export async function POST(request) {
         const result = await generateElevenLabsTTS(text);
         audioBuffer = result.buffer;
         contentType = result.contentType;
+        ttsProvider = 'elevenlabs';
       } catch (elErr) {
         console.error('[gd-ai/tts] Both TTS providers failed:', elErr.message);
         return new Response(JSON.stringify({ error: 'TTS unavailable' }), { status: 503 });
@@ -153,6 +156,9 @@ export async function POST(request) {
         console.error('[gd-ai/tts] Storage cache save failed:', err)
       );
     }
+
+    // Daily voice totals + per-call log for the admin usage dashboard
+    trackVoiceServer(uid, { chars: text.length, provider: ttsProvider, feature: 'gd-voice' }).catch(() => {});
 
     // Log usage to analytics
     if (adminDb) {
