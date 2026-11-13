@@ -178,7 +178,7 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { m: 'voice', label: 'Voice Only', desc: 'Hands-free audio transcription.', icon: Mic },
-                  { m: 'video', label: 'Video & Voice', desc: 'Assess body language & visual responses.', icon: Video }
+                  { m: 'video', label: 'Video & Voice', desc: 'Like a real video interview. Also get feedback on eye contact, posture, lighting and attire.', icon: Video }
                 ].map((item) => {
                   const Icon = item.icon;
                   return (
