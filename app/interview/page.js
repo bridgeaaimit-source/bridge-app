@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { RotateCcw, Share2, Mic, Trophy, Volume2, Lightbulb, Star, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
 import confetti from "canvas-confetti";
 import AppShell from "@/components/AppShell";
 import toast from "react-hot-toast";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { addDoc, collection, doc, getDoc, updateDoc } from "firebase/firestore";
+import { normalizeFillerWords } from "@/lib/interviewEval";
 import { useAssemblyAI } from "@/hooks/useAssemblyAI";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
 
@@ -40,6 +42,10 @@ export default function InterviewPage() {
   const [browserSupport, setBrowserSupport] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [failedCount, setFailedCount] = useState(0);
+  // One entry per question: { question, answer, promise, result, error }
+  const evaluationsRef = useRef([]);
 
   const {
     isRecording,
@@ -169,145 +175,131 @@ export default function InterviewPage() {
     generateQuestions();
   };
 
-  const submitVoiceAnswer = async () => {
-    if (!voiceAnswer.trim()) {
-      setErrorMessage("Please speak or write an answer before submitting.");
-      return;
-    }
+  const MIN_WORDS = 20;
+  const countWords = (text) => (text.trim() ? text.trim().split(/\s+/).length : 0);
 
-    if (!uid || !sessionId) {
-      setErrorMessage("User session not initialized. Please refresh and try again.");
-      return;
-    }
-
-    setErrorMessage("");
-    setIsAnalyzingAnswer(true);
-
-    try {
-      const currentQuestion = questions[currentQuestionIndex];
-      console.log('Submitting voice answer:', { currentQuestion, transcript: voiceAnswer.trim(), domain: selectedDomain, uid, sessionId });
-      
+  const evaluateAnswer = async (question, answerText) => {
+    const callApi = async () => {
       const response = await fetch("/api/interview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: currentQuestion,
-          answer: voiceAnswer.trim(),
-          domain: selectedDomain,
-          uid,
-          sessionId
-        }),
+        body: JSON.stringify({ question, answer: answerText, domain: selectedDomain, uid }),
       });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.error || "Could not analyze this answer.");
+      return data;
+    };
+    try {
+      return await callApi();
+    } catch {
+      return await callApi(); // one quiet retry
+    }
+  };
 
-      console.log('Voice answer response status:', response.status);
-      const data = await response.json();
-      console.log('Voice answer response data:', data);
+  const queueEvaluation = (index, question, answerText) => {
+    const entry = { question, answer: answerText, result: null, error: null };
+    entry.promise = evaluateAnswer(question, answerText)
+      .then((result) => { entry.result = result; return result; })
+      .catch((err) => { entry.error = err; return null; });
+    evaluationsRef.current[index] = entry;
+  };
 
-      if (!response.ok) {
-        throw new Error(data?.error || "Could not analyze your answer right now.");
-      }
-
-      const updatedAnalyses = [...analyses, data];
-      setAnalyses(updatedAnalyses);
-      const updatedResponses = [
-        ...responses,
-        {
-          question: currentQuestion,
-          answer: voiceAnswer.trim(),
-          analysis: data
-        }
-      ];
-      setResponses(updatedResponses);
-      setVoiceAnswer("");
-      clearAssemblyAITranscript();
-      
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-      } else {
-        setStep(3);
-        setFeedback(data);
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
+  const saveInterview = async (report) => {
+    if (isBypassed || !auth.currentUser) return;
+    const user = auth.currentUser;
+    try {
+      await addDoc(collection(db, "users", user.uid, "interview_feedback"), {
+        type: "mock_interview",
+        jobRole: selectedDomain,
+        round: "Mock Interview",
+        mode: interviewMode,
+        feedback: {
+          overall_score: report.overall_score,
+          metrics: report.metrics,
+          strengths: report.strengths,
+          improvements: report.improvements,
+          filler_words: report.filler_words,
+        },
+        questions: report.perQuestion.map((q) => ({ question: q.question, answer: q.answer, score: q.score, better_answer: q.better_answer })),
+        sessionId,
+        timestamp: new Date().toISOString(),
+        createdAt: Date.now(),
+      });
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        const newInterviewsDone = (userData.interviewsDone || 0) + 1;
+        const newAvgScore = ((userData.avgScore || 0) * (userData.interviewsDone || 0) + report.overall_score) / newInterviewsDone;
+        await updateDoc(userRef, {
+          interviewsDone: newInterviewsDone,
+          avgScore: Math.round(newAvgScore * 10) / 10,
+          updatedAt: new Date().toISOString(),
         });
       }
+      fetch(`/api/bridge-score?userId=${user.uid}`).catch(() => {});
     } catch (error) {
-      console.error('Error submitting voice answer:', error);
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while analyzing your answer. Please try again."
-      );
-    } finally {
-      setIsAnalyzingAnswer(false);
+      console.error("Could not save interview:", error.message);
+      toast.error("Your report is ready, but we couldn't save it to your profile.");
     }
   };
 
-  const submitAnswer = async () => {
-    if (!answer.trim()) {
-      setErrorMessage("Please write an answer before submitting.");
+  const finishInterview = async () => {
+    setIsFinalizing(true);
+    setErrorMessage("");
+    const entries = evaluationsRef.current;
+    await Promise.all(entries.map((e) => e.promise));
+    const failed = entries.filter((e) => !e.result);
+    setFailedCount(failed.length);
+    if (failed.length > 0) {
+      setIsFinalizing(false);
+      setErrorMessage(`We couldn't evaluate ${failed.length} of your answers. Tap "Retry" to try again.`);
       return;
     }
+    const results = entries.map((e) => e.result);
+    const report = aggregateFeedback(results, entries);
+    setAnalyses(results);
+    setResponses(entries.map((e) => ({ question: e.question, answer: e.answer, analysis: e.result })));
+    setSelectedFeedbackTab(0);
+    setFeedback(report);
+    setIsFinalizing(false);
+    setStep(3);
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    saveInterview(report);
+  };
 
+  const retryFailed = () => {
+    evaluationsRef.current.forEach((entry, index) => {
+      if (entry && !entry.result) queueEvaluation(index, entry.question, entry.answer);
+    });
+    finishInterview();
+  };
+
+  const submitAnswerText = (rawText) => {
+    const text = (rawText || "").trim();
+    if (countWords(text) < MIN_WORDS) {
+      setErrorMessage(`Please answer in at least ${MIN_WORDS} words so the AI can give useful feedback.`);
+      return;
+    }
     setErrorMessage("");
-    setIsAnalyzingAnswer(true);
-
-    try {
-      const currentQuestion = questions[currentQuestionIndex];
-      const response = await fetch("/api/interview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: currentQuestion,
-          answer: answer.trim(),
-          domain: selectedDomain,
-          uid,
-          sessionId
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || "Could not analyze your answer right now.");
-      }
-
-      const updatedAnalyses = [...analyses, data];
-      setAnalyses(updatedAnalyses);
-      const updatedResponses = [
-        ...responses,
-        {
-          question: currentQuestion,
-          answer: answer.trim(),
-          analysis: data,
-        },
-      ];
-      setResponses(updatedResponses);
-
-      const isLastQuestion = currentQuestionIndex >= questions.length - 1;
-      if (isLastQuestion) {
-        setSelectedFeedbackTab(0);
-        setFeedback(aggregateFeedback(updatedAnalyses));
-        setStep(3);
-      } else {
-        setCurrentQuestionIndex((prev) => prev + 1);
-        setAnswer("");
-      }
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while analyzing your answer. Please try again."
-      );
-    } finally {
-      setIsAnalyzingAnswer(false);
+    queueEvaluation(currentQuestionIndex, questions[currentQuestionIndex], text);
+    setAnswer("");
+    setVoiceAnswer("");
+    clearAssemblyAITranscript();
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex((prev) => prev + 1);
+    } else {
+      finishInterview();
     }
   };
+
+  const submitVoiceAnswer = () => submitAnswerText(voiceAnswer);
+  const submitAnswer = () => submitAnswerText(answer);
 
   const resetInterview = () => {
     setStep(1);
     setAnswer("");
+    setVoiceAnswer("");
     setQuestions([]);
     setCurrentQuestionIndex(0);
     setAnalyses([]);
@@ -317,6 +309,10 @@ export default function InterviewPage() {
     setErrorMessage("");
     setIsLoadingQuestions(false);
     setIsAnalyzingAnswer(false);
+    setIsFinalizing(false);
+    setFailedCount(0);
+    evaluationsRef.current = [];
+    setSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   };
 
   const shareResult = () => {
@@ -334,41 +330,37 @@ export default function InterviewPage() {
     }
   };
 
-  const aggregateFeedback = (analyses) => {
-    if (!analyses || analyses.length === 0) return null;
-
-    const totalScore = analyses.reduce((sum, analysis) => sum + (analysis.score || 0), 0);
-    const overallScore = totalScore / analyses.length;
-
+  const aggregateFeedback = (results, entries = []) => {
+    if (!results || results.length === 0) return null;
+    const avg = (key) => {
+      const values = results.map((r) => Number(r?.[key])).filter((n) => Number.isFinite(n));
+      return values.length ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10 : 0;
+    };
     const allFillerWords = new Set();
     const allStrengths = [];
     const allImprovements = [];
-
-    analyses.forEach(analysis => {
-      if (analysis.filler_words) {
-        analysis.filler_words.forEach(word => allFillerWords.add(word));
-      }
-      if (analysis.strengths) {
-        allStrengths.push(...analysis.strengths);
-      }
-      if (analysis.improvements) {
-        allImprovements.push(...analysis.improvements);
-      }
+    results.forEach((r) => {
+      normalizeFillerWords(r?.filler_words).found.forEach((w) => allFillerWords.add(w));
+      if (Array.isArray(r?.strengths)) allStrengths.push(...r.strengths);
+      if (Array.isArray(r?.improvements)) allImprovements.push(...r.improvements);
     });
-
     return {
-      overall_score: overallScore,
+      overall_score: avg("score"),
       filler_words: Array.from(allFillerWords),
-      strengths: allStrengths,
-      improvements: allImprovements,
+      strengths: allStrengths.slice(0, 6),
+      improvements: allImprovements.slice(0, 6),
       metrics: {
-        clarity: overallScore,
-        relevance: overallScore,
-        confidence: overallScore,
-        structure: overallScore,
-        completeness: overallScore
+        clarity: avg("clarity"),
+        confidence: avg("confidence"),
+        content: avg("content"),
+        communication: avg("communication"),
       },
-      model_answer: "Based on your responses, a strong answer would demonstrate clear communication of your skills and experiences with specific examples, showing how they align with the role requirements."
+      perQuestion: results.map((r, i) => ({
+        question: entries[i]?.question || questions[i] || `Question ${i + 1}`,
+        answer: entries[i]?.answer || "",
+        score: Number.isFinite(Number(r?.score)) ? Number(r.score) : 0,
+        better_answer: typeof r?.better_answer === "string" ? r.better_answer : "",
+      })),
     };
   };
 
@@ -486,6 +478,9 @@ export default function InterviewPage() {
                   >
                     {isLoadingQuestions ? "Loading Questions..." : "Begin Interview →"}
                   </button>
+                  {errorMessage && (
+                    <div className="mt-4 p-4 bg-red-50 rounded-xl border border-red-200 text-red-600 text-sm">{errorMessage}</div>
+                  )}
                 </div>
               </div>
             )}
@@ -500,7 +495,7 @@ export default function InterviewPage() {
                         <Mic className="w-4 h-4 text-[#0D9488]" />
                       </div>
                       <div>
-                        <div className="text-sm text-gray-600">Question {currentQuestionIndex + 1} of 5</div>
+                        <div className="text-sm text-gray-600">Question {currentQuestionIndex + 1} of {questions.length}</div>
                         <div className="font-semibold text-gray-900">AI Interviewer</div>
                       </div>
                     </div>
@@ -540,15 +535,15 @@ export default function InterviewPage() {
                         className="w-full h-32 p-4 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent"
                       />
                       <div className="flex justify-between items-center">
-                        <div className="text-sm text-gray-500">
-                          {answer.length} characters
+                        <div className={`text-sm ${countWords(answer) >= MIN_WORDS ? 'text-[#0D9488]' : 'text-gray-500'}`}>
+                          {countWords(answer)} words {countWords(answer) < MIN_WORDS && `(minimum ${MIN_WORDS})`}
                         </div>
                         <button
                           onClick={submitAnswer}
-                          disabled={!answer.trim() || isAnalyzingAnswer}
+                          disabled={countWords(answer) < MIN_WORDS || isFinalizing}
                           className="bg-gradient-to-r from-[#0D9488] to-[#0F766E] text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {isAnalyzingAnswer ? "Analyzing..." : "Submit Answer"}
+                          {isFinalizing ? "Preparing your report..." : currentQuestionIndex >= questions.length - 1 ? "Finish Interview" : "Next Question →"}
                         </button>
                       </div>
                     </div>
@@ -612,12 +607,10 @@ export default function InterviewPage() {
                               {(hookTranscript || hookInterimTranscript) && (
                                 <button
                                   onClick={() => {
-                                    const captured = hookTranscript || hookInterimTranscript;
+                                    const captured = [hookTranscript, hookInterimTranscript].filter(Boolean).join(" ");
                                     stopAssemblyAIRecording();
                                     setVoiceAnswer(captured);
-                                    setTimeout(() => {
-                                      submitVoiceAnswer();
-                                    }, 100);
+                                    submitAnswerText(captured);
                                   }}
                                   type="button"
                                   className="flex-1 bg-[#0D9488] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#0F766E] transition-colors shadow-sm"
@@ -653,11 +646,11 @@ export default function InterviewPage() {
                                   </button>
                                   <button
                                     onClick={submitVoiceAnswer}
-                                    disabled={isAnalyzingAnswer || !voiceAnswer.trim()}
+                                    disabled={isFinalizing || !voiceAnswer.trim()}
                                     type="button"
                                     className="flex-1 bg-gradient-to-r from-[#0D9488] to-[#0F766E] text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
-                                    {isAnalyzingAnswer ? "Analyzing..." : "Submit Answer"}
+                                    {isFinalizing ? "Preparing your report..." : currentQuestionIndex >= questions.length - 1 ? "Finish Interview" : "Next Question →"}
                                   </button>
                                 </div>
                               </div>
@@ -683,9 +676,25 @@ export default function InterviewPage() {
                   )}
                 </div>
 
+                {isFinalizing && (
+                  <div className="p-4 bg-[#F0FDFA] rounded-xl border border-[#CCFBF1] flex items-center gap-3">
+                    <div className="w-5 h-5 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin" />
+                    <div className="text-[#0F766E] text-sm font-medium">Preparing your report — scoring your answers...</div>
+                  </div>
+                )}
+
                 {errorMessage && (
-                  <div className="p-4 bg-red-50 rounded-xl border border-red-200">
+                  <div className="p-4 bg-red-50 rounded-xl border border-red-200 flex items-center justify-between gap-4">
                     <div className="text-red-600 text-sm">{errorMessage}</div>
+                    {failedCount > 0 && !isFinalizing && (
+                      <button
+                        onClick={retryFailed}
+                        type="button"
+                        className="shrink-0 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700"
+                      >
+                        Retry
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -798,11 +807,26 @@ export default function InterviewPage() {
                   </div>
                 </div>
 
-                {/* Model Answer */}
-                {feedback.model_answer && (
-                  <div className="bg-[#F0FDFA] rounded-2xl p-6 shadow-sm border border-[#CCFBF1]">
-                    <h3 className="font-semibold text-[#0F766E] mb-4">Model Answer</h3>
-                    <p className="text-gray-700">{feedback.model_answer}</p>
+                {/* Question-by-question review */}
+                {Array.isArray(feedback.perQuestion) && feedback.perQuestion.length > 0 && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <h3 className="font-semibold text-gray-900 mb-4">Question-by-question review</h3>
+                    <div className="space-y-5">
+                      {feedback.perQuestion.map((item, index) => (
+                        <div key={index} className="border-b border-gray-100 pb-5 last:border-0 last:pb-0">
+                          <div className="flex items-start justify-between gap-4 mb-2">
+                            <p className="font-medium text-gray-900">{index + 1}. {item.question}</p>
+                            <span className="shrink-0 text-sm font-semibold text-[#0D9488]">{item.score}/10</span>
+                          </div>
+                          {item.better_answer && (
+                            <div className="bg-[#F0FDFA] rounded-xl p-4 border border-[#CCFBF1]">
+                              <div className="text-xs font-bold text-[#0F766E] uppercase tracking-wide mb-1">A stronger answer</div>
+                              <p className="text-sm text-gray-700 leading-relaxed">{item.better_answer}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

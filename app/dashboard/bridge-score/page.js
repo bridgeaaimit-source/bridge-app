@@ -28,6 +28,14 @@ import { auth, db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, orderBy, limit, getDocs, where } from "firebase/firestore";
 import { useAuthBypass } from "@/hooks/useAuthBypass";
 
+// Calendar day in the user's own timezone (IST for Indian students), as YYYY-MM-DD.
+// toISOString() would use UTC and shift dates before 5:30 am IST.
+const toLocalDateKey = (date) => {
+  const d = date instanceof Date ? date : new Date(date);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+
 // Helper to generate calendar grids (42 days including previous/next overflow)
 const getDaysInMonth = (year, month) => {
   const date = new Date(year, month, 1);
@@ -170,7 +178,7 @@ export default function BridgeScoreAnalysis() {
             const scoreRecords = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             scoreRecords.forEach(r => {
               const dateObj = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.createdAt || Date.now());
-              const dateStr = dateObj.toISOString().split("T")[0];
+              const dateStr = toLocalDateKey(dateObj);
               
               if (!realMap[dateStr] || new Date(r.createdAt) > new Date(realMap[dateStr].createdAt)) {
                 realMap[dateStr] = {
@@ -190,7 +198,7 @@ export default function BridgeScoreAnalysis() {
             aptSnap.forEach(d => {
               const data = d.data();
               const dateObj = data.completedAt?.toDate ? data.completedAt.toDate() : new Date(data.completedAt || Date.now());
-              const dateStr = dateObj.toISOString().split("T")[0];
+              const dateStr = toLocalDateKey(dateObj);
               
               if (!realMap[dateStr]) realMap[dateStr] = { activities: [] };
               realMap[dateStr].activities.push({
@@ -210,7 +218,7 @@ export default function BridgeScoreAnalysis() {
             intSnap.forEach(d => {
               const data = d.data();
               const dateObj = data.createdAt ? new Date(data.createdAt) : new Date(data.timestamp || Date.now());
-              const dateStr = dateObj.toISOString().split("T")[0];
+              const dateStr = toLocalDateKey(dateObj);
               
               if (!realMap[dateStr]) realMap[dateStr] = { activities: [] };
               const feedback = data.feedback || {};
@@ -231,7 +239,7 @@ export default function BridgeScoreAnalysis() {
             gdSnap.forEach(d => {
               const data = d.data();
               const dateObj = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt || Date.now());
-              const dateStr = dateObj.toISOString().split("T")[0];
+              const dateStr = toLocalDateKey(dateObj);
               
               if (!realMap[dateStr]) realMap[dateStr] = { activities: [] };
               realMap[dateStr].activities.push({
@@ -262,7 +270,7 @@ export default function BridgeScoreAnalysis() {
               calculateRecommendations(latestRecord.breakdown);
             }
           } else {
-            const todayStr = new Date().toISOString().split("T")[0];
+            const todayStr = toLocalDateKey(new Date());
             setSelectedDayStr(todayStr);
             setCurrentDate(new Date());
           }
@@ -428,7 +436,7 @@ export default function BridgeScoreAnalysis() {
           </div>
           <div className="flex items-center gap-2 bg-[#CCFBF1] text-[#0D9488] px-4 py-2 rounded-xl border border-[#99F6E4]">
             <Trophy className="w-5 h-5 shrink-0" />
-            <span className="text-sm font-bold">Top 15% Percentile</span>
+            <span className="text-sm font-bold">Scored out of 1000</span>
           </div>
         </div>
 

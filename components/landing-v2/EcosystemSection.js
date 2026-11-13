@@ -167,7 +167,7 @@ export default function EcosystemSection() {
           className="relative rounded-[2.5rem] bg-gray-50 dark:bg-gray-900/60 backdrop-blur-md border border-gray-200 dark:border-gray-800 p-8 sm:p-12 shadow-sm dark:shadow-2xl dark:shadow-gray-950 overflow-hidden transition-colors"
         >
           {/* Subtle noise and glow */}
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none" />
+          <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none" />
           <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-500 rounded-full blur-[120px] opacity-20 pointer-events-none" />
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">

@@ -142,9 +142,9 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                  { d: 'Beginner', desc: 'Basic terms, syntax, loops, core values. (+10 Bridge score impact)' },
-                  { d: 'Intermediate', desc: 'Standard DSA, frameworks, scenarios. (+25 Bridge score impact)' },
-                  { d: 'Placement Ready', desc: 'Complex problem-solving, scale, STAR formats. (+40 Bridge score impact)' }
+                  { d: 'Beginner', desc: 'Core concepts and common questions for your round. (+10 Bridge score impact)' },
+                  { d: 'Intermediate', desc: 'Scenario-based questions with follow-ups. (+25 Bridge score impact)' },
+                  { d: 'Placement Ready', desc: 'Tough follow-ups, case-style problems and in-depth STAR answers. (+40 Bridge score impact)' }
                 ].map((item) => (
                   <div 
                     key={item.d}
@@ -307,7 +307,7 @@ export default function SetupForm({ startInterview, loadFeedbackHistory, handleR
                   </div>
                   <div className="flex justify-between text-xs font-medium text-slate-500">
                     <span>Mode:</span>
-                    <span className="font-bold text-slate-700 capitalize">{state.config.mode} & Voice</span>
+                    <span className="font-bold text-slate-700">{state.config.mode === 'video' ? 'Video & Voice' : 'Voice only'}</span>
                   </div>
                   <div className="flex justify-between text-xs font-medium text-slate-500">
                     <span>Target Role:</span>

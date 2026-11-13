@@ -25,27 +25,19 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.appbridgeai.in"),
   title: "BridgeAI — India's AI Placement Readiness & Campus Hiring Platform",
   description: "Simulate real mock interviews, participate in daily group discussions, ATS-optimize resumes, and monitor placement metrics with BridgeAI.",
   openGraph: {
     title: "BridgeAI — India's AI Placement Readiness & Campus Hiring Platform",
     description: "Simulate real mock interviews, participate in daily group discussions, ATS-optimize resumes, and monitor placement metrics with BridgeAI.",
     type: "website",
-    url: "https://bridge-app.vercel.app",
-    images: [
-      {
-        url: "https://bridge-app.vercel.app/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "BridgeAI Placement Platform",
-      },
-    ],
+    url: "https://www.appbridgeai.in",
   },
   twitter: {
     card: "summary_large_image",
     title: "BridgeAI Placement Platform",
     description: "India's primary AI placement readiness & campus hiring platform",
-    images: ["https://bridge-app.vercel.app/og-image.png"],
   },
   icons: {
     icon: "/images/logo_favicon_512.png",
