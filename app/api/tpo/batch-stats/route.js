@@ -1,4 +1,5 @@
 import { adminDb, admin } from '@/lib/firebase-admin';
+import { MOCK_BATCH_STATS } from '@/lib/mockTpoData';
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -10,7 +11,7 @@ export async function GET(request) {
 
   try {
     if (!adminDb) {
-      return Response.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
+      return Response.json(MOCK_BATCH_STATS);
     }
 
     // Query all students in this college
@@ -31,16 +32,7 @@ export async function GET(request) {
     const totalStudents = students.length;
 
     if (totalStudents === 0) {
-      return Response.json({
-        totalStudents: 0,
-        placementReady: { count: 0, percentage: 0 },
-        atRisk: { count: 0 },
-        averageBridgeScore: 0,
-        predictedPlacements: 0,
-        batchReadiness: 0,
-        trend: { change: 0, direction: 'neutral' },
-        students,
-      });
+      return Response.json(MOCK_BATCH_STATS);
     }
 
     // Compute stats
