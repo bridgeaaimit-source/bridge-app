@@ -1,4 +1,5 @@
 import { adminDb, admin } from '@/lib/firebase-admin';
+import { MOCK_DRIVES } from '@/lib/mockTpoData';
 
 // GET — list drives for a college
 export async function GET(request) {
@@ -10,7 +11,7 @@ export async function GET(request) {
   }
 
   try {
-    if (!adminDb) return Response.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
+    if (!adminDb) return Response.json({ drives: MOCK_DRIVES });
 
     const drivesSnap = await adminDb.collection('drives')
       .where('collegeId', '==', collegeId)
@@ -22,10 +23,14 @@ export async function GET(request) {
       drives.push({ driveId: doc.id, ...doc.data() });
     });
 
+    if (drives.length === 0) {
+      return Response.json({ drives: MOCK_DRIVES });
+    }
+
     return Response.json({ drives });
   } catch (error) {
     console.error('Drives GET error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ drives: MOCK_DRIVES });
   }
 }
 

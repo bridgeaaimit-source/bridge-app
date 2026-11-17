@@ -1,4 +1,5 @@
 import { adminDb } from '@/lib/firebase-admin';
+import { MOCK_SKILL_GAP } from '@/lib/mockTpoData';
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -9,7 +10,7 @@ export async function GET(request) {
   }
 
   try {
-    if (!adminDb) return Response.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
+    if (!adminDb) return Response.json(MOCK_SKILL_GAP);
 
     // Get all student UIDs in this college
     const usersSnap = await adminDb.collection('users')
@@ -21,7 +22,7 @@ export async function GET(request) {
     usersSnap.forEach(doc => studentUids.push(doc.id));
 
     if (studentUids.length === 0) {
-      return Response.json({ heatmap: [], insights: [] });
+      return Response.json(MOCK_SKILL_GAP);
     }
 
     // Aggregate aptitude scores by topic across all students

@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { trackTokensServer } from '@/lib/tokenTrackerServer';
+import { MOCK_WEEKLY_REPORT } from '@/lib/mockTpoData';
 
 export async function POST(request) {
   try {
@@ -10,10 +11,15 @@ export async function POST(request) {
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      return Response.json({ error: 'Anthropic API key not configured' }, { status: 500 });
+      return Response.json({
+        report: MOCK_WEEKLY_REPORT,
+        generatedAt: new Date().toISOString(),
+        tokensUsed: 0,
+        mock: true,
+      });
     }
 
-    const client = new Anthropic({ apiKey });
+    const client = new Anthropic({ apiKey, timeout: 7000 });
 
     const prompt = `You are an expert placement coordinator generating a professional weekly batch performance report for ${collegeName || 'the college'}.
 
@@ -66,6 +72,11 @@ Format as clean markdown with headers, bullet points, and bold text for emphasis
     });
   } catch (error) {
     console.error('Weekly report error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({
+      report: MOCK_WEEKLY_REPORT,
+      generatedAt: new Date().toISOString(),
+      tokensUsed: 0,
+      mock: true,
+    });
   }
 }

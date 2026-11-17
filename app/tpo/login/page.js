@@ -295,12 +295,20 @@ export default function TPOLoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-3">
             <p className="text-xs text-gray-400">
               {isSignUp
                 ? "Already have an account? Use the Sign In tab above."
                 : "New TPO? Use the Sign Up tab to create your account."}
             </p>
+            <div className="pt-2 border-t border-gray-100">
+              <a
+                href="/tpo"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-[#0D9488] bg-teal-50 hover:bg-teal-100 transition-colors"
+              >
+                Explore Demo Dashboard →
+              </a>
+            </div>
           </div>
         </div>
 
