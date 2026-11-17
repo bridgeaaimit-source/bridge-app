@@ -174,9 +174,9 @@ export default function StudentsPage() {
                 <span className="text-xs font-bold text-[#0D9488] uppercase tracking-wider">Diagnostic Starter</span>
                 <p className="text-2xl font-black text-gray-900 dark:text-white mt-2">₹0 <span className="text-xs font-semibold text-gray-400">/ Free Forever</span></p>
                 <ul className="mt-6 space-y-3 text-xs text-gray-500 dark:text-slate-300 font-medium">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> 4 AI mock interviews</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> 1 GD battle / week</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Basic BRIDGE Score credential</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" /> 2 AI mock interviews</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" /> 1 GD battle</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" /> Basic Bridges Pool</li>
                 </ul>
               </div>
               <Link href="/login" className="mt-8 block text-center rounded-xl border border-[#0D9488] py-2.5 text-xs font-bold text-[#0D9488] hover:bg-teal-50 dark:hover:bg-[#0D9488]/10 cursor-pointer">
@@ -191,11 +191,11 @@ export default function StudentsPage() {
               </div>
               <div>
                 <span className="text-xs font-bold text-teal-200 uppercase tracking-wider">Placement Crusher</span>
-                <p className="text-2xl font-black text-white mt-2">₹499 <span className="text-xs font-semibold text-teal-200">/ month</span></p>
+                <p className="text-2xl font-black text-white mt-2">₹599 <span className="text-xs font-semibold text-teal-200">/ month</span></p>
                 <ul className="mt-6 space-y-3 text-xs text-teal-100 font-medium">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-300" /> 20 AI mock interviews / month</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-300" /> Unlimited GD battle rooms</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-300" /> Priority roadmaps & skill updates</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-300 shrink-0" /> 15 AI mock interviews per month</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-300 shrink-0" /> 10 GD battle rooms</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-300 shrink-0 mt-0.5" /> <span>News Pulse, Career GPS, Career Intelligence, Aptitude Test, and other features</span></li>
                 </ul>
               </div>
               <Link href="/login" className="mt-8 block text-center rounded-xl bg-white py-2.5 text-xs font-bold text-[#0D524C] hover:bg-gray-50 cursor-pointer shadow-sm">

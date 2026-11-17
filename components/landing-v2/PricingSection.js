@@ -86,10 +86,9 @@ export default function PricingSection() {
                 className="mt-8 space-y-4 text-xs font-semibold text-gray-600 dark:text-gray-300"
               >
                 {[
-                  "4 AI mock interviews",
+                  "2 AI mock interviews",
                   "1 GD battle",
-                  "Basic BRIDGE score",
-                  "PDF Resume review"
+                  "Basic Bridges Pool"
                 ].map((f) => (
                   <m.li variants={listItem} key={f} className="flex items-center gap-3">
                     <span className="h-5 w-5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 flex-shrink-0">
@@ -148,7 +147,7 @@ export default function PricingSection() {
               </h3>
               
               <p className="mt-1 text-2xl font-black text-white">
-                ₹499 <span className="text-xs font-semibold text-teal-200">/ month</span>
+                ₹599 <span className="text-xs font-semibold text-teal-200">/ month</span>
               </p>
               <p className="text-[10px] text-teal-200 font-semibold mt-1">
                 Less than 1 day of coaching fees.
@@ -162,11 +161,9 @@ export default function PricingSection() {
                 className="mt-8 space-y-4 text-xs font-semibold"
               >
                 {[
-                  "20 AI video interviews / month",
-                  "20 GD battles / month",
-                  "Unlimited improvement guides",
-                  "Priority question bank",
-                  "Personal roadmap updates"
+                  "15 AI mock interviews per month",
+                  "10 GD battle rooms",
+                  "News Pulse, Career GPS, Career Intelligence, Aptitude Test, and other features"
                 ].map((f) => (
                   <m.li variants={listItem} key={f} className="flex items-center gap-3">
                     <span className="h-5 w-5 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-emerald-300 flex-shrink-0 group-hover:bg-white/20 transition-colors">
